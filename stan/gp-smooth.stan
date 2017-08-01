@@ -10,18 +10,21 @@ data {
 }
 transformed data {
   vector[N] mu;
+  real delta = 1e-9;
   for (i in 1:N)
     mu[i] = 0;
 }
 parameters {
   // vector[N1+N2+N3] f;
-  vector[N] rtrue;
   // real<lower=0> abc[3];
   real<lower=0> sigma_sq;
   real<lower=0> rphi[2];
+  vector[N] eta;
 }
 model {
   matrix[N,N] C_rphi;
+  matrix[N,N] L_C_rphi;
+  vector[N] rtrue;
   real r;
   real r2;
   for (i in 1:N)
@@ -29,11 +32,18 @@ model {
       r = fabs(time[i] - time[j]);
       r2 = pow(r, 2);
       C_rphi[i,j] = rphi[1] * (1 + ((sqrt(5)*r)/rphi[2]) + ((5*r2)/(3*pow(rphi[2],2)))) * exp((-sqrt(5)*r)/rphi[2]);
+      if(i==j){
+        C_rphi[i,j] = C_rphi[i,j] + delta;
+      }
     }
-    
+  
+  L_C_rphi = cholesky_decompose(C_rphi);
+  rtrue = L_C_rphi * eta;
+  
   rphi[1] ~ cauchy(0,5);
   rphi[2] ~ cauchy(0,5);
+  sigma_sq ~ cauchy(0,5);
   
-  rtrue ~ multi_normal(mu, C_rphi);
-  robs ~ normal(rtrue,sigma_sq);
+  eta ~ normal(0, 1);
+  robs ~ normal(rtrue, sigma_sq);
 }
