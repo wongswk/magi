@@ -7,8 +7,8 @@ data {
   int<lower=1> N;
   real robs[N];
   real vobs[N];
-  real drobs[N];
-  real dvobs[N];
+  vector[N] drobs;
+  vector[N] dvobs;
   real time[N];
 }
 transformed data {
@@ -22,7 +22,7 @@ parameters {
   // vector[N1+N2+N3] f;
   // real<lower=0> abc[3];
   real<lower=0> sigma;
-  real<lower=0> gamma;
+  // real<lower=0> gamma;
   real<lower=0> rphi[2];
   real<lower=0> vphi[2];
   vector[N] reta;
@@ -103,8 +103,13 @@ model {
   L_K_rphi = cholesky_decompose(K_rphi);
   L_K_vphi = cholesky_decompose(K_vphi);
   
-  drtrue = m_rphi_rtrue + K_rphi * dreta;
-  dvtrue = m_vphi_vtrue + K_vphi * dveta;
+  // dvtrue = dvobs;
+  // drtrue = drobs;
+  
+  // m_rphi_rtrue + K_rphi * dreta = drobs;
+  // m_vphi_vtrue + K_vphi * dveta = dvobs;
+  
+  
   
   rphi[1] ~ cauchy(0,5);
   rphi[2] ~ cauchy(0,5);
@@ -112,7 +117,7 @@ model {
   vphi[2] ~ cauchy(0,5);
   
   sigma ~ cauchy(0,5);
-  gamma ~ cauchy(0,5);
+  // gamma ~ cauchy(0,5);
   // abc ~ cauchy(0,5);
   
   reta ~ normal(0, 1);
@@ -124,8 +129,10 @@ model {
   robs ~ normal(rtrue, sigma);
   vobs ~ normal(vtrue, sigma);
   
-  drobs ~ normal(drtrue, gamma);
-  dvobs ~ normal(dvtrue, gamma);
-  // drobs = drtrue;
-  // dvobs = dvtrue;
+  drobs ~ multi_normal(m_rphi_rtrue, K_rphi);
+  dvobs ~ multi_normal(m_vphi_vtrue, K_vphi);
+  
+  // drobs ~ normal(drtrue, gamma);
+  // dvobs ~ normal(dvtrue, gamma);
+  
 }

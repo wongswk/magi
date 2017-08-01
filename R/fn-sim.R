@@ -101,7 +101,12 @@ getMeanDerivCurve <- function(x, y, dy, x.new, phi.mat, delta = 1e-9, sigma.mat,
   t(sapply(1:nrow(phi.mat), function(it){
     sigma <- sigma.mat[it]
     phi <- phi.mat[it,]
-    gamma <- gamma.mat[it]
+    if(is.null(gamma.mat)){
+      gamma <- 0
+    }else{
+      gamma <- gamma.mat[it]
+    }
+    
     
     C <- phi[1] * (1 + ((sqrt(5)*r)/phi[2]) + ((5*r2)/(3*phi[2]^2))) * exp((-sqrt(5)*r)/phi[2])
     Cprime  <- signr* (phi[1] * exp((-sqrt(5)*r)/phi[2])) * (((5*r)/(3*phi[2]^2)) + ((5*sqrt(5)*r2)/(3*phi[2]^3)))
@@ -168,18 +173,21 @@ abline(v=0.1, col=2)
 plot(gpsmooth_ss$gamma, type="l",main="gamma")
 hist(gpsmooth_ss$gamma, breaks = 50,main="gamma")
 
+vdRmcurve <- getMeanDerivCurve(x=fn.sim$time, y=fn.sim$Rtrue, dy=fn.sim$dRtrue, x.new=fn.true$time,
+                               sigma.mat = gpsmooth_ss$sigma, phi.mat = gpsmooth_ss$rphi, gamma.mat=gpsmooth_ss$gamma)
+
+vdVmcurve <- getMeanDerivCurve(x=fn.sim$time, y=fn.sim$Vtrue, dy=fn.sim$dVtrue, x.new=fn.true$time,
+                               sigma.mat = gpsmooth_ss$sigma, phi.mat = gpsmooth_ss$rphi, gamma.mat=gpsmooth_ss$gamma)
+
+
 
 matplot(fn.true$time, data.matrix(fn.true[,c(2,5)]), type="l", lty=1, col=c(2,1))
 points(fn.sim$time, fn.sim$Rtrue, col=2)
-vdRmcurve <- getMeanDerivCurve(x=fn.sim$time, y=fn.sim$Rtrue, dy=fn.sim$dRtrue, x.new=fn.true$time,
-                               sigma.mat = gpsmooth_ss$sigma, phi.mat = gpsmooth_ss$rphi, gamma.mat=gpsmooth_ss$gamma)
 matplot(fn.true$time, head(t(vdRmcurve),nrow(fn.true)), col="pink",add=TRUE, type="l",lty=1)
 matplot(fn.true$time, tail(t(vdRmcurve),nrow(fn.true)), col="grey",add=TRUE, type="l",lty=1)
 
 matplot(fn.true$time, data.matrix(fn.true[,c(1,4)]), type="l", lty=1, col=c(2,1))
 points(fn.sim$time, fn.sim$Vtrue, col=2)
-vdVmcurve <- getMeanDerivCurve(x=fn.sim$time, y=fn.sim$Vtrue, dy=fn.sim$dVtrue, x.new=fn.true$time,
-                               sigma.mat = gpsmooth_ss$sigma, phi.mat = gpsmooth_ss$rphi, gamma.mat=gpsmooth_ss$gamma)
 matplot(fn.true$time, head(t(vdVmcurve),nrow(fn.true)), col="pink",add=TRUE, type="l",lty=1)
 matplot(fn.true$time, tail(t(vdVmcurve),nrow(fn.true)), col="grey",add=TRUE, type="l",lty=1)
 
