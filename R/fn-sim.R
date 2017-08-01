@@ -42,6 +42,7 @@ matplot(fn.sim$time, data.matrix(fn.sim[,-3]), type="l", lty=1)
 gpsmooth <- stan(file="stan/gp-smooth.stan",
                  data=list(N=nrow(fn.sim),
                            robs=fn.sim$Rtrue,
+                           vobs=fn.sim$Vtrue,
                            time=fn.sim$time),
                  iter=1000, chains=1)
 
@@ -53,9 +54,15 @@ abline(h=0.1, col=2)
 hist(gpsmooth_ss$sigma, breaks = 50,main="sigma_sq")
 abline(v=0.1, col=2)
 
-mcurve <- getMeanCurve(x=fn.sim$time, y=fn.sim$Rtrue, x.new=fn.true$time,
-                       sigma.mat = gpsmooth_ss$sigma_sq, phi.mat = gpsmooth_ss$rphi)
+rmcurve <- getMeanCurve(x=fn.sim$time, y=fn.sim$Rtrue, x.new=fn.true$time,
+                       sigma.mat = gpsmooth_ss$sigma, phi.mat = gpsmooth_ss$rphi)
+vmcurve <- getMeanCurve(x=fn.sim$time, y=fn.sim$Vtrue, x.new=fn.true$time,
+                        sigma.mat = gpsmooth_ss$sigma, phi.mat = gpsmooth_ss$vphi)
 
-plot(fn.sim$time, fn.sim$Rtrue, type="l", lty=1)
-matplot(fn.true$time, t(mcurve), col="grey",add=TRUE, type="l",lty=1)
-points(fn.sim$time, fn.sim$Rtrue)
+matplot(fn.sim$time, data.matrix(fn.sim[,-3]), type="l", lty=1)
+matplot(fn.true$time, t(rmcurve), col="pink",add=TRUE, type="l",lty=1)
+matplot(fn.true$time, t(vmcurve), col="grey",add=TRUE, type="l",lty=1)
+points(fn.sim$time, fn.sim$Vtrue, col=1)
+points(fn.sim$time, fn.sim$Rtrue, col=2)
+
+
