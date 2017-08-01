@@ -7,6 +7,8 @@ data {
   int<lower=1> N;
   real robs[N];
   real vobs[N];
+  real drobs[N];
+  real dvobs[N];
   real time[N];
 }
 transformed data {
@@ -14,11 +16,13 @@ transformed data {
   real delta = 1e-9;
   for (i in 1:N)
     mu[i] = 0;
+  print("Finished transforming data.");
 }
 parameters {
   // vector[N1+N2+N3] f;
-  real<lower=0> abc[3];
+  // real<lower=0> abc[3];
   real<lower=0> sigma;
+  real<lower=0> gamma;
   real<lower=0> rphi[2];
   real<lower=0> vphi[2];
   vector[N] reta;
@@ -55,6 +59,7 @@ model {
   
   real r;
   real r2;
+  
   for (i in 1:N)
     for (j in 1:N){
       r = fabs(time[i] - time[j]);
@@ -85,24 +90,22 @@ model {
   vtrue = L_C_vphi * veta;
   inv_L_C_vphi = inverse(L_C_vphi);
   
-  for (i in 1:N){
-    dvtrue[i] = abc[3] * (vtrue[i] - pow(vtrue[i],3)/3.0 + rtrue[i]);  
-    drtrue[i] = -1.0/abc[3] * (vtrue[i] - abc[1] + abc[2]*rtrue[i]);
-  }
-  
   m_rphi_rtrue = dC_rphi' * inv_L_C_rphi' * inv_L_C_rphi * rtrue;
   m_vphi_vtrue = dC_vphi' * inv_L_C_vphi' * inv_L_C_vphi * vtrue;
   
   K_rphi = inv_L_C_rphi * dC_rphi;
   K_rphi = ddC_rphi - K_rphi' * K_rphi;
-  L_K_rphi = cholesky_decompose(K_rphi);
-  
   K_vphi = inv_L_C_vphi * dC_vphi;
   K_vphi = ddC_vphi - K_vphi' * K_vphi;
+  for(i in 1:N){
+    K_rphi[i,i] = K_rphi[i,i]+delta;
+    K_vphi[i,i] = K_vphi[i,i]+delta;
+  }
+  L_K_rphi = cholesky_decompose(K_rphi);
   L_K_vphi = cholesky_decompose(K_vphi);
   
-  dreta = inverse(K_rphi) * (drtrue - m_rphi_rtrue);
-  dreta = inverse(K_rphi) * (drtrue - m_rphi_rtrue);
+  drtrue = m_rphi_rtrue + K_rphi * dreta;
+  dvtrue = m_vphi_vtrue + K_vphi * dveta;
   
   rphi[1] ~ cauchy(0,5);
   rphi[2] ~ cauchy(0,5);
@@ -110,6 +113,8 @@ model {
   vphi[2] ~ cauchy(0,5);
   
   sigma ~ cauchy(0,5);
+  gamma ~ cauchy(0,5);
+  // abc ~ cauchy(0,5);
   
   reta ~ normal(0, 1);
   veta ~ normal(0, 1);
@@ -119,4 +124,7 @@ model {
   
   robs ~ normal(rtrue, sigma);
   vobs ~ normal(vtrue, sigma);
+  
+  drobs ~ normal(drtrue, gamma);
+  dvobs ~ normal(dvtrue, gamma);
 }
