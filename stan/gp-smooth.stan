@@ -31,6 +31,14 @@ model {
   matrix[N,N] C_vphi;
   matrix[N,N] L_C_vphi;
   vector[N] vtrue;
+  
+  vector[N] drtrue;
+  vector[N] dvtrue;
+  
+  vector[N] m_rphi;
+  vector[N] m_vphi;
+  
+  
   real r;
   real r2;
   for (i in 1:N)
@@ -50,6 +58,14 @@ model {
   
   L_C_vphi = cholesky_decompose(C_vphi);
   vtrue = L_C_vphi * veta;
+  
+  for (i in 1:N){
+    dvtrue[i] = abc[3] * (vtrue[i] - pow(vtrue[i],3)/3.0 + rtrue[i]);  
+    drtrue[i] = -1.0/abc[3] * (vtrue[i] - abc[1] + abc[2]*rtrue[i]);
+  }
+  
+  
+  drtrue ~ normal(0, 1);
   
   rphi[1] ~ cauchy(0,5);
   rphi[2] ~ cauchy(0,5);

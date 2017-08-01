@@ -44,7 +44,7 @@ gpsmooth <- stan(file="stan/gp-smooth.stan",
                            robs=fn.sim$Rtrue,
                            vobs=fn.sim$Vtrue,
                            time=fn.sim$time),
-                 iter=1000, chains=1)
+                 iter=100, chains=1)
 
 traceplot(gpsmooth)
 gpsmooth_ss <- extract(gpsmooth, permuted=TRUE)
