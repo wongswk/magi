@@ -27,6 +27,8 @@ parameters {
   real<lower=0> vphi[2];
   vector[N] reta;
   vector[N] veta;
+  vector[N] dreta;
+  vector[N] dveta;
 }
 model {
   matrix[N,N] C_rphi;
@@ -53,9 +55,6 @@ model {
   
   vector[N] m_rphi_rtrue;
   vector[N] m_vphi_vtrue;
-  
-  vector[N] dreta;
-  vector[N] dveta;
   
   real r;
   real r2;
@@ -127,4 +126,6 @@ model {
   
   drobs ~ normal(drtrue, gamma);
   dvobs ~ normal(dvtrue, gamma);
+  // drobs = drtrue;
+  // dvobs = dvtrue;
 }
