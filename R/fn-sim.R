@@ -19,23 +19,6 @@ getMeanCurve <- function(x, y, x.new, phi.mat, delta = 1e-9, sigma.mat){
   }))
 }
 
-getMeanCurve.example <- function(tvec, alpha.mat, rho.mat, eta.mat, delta = 1e-9){
-  foo <- outer(tvec, t(tvec),'-')[,1,]
-  r <- abs(foo)
-  r2 <- r^2
-  
-  signr <- -sign(foo)
-  
-  t(sapply(1:nrow(eta.mat), function(it){
-    alpha <- alpha.mat[it]
-    rho <- rho.mat[it]
-    eta <- eta.mat[it,]
-    K <- alpha^2*exp(-r2/(2*rho^2))
-    diag(K) <- diag(K)+delta
-    chol(K) %*% eta  
-  }))
-}
-
 #### start of code ####
 
 library(rstan)
@@ -62,12 +45,6 @@ gpsmooth <- stan(file="stan/gp-smooth.stan",
                            time=fn.sim$time),
                  iter=1000, chains=1)
 
-# gpsmooth <- stan(file="stan/gp-example.stan",
-#                  data=list(N=nrow(fn.sim),
-#                            y=fn.sim$Rtrue,
-#                            x=fn.sim$time),
-#                  iter=1000, chains=1)
-
 traceplot(gpsmooth)
 gpsmooth_ss <- extract(gpsmooth, permuted=TRUE)
 
@@ -78,11 +55,6 @@ abline(v=0.1, col=2)
 
 mcurve <- getMeanCurve(x=fn.sim$time, y=fn.sim$Rtrue, x.new=fn.true$time,
                        sigma.mat = gpsmooth_ss$sigma_sq, phi.mat = gpsmooth_ss$rphi)
-mcurve <- getMeanCurve.example(tvec = fn.sim$time,
-                     rho.mat = gpsmooth_ss$rho,
-                     alpha.mat = gpsmooth_ss$alpha,
-                     eta.mat = gpsmooth_ss$eta)
-
 
 plot(fn.sim$time, fn.sim$Rtrue, type="l", lty=1)
 matplot(fn.true$time, t(mcurve), col="grey",add=TRUE, type="l",lty=1)
