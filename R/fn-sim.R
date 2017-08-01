@@ -157,8 +157,8 @@ gpsmooth <- stan(file="stan/gp-smooth.stan",
                  data=list(N=nrow(fn.sim),
                            robs=fn.sim$Rtrue,
                            vobs=fn.sim$Vtrue,
-                           drobs=fn.sim$dRtrue,
-                           dvobs=fn.sim$dVtrue,
+                           # drobs=fn.sim$dRtrue,
+                           # dvobs=fn.sim$dVtrue,
                            time=fn.sim$time),
                  iter=100, chains=1)
 

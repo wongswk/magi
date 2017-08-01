@@ -7,8 +7,6 @@ data {
   int<lower=1> N;
   real robs[N];
   real vobs[N];
-  vector[N] drobs;
-  vector[N] dvobs;
   real time[N];
 }
 transformed data {
@@ -20,7 +18,7 @@ transformed data {
 }
 parameters {
   // vector[N1+N2+N3] f;
-  // real<lower=0> abc[3];
+  real<lower=0> abc[3];
   real<lower=0> sigma;
   // real<lower=0> gamma;
   real<lower=0> rphi[2];
@@ -55,6 +53,9 @@ model {
   
   vector[N] m_rphi_rtrue;
   vector[N] m_vphi_vtrue;
+  
+  vector[N] drobs;
+  vector[N] dvobs;
   
   real r;
   real r2;
@@ -109,7 +110,10 @@ model {
   // m_rphi_rtrue + K_rphi * dreta = drobs;
   // m_vphi_vtrue + K_vphi * dveta = dvobs;
   
-  
+  for (i in 1:N){
+    dvobs[i] = abc[3] * (vtrue[i] - pow(vtrue[i],3)/3.0 + rtrue[i]);  
+    drobs[i] = -1.0/abc[3] * (vtrue[i] - abc[1] + abc[2]*rtrue[i]);
+  }
   
   rphi[1] ~ cauchy(0,5);
   rphi[2] ~ cauchy(0,5);
@@ -119,7 +123,9 @@ model {
   // sigma ~ cauchy(0,5);
   sigma ~ normal(0,0.001);
   // gamma ~ cauchy(0,5);
-  // abc ~ cauchy(0,5);
+  abc[1] ~ cauchy(0,5);
+  abc[2] ~ cauchy(0,5);
+  abc[3] ~ cauchy(0,5);
   
   reta ~ normal(0, 1);
   veta ~ normal(0, 1);
