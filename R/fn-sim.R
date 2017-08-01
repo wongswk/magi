@@ -39,12 +39,16 @@ fn.sim[,1:2] <- fn.sim[,1:2]+rnorm(length(unlist(fn.sim[,1:2])), sd=0.1)
 fn.sim <- fn.sim[seq(1,nrow(fn.sim), length=41),]
 matplot(fn.sim$time, data.matrix(fn.sim[,-3]), type="l", lty=1)
 
+init <- list(abc=c(0.2, 0.2, 1), sigma=0.1, 
+             rphi=c(1.9e5, 0.08), vphi=c(1.2e6,0.083),
+             reta=rnorm(nrow(fn.sim)), veta=rnorm(nrow(fn.sim)))
+
 gpsmooth <- stan(file="stan/gp-smooth.stan",
                  data=list(N=nrow(fn.sim),
                            robs=fn.sim$Rtrue,
                            vobs=fn.sim$Vtrue,
                            time=fn.sim$time),
-                 iter=100, chains=1)
+                 iter=100, chains=1, verbose = TRUE)
 
 traceplot(gpsmooth)
 gpsmooth_ss <- extract(gpsmooth, permuted=TRUE)
