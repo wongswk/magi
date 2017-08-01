@@ -184,7 +184,15 @@ vdVmcurve <- getMeanDerivCurve(x=fn.sim$time, y=fn.sim$Vtrue, dy=fn.sim$dVtrue, 
 matplot(fn.true$time, data.matrix(fn.true[,c(2,5)]), type="l", lty=1, col=c(2,1))
 points(fn.sim$time, fn.sim$Rtrue, col=2)
 matplot(fn.true$time, head(t(vdRmcurve),nrow(fn.true)), col="pink",add=TRUE, type="l",lty=1)
+
+matplot(fn.true$time, data.matrix(fn.true[,c(2,5)]), type="l", lty=1, col=c(2,1))
+points(fn.sim$time, fn.sim$Rtrue, col=2)
+matplot(fn.true$time, head(t(vdRmcurve),nrow(fn.true)), col="pink",add=TRUE, type="l",lty=1)
 matplot(fn.true$time, tail(t(vdRmcurve),nrow(fn.true)), col="grey",add=TRUE, type="l",lty=1)
+
+matplot(fn.true$time, data.matrix(fn.true[,c(1,4)]), type="l", lty=1, col=c(2,1))
+points(fn.sim$time, fn.sim$Vtrue, col=2)
+matplot(fn.true$time, head(t(vdVmcurve),nrow(fn.true)), col="pink",add=TRUE, type="l",lty=1)
 
 matplot(fn.true$time, data.matrix(fn.true[,c(1,4)]), type="l", lty=1, col=c(2,1))
 points(fn.sim$time, fn.sim$Vtrue, col=2)

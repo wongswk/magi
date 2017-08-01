@@ -116,7 +116,8 @@ model {
   vphi[1] ~ cauchy(0,5);
   vphi[2] ~ cauchy(0,5);
   
-  sigma ~ cauchy(0,5);
+  // sigma ~ cauchy(0,5);
+  sigma ~ normal(0,0.001);
   // gamma ~ cauchy(0,5);
   // abc ~ cauchy(0,5);
   
