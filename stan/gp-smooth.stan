@@ -8,6 +8,7 @@ data {
   real robs[N];
   real vobs[N];
   real time[N];
+  real lambda;
 }
 transformed data {
   vector[N] mu;
@@ -121,7 +122,7 @@ model {
   vphi[2] ~ cauchy(0,5);
   
   // sigma ~ cauchy(0,5);
-  sigma ~ normal(0,0.001);
+  sigma ~ normal(0,lambda);
   // gamma ~ cauchy(0,5);
   abc[1] ~ cauchy(0,5);
   abc[2] ~ cauchy(0,5);

@@ -124,6 +124,7 @@ getMeanDerivCurve <- function(x, y, dy, x.new, phi.mat, delta = 1e-9, sigma.mat,
     diag(M)[id.dobs] <- diag(M)[id.dobs]+gamma^2
       
     stopifnot(is.finite(M))
+    diag(M) <- diag(M)+delta
     
     M[c(id.vnew,id.dnew),c(id.vobs,id.dobs)]%*%solve(M[c(id.vobs,id.dobs),c(id.vobs,id.dobs)], c(y,dy))
   }))
@@ -159,7 +160,8 @@ gpsmooth <- stan(file="stan/gp-smooth.stan",
                            vobs=fn.sim$Vtrue,
                            # drobs=fn.sim$dRtrue,
                            # dvobs=fn.sim$dVtrue,
-                           time=fn.sim$time),
+                           time=fn.sim$time,
+                           lambda=1),
                  iter=100, chains=1)
 
 traceplot(gpsmooth)
@@ -199,3 +201,11 @@ points(fn.sim$time, fn.sim$Vtrue, col=2)
 matplot(fn.true$time, head(t(vdVmcurve),nrow(fn.true)), col="pink",add=TRUE, type="l",lty=1)
 matplot(fn.true$time, tail(t(vdVmcurve),nrow(fn.true)), col="grey",add=TRUE, type="l",lty=1)
 
+save(gpsmooth_ss, vdRmcurve, vdVmcurve, file="dump.RData")
+
+gpsmooth_ss$abc
+gpsmooth_ss$sigma
+gpsmooth_ss$rphi
+gpsmooth_ss$vphi
+
+vdRmcurve[,seq(1,401,length=41)]
