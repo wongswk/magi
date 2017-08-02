@@ -1,5 +1,5 @@
 #### start of code ####
-
+source("R/func.R")
 library(rstan)
 fn.true <- read.csv("data/FN.csv")
 fn.true$time <- seq(0,20,0.05)
@@ -23,10 +23,6 @@ fn.sim[,1:2] <- fn.sim[,1:2]+rnorm(length(unlist(fn.sim[,1:2])), sd=0.1)
 fn.sim <- fn.sim[seq(1,nrow(fn.sim), length=41),]
 matplot(fn.sim$time, data.matrix(fn.sim[,-3]), type="l", lty=1)
 
-
-
-
-
 init <- list(
   abc=c(0.2,0.2,3),
   rphi=c(0.9486433, 3.2682434),
@@ -40,10 +36,10 @@ r2 <- r^2
 signr <- -sign(foo)
 
 
-init$reta <- solve(t(chol(calCov(init$rphi)$C)), VRtrue[seq(1,401,length=41),c("Rtrue")])
-init$veta <- solve(t(chol(calCov(init$vphi)$C)), VRtrue[seq(1,401,length=41),c("Vtrue")])
+init$reta <- solve(t(chol(calCov(init$rphi, r)$C)), fn.true[seq(1,401,length=41),c("Rtrue")])
+init$veta <- solve(t(chol(calCov(init$vphi, r)$C)), fn.true[seq(1,401,length=41),c("Vtrue")])
 
-stopifnot(abs(getX(r, t(init$rphi), t(init$reta)) - VRtrue[seq(1,401,length=41),c("Rtrue")]) < 1e-14)
+stopifnot(abs(getX(r, t(init$rphi), t(init$reta)) - fn.true[seq(1,401,length=41),c("Rtrue")]) < 1e-14)
 
 gpsmooth <- stan(file="stan/gp-smooth.stan",
                  data=list(N=nrow(fn.sim),
@@ -53,12 +49,13 @@ gpsmooth <- stan(file="stan/gp-smooth.stan",
                            # dvobs=fn.sim$dVtrue,
                            time=fn.sim$time,
                            lambda=5),
-                 iter=100, chains=1, init=list(init), warmup = 0)
+                 iter=100, chains=1, init=list(init), warmup = 30)
 
 traceplot(gpsmooth)
 gpsmooth_ss <- extract(gpsmooth, permuted=TRUE)
 
 gpsmooth_ss$lp__
+# init has lp value -131192.9
 
 plot(gpsmooth_ss$sigma, type="l",main="sigma")
 abline(h=0.1, col=2)
@@ -104,13 +101,22 @@ points(fn.sim$time, fn.sim$Vtrue, col=2)
 matplot(fn.true$time, head(t(vdVmcurve),nrow(fn.true)), col="pink",add=TRUE, type="l",lty=1)
 matplot(fn.true$time, tail(t(vdVmcurve),nrow(fn.true)), col="grey",add=TRUE, type="l",lty=1)
 matplot(fn.sim$time, t(dVdRpostsample[,,"dvobs"]), col="skyblue",add=TRUE, type="l",lty=1)
-matplot(fn.sim$time, t(gpsmooth_ss$vtrue), col="skyblue",add=TRUE, type="l",lty=1)
 
 save(gpsmooth_ss, vdRmcurve, vdVmcurve, file="dump.RData")
 
-gpsmooth_ss$abc
-gpsmooth_ss$sigma
-gpsmooth_ss$rphi
-gpsmooth_ss$vphi
+# "best" log-likelihood based on truth. phi vector found by optim with other inputs set at truth
+loglik( data.matrix(fn.true[seq(1,401,length=41),c("Vtrue","Rtrue")]), init$abc, 
+        c(init$vphi, init$rphi), 0.1,  fn.sim[,1:2], r)
 
-vdRmcurve[,seq(1,401,length=41)]
+
+lapply(1:length(gpsmooth_ss$lp__), function(it){
+  loglik( cbind(gpsmooth_ss$vtrue[it,], gpsmooth_ss$rtrue[it,]), 
+          gpsmooth_ss$abc[it,], 
+          c(gpsmooth_ss$vphi[it,],gpsmooth_ss$rphi[it,]), 
+          0.1,
+          fn.sim[,1:2], 
+          r)
+})
+
+#' discrepency between STAN log posterior and log likelihood
+#' need to implement the model in plain R later
