@@ -45,17 +45,19 @@ gpsmooth <- stan(file="stan/gp-smooth.stan",
                  data=list(N=nrow(fn.sim),
                            robs=fn.sim$Rtrue,
                            vobs=fn.sim$Vtrue,
-                           # drobs=fn.sim$dRtrue,
-                           # dvobs=fn.sim$dVtrue,
-                           time=fn.sim$time,
-                           lambda=5),
-                 iter=100, chains=1, init=list(init), warmup = 30)
+                           time=fn.sim$time),
+                 iter=1, chains=1, init=list(init), warmup = 0)
 
 traceplot(gpsmooth)
 gpsmooth_ss <- extract(gpsmooth, permuted=TRUE)
 
 gpsmooth_ss$lp__
-# init has lp value -131192.9
+# init has lp value -131206
+# simulation around -180
+
+gpsmooth_ss$vtrue - fn.true[seq(1,401,length=41),c("Vtrue")]
+gpsmooth_ss$rtrue - fn.true[seq(1,401,length=41),c("Rtrue")]
+
 
 plot(gpsmooth_ss$sigma, type="l",main="sigma")
 abline(h=0.1, col=2)
@@ -107,7 +109,7 @@ save(gpsmooth_ss, vdRmcurve, vdVmcurve, file="dump.RData")
 # "best" log-likelihood based on truth. phi vector found by optim with other inputs set at truth
 loglik( data.matrix(fn.true[seq(1,401,length=41),c("Vtrue","Rtrue")]), init$abc, 
         c(init$vphi, init$rphi), 0.1,  fn.sim[,1:2], r)
-
+# around 385.3999
 
 lapply(1:length(gpsmooth_ss$lp__), function(it){
   loglik( cbind(gpsmooth_ss$vtrue[it,], gpsmooth_ss$rtrue[it,]), 
@@ -117,6 +119,7 @@ lapply(1:length(gpsmooth_ss$lp__), function(it){
           fn.sim[,1:2], 
           r)
 })
+# around 81.03348
 
 #' discrepency between STAN log posterior and log likelihood
 #' need to implement the model in plain R later
