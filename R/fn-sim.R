@@ -129,6 +129,16 @@ getMeanDerivCurve <- function(x, y, dy, x.new, phi.mat, delta = 1e-9, sigma.mat,
     M[c(id.vnew,id.dnew),c(id.vobs,id.dobs)]%*%solve(M[c(id.vobs,id.dobs),c(id.vobs,id.dobs)], c(y,dy))
   }))
 }
+
+getX <- function(r, phi.mat, eta.mat, delta = 1e-9){
+  r2 <- r^2
+  t(sapply(1:nrow(phi.mat), function(it){
+    phi <- phi.mat[it,]
+    C <- phi[1] * (1 + ((sqrt(5)*r)/phi[2]) + ((5*r2)/(3*phi[2]^2))) * exp((-sqrt(5)*r)/phi[2])
+    diag(C) <- diag(C) + delta
+    chol(C) %*% eta.mat[it,]
+  }))
+}
 #### start of code ####
 
 library(rstan)
@@ -161,7 +171,7 @@ gpsmooth <- stan(file="stan/gp-smooth.stan",
                            # drobs=fn.sim$dRtrue,
                            # dvobs=fn.sim$dVtrue,
                            time=fn.sim$time,
-                           lambda=1),
+                           lambda=0.008),
                  iter=100, chains=1)
 
 traceplot(gpsmooth)
@@ -181,11 +191,15 @@ vdRmcurve <- getMeanDerivCurve(x=fn.sim$time, y=fn.sim$Rtrue, dy=fn.sim$dRtrue, 
 vdVmcurve <- getMeanDerivCurve(x=fn.sim$time, y=fn.sim$Vtrue, dy=fn.sim$dVtrue, x.new=fn.true$time,
                                sigma.mat = gpsmooth_ss$sigma, phi.mat = gpsmooth_ss$rphi, gamma.mat=gpsmooth_ss$gamma)
 
+Rpostsample <- getX(r=as.matrix(dist(fn.sim$time)), phi.mat = gpsmooth_ss$rphi, eta.mat = gpsmooth_ss$reta)
+Vpostsample <- getX(r=as.matrix(dist(fn.sim$time)), phi.mat = gpsmooth_ss$vphi, eta.mat = gpsmooth_ss$veta)
 
 
 matplot(fn.true$time, data.matrix(fn.true[,c(2,5)]), type="l", lty=1, col=c(2,1))
 points(fn.sim$time, fn.sim$Rtrue, col=2)
 matplot(fn.true$time, head(t(vdRmcurve),nrow(fn.true)), col="pink",add=TRUE, type="l",lty=1)
+matplot(fn.sim$time, t(Rpostsample), col="skyblue",add=TRUE, type="l",lty=1)
+
 
 matplot(fn.true$time, data.matrix(fn.true[,c(2,5)]), type="l", lty=1, col=c(2,1))
 points(fn.sim$time, fn.sim$Rtrue, col=2)
@@ -195,6 +209,7 @@ matplot(fn.true$time, tail(t(vdRmcurve),nrow(fn.true)), col="grey",add=TRUE, typ
 matplot(fn.true$time, data.matrix(fn.true[,c(1,4)]), type="l", lty=1, col=c(2,1))
 points(fn.sim$time, fn.sim$Vtrue, col=2)
 matplot(fn.true$time, head(t(vdVmcurve),nrow(fn.true)), col="pink",add=TRUE, type="l",lty=1)
+matplot(fn.sim$time, t(Vpostsample), col="skyblue",add=TRUE, type="l",lty=1)
 
 matplot(fn.true$time, data.matrix(fn.true[,c(1,4)]), type="l", lty=1, col=c(2,1))
 points(fn.sim$time, fn.sim$Vtrue, col=2)
