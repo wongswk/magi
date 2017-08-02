@@ -132,14 +132,30 @@ model {
 }
 
 generated quantities {
-  vector[N] rtrue;
-  vector[N] vtrue;
-  
-  {
   matrix[N,N] C_rphi;
   matrix[N,N] L_C_rphi;
+  matrix[N,N] inv_L_C_rphi;
+  vector[N] rtrue;
   matrix[N,N] C_vphi;
   matrix[N,N] L_C_vphi;
+  matrix[N,N] inv_L_C_vphi;
+  vector[N] vtrue;
+  
+  matrix[N,N] K_rphi;
+  matrix[N,N] K_vphi;
+  
+  matrix[N,N] dC_rphi;
+  matrix[N,N] ddC_rphi;
+  matrix[N,N] dC_vphi;
+  matrix[N,N] ddC_vphi;
+  
+  vector[N] m_rphi_rtrue;
+  vector[N] m_vphi_vtrue;
+  
+  vector[N] drobs;
+  vector[N] dvobs;
+  
+  
   
   for (i in 1:N)
     for (j in 1:N){
@@ -151,10 +167,41 @@ generated quantities {
         C_rphi[i,j] = C_rphi[i,j] + delta;
         C_vphi[i,j] = C_vphi[i,j] + delta;
       }
+      dC_rphi[i,j] = (2*step(j-i) - 1) * (rphi[1] * exp((-sqrt(5)*r[i,j])/rphi[2])) * 
+        (((5*r[i,j])/(3*pow(rphi[2],2))) + ((5*sqrt(5)*r2[i,j])/(3*pow(rphi[2],3))));
+      
+      dC_vphi[i,j] = (2*step(j-i) - 1) * (vphi[1] * exp((-sqrt(5)*r[i,j])/vphi[2])) * 
+        (((5*r[i,j])/(3*pow(vphi[2],2))) + ((5*sqrt(5)*r2[i,j])/(3*pow(vphi[2],3))));
+      
+      ddC_rphi[i,j] = (rphi[1]*exp((-sqrt(5)*r[i,j])/rphi[2])) * ((5/(3*pow(rphi[2],2))) 
+        + ((5*sqrt(5)*r[i,j])/(3*pow(rphi[2],3))) - ((25*r2[i,j])/(3*pow(rphi[2],4))));
+      ddC_vphi[i,j] = (vphi[1]*exp((-sqrt(5)*r[i,j])/vphi[2])) * ((5/(3*pow(vphi[2],2))) 
+        + ((5*sqrt(5)*r[i,j])/(3*pow(vphi[2],3))) - ((25*r2[i,j])/(3*pow(vphi[2],4))));
     }
+  
   L_C_rphi = cholesky_decompose(C_rphi);
+  // print(C_rphi[1,2]);
   rtrue = L_C_rphi * reta;
+  inv_L_C_rphi = inverse(L_C_rphi);
+  
   L_C_vphi = cholesky_decompose(C_vphi);
   vtrue = L_C_vphi * veta;
+  inv_L_C_vphi = inverse(L_C_vphi);
+  
+  m_rphi_rtrue = dC_rphi' * (inv_L_C_rphi' * (inv_L_C_rphi * rtrue));
+  m_vphi_vtrue = dC_vphi' * (inv_L_C_vphi' * (inv_L_C_vphi * vtrue));
+  
+  K_rphi = inv_L_C_rphi * dC_rphi;
+  K_rphi = ddC_rphi - K_rphi' * K_rphi;
+  K_vphi = inv_L_C_vphi * dC_vphi;
+  K_vphi = ddC_vphi - K_vphi' * K_vphi;
+  for(i in 1:N){
+    K_rphi[i,i] = K_rphi[i,i]+delta;
+    K_vphi[i,i] = K_vphi[i,i]+delta;
+  }
+  
+  for (i in 1:N){
+    dvobs[i] = abc[3] * (vtrue[i] - pow(vtrue[i],3)/3.0 + rtrue[i]);  
+    drobs[i] = -1.0/abc[3] * (vtrue[i] - abc[1] + abc[2]*rtrue[i]);
   }
 }

@@ -25,8 +25,8 @@ matplot(fn.sim$time, data.matrix(fn.sim[,-3]), type="l", lty=1)
 
 init <- list(
   abc=c(0.2,0.2,3),
-  rphi=c(0.9486433, 3.2682434),
-  vphi=c(1.9840824, 1.1185157)
+  rphi=c(302.6, 2.02),
+  vphi=c(145.6, 1.21)
 )
 
 tvec41 <- fn.sim$time
@@ -46,17 +46,32 @@ gpsmooth <- stan(file="stan/gp-smooth.stan",
                            robs=fn.sim$Rtrue,
                            vobs=fn.sim$Vtrue,
                            time=fn.sim$time),
-                 iter=1, chains=1, init=list(init), warmup = 0)
+                 iter=100, chains=1, init=list(init), warmup = 50)
 
-traceplot(gpsmooth)
+
 gpsmooth_ss <- extract(gpsmooth, permuted=TRUE)
 
-gpsmooth_ss$lp__
-# init has lp value -131206
+max(gpsmooth_ss$lp__)
+id.max <- which.max(gpsmooth_ss$lp__)
+gpsmooth_ss$rphi[id.max,]
+gpsmooth_ss$vphi[id.max,]
+# init has lp value -167.4835
 # simulation around -180
 
-gpsmooth_ss$vtrue - fn.true[seq(1,401,length=41),c("Vtrue")]
-gpsmooth_ss$rtrue - fn.true[seq(1,401,length=41),c("Rtrue")]
+stopifnot(abs(gpsmooth_ss$vtrue - fn.true[seq(1,401,length=41),c("Vtrue")])<1e-10)
+stopifnot(abs(gpsmooth_ss$rtrue - fn.true[seq(1,401,length=41),c("Rtrue")])<1e-10)
+
+covR.init <- calCov(init$rphi, r)
+covV.init <- calCov(init$vphi, r)
+
+stopifnot(abs(gpsmooth_ss$C_rphi[1,,] - covR.init$C)<1e-12)
+stopifnot(abs(gpsmooth_ss$L_C_rphi[1,,] - t(chol(covR.init$C))) < 1e-12)
+stopifnot(abs(gpsmooth_ss$K_rphi[1,,] - covR.init$Kphi) < 1e-10)
+stopifnot(abs(gpsmooth_ss$dC_rphi[1,,] - covR.init$Cprime) < 1e-12)
+stopifnot(abs(gpsmooth_ss$ddC_rphi[1,,] - covR.init$Cdoubleprime) < 1e-12)
+stopifnot(abs(t(gpsmooth_ss$m_rphi_rtrue) - covR.init$mphi%*%fn.true[seq(1,401,length=41),c("Rtrue")]) < 1e-11)
+stopifnot(abs(gpsmooth_ss$drobs - fn.true[seq(1,401,length=41),c("dRtrue")])<1e-10)
+
 
 
 plot(gpsmooth_ss$sigma, type="l",main="sigma")
@@ -81,27 +96,21 @@ dVdRpostsample <- getdVdR(abc.mat = gpsmooth_ss$abc, rtrue.mat = gpsmooth_ss$rtr
 
 matplot(fn.true$time, data.matrix(fn.true[,c(2,5)]), type="l", lty=1, col=c(2,1))
 points(fn.sim$time, fn.sim$Rtrue, col=2)
-matplot(fn.true$time, head(t(vdRmcurve),nrow(fn.true)), col="pink",add=TRUE, type="l",lty=1)
 matplot(fn.sim$time, t(Rpostsample), col="skyblue",add=TRUE, type="l",lty=1)
 matplot(fn.sim$time, t(gpsmooth_ss$rtrue), col="skyblue",add=TRUE, type="l",lty=1)
 
 
 matplot(fn.true$time, data.matrix(fn.true[,c(2,5)]), type="l", lty=1, col=c(2,1))
 points(fn.sim$time, fn.sim$Rtrue, col=2)
-matplot(fn.true$time, head(t(vdRmcurve),nrow(fn.true)), col="pink",add=TRUE, type="l",lty=1)
-matplot(fn.true$time, tail(t(vdRmcurve),nrow(fn.true)), col="grey",add=TRUE, type="l",lty=1)
 matplot(fn.sim$time, t(dVdRpostsample[,,"drobs"]), col="skyblue",add=TRUE, type="l",lty=1)
 
 
 matplot(fn.true$time, data.matrix(fn.true[,c(1,4)]), type="l", lty=1, col=c(2,1))
 points(fn.sim$time, fn.sim$Vtrue, col=2)
-matplot(fn.true$time, head(t(vdVmcurve),nrow(fn.true)), col="pink",add=TRUE, type="l",lty=1)
 matplot(fn.sim$time, t(Vpostsample), col="skyblue",add=TRUE, type="l",lty=1)
 
 matplot(fn.true$time, data.matrix(fn.true[,c(1,4)]), type="l", lty=1, col=c(2,1))
 points(fn.sim$time, fn.sim$Vtrue, col=2)
-matplot(fn.true$time, head(t(vdVmcurve),nrow(fn.true)), col="pink",add=TRUE, type="l",lty=1)
-matplot(fn.true$time, tail(t(vdVmcurve),nrow(fn.true)), col="grey",add=TRUE, type="l",lty=1)
 matplot(fn.sim$time, t(dVdRpostsample[,,"dvobs"]), col="skyblue",add=TRUE, type="l",lty=1)
 
 save(gpsmooth_ss, vdRmcurve, vdVmcurve, file="dump.RData")
@@ -111,7 +120,7 @@ loglik( data.matrix(fn.true[seq(1,401,length=41),c("Vtrue","Rtrue")]), init$abc,
         c(init$vphi, init$rphi), 0.1,  fn.sim[,1:2], r)
 # around 385.3999
 
-lapply(1:length(gpsmooth_ss$lp__), function(it){
+lglik <- lapply(1:length(gpsmooth_ss$lp__), function(it){
   loglik( cbind(gpsmooth_ss$vtrue[it,], gpsmooth_ss$rtrue[it,]), 
           gpsmooth_ss$abc[it,], 
           c(gpsmooth_ss$vphi[it,],gpsmooth_ss$rphi[it,]), 
@@ -119,6 +128,9 @@ lapply(1:length(gpsmooth_ss$lp__), function(it){
           fn.sim[,1:2], 
           r)
 })
+
+lglik[[id.max]]
+gpsmooth_ss$abc[id.max,]
 # around 81.03348
 
 #' discrepency between STAN log posterior and log likelihood
