@@ -136,7 +136,7 @@ getX <- function(r, phi.mat, eta.mat, delta = 1e-9){
     phi <- phi.mat[it,]
     C <- phi[1] * (1 + ((sqrt(5)*r)/phi[2]) + ((5*r2)/(3*phi[2]^2))) * exp((-sqrt(5)*r)/phi[2])
     diag(C) <- diag(C) + delta
-    chol(C) %*% eta.mat[it,]
+    t(chol(C)) %*% eta.mat[it,]
   }))
 }
 
