@@ -109,7 +109,7 @@ gpsmooth <- stan(file="stan/gp-smooth.stan",
                            robs=fn.sim$Rtrue,
                            vobs=fn.sim$Vtrue,
                            time=fn.sim$time),
-                 iter=2, chains=1, init=list(init), warmup = 0)
+                 iter=200, chains=1, init=list(init), warmup = 100)
 
 traceplot(gpsmooth)
 gpsmooth_ss <- extract(gpsmooth, permuted=TRUE)
@@ -131,29 +131,22 @@ vdRpostcurve <- getMeanDerivCurve(x=fn.sim$time, y.mat=gpsmooth_ss$rtrue, dy.mat
 vdVpostcurve <- getMeanDerivCurve(x=fn.sim$time, y.mat=gpsmooth_ss$vtrue, dy.mat=gpsmooth_ss$dvobs, x.new=fn.true$time,
                                   sigma.mat = gpsmooth_ss$sigma, phi.mat = gpsmooth_ss$vphi, gamma.mat=gpsmooth_ss$gamma)
 
-Rpostsample <- getX(r=as.matrix(dist(fn.sim$time)), phi.mat = gpsmooth_ss$rphi, eta.mat = gpsmooth_ss$reta)
-Vpostsample <- getX(r=as.matrix(dist(fn.sim$time)), phi.mat = gpsmooth_ss$vphi, eta.mat = gpsmooth_ss$veta)
-
-dVdRpostsample <- getdVdR(abc.mat = gpsmooth_ss$abc, rtrue.mat = gpsmooth_ss$rtrue, vtrue.mat = gpsmooth_ss$vtrue)
 
 matplot(fn.true$time, data.matrix(fn.true[,c(2,5)]), type="l", lty=1, col=c(2,1))
 points(fn.sim$time, fn.sim$Rtrue, col=2)
-matplot(fn.sim$time, t(Rpostsample), col="skyblue",add=TRUE, type="l",lty=1)
-matplot(fn.sim$time, t(gpsmooth_ss$rtrue), col="skyblue",add=TRUE, type="l",lty=1)
-
-
-matplot(fn.true$time, data.matrix(fn.true[,c(2,5)]), type="l", lty=1, col=c(2,1))
-points(fn.sim$time, fn.sim$Rtrue, col=2)
-matplot(fn.sim$time, t(dVdRpostsample[,,"drobs"]), col="skyblue",add=TRUE, type="l",lty=1)
+matplot(fn.sim$time, t(gpsmooth_ss$rtrue), col="skyblue",add=TRUE, type="p",lty=1, pch=20)
+matplot(fn.true$time, head(t(vdRpostcurve),nrow(fn.true)), col="skyblue",add=TRUE, type="l",lty=1)
+matplot(fn.sim$time, t(gpsmooth_ss$drobs), col="grey",add=TRUE, type="p",lty=1, pch=20)
+matplot(fn.true$time, tail(t(vdRpostcurve),nrow(fn.true)), col="grey",add=TRUE, type="l",lty=1)
 
 
 matplot(fn.true$time, data.matrix(fn.true[,c(1,4)]), type="l", lty=1, col=c(2,1))
 points(fn.sim$time, fn.sim$Vtrue, col=2)
-matplot(fn.sim$time, t(Vpostsample), col="skyblue",add=TRUE, type="l",lty=1)
+matplot(fn.sim$time, t(gpsmooth_ss$vtrue), col="skyblue",add=TRUE, type="p",lty=1, pch=20)
+matplot(fn.true$time, head(t(vdVpostcurve),nrow(fn.true)), col="skyblue",add=TRUE, type="l",lty=1)
+matplot(fn.sim$time, t(gpsmooth_ss$dvobs), col="grey",add=TRUE, type="p",lty=1, pch=20)
+matplot(fn.true$time, tail(t(vdVpostcurve),nrow(fn.true)), col="grey",add=TRUE, type="l",lty=1)
 
-matplot(fn.true$time, data.matrix(fn.true[,c(1,4)]), type="l", lty=1, col=c(2,1))
-points(fn.sim$time, fn.sim$Vtrue, col=2)
-matplot(fn.sim$time, t(dVdRpostsample[,,"dvobs"]), col="skyblue",add=TRUE, type="l",lty=1)
 
 save(gpsmooth_ss, vdRpostcurve, vdVpostcurve, file="dump.RData")
 
@@ -173,6 +166,14 @@ lglik <- lapply(1:length(gpsmooth_ss$lp__), function(it){
 
 lglik[[id.max]]
 gpsmooth_ss$abc[id.max,]
+
+hist(gpsmooth_ss$abc[,1], main="a")
+abline(v=init$abc[1], col=2)
+hist(gpsmooth_ss$abc[,2], main="b")
+abline(v=init$abc[2], col=2)
+hist(gpsmooth_ss$abc[,3], main="c")
+abline(v=init$abc[3], col=2)
+
 plot(unlist(lglik), gpsmooth_ss$lp__)
 # around 81.03348
 
@@ -180,3 +181,19 @@ plot(unlist(lglik), gpsmooth_ss$lp__)
 #' need to implement the model in plain R later
 gpsmooth_ss$rphi[id.max,]
 gpsmooth_ss$vphi[id.max,]
+gpsmooth_ss$abc[id.max,]
+
+matplot(fn.true$time, data.matrix(fn.true[,c(2,5)]), type="l", lty=1, col=c(2,1))
+points(fn.sim$time, fn.sim$Rtrue, col=2)
+matplot(fn.sim$time, t(gpsmooth_ss$rtrue[id.max,,drop=FALSE]), col="skyblue",add=TRUE, type="p",lty=1, pch=20)
+matplot(fn.true$time, head(t(vdRpostcurve[id.max,,drop=FALSE]),nrow(fn.true)), col="skyblue",add=TRUE, type="l",lty=1)
+matplot(fn.sim$time, t(gpsmooth_ss$drobs[id.max,,drop=FALSE]), col="grey",add=TRUE, type="p",lty=1, pch=20)
+matplot(fn.true$time, tail(t(vdRpostcurve[id.max,,drop=FALSE]),nrow(fn.true)), col="grey",add=TRUE, type="l",lty=1)
+
+
+matplot(fn.true$time, data.matrix(fn.true[,c(1,4)]), type="l", lty=1, col=c(2,1))
+points(fn.sim$time, fn.sim$Vtrue, col=2)
+matplot(fn.sim$time, t(gpsmooth_ss$vtrue[id.max,,drop=FALSE]), col="skyblue",add=TRUE, type="p",lty=1, pch=20)
+matplot(fn.true$time, head(t(vdVpostcurve[id.max,,drop=FALSE]),nrow(fn.true)), col="skyblue",add=TRUE, type="l",lty=1)
+matplot(fn.sim$time, t(gpsmooth_ss$dvobs[id.max,,drop=FALSE]), col="grey",add=TRUE, type="p",lty=1, pch=20)
+matplot(fn.true$time, tail(t(vdVpostcurve[id.max,,drop=FALSE]),nrow(fn.true)), col="grey",add=TRUE, type="l",lty=1)
