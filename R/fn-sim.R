@@ -26,7 +26,8 @@ matplot(fn.sim$time, data.matrix(fn.sim[,-3]), type="l", lty=1)
 init <- list(
   abc=c(0.2,0.2,3),
   rphi=c(0.9486433, 3.2682434),
-  vphi=c(1.9840824, 1.1185157)
+  vphi=c(1.9840824, 1.1185157),
+  sigma=0.1
 )
 
 tvec41 <- fn.sim$time
@@ -109,7 +110,7 @@ gpsmooth <- stan(file="stan/gp-smooth.stan",
                            robs=fn.sim$Rtrue,
                            vobs=fn.sim$Vtrue,
                            time=fn.sim$time),
-                 iter=200, chains=1, init=list(init), warmup = 100)
+                 iter=100, chains=1, init=list(init), warmup = 50)
 
 traceplot(gpsmooth)
 gpsmooth_ss <- extract(gpsmooth, permuted=TRUE)
@@ -164,9 +165,6 @@ lglik <- lapply(1:length(gpsmooth_ss$lp__), function(it){
           r)
 })
 
-lglik[[id.max]]
-gpsmooth_ss$abc[id.max,]
-
 hist(gpsmooth_ss$abc[,1], main="a")
 abline(v=init$abc[1], col=2)
 hist(gpsmooth_ss$abc[,2], main="b")
@@ -174,14 +172,21 @@ abline(v=init$abc[2], col=2)
 hist(gpsmooth_ss$abc[,3], main="c")
 abline(v=init$abc[3], col=2)
 
+hist(gpsmooth_ss$sigma, main="sigma")
+abline(v=init$sigma, col=2)
+
 plot(unlist(lglik), gpsmooth_ss$lp__)
 # around 81.03348
 
 #' discrepency between STAN log posterior and log likelihood
 #' need to implement the model in plain R later
+lglik[[id.max]]
+
 gpsmooth_ss$rphi[id.max,]
 gpsmooth_ss$vphi[id.max,]
+
 gpsmooth_ss$abc[id.max,]
+gpsmooth_ss$sigma[id.max]
 
 matplot(fn.true$time, data.matrix(fn.true[,c(2,5)]), type="l", lty=1, col=c(2,1))
 points(fn.sim$time, fn.sim$Rtrue, col=2)

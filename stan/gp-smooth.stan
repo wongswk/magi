@@ -13,7 +13,7 @@ transformed data {
   vector[N] mu;
   // real gamma = 0;
   real delta = 1e-9;
-  real sigma = 0.1;
+  // real sigma = 0.1;
   matrix[N,N] r;
   matrix[N,N] r2;
   for (i in 1:N){
@@ -28,7 +28,7 @@ transformed data {
 parameters {
   // vector[N1+N2+N3] f;
   real<lower=0> abc[3];
-  // real<lower=0> sigma;
+  real<lower=0> sigma;
   // real<lower=0> gamma;
   real<lower=0> rphi[2];
   real<lower=0> vphi[2];
