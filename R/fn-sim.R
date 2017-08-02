@@ -139,6 +139,19 @@ getX <- function(r, phi.mat, eta.mat, delta = 1e-9){
     chol(C) %*% eta.mat[it,]
   }))
 }
+
+getdVdR <- function(abc.mat, rtrue.mat, vtrue.mat){
+  result <- sapply(1:nrow(abc.mat), function(it){
+    abc <- abc.mat[it,]
+    vtrue <- vtrue.mat[it,]
+    rtrue <- rtrue.mat[it,]
+    
+    dvobs = abc[3] * (vtrue - (vtrue^3)/3.0 + rtrue)
+    drobs = -1.0/abc[3] * (vtrue - abc[1] + abc[2]*rtrue)
+    cbind(drobs, dvobs)
+  }, simplify = "array")
+  aperm(result, c(3,1,2))
+}
 #### start of code ####
 
 library(rstan)
@@ -171,7 +184,7 @@ gpsmooth <- stan(file="stan/gp-smooth.stan",
                            # drobs=fn.sim$dRtrue,
                            # dvobs=fn.sim$dVtrue,
                            time=fn.sim$time,
-                           lambda=0.008),
+                           lambda=0.0083),
                  iter=100, chains=1)
 
 traceplot(gpsmooth)
@@ -194,6 +207,7 @@ vdVmcurve <- getMeanDerivCurve(x=fn.sim$time, y=fn.sim$Vtrue, dy=fn.sim$dVtrue, 
 Rpostsample <- getX(r=as.matrix(dist(fn.sim$time)), phi.mat = gpsmooth_ss$rphi, eta.mat = gpsmooth_ss$reta)
 Vpostsample <- getX(r=as.matrix(dist(fn.sim$time)), phi.mat = gpsmooth_ss$vphi, eta.mat = gpsmooth_ss$veta)
 
+dVdRpostsample <- getdVdR(abc.mat = gpsmooth_ss$abc, rtrue.mat = Rpostsample, vtrue.mat = Vpostsample)
 
 matplot(fn.true$time, data.matrix(fn.true[,c(2,5)]), type="l", lty=1, col=c(2,1))
 points(fn.sim$time, fn.sim$Rtrue, col=2)
@@ -205,6 +219,8 @@ matplot(fn.true$time, data.matrix(fn.true[,c(2,5)]), type="l", lty=1, col=c(2,1)
 points(fn.sim$time, fn.sim$Rtrue, col=2)
 matplot(fn.true$time, head(t(vdRmcurve),nrow(fn.true)), col="pink",add=TRUE, type="l",lty=1)
 matplot(fn.true$time, tail(t(vdRmcurve),nrow(fn.true)), col="grey",add=TRUE, type="l",lty=1)
+matplot(fn.sim$time, t(dVdRpostsample[,,"drobs"]), col="skyblue",add=TRUE, type="l",lty=1)
+
 
 matplot(fn.true$time, data.matrix(fn.true[,c(1,4)]), type="l", lty=1, col=c(2,1))
 points(fn.sim$time, fn.sim$Vtrue, col=2)
@@ -215,6 +231,7 @@ matplot(fn.true$time, data.matrix(fn.true[,c(1,4)]), type="l", lty=1, col=c(2,1)
 points(fn.sim$time, fn.sim$Vtrue, col=2)
 matplot(fn.true$time, head(t(vdVmcurve),nrow(fn.true)), col="pink",add=TRUE, type="l",lty=1)
 matplot(fn.true$time, tail(t(vdVmcurve),nrow(fn.true)), col="grey",add=TRUE, type="l",lty=1)
+matplot(fn.sim$time, t(dVdRpostsample[,,"dvobs"]), col="skyblue",add=TRUE, type="l",lty=1)
 
 save(gpsmooth_ss, vdRmcurve, vdVmcurve, file="dump.RData")
 
