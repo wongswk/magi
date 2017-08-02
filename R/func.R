@@ -186,7 +186,7 @@ calCov <- function(phi, r) {
   C <- C + 1e-9 * diag( nrow(r))
   
   Cinv <- solve(C)
-  mphi <-  t(Cprime) %*% Cinv
+  mphi <- Cprime %*% Cinv
   Kphi <- Cdoubleprime - (Cprime %*% Cinv %*% t(Cprime))  + 1e-9 * diag( nrow(r))
   
   return(list(C = C, Cinv = Cinv, mphi = mphi, Kphi = Kphi, Cprime=Cprime, Cdoubleprime=Cdoubleprime))

@@ -19,7 +19,7 @@ fn.sim[,1:2] <- fn.sim[,1:2]+rnorm(length(unlist(fn.sim[,1:2])), sd=0.1)
 #                           robs=fn.sim$Rtrue,
 #                           vobs=fn.sim$Vtrue),
 #                 iter=200, chains=5)
-
+set.seed(123)
 fn.sim <- fn.sim[seq(1,nrow(fn.sim), length=41),]
 matplot(fn.sim$time, data.matrix(fn.sim[,-3]), type="l", lty=1)
 
@@ -46,20 +46,17 @@ gpsmooth <- stan(file="stan/gp-smooth.stan",
                            robs=fn.sim$Rtrue,
                            vobs=fn.sim$Vtrue,
                            time=fn.sim$time),
-                 iter=100, chains=1, init=list(init), warmup = 50)
+                 iter=2, chains=1, init=list(init), warmup = 0)
 
 
 gpsmooth_ss <- extract(gpsmooth, permuted=TRUE)
+gpsmooth_ss$lp__
 
-max(gpsmooth_ss$lp__)
-id.max <- which.max(gpsmooth_ss$lp__)
-gpsmooth_ss$rphi[id.max,]
-gpsmooth_ss$vphi[id.max,]
-# init has lp value -167.4835
+# init has lp value -164.7908 
 # simulation around -180
 
-stopifnot(abs(gpsmooth_ss$vtrue - fn.true[seq(1,401,length=41),c("Vtrue")])<1e-10)
-stopifnot(abs(gpsmooth_ss$rtrue - fn.true[seq(1,401,length=41),c("Rtrue")])<1e-10)
+stopifnot(abs(gpsmooth_ss$vtrue[1,] - fn.true[seq(1,401,length=41),c("Vtrue")])<1e-10)
+stopifnot(abs(gpsmooth_ss$rtrue[1,] - fn.true[seq(1,401,length=41),c("Rtrue")])<1e-10)
 
 covR.init <- calCov(init$rphi, r)
 covV.init <- calCov(init$vphi, r)
@@ -69,10 +66,20 @@ stopifnot(abs(gpsmooth_ss$L_C_rphi[1,,] - t(chol(covR.init$C))) < 1e-12)
 stopifnot(abs(gpsmooth_ss$K_rphi[1,,] - covR.init$Kphi) < 1e-10)
 stopifnot(abs(gpsmooth_ss$dC_rphi[1,,] - covR.init$Cprime) < 1e-12)
 stopifnot(abs(gpsmooth_ss$ddC_rphi[1,,] - covR.init$Cdoubleprime) < 1e-12)
-stopifnot(abs(t(gpsmooth_ss$m_rphi_rtrue) - covR.init$mphi%*%fn.true[seq(1,401,length=41),c("Rtrue")]) < 1e-11)
+stopifnot(abs(gpsmooth_ss$m_rphi_rtrue[1,] - covR.init$mphi%*%fn.true[seq(1,401,length=41),c("Rtrue")]) < 1e-11)
 stopifnot(abs(gpsmooth_ss$drobs - fn.true[seq(1,401,length=41),c("dRtrue")])<1e-10)
 
+gpsmooth <- stan(file="stan/gp-smooth.stan",
+                 data=list(N=nrow(fn.sim),
+                           robs=fn.sim$Rtrue,
+                           vobs=fn.sim$Vtrue,
+                           time=fn.sim$time),
+                 iter=2, chains=1, init=list(init), warmup = 0)
 
+traceplot(gpsmooth)
+gpsmooth_ss <- extract(gpsmooth, permuted=TRUE)
+max(gpsmooth_ss$lp__)
+id.max <- which.max(gpsmooth_ss$lp__)
 
 plot(gpsmooth_ss$sigma, type="l",main="sigma")
 abline(h=0.1, col=2)
@@ -131,7 +138,10 @@ lglik <- lapply(1:length(gpsmooth_ss$lp__), function(it){
 
 lglik[[id.max]]
 gpsmooth_ss$abc[id.max,]
+plot(unlist(lglik), gpsmooth_ss$lp__)
 # around 81.03348
 
 #' discrepency between STAN log posterior and log likelihood
 #' need to implement the model in plain R later
+gpsmooth_ss$rphi[id.max,]
+gpsmooth_ss$vphi[id.max,]

@@ -92,12 +92,12 @@ model {
   vtrue = L_C_vphi * veta;
   inv_L_C_vphi = inverse(L_C_vphi);
   
-  m_rphi_rtrue = dC_rphi' * (inv_L_C_rphi' * (inv_L_C_rphi * rtrue));
-  m_vphi_vtrue = dC_vphi' * (inv_L_C_vphi' * (inv_L_C_vphi * vtrue));
+  m_rphi_rtrue = dC_rphi * (inv_L_C_rphi' * (inv_L_C_rphi * rtrue));
+  m_vphi_vtrue = dC_vphi * (inv_L_C_vphi' * (inv_L_C_vphi * vtrue));
   
-  K_rphi = inv_L_C_rphi * dC_rphi;
+  K_rphi = inv_L_C_rphi * dC_rphi';
   K_rphi = ddC_rphi - K_rphi' * K_rphi;
-  K_vphi = inv_L_C_vphi * dC_vphi;
+  K_vphi = inv_L_C_vphi * dC_vphi';
   K_vphi = ddC_vphi - K_vphi' * K_vphi;
   for(i in 1:N){
     K_rphi[i,i] = K_rphi[i,i]+delta;
@@ -188,12 +188,12 @@ generated quantities {
   vtrue = L_C_vphi * veta;
   inv_L_C_vphi = inverse(L_C_vphi);
   
-  m_rphi_rtrue = dC_rphi' * (inv_L_C_rphi' * (inv_L_C_rphi * rtrue));
-  m_vphi_vtrue = dC_vphi' * (inv_L_C_vphi' * (inv_L_C_vphi * vtrue));
+  m_rphi_rtrue = dC_rphi * (inv_L_C_rphi' * (inv_L_C_rphi * rtrue));
+  m_vphi_vtrue = dC_vphi * (inv_L_C_vphi' * (inv_L_C_vphi * vtrue));
   
-  K_rphi = inv_L_C_rphi * dC_rphi;
+  K_rphi = inv_L_C_rphi * dC_rphi';
   K_rphi = ddC_rphi - K_rphi' * K_rphi;
-  K_vphi = inv_L_C_vphi * dC_vphi;
+  K_vphi = inv_L_C_vphi * dC_vphi';
   K_vphi = ddC_vphi - K_vphi' * K_vphi;
   for(i in 1:N){
     K_rphi[i,i] = K_rphi[i,i]+delta;
