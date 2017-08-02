@@ -14,14 +14,22 @@ transformed data {
   vector[N] mu;
   // real gamma = 0;
   real delta = 1e-9;
-  for (i in 1:N)
+  real sigma = 0.1;
+  matrix[N,N] r;
+  matrix[N,N] r2;
+  for (i in 1:N){
     mu[i] = 0;
+    for (j in 1:N){
+      r[i,j] = fabs(time[i] - time[j]);
+      r2[i,j] = pow(r[i,j], 2);
+    }
+  }
   print("Finished transforming data.");
 }
 parameters {
   // vector[N1+N2+N3] f;
   real<lower=0> abc[3];
-  real<lower=0> sigma;
+  // real<lower=0> sigma;
   // real<lower=0> gamma;
   real<lower=0> rphi[2];
   real<lower=0> vphi[2];
@@ -52,29 +60,28 @@ model {
   vector[N] drobs;
   vector[N] dvobs;
   
-  real r;
-  real r2;
+  
   
   for (i in 1:N)
     for (j in 1:N){
-      r = fabs(time[i] - time[j]);
-      r2 = pow(r, 2);
-      C_rphi[i,j] = rphi[1] * (1 + ((sqrt(5)*r)/rphi[2]) + ((5*r2)/(3*pow(rphi[2],2)))) * exp((-sqrt(5)*r)/rphi[2]);
-      C_vphi[i,j] = vphi[1] * (1 + ((sqrt(5)*r)/vphi[2]) + ((5*r2)/(3*pow(vphi[2],2)))) * exp((-sqrt(5)*r)/vphi[2]);
+      C_rphi[i,j] = rphi[1] * (1 + ((sqrt(5)*r[i,j])/rphi[2]) + ((5*r2[i,j])/(3*pow(rphi[2],2)))) * 
+        exp((-sqrt(5)*r[i,j])/rphi[2]);
+      C_vphi[i,j] = vphi[1] * (1 + ((sqrt(5)*r[i,j])/vphi[2]) + ((5*r2[i,j])/(3*pow(vphi[2],2)))) * 
+        exp((-sqrt(5)*r[i,j])/vphi[2]);
       if(i==j){
         C_rphi[i,j] = C_rphi[i,j] + delta;
         C_vphi[i,j] = C_vphi[i,j] + delta;
       }
-      dC_rphi[i,j] = (2*step(j-i) - 1) * (rphi[1] * exp((-sqrt(5)*r)/rphi[2])) * 
-        (((5*r)/(3*pow(rphi[2],2))) + ((5*sqrt(5)*r2)/(3*pow(rphi[2],3))));
+      dC_rphi[i,j] = (2*step(j-i) - 1) * (rphi[1] * exp((-sqrt(5)*r[i,j])/rphi[2])) * 
+        (((5*r[i,j])/(3*pow(rphi[2],2))) + ((5*sqrt(5)*r2[i,j])/(3*pow(rphi[2],3))));
       
-      dC_vphi[i,j] = (2*step(j-i) - 1) * (vphi[1] * exp((-sqrt(5)*r)/vphi[2])) * 
-        (((5*r)/(3*pow(vphi[2],2))) + ((5*sqrt(5)*r2)/(3*pow(vphi[2],3))));
+      dC_vphi[i,j] = (2*step(j-i) - 1) * (vphi[1] * exp((-sqrt(5)*r[i,j])/vphi[2])) * 
+        (((5*r[i,j])/(3*pow(vphi[2],2))) + ((5*sqrt(5)*r2[i,j])/(3*pow(vphi[2],3))));
       
-      ddC_rphi[i,j] = (rphi[1]*exp((-sqrt(5)*r)/rphi[2])) * ((5/(3*pow(rphi[2],2))) 
-        + ((5*sqrt(5)*r)/(3*pow(rphi[2],3))) - ((25*r2)/(3*pow(rphi[2],4))));
-      ddC_vphi[i,j] = (vphi[1]*exp((-sqrt(5)*r)/vphi[2])) * ((5/(3*pow(vphi[2],2))) 
-        + ((5*sqrt(5)*r)/(3*pow(vphi[2],3))) - ((25*r2)/(3*pow(vphi[2],4))));
+      ddC_rphi[i,j] = (rphi[1]*exp((-sqrt(5)*r[i,j])/rphi[2])) * ((5/(3*pow(rphi[2],2))) 
+        + ((5*sqrt(5)*r[i,j])/(3*pow(rphi[2],3))) - ((25*r2[i,j])/(3*pow(rphi[2],4))));
+      ddC_vphi[i,j] = (vphi[1]*exp((-sqrt(5)*r[i,j])/vphi[2])) * ((5/(3*pow(vphi[2],2))) 
+        + ((5*sqrt(5)*r[i,j])/(3*pow(vphi[2],3))) - ((25*r2[i,j])/(3*pow(vphi[2],4))));
     }
   
   L_C_rphi = cholesky_decompose(C_rphi);
@@ -109,7 +116,7 @@ model {
   vphi[2] ~ cauchy(0,5);
   
   // sigma ~ cauchy(0,5);
-  sigma ~ normal(0,lambda);
+  // sigma ~ normal(0,lambda);
   // gamma ~ cauchy(0,5);
   abc[1] ~ cauchy(0,5);
   abc[2] ~ cauchy(0,5);
@@ -125,3 +132,30 @@ model {
   dvobs ~ multi_normal(m_vphi_vtrue, K_vphi);
 }
 
+generated quantities {
+  vector[N] rtrue;
+  vector[N] vtrue;
+  
+  {
+  matrix[N,N] C_rphi;
+  matrix[N,N] L_C_rphi;
+  matrix[N,N] C_vphi;
+  matrix[N,N] L_C_vphi;
+  
+  for (i in 1:N)
+    for (j in 1:N){
+      C_rphi[i,j] = rphi[1] * (1 + ((sqrt(5)*r[i,j])/rphi[2]) + ((5*r2[i,j])/(3*pow(rphi[2],2)))) * 
+        exp((-sqrt(5)*r[i,j])/rphi[2]);
+      C_vphi[i,j] = vphi[1] * (1 + ((sqrt(5)*r[i,j])/vphi[2]) + ((5*r2[i,j])/(3*pow(vphi[2],2)))) * 
+        exp((-sqrt(5)*r[i,j])/vphi[2]);
+      if(i==j){
+        C_rphi[i,j] = C_rphi[i,j] + delta;
+        C_vphi[i,j] = C_vphi[i,j] + delta;
+      }
+    }
+  L_C_rphi = cholesky_decompose(C_rphi);
+  rtrue = L_C_rphi * reta;
+  L_C_vphi = cholesky_decompose(C_vphi);
+  vtrue = L_C_vphi * veta;
+  }
+}
