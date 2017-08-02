@@ -25,8 +25,8 @@ matplot(fn.sim$time, data.matrix(fn.sim[,-3]), type="l", lty=1)
 
 init <- list(
   abc=c(0.2,0.2,3),
-  rphi=c(302.6, 2.02),
-  vphi=c(145.6, 1.21)
+  rphi=c(0.9486433, 3.2682434),
+  vphi=c(1.9840824, 1.1185157)
 )
 
 tvec41 <- fn.sim$time
@@ -41,6 +41,7 @@ init$veta <- solve(t(chol(calCov(init$vphi, r)$C)), fn.true[seq(1,401,length=41)
 
 stopifnot(abs(getX(r, t(init$rphi), t(init$reta)) - fn.true[seq(1,401,length=41),c("Rtrue")]) < 1e-14)
 
+#### investigate true value ####
 gpsmooth <- stan(file="stan/gp-smooth.stan",
                  data=list(N=nrow(fn.sim),
                            robs=fn.sim$Rtrue,
@@ -52,7 +53,7 @@ gpsmooth <- stan(file="stan/gp-smooth.stan",
 gpsmooth_ss <- extract(gpsmooth, permuted=TRUE)
 gpsmooth_ss$lp__
 
-# init has lp value -164.7908 
+# init has lp value 68.00089
 # simulation around -180
 
 stopifnot(abs(gpsmooth_ss$vtrue[1,] - fn.true[seq(1,401,length=41),c("Vtrue")])<1e-10)
@@ -61,14 +62,48 @@ stopifnot(abs(gpsmooth_ss$rtrue[1,] - fn.true[seq(1,401,length=41),c("Rtrue")])<
 covR.init <- calCov(init$rphi, r)
 covV.init <- calCov(init$vphi, r)
 
+Rpostsample <- getX(r=as.matrix(dist(fn.sim$time)), phi.mat = gpsmooth_ss$rphi, eta.mat = gpsmooth_ss$reta)
+Vpostsample <- getX(r=as.matrix(dist(fn.sim$time)), phi.mat = gpsmooth_ss$vphi, eta.mat = gpsmooth_ss$veta)
+dVdRpostsample <- getdVdR(abc.mat = gpsmooth_ss$abc, rtrue.mat = gpsmooth_ss$rtrue, vtrue.mat = gpsmooth_ss$vtrue)
+
+#' checking value output at init is the same as true value
 stopifnot(abs(gpsmooth_ss$C_rphi[1,,] - covR.init$C)<1e-12)
 stopifnot(abs(gpsmooth_ss$L_C_rphi[1,,] - t(chol(covR.init$C))) < 1e-12)
 stopifnot(abs(gpsmooth_ss$K_rphi[1,,] - covR.init$Kphi) < 1e-10)
 stopifnot(abs(gpsmooth_ss$dC_rphi[1,,] - covR.init$Cprime) < 1e-12)
 stopifnot(abs(gpsmooth_ss$ddC_rphi[1,,] - covR.init$Cdoubleprime) < 1e-12)
 stopifnot(abs(gpsmooth_ss$m_rphi_rtrue[1,] - covR.init$mphi%*%fn.true[seq(1,401,length=41),c("Rtrue")]) < 1e-11)
-stopifnot(abs(gpsmooth_ss$drobs - fn.true[seq(1,401,length=41),c("dRtrue")])<1e-10)
+stopifnot(abs(gpsmooth_ss$drobs[1,] - fn.true[seq(1,401,length=41),c("dRtrue")])<1e-10)
+stopifnot(abs(Rpostsample - gpsmooth_ss$rtrue) < 1e-10)
+stopifnot(abs(Vpostsample - gpsmooth_ss$vtrue) < 1e-10)
+stopifnot(abs(dVdRpostsample[,,"drobs"] - gpsmooth_ss$drobs) < 1e-10)
+stopifnot(abs(dVdRpostsample[,,"dvobs"] - gpsmooth_ss$dvobs) < 1e-10)
 
+
+vdRpostcurve <- getMeanDerivCurve(x=fn.sim$time, y.mat=gpsmooth_ss$rtrue, dy.mat=gpsmooth_ss$drobs, x.new=fn.true$time,
+                               sigma.mat = gpsmooth_ss$sigma, phi.mat = gpsmooth_ss$rphi, gamma.mat=gpsmooth_ss$gamma)
+
+vdVpostcurve <- getMeanDerivCurve(x=fn.sim$time, y.mat=gpsmooth_ss$vtrue, dy.mat=gpsmooth_ss$dvobs, x.new=fn.true$time,
+                               sigma.mat = gpsmooth_ss$sigma, phi.mat = gpsmooth_ss$vphi, gamma.mat=gpsmooth_ss$gamma)
+
+
+matplot(fn.true$time, data.matrix(fn.true[,c(2,5)]), type="l", lty=1, col=c(2,1))
+points(fn.sim$time, fn.sim$Rtrue, col=2)
+matplot(fn.sim$time, t(gpsmooth_ss$rtrue), col="skyblue",add=TRUE, type="p",lty=1, pch=20)
+matplot(fn.true$time, head(t(vdRpostcurve),nrow(fn.true)), col="skyblue",add=TRUE, type="l",lty=1)
+matplot(fn.sim$time, t(gpsmooth_ss$drobs), col="grey",add=TRUE, type="p",lty=1, pch=20)
+matplot(fn.true$time, tail(t(vdRpostcurve),nrow(fn.true)), col="grey",add=TRUE, type="l",lty=1)
+
+
+matplot(fn.true$time, data.matrix(fn.true[,c(1,4)]), type="l", lty=1, col=c(2,1))
+points(fn.sim$time, fn.sim$Vtrue, col=2)
+matplot(fn.sim$time, t(gpsmooth_ss$vtrue), col="skyblue",add=TRUE, type="p",lty=1, pch=20)
+matplot(fn.true$time, head(t(vdVpostcurve),nrow(fn.true)), col="skyblue",add=TRUE, type="l",lty=1)
+matplot(fn.sim$time, t(gpsmooth_ss$dvobs), col="grey",add=TRUE, type="p",lty=1, pch=20)
+matplot(fn.true$time, tail(t(vdVpostcurve),nrow(fn.true)), col="grey",add=TRUE, type="l",lty=1)
+
+
+#### real simulation ####
 gpsmooth <- stan(file="stan/gp-smooth.stan",
                  data=list(N=nrow(fn.sim),
                            robs=fn.sim$Rtrue,
@@ -90,11 +125,11 @@ plot(gpsmooth_ss$gamma, type="l",main="gamma")
 hist(gpsmooth_ss$gamma, breaks = 50,main="gamma")
 
 
-vdRmcurve <- getMeanDerivCurve(x=fn.sim$time, y=fn.sim$Rtrue, dy=fn.sim$dRtrue, x.new=fn.true$time,
-                               sigma.mat = gpsmooth_ss$sigma, phi.mat = gpsmooth_ss$rphi, gamma.mat=gpsmooth_ss$gamma)
+vdRpostcurve <- getMeanDerivCurve(x=fn.sim$time, y.mat=gpsmooth_ss$rtrue, dy.mat=gpsmooth_ss$drobs, x.new=fn.true$time,
+                                  sigma.mat = gpsmooth_ss$sigma, phi.mat = gpsmooth_ss$rphi, gamma.mat=gpsmooth_ss$gamma)
 
-vdVmcurve <- getMeanDerivCurve(x=fn.sim$time, y=fn.sim$Vtrue, dy=fn.sim$dVtrue, x.new=fn.true$time,
-                               sigma.mat = gpsmooth_ss$sigma, phi.mat = gpsmooth_ss$rphi, gamma.mat=gpsmooth_ss$gamma)
+vdVpostcurve <- getMeanDerivCurve(x=fn.sim$time, y.mat=gpsmooth_ss$vtrue, dy.mat=gpsmooth_ss$dvobs, x.new=fn.true$time,
+                                  sigma.mat = gpsmooth_ss$sigma, phi.mat = gpsmooth_ss$vphi, gamma.mat=gpsmooth_ss$gamma)
 
 Rpostsample <- getX(r=as.matrix(dist(fn.sim$time)), phi.mat = gpsmooth_ss$rphi, eta.mat = gpsmooth_ss$reta)
 Vpostsample <- getX(r=as.matrix(dist(fn.sim$time)), phi.mat = gpsmooth_ss$vphi, eta.mat = gpsmooth_ss$veta)
@@ -120,7 +155,7 @@ matplot(fn.true$time, data.matrix(fn.true[,c(1,4)]), type="l", lty=1, col=c(2,1)
 points(fn.sim$time, fn.sim$Vtrue, col=2)
 matplot(fn.sim$time, t(dVdRpostsample[,,"dvobs"]), col="skyblue",add=TRUE, type="l",lty=1)
 
-save(gpsmooth_ss, vdRmcurve, vdVmcurve, file="dump.RData")
+save(gpsmooth_ss, vdRpostcurve, vdVpostcurve, file="dump.RData")
 
 # "best" log-likelihood based on truth. phi vector found by optim with other inputs set at truth
 loglik( data.matrix(fn.true[seq(1,401,length=41),c("Vtrue","Rtrue")]), init$abc, 

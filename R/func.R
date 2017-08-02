@@ -85,7 +85,7 @@ getDerivCurve2 <- function(x, y, x.new, phi.mat, delta = 1e-9, sigma.mat, gamma.
   }))
 }
 
-getMeanDerivCurve <- function(x, y, dy, x.new, phi.mat, delta = 1e-9, sigma.mat, gamma.mat){
+getMeanDerivCurve <- function(x, y.mat, dy.mat, x.new, phi.mat, delta = 1e-9, sigma.mat, gamma.mat){
   tvec <- c(x.new,x,x.new,x)
   id.dnew <- 1:length(x.new)
   id.dobs <- 1:length(x) + length(x.new)
@@ -99,6 +99,8 @@ getMeanDerivCurve <- function(x, y, dy, x.new, phi.mat, delta = 1e-9, sigma.mat,
   signr <- -sign(foo)
   
   t(sapply(1:nrow(phi.mat), function(it){
+    y <- y.mat[it,]
+    dy <- dy.mat[it,]
     sigma <- sigma.mat[it]
     phi <- phi.mat[it,]
     if(is.null(gamma.mat)){
