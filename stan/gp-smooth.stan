@@ -12,6 +12,7 @@ data {
 }
 transformed data {
   vector[N] mu;
+  // real gamma = 0;
   real delta = 1e-9;
   for (i in 1:N)
     mu[i] = 0;
@@ -26,8 +27,6 @@ parameters {
   real<lower=0> vphi[2];
   vector[N] reta;
   vector[N] veta;
-  vector[N] dreta;
-  vector[N] dveta;
 }
 model {
   matrix[N,N] C_rphi;
@@ -39,13 +38,8 @@ model {
   matrix[N,N] inv_L_C_vphi;
   vector[N] vtrue;
   
-  vector[N] drtrue;
-  vector[N] dvtrue;
-  
   matrix[N,N] K_rphi;
   matrix[N,N] K_vphi;
-  matrix[N,N] L_K_rphi;
-  matrix[N,N] L_K_vphi;
   
   matrix[N,N] dC_rphi;
   matrix[N,N] ddC_rphi;
@@ -84,6 +78,7 @@ model {
     }
   
   L_C_rphi = cholesky_decompose(C_rphi);
+  // print(C_rphi[1,2]);
   rtrue = L_C_rphi * reta;
   inv_L_C_rphi = inverse(L_C_rphi);
   
@@ -102,14 +97,6 @@ model {
     K_rphi[i,i] = K_rphi[i,i]+delta;
     K_vphi[i,i] = K_vphi[i,i]+delta;
   }
-  L_K_rphi = cholesky_decompose(K_rphi);
-  L_K_vphi = cholesky_decompose(K_vphi);
-  
-  // dvtrue = dvobs;
-  // drtrue = drobs;
-  
-  // m_rphi_rtrue + K_rphi * dreta = drobs;
-  // m_vphi_vtrue + K_vphi * dveta = dvobs;
   
   for (i in 1:N){
     dvobs[i] = abc[3] * (vtrue[i] - pow(vtrue[i],3)/3.0 + rtrue[i]);  
@@ -131,16 +118,10 @@ model {
   reta ~ normal(0, 1);
   veta ~ normal(0, 1);
   
-  dreta ~ normal(0, 1);
-  dveta ~ normal(0, 1);
-  
   robs ~ normal(rtrue, sigma);
   vobs ~ normal(vtrue, sigma);
   
   drobs ~ multi_normal(m_rphi_rtrue, K_rphi);
   dvobs ~ multi_normal(m_vphi_vtrue, K_vphi);
-  
-  // drobs ~ normal(drtrue, gamma);
-  // dvobs ~ normal(dvtrue, gamma);
-  
 }
+
