@@ -233,3 +233,10 @@ matplot(fn.true$time, tail(t(vdVpostcurve[id.max,,drop=FALSE]),nrow(fn.true)), c
 dev.off()
 
 save(gpsmooth_ss, vdRpostcurve, vdVpostcurve, file="dump.RData")
+
+loglik(x = matrix(0, ncol=2,nrow=nrow(fn.sim)), 
+       theta = c(0, 0.2, 1.0), 
+       phi = c(1e-10, 1e+01, 1e-09, 1e+01), 
+       sigma = 1.142141,
+       y = fn.sim[,1:2], 
+       r = r)
