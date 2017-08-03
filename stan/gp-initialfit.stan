@@ -11,9 +11,18 @@ data {
 }
 transformed data {
   vector[N] mu;
+  // real gamma = 0;
   real delta = 1e-9;
-  for (i in 1:N)
+  // real sigma = 0.1;
+  matrix[N,N] r;
+  matrix[N,N] r2;
+  for (i in 1:N){
     mu[i] = 0;
+    for (j in 1:N){
+      r[i,j] = fabs(time[i] - time[j]);
+      r2[i,j] = pow(r[i,j], 2);
+    }
+  }
 }
 parameters {
   // vector[N1+N2+N3] f;
@@ -31,14 +40,12 @@ model {
   matrix[N,N] C_vphi;
   matrix[N,N] L_C_vphi;
   vector[N] vtrue;
-  real r;
-  real r2;
   for (i in 1:N)
     for (j in 1:N){
-      r = fabs(time[i] - time[j]);
-      r2 = pow(r, 2);
-      C_rphi[i,j] = rphi[1] * (1 + ((sqrt(5)*r)/rphi[2]) + ((5*r2)/(3*pow(rphi[2],2)))) * exp((-sqrt(5)*r)/rphi[2]);
-      C_vphi[i,j] = vphi[1] * (1 + ((sqrt(5)*r)/vphi[2]) + ((5*r2)/(3*pow(vphi[2],2)))) * exp((-sqrt(5)*r)/vphi[2]);
+      C_rphi[i,j] = rphi[1] * (1 + ((sqrt(5)*r[i,j])/rphi[2]) + ((5*r2[i,j])/(3*pow(rphi[2],2)))) * 
+        exp((-sqrt(5)*r[i,j])/rphi[2]);
+      C_vphi[i,j] = vphi[1] * (1 + ((sqrt(5)*r[i,j])/vphi[2]) + ((5*r2[i,j])/(3*pow(vphi[2],2)))) * 
+        exp((-sqrt(5)*r[i,j])/vphi[2]);
       if(i==j){
         C_rphi[i,j] = C_rphi[i,j] + delta;
         C_vphi[i,j] = C_vphi[i,j] + delta;
@@ -72,14 +79,12 @@ generated quantities {
   matrix[N,N] C_vphi;
   matrix[N,N] L_C_vphi;
   vector[N] vtrue;
-  real r; # need to move this to transformed data part
-  real r2;
   for (i in 1:N)
     for (j in 1:N){
-      r = fabs(time[i] - time[j]);
-      r2 = pow(r, 2);
-      C_rphi[i,j] = rphi[1] * (1 + ((sqrt(5)*r)/rphi[2]) + ((5*r2)/(3*pow(rphi[2],2)))) * exp((-sqrt(5)*r)/rphi[2]);
-      C_vphi[i,j] = vphi[1] * (1 + ((sqrt(5)*r)/vphi[2]) + ((5*r2)/(3*pow(vphi[2],2)))) * exp((-sqrt(5)*r)/vphi[2]);
+      C_rphi[i,j] = rphi[1] * (1 + ((sqrt(5)*r[i,j])/rphi[2]) + ((5*r2[i,j])/(3*pow(rphi[2],2)))) * 
+        exp((-sqrt(5)*r[i,j])/rphi[2]);
+      C_vphi[i,j] = vphi[1] * (1 + ((sqrt(5)*r[i,j])/vphi[2]) + ((5*r2[i,j])/(3*pow(vphi[2],2)))) * 
+        exp((-sqrt(5)*r[i,j])/vphi[2]);
       if(i==j){
         C_rphi[i,j] = C_rphi[i,j] + delta;
         C_vphi[i,j] = C_vphi[i,j] + delta;
