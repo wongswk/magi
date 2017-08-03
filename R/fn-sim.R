@@ -8,7 +8,7 @@ matplot(fn.true$time, data.matrix(fn.true[,-3]), type="l", lty=1)
 abc = c(0.2, 0.2, 3)
 
 read.fn.sim <- TRUE
-set.seed(123)
+# set.seed(123)
 
 fn.true$dVtrue = with(fn.true, abc[3] * (Vtrue - Vtrue^3/3.0 + Rtrue))
 fn.true$dRtrue = with(fn.true, -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
@@ -119,6 +119,58 @@ matplot(fn.sim$time, t(gpsmooth_ss$dvobs), col="grey",add=TRUE, type="p",lty=1, 
 matplot(fn.true$time, tail(t(vdVpostcurve),nrow(fn.true)), col="grey",add=TRUE, type="l",lty=1)
 dev.off()
 
+#### Gaussian process fitting without ODE as initial value ####
+gpfit <- stan(file="stan/gp-initialfit.stan",
+              data=list(N=nrow(fn.sim),
+                        robs=fn.sim$Rtrue,
+                        vobs=fn.sim$Vtrue,
+                        time=fn.sim$time),
+              iter=100, chains=1, warmup = 50, cores=1)
+gpfit_ss <- extract(gpfit, permuted=TRUE)
+
+id.plot <- seq(1,length(gpfit_ss$lp__),length=100)
+id.plot <- unique(as.integer(id.plot))
+
+# looking at MAP - colored blue, posterior mean is colored green
+id.max <- which.max(gpfit_ss$lp__)
+# looking at posterior distribution
+layout(1)
+matplot(fn.true$time, data.matrix(fn.true[,c(1:2)]), type="l", lty=1, col=c(2,1), 
+        ylab="R & V", main="full posterior")
+points(fn.sim$time, fn.sim$Rtrue, col=1)
+points(fn.sim$time, fn.sim$Vtrue, col=2)
+matplot(fn.sim$time, t(gpfit_ss$rtrue[id.plot,]), col="grey",add=TRUE, type="p",lty=1, pch=20)
+matplot(fn.sim$time, t(gpfit_ss$vtrue[id.plot,]), col="pink",add=TRUE, type="p",lty=1, pch=20)
+
+matplot(fn.true$time, data.matrix(fn.true[,c(1:2)]), type="l", lty=1, col=c(2,1), 
+        ylab="R & V", main="full posterior", add=TRUE)
+
+lines(fn.sim$time, colMeans(gpfit_ss$rtrue), col=3)
+lines(fn.sim$time, colMeans(gpfit_ss$vtrue), col=3)
+
+lines(fn.sim$time, gpfit_ss$rtrue[id.max,], col=4)
+lines(fn.sim$time, gpfit_ss$vtrue[id.max,], col=4)
+
+layout(matrix(1:4,2,byrow = TRUE))
+hist(gpfit_ss$rphi[,1])
+abline(v=init$rphi[1], col=2)
+abline(v=mean(gpfit_ss$rphi[,1]), col=3)
+abline(v=gpfit_ss$rphi[id.max,1], col=4)
+hist(gpfit_ss$rphi[,2])
+abline(v=init$rphi[2], col=2)
+abline(v=mean(gpfit_ss$rphi[,2]), col=3)
+abline(v=gpfit_ss$rphi[id.max,2], col=4)
+hist(gpfit_ss$vphi[,1])
+abline(v=init$vphi[1], col=2)
+abline(v=mean(gpfit_ss$vphi[,1]), col=3)
+abline(v=gpfit_ss$vphi[id.max,1], col=4)
+hist(gpfit_ss$vphi[,2])
+abline(v=init$vphi[2], col=2)
+abline(v=mean(gpfit_ss$vphi[,2]), col=3)
+abline(v=gpfit_ss$vphi[id.max,2], col=4)
+
+
+# looking at posterior mean
 
 #### real simulation ####
 gpsmooth <- stan(file="stan/gp-smooth.stan",
