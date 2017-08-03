@@ -15,15 +15,8 @@ fn.true$dRtrue = with(fn.true, -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
 
 fn.sim <- fn.true
 fn.sim[,1:2] <- fn.sim[,1:2]+rnorm(length(unlist(fn.sim[,1:2])), sd=0.1)
-
-
-# fit_fit <- stan(file="stan/ode-fit.stan",
-#                 data=list(N=nrow(fn.sim),
-#                           robs=fn.sim$Rtrue,
-#                           vobs=fn.sim$Vtrue),
-#                 iter=200, chains=5)
-
 fn.sim <- fn.sim[seq(1,nrow(fn.sim), length=41),]
+
 if(read.fn.sim){
   fn.sim <- read.csv("data/fn.sim.csv")[,-1]
 }
