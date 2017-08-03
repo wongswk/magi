@@ -109,17 +109,17 @@ model {
     drobs[i] = -1.0/abc[3] * (vtrue[i] - abc[1] + abc[2]*rtrue[i]);
   }
   
-  // rphi[1] ~ cauchy(0,5);
-  // rphi[2] ~ cauchy(0,5);
-  // vphi[1] ~ cauchy(0,5);
-  // vphi[2] ~ cauchy(0,5);
+  rphi[1] ~ lognormal(1,1);
+  rphi[2] ~ lognormal(0,1);
+  vphi[1] ~ lognormal(1,1);
+  vphi[2] ~ lognormal(0,1);
   
-  // sigma ~ cauchy(0,5);
+  sigma ~ lognormal(-2,1);
   // sigma ~ normal(0,lambda);
   // gamma ~ cauchy(0,5);
-  // abc[1] ~ cauchy(0,5);
-  // abc[2] ~ cauchy(0,5);
-  // abc[3] ~ cauchy(0,5);
+  abc[1] ~ cauchy(0,5);
+  abc[2] ~ cauchy(0,5);
+  abc[3] ~ cauchy(0,5);
   
   reta ~ normal(0, 1);
   veta ~ normal(0, 1);
