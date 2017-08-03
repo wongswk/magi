@@ -126,7 +126,7 @@ gpsmooth <- stan(file="stan/gp-smooth.stan",
                            robs=fn.sim$Rtrue,
                            vobs=fn.sim$Vtrue,
                            time=fn.sim$time),
-                 iter=200, chains=7, warmup = 100, cores=7)
+                 iter=100, chains=1, warmup = 50, cores=1, init = list(init))
 
 
 gpsmooth_ss <- extract(gpsmooth, permuted=TRUE)
@@ -164,7 +164,7 @@ gpsmooth_ss$abc[id.max,]
 gpsmooth_ss$sigma[id.max]
 
 
-pdf("MCMC initialize at random value (flat improper prior).pdf", width = 8, height = 8)
+pdf("MCMC initialize at true value (flat improper prior).pdf", width = 8, height = 8)
 id.plot <- seq(1,nrow(gpsmooth_ss$abc),length=100)
 id.plot <- unique(as.integer(id.plot))
 
