@@ -131,6 +131,14 @@ gpfit_ss <- extract(gpfit, permuted=TRUE)
 id.plot <- seq(1,length(gpfit_ss$lp__),length=100)
 id.plot <- unique(as.integer(id.plot))
 
+gptrue <- stan(file="stan/gp-initialfit.stan",
+              data=list(N=nrow(fn.sim),
+                        robs=fn.sim$Rtrue,
+                        vobs=fn.sim$Vtrue,
+                        time=fn.sim$time),
+              iter=2, chains=1, warmup = 0, cores=1, init = list(init))
+extract(gptrue, permuted=TRUE)$lp__
+
 # looking at MAP - colored blue, posterior mean is colored green
 id.max <- which.max(gpfit_ss$lp__)
 # looking at posterior distribution
@@ -160,6 +168,8 @@ init.epost <- list(
   sigma = mean(gpfit_ss$sigma)
 )
 
+gpfit.post <- list()
+
 pdf("GP fit (no ODE information).pdf", width = 8, height = 8)
 layout(1)
 matplot(fn.true$time, data.matrix(fn.true[,c(1:2)]), type="l", lty=1, col=c(2,1), 
@@ -184,28 +194,28 @@ abline(v=init$rphi[1], col=2)
 abline(v=init.epost$rphi[1], col=3)
 abline(v=init.map$rphi[1], col=4)
 abline(v=init.marmode$rphi[1], col=5)
-plot.add.dlnorm(gpfit_ss$rphi[,1])
+gpfit.post[["rhpi1"]] <- plot.add.dlnorm(gpfit_ss$rphi[,1])
 
 hist(gpfit_ss$rphi[,2], probability = TRUE, breaks = 20)
 abline(v=init$rphi[2], col=2)
 abline(v=init.epost$rphi[2], col=3)
 abline(v=init.map$rphi[2], col=4)
 abline(v=init.marmode$rphi[2], col=5)
-plot.add.dlnorm(gpfit_ss$rphi[,2])
+gpfit.post[["rhpi2"]] <- plot.add.dlnorm(gpfit_ss$rphi[,2])
 
 hist(gpfit_ss$vphi[,1], probability = TRUE, breaks = 20)
 abline(v=init$vphi[1], col=2)
 abline(v=init.epost$vphi[1], col=3)
 abline(v=init.map$vphi[1], col=4)
 abline(v=init.marmode$vphi[1], col=5)
-plot.add.dlnorm(gpfit_ss$vphi[,1])
+gpfit.post[["vhpi1"]] <- plot.add.dlnorm(gpfit_ss$vphi[,1])
 
 hist(gpfit_ss$vphi[,2], probability = TRUE, breaks = 20)
 abline(v=init$vphi[2], col=2)
 abline(v=init.epost$vphi[2], col=3)
 abline(v=init.map$vphi[2], col=4)
 abline(v=init.marmode$vphi[2], col=5)
-plot.add.dlnorm(gpfit_ss$vphi[,2])
+gpfit.post[["vhpi2"]] <- plot.add.dlnorm(gpfit_ss$vphi[,2])
 
 layout(1)
 hist(gpfit_ss$sigma, probability = TRUE, breaks = 20)
@@ -213,19 +223,25 @@ abline(v=init$sigma, col=2)
 abline(v=init.epost$sigma, col=3)
 abline(v=init.map$sigma, col=4)
 abline(v=init.marmode$sigma, col=5)
-plot.add.dlnorm(gpfit_ss$sigma)
+gpfit.post[["sigma"]] <- plot.add.dlnorm(gpfit_ss$sigma)
 dev.off()
 
+gpfit.post <- do.call(rbind, gpfit.post)
 
 
 #### real simulation ####
+# rphi[1] ~ lognormal(hyperparm[1],hyperparm[6]);
+# rphi[2] ~ lognormal(hyperparm[2],hyperparm[7]);
+# vphi[1] ~ lognormal(hyperparm[3],hyperparm[8]);
+# vphi[2] ~ lognormal(hyperparm[4],hyperparm[9]);
+# sigma ~ lognormal(hyperparm[5],hyperparm[10]);
 gpsmooth <- stan(file="stan/gp-smooth.stan",
                  data=list(N=nrow(fn.sim),
                            robs=fn.sim$Rtrue,
                            vobs=fn.sim$Vtrue,
-                           time=fn.sim$time),
-                 iter=100, chains=3, warmup = 50, cores=3, 
-                 init = list(init,init.map,init.epost))
+                           time=fn.sim$time,
+                           hyperparm=c(gpfit.post[,"mean"], gpfit.post[,"sd"])),
+                 iter=100, chains=5, warmup = 50, cores=5) #init = list(init,init.map,init.epost,init.marmode,"random","0",list())
 
 
 gpsmooth_ss <- extract(gpsmooth, permuted=TRUE)

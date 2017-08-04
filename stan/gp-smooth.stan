@@ -8,6 +8,7 @@ data {
   real robs[N];
   real vobs[N];
   real time[N];
+  real hyperparm[10];
 }
 transformed data {
   vector[N] mu;
@@ -109,12 +110,11 @@ model {
     drobs[i] = -1.0/abc[3] * (vtrue[i] - abc[1] + abc[2]*rtrue[i]);
   }
   
-  rphi[1] ~ lognormal(1,1);
-  rphi[2] ~ lognormal(0,1);
-  vphi[1] ~ lognormal(1,1);
-  vphi[2] ~ lognormal(0,1);
-  
-  sigma ~ lognormal(-2,1);
+  rphi[1] ~ lognormal(hyperparm[1],hyperparm[6]);
+  rphi[2] ~ lognormal(hyperparm[2],hyperparm[7]);
+  vphi[1] ~ lognormal(hyperparm[3],hyperparm[8]);
+  vphi[2] ~ lognormal(hyperparm[4],hyperparm[9]);
+  sigma ~ lognormal(hyperparm[5],hyperparm[10]);
   // sigma ~ normal(0,lambda);
   // gamma ~ cauchy(0,5);
   abc[1] ~ cauchy(0,5);

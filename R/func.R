@@ -235,6 +235,7 @@ mode.density <- function(x){
 plot.add.dlnorm <- function(samples, col=6){
   plot.function(function(x) dlnorm(x, mean(log(samples)), sd(log(samples))),
                 add=TRUE, from = min(samples), to = max(samples), n=1001, col=col)
+  c(mean=mean(log(samples)), sd=sd(log(samples)))
 }
   
   
