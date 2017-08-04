@@ -226,3 +226,15 @@ loglik <- function(x, theta, phi, sigma, y, r)  {
   return(ret)
   
 }
+
+mode.density <- function(x){
+  den <- density(x)
+  den$x[which.max(den$y)]
+}
+
+plot.add.dlnorm <- function(samples, col=6){
+  plot.function(function(x) dlnorm(x, mean(log(samples)), sd(log(samples))),
+                add=TRUE, from = min(samples), to = max(samples), n=1001, col=col)
+}
+  
+  
