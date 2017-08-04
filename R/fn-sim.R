@@ -125,7 +125,7 @@ gpfit <- stan(file="stan/gp-initialfit.stan",
                         robs=fn.sim$Rtrue,
                         vobs=fn.sim$Vtrue,
                         time=fn.sim$time),
-              iter=100, chains=1, warmup = 50, cores=1)
+              iter=200, chains=7, warmup = 100, cores=7)
 gpfit_ss <- extract(gpfit, permuted=TRUE)
 
 id.plot <- seq(1,length(gpfit_ss$lp__),length=100)
@@ -134,6 +134,8 @@ id.plot <- unique(as.integer(id.plot))
 # looking at MAP - colored blue, posterior mean is colored green
 id.max <- which.max(gpfit_ss$lp__)
 # looking at posterior distribution
+
+pdf("GP fit (no ODE information).pdf", width = 8, height = 8)
 layout(1)
 matplot(fn.true$time, data.matrix(fn.true[,c(1:2)]), type="l", lty=1, col=c(2,1), 
         ylab="R & V", main="full posterior")
@@ -169,8 +171,28 @@ abline(v=init$vphi[2], col=2)
 abline(v=mean(gpfit_ss$vphi[,2]), col=3)
 abline(v=gpfit_ss$vphi[id.max,2], col=4)
 
+layout(1)
+hist(gpfit_ss$sigma)
+abline(v=init$sigma, col=2)
+abline(v=mean(gpfit_ss$sigma), col=3)
+abline(v=gpfit_ss$sigma[id.max], col=4)
+dev.off()
 
-# looking at posterior mean
+init.map <- list(
+  reta = gpfit_ss$reta[id.max,],
+  veta = gpfit_ss$veta[id.max,],
+  rphi = gpfit_ss$rphi[id.max,],
+  vphi = gpfit_ss$vphi[id.max,],
+  sigma = gpfit_ss$sigma[id.max]
+)
+
+init.epost <- list(
+  reta = colMeans(gpfit_ss$reta),
+  veta = colMeans(gpfit_ss$veta),
+  rphi = colMeans(gpfit_ss$rphi),
+  vphi = colMeans(gpfit_ss$vphi),
+  sigma = mean(gpfit_ss$sigma)
+)
 
 #### real simulation ####
 gpsmooth <- stan(file="stan/gp-smooth.stan",
@@ -178,7 +200,8 @@ gpsmooth <- stan(file="stan/gp-smooth.stan",
                            robs=fn.sim$Rtrue,
                            vobs=fn.sim$Vtrue,
                            time=fn.sim$time),
-                 iter=100, chains=1, warmup = 50, cores=1, init = list(init))
+                 iter=100, chains=3, warmup = 50, cores=3, 
+                 init = list(init,init.map,init.epost))
 
 
 gpsmooth_ss <- extract(gpsmooth, permuted=TRUE)
@@ -216,7 +239,7 @@ gpsmooth_ss$abc[id.max,]
 gpsmooth_ss$sigma[id.max]
 
 
-pdf("MCMC initialize at true value (flat improper prior).pdf", width = 8, height = 8)
+pdf("MCMC initialize different values (vaguely informative prior).pdf", width = 8, height = 8)
 id.plot <- seq(1,nrow(gpsmooth_ss$abc),length=100)
 id.plot <- unique(as.integer(id.plot))
 
