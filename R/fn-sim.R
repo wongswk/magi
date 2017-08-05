@@ -43,11 +43,17 @@ init$veta <- solve(t(chol(calCov(init$vphi, r)$C)), fn.true[seq(1,401,length=41)
 stopifnot(abs(getX(r, t(init$rphi), t(init$reta)) - fn.true[seq(1,401,length=41),c("Rtrue")]) < 1e-14)
 
 #### investigate true value ####
+# not working on need to fix
+hyperparm0 <- c(rep(0,5),rep(5,5))
+hyperveta0 <- hyperreta0 <- cbind(rep(0,nrow(fn.sim)), rep(1,nrow(fn.sim)))
+
 gpsmooth <- stan(file="stan/gp-smooth.stan",
                  data=list(N=nrow(fn.sim),
                            robs=fn.sim$Rtrue,
                            vobs=fn.sim$Vtrue,
-                           time=fn.sim$time),
+                           time=fn.sim$time,
+                           hyperparm=hyperparm0,
+                           hyperreta=hyperreta0, hyperveta = hyperveta0),
                  iter=2, chains=1, init=list(init), warmup = 0)
 
 
@@ -168,6 +174,13 @@ init.epost <- list(
   sigma = mean(gpfit_ss$sigma)
 )
 
+hyperreta <- cbind(mean=colMeans(gpfit_ss$reta),
+                   sd=apply(gpfit_ss$reta,2,sd))
+hyperveta <- cbind(colMeans(gpfit_ss$veta),
+                   apply(gpfit_ss$veta,2,sd))
+
+
+
 gpfit.post <- list()
 
 pdf("GP fit (no ODE information).pdf", width = 8, height = 8)
@@ -240,7 +253,9 @@ gpsmooth <- stan(file="stan/gp-smooth.stan",
                            robs=fn.sim$Rtrue,
                            vobs=fn.sim$Vtrue,
                            time=fn.sim$time,
-                           hyperparm=c(gpfit.post[,"mean"], gpfit.post[,"sd"])),
+                           hyperparm=c(gpfit.post[,"mean"], gpfit.post[,"sd"]),
+                           hyperreta=hyperreta,
+                           hyperveta=hyperveta),
                  iter=100, chains=5, warmup = 50, cores=5) #init = list(init,init.map,init.epost,init.marmode,"random","0",list())
 
 
@@ -279,7 +294,7 @@ gpsmooth_ss$abc[id.max,]
 gpsmooth_ss$sigma[id.max]
 
 
-pdf("MCMC initialize different values (vaguely informative prior).pdf", width = 8, height = 8)
+pdf("MCMC initialize random values (posterior from GP fitting as prior).pdf", width = 8, height = 8)
 id.plot <- seq(1,nrow(gpsmooth_ss$abc),length=100)
 id.plot <- unique(as.integer(id.plot))
 
@@ -355,3 +370,8 @@ loglik(x = matrix(0, ncol=2,nrow=nrow(fn.sim)),
        sigma = 1.142141,
        y = fn.sim[,1:2], 
        r = r)
+
+summary(gpsmooth_ss$lp__[c(1:50,101:150)])
+# log posterior for converged chain
+summary(gpsmooth_ss$lp__[-c(1:50,101:150)])
+# log posterior for zero chain

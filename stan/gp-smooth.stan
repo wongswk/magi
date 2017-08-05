@@ -9,6 +9,8 @@ data {
   real vobs[N];
   real time[N];
   real hyperparm[10];
+  matrix[N,2] hyperreta;
+  matrix[N,2] hyperveta;
 }
 transformed data {
   vector[N] mu;
@@ -121,8 +123,8 @@ model {
   abc[2] ~ cauchy(0,5);
   abc[3] ~ cauchy(0,5);
   
-  reta ~ normal(0, 1);
-  veta ~ normal(0, 1);
+  reta ~ normal(hyperreta[,1], hyperreta[,2]);
+  veta ~ normal(hyperveta[,1], hyperveta[,2]);
   
   robs ~ normal(rtrue, sigma);
   vobs ~ normal(vtrue, sigma);
