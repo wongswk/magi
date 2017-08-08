@@ -53,7 +53,9 @@ gpsmooth <- stan(file="stan/gp-smooth.stan",
                            vobs=fn.sim$Vtrue,
                            time=fn.sim$time,
                            hyperparm=hyperparm0,
-                           hyperreta=hyperreta0, hyperveta = hyperveta0),
+                           hyperreta=hyperreta0, 
+                           hyperveta = hyperveta0,
+                           ubsigma = 1000),
                  iter=2, chains=1, init=list(init), warmup = 0)
 
 
@@ -131,7 +133,7 @@ gpfit <- stan(file="stan/gp-initialfit.stan",
                         robs=fn.sim$Rtrue,
                         vobs=fn.sim$Vtrue,
                         time=fn.sim$time),
-              iter=700, chains=7, warmup = 300, cores=7)
+              iter=200, chains=7, warmup = 100, cores=7)
 gpfit_ss <- extract(gpfit, permuted=TRUE)
 
 id.plot <- seq(1,length(gpfit_ss$lp__),length=100)
@@ -258,8 +260,32 @@ gpsmooth <- stan(file="stan/gp-smooth.stan",
                            hyperveta=hyperveta),
                  iter=100, chains=5, warmup = 50, cores=5) #init = list(init,init.map,init.epost,init.marmode,"random","0",list())
 
+init.rand <- lapply(1:10, function(dummy){
+  id.max <- sample(nrow(gpfit_ss$reta),1)
+  list(
+    reta = gpfit_ss$reta[id.max,],
+    veta = gpfit_ss$veta[id.max,],
+    rphi = gpfit_ss$rphi[id.max,],
+    vphi = gpfit_ss$vphi[id.max,],
+    sigma = gpfit_ss$sigma[id.max]
+  )
+})
+  
+gpsmooth2 <- stan(file="stan/gp-smooth.stan",
+                 data=list(N=nrow(fn.sim),
+                           robs=fn.sim$Rtrue,
+                           vobs=fn.sim$Vtrue,
+                           time=fn.sim$time,
+                           hyperparm=hyperparm0,
+                           hyperreta=hyperreta0,
+                           hyperveta=hyperveta0,
+                           ubsigma=0.25),
+                 init = list(init,init.map,init.epost,init.marmode,
+                             init.rand[[1]],init.rand[[2]],init.rand[[3]],init.rand[[4]]),
+                 iter=100, chains=8, warmup = 50, cores=8) #
 
-gpsmooth_ss <- extract(gpsmooth, permuted=TRUE)
+
+gpsmooth_ss <- extract(gpsmooth2, permuted=TRUE)
 max(gpsmooth_ss$lp__)
 id.max <- which.max(gpsmooth_ss$lp__)
 
@@ -267,6 +293,8 @@ plot(gpsmooth_ss$sigma, type="l",main="sigma")
 abline(h=0.1, col=2)
 hist(gpsmooth_ss$sigma, breaks = 50,main="sigma")
 abline(v=0.1, col=2)
+plot(gpsmooth_ss$lp__, type="l")
+
 
 vdRpostcurve <- getMeanDerivCurve(x=fn.sim$time, y.mat=gpsmooth_ss$rtrue, dy.mat=gpsmooth_ss$drobs, x.new=fn.true$time,
                                   sigma.mat = gpsmooth_ss$sigma, phi.mat = gpsmooth_ss$rphi, gamma.mat=gpsmooth_ss$gamma)
@@ -375,3 +403,5 @@ summary(gpsmooth_ss$lp__[c(1:50,101:150)])
 # log posterior for converged chain
 summary(gpsmooth_ss$lp__[-c(1:50,101:150)])
 # log posterior for zero chain
+
+# try the hard boundary on parameter as well. 
