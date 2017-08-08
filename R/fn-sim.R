@@ -284,8 +284,37 @@ gpsmooth2 <- stan(file="stan/gp-smooth.stan",
                              init.rand[[1]],init.rand[[2]],init.rand[[3]],init.rand[[4]]),
                  iter=100, chains=8, warmup = 50, cores=8) #
 
+init.pR <- list(init,init.map,init.epost,init.marmode,
+                init.rand[[1]],init.rand[[2]],init.rand[[3]],init.rand[[4]])
+init.pR <- lapply(init.pR, function(x) {x$veta <- NULL; x$vphi <- NULL; x})
+gpsmooth.pR <- stan(file="stan/gp-smooth-partial-robs.stan",
+                  data=list(N=nrow(fn.sim),
+                            robs=fn.sim$Rtrue,
+                            time=fn.sim$time,
+                            hyperparm=hyperparm0,
+                            hyperreta=hyperreta0,
+                            hyperveta=hyperveta0,
+                            ubsigma=0.25),
+                  init = init.pR,
+                  iter=100, chains=8, warmup = 50, cores=8) 
 
-gpsmooth_ss <- extract(gpsmooth2, permuted=TRUE)
+init.pV <- list(init,init.map,init.epost,init.marmode,
+                init.rand[[1]],init.rand[[2]],init.rand[[3]],init.rand[[4]])
+init.pV <- lapply(init.pV, function(x) {x$reta <- NULL; x$rphi <- NULL; x})
+gpsmooth.pV <- stan(file="stan/gp-smooth-partial-vobs.stan",
+                    data=list(N=nrow(fn.sim),
+                              vobs=fn.sim$Vtrue,
+                              time=fn.sim$time,
+                              hyperparm=hyperparm0,
+                              hyperreta=hyperreta0,
+                              hyperveta=hyperveta0,
+                              ubsigma=0.25),
+                    init = list(init,init.map,init.epost,init.marmode,
+                                init.rand[[1]],init.rand[[2]],init.rand[[3]],init.rand[[4]]),
+                    iter=100, chains=8, warmup = 50, cores=8) #
+
+
+gpsmooth_ss <- extract(gpsmooth.pV, permuted=TRUE)
 max(gpsmooth_ss$lp__)
 id.max <- which.max(gpsmooth_ss$lp__)
 
@@ -322,11 +351,11 @@ gpsmooth_ss$abc[id.max,]
 gpsmooth_ss$sigma[id.max]
 
 
-pdf("MCMC initialize random values (posterior from GP fitting as prior).pdf", width = 8, height = 8)
+pdf("partial system only observes V.pdf", width = 8, height = 8)
 id.plot <- seq(1,nrow(gpsmooth_ss$abc),length=100)
 id.plot <- unique(as.integer(id.plot))
 
-traceplot(gpsmooth, pars=names(gpsmooth)[1:8])
+traceplot(gpsmooth.pV, pars=names(gpsmooth.pV)[1:8])
 
 matplot(fn.true$time, data.matrix(fn.true[,c(2,5)]), type="l", lty=1, col=c(2,1), 
         ylab="R", main="full posterior")
@@ -388,9 +417,17 @@ matplot(fn.sim$time, t(gpsmooth_ss$vtrue[id.max,,drop=FALSE]), col="skyblue",add
 matplot(fn.true$time, head(t(vdVpostcurve[id.max,,drop=FALSE]),nrow(fn.true)), col="skyblue",add=TRUE, type="l",lty=1)
 matplot(fn.sim$time, t(gpsmooth_ss$dvobs[id.max,,drop=FALSE]), col="grey",add=TRUE, type="p",lty=1, pch=20)
 matplot(fn.true$time, tail(t(vdVpostcurve[id.max,,drop=FALSE]),nrow(fn.true)), col="grey",add=TRUE, type="l",lty=1)
+
+layout(1:2)
+plot(gpsmooth_ss$sigma, type="l",main="sigma")
+abline(h=0.1, col=2)
+hist(gpsmooth_ss$sigma, breaks = 50,main="sigma")
+abline(v=0.1, col=2)
+plot(gpsmooth_ss$lp__, type="l")
+
 dev.off()
 
-save(gpsmooth_ss, vdRpostcurve, vdVpostcurve, file="dump.RData")
+save(gpsmooth.pV, vdRpostcurve, vdVpostcurve, file="dump.RData")
 
 loglik(x = matrix(0, ncol=2,nrow=nrow(fn.sim)), 
        theta = c(0, 0.2, 1.0), 
