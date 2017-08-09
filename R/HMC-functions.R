@@ -72,6 +72,35 @@ loglik <- function(x, theta, CovV, CovR, sigma, y)  {
   
 }
 
+logliknoODE <- function(x, CovV, CovR, sigma, y)  {
+  
+  Vsm <- x[,1]
+  Rsm <- x[,2]
+  n <- nrow(x)
+  
+  #f <- fODE(theta, x)
+  res <- matrix(nrow=2,ncol=3)
+  
+  # V 
+  #CovV <- calCov(phi[1:2])
+  #fr <- (f[,1] - CovV$mphi %*% Vsm)
+  res[1,] <- c( -0.5 * sum((Vsm - y[,1])^2) / sigma^2 - n * log(sigma), 0,  -0.5 * as.numeric(determinant(CovV$C)$modulus) - 0.5 * t(Vsm) %*% CovV$Cinv %*% Vsm)
+  
+  
+  # R
+  #CovR <- calCov(phi[3:4])
+  #fr <- (f[,2] - CovR$mphi %*% Rsm)
+  res[2,] <- c( -0.5 * sum((Rsm - y[,2])^2) / sigma^2 - n * log(sigma), 0,  -0.5 * as.numeric(determinant(CovR$C)$modulus) - 0.5 * t(Rsm) %*% CovR$Cinv %*% Rsm)
+  
+  
+  ret <- sum(res)
+  attr(ret,"components") <- res
+  
+  return(ret)
+  
+}
+
+
 loglikVmis <- function(x, theta, CovV, CovR, sigma, y)  {
   a <- theta[1]
   b <- theta[2]
@@ -202,6 +231,61 @@ xthetallikRmis <- function(x, theta, CovV, CovR, sigma, y, grad = F)  {
   
 }
 
+xthetalliknoODE <- function(x, CovV, CovR, sigma, y, grad = F)  {
+  #a <- theta[1]
+  #b <- theta[2]
+  #c <- theta[3]
+
+  Vsm <- x[,1]
+  Rsm <- x[,2]
+  n <- nrow(x)
+  
+  #f <- fODE(theta, x)
+  res <- matrix(nrow=2,ncol=3)
+  
+  # V 
+  #CovV <- calCov(phi[1:2])
+  #frV <- (f[,1] - CovV$mphi %*% Vsm)
+  
+  # R
+  #CovR <- calCov(phi[3:4])
+  #frR <- (f[,2] - CovR$mphi %*% Rsm)
+  
+  res[1,] <- c( -0.5 * sum((Vsm - y[,1])^2) / sigma^2, 0,   - 0.5 * t(Vsm) %*% CovV$Cinv %*% Vsm)
+  res[2,] <- c( -0.5 * sum((Rsm - y[,2])^2) / sigma^2, 0,   - 0.5 * t(Rsm) %*% CovR$Cinv %*% Rsm)
+  
+  ret <- sum(res)
+  attr(ret,"components") <- res
+  
+  
+  if(grad) {
+    # V contrib
+    # Vtemp <- diag( c*(1 - x[,1]^2)) - CovV$mphi
+    # Rtemp <- diag( rep(c,n))
+    # aTemp <- rep(0,n)
+    # bTemp <- rep(0,n)
+    # cTemp <- f[,1] / c
+    # VC2 <- 2 * t(cbind(Vtemp,Rtemp,aTemp,bTemp,cTemp)) %*% CovV$Kinv %*% frV
+    
+    # R contrib
+    # Vtemp <- diag( rep( -1/c, n) )
+    # Rtemp <- diag( rep( -b/c, n) ) - CovR$mphi
+    # aTemp <- rep(1/c,n)
+    # bTemp <- -Rsm/c
+    # cTemp <- f[,2] * (-1/c)
+    # RC2 <- 2 * t(cbind(Vtemp,Rtemp,aTemp,bTemp,cTemp)) %*% CovR$Kinv %*% frR
+    
+    C3 <- c(2 * CovV$Cinv %*% Vsm,  2 * CovR$Cinv %*% Rsm)
+    C1 <- c( 2 * (Vsm - y[,1]) / sigma^2 ,  2 * (Rsm - y[,2]) / sigma^2)
+    
+    #attr(ret,"grad") <- c((VC2 + RC2 + C3 + C1) * (-0.5))
+    attr(ret,"grad") <- c((C3 + C1) * (-0.5))
+  }
+  
+  return(ret)
+  
+  
+}
 
 xthetallik <- function(x, theta, CovV, CovR, sigma, y, grad = F)  {
   a <- theta[1]
@@ -334,6 +418,12 @@ xthU <- function(q, grad=FALSE) {
   
   #xthetallik(x,theta, c(1.9840824, 1.1185157, 0.9486433, 3.268243), 0.1, fn.sim[,1:2], grad)
   xthetallik(x,theta, curCovV, curCovR, cursigma, fn.sim[,1:2], grad)
+}
+
+xthUnoODE <- function(q, grad=FALSE) {
+  x <- cbind(q[1:41], q[42:82])
+  
+  xthetalliknoODE(x, curCovV, curCovR, cursigma, fn.sim[,1:2], grad)
 }
 
 xthURmis <- function(q, grad=FALSE) {
