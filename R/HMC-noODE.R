@@ -13,13 +13,14 @@ pram.true <- list(
   vphi=c(1.9840824, 1.1185157)
 )
 
+library(parallel)
 source("visualization.R")
 source("helper/utilities.r")
 source("helper/basic_hmc.R")
 source("HMC-functions.R")
 
 #noise level
-noise <- 0.5
+noise <- 0.3
 fn.sim[,1:2] <- VRtrue[seq(1,401,length=41),] + rnorm(82, 0, noise)
 #VRtrue[seq(1,401,length=41),] + rnorm(82, 0, noise) - VRtrue[seq(1,401,length=41),] 
 
@@ -59,6 +60,9 @@ paccepts <- 0
 #deltas <- c()
 
 
+gpmcmc <- mclapply(1:8, function(dummy.chain){
+# th.all[1,] <-  rnorm(82)
+# phisig[1,] <- exp(rnorm(5))
 for (t in 2:n.iter) {
   
   if (t %% 100 == 0) { show(c(t, full_llik[t-1], accepts/t, paccepts/t)) }
@@ -95,6 +99,20 @@ for (t in 2:n.iter) {
   
   full_llik[t] <- logliknoODE( cbind(th.all[t,1:41],th.all[t,42:82]), curCovV, curCovR, cursigma,  fn.sim[,1:2])  
 }  
+return(list(
+  full_llik=full_llik,
+  th.all=th.all,
+  phisig=phisig,
+  lliklist=lliklist
+))
+}, mc.cores = 8)
+
+burnin <- 2500-1
+full_llik <- do.call(c,lapply(gpmcmc, function(x) x$full_llik[-(1:burnin)]))
+th.all <- do.call(rbind,lapply(gpmcmc, function(x) x$th.all[-(1:burnin),]))
+phisig <- do.call(rbind,lapply(gpmcmc, function(x) x$phisig[-(1:burnin),]))
+lliklist <- do.call(c,lapply(gpmcmc, function(x) x$lliklist[-(1:burnin)]))
+
 
 ## Best sampled
 id.best <- which.max(full_llik)
@@ -121,14 +139,14 @@ startsigma <- mean(phisig[2500:5000,5])
 sigLow <- quantile(phisig[2500:5000,5], 0.001)
 sigHigh <- quantile(phisig[2500:5000,5], 0.999)
 
-burnin <- 2500-1
-gpfit <- list(sigma=phisig[-(1:burnin),5],
-              rphi=phisig[-(1:burnin),3:4],
-              vphi=phisig[-(1:burnin),1:2],
-              rtrue=th.all[-(1:burnin),42:82],
-              vtrue=th.all[-(1:burnin),1:41],
-              lp__=lliklist[-(1:burnin)],
-              lglik=full_llik[-(1:burnin)])
+
+gpfit <- list(sigma=phisig[,5],
+              rphi=phisig[,3:4],
+              vphi=phisig[,1:2],
+              rtrue=th.all[,42:82],
+              vtrue=th.all[,1:41],
+              lp__=lliklist,
+              lglik=full_llik)
 
 pram.true$sigma <- noise
 fn.true <- VRtrue
@@ -139,3 +157,25 @@ fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[
 post.noODE <- summary.post.noODE(paste0("../results/R-GPfit-",noise,".pdf"), fn.true, fn.sim, gpfit, pram.true)
 
 post.noODE$init.epost
+
+#### check with STAN ####
+gpfit.stan <- stan(file="../stan/gp-initialfit.stan",
+              data=list(N=nrow(fn.sim),
+                        robs=fn.sim$Rtrue,
+                        vobs=fn.sim$Vtrue,
+                        time=fn.sim$time),
+              iter=600, chains=7, warmup = 100, cores=7)
+gpfit_ss <- extract(gpfit.stan, permuted=TRUE)
+
+post.noODE.stan <- summary.post.noODE(paste0("../results/STAN-noODE-noise-",noise,".pdf"), 
+                                      fn.true, fn.sim, gpfit_ss, pram.true)
+
+startX <- with(post.noODE.stan$init.epost, c(vtrue,rtrue))
+startphi <- with(post.noODE.stan$init.epost, c(vphi,rphi))
+startsigma <- post.noODE.stan$init.epost$sigma
+sigLow <- exp(post.noODE.stan$gpfit.post["sigma","mean"]-4.5*post.noODE.stan$gpfit.post["sigma","sd"])
+sigHigh <- exp(post.noODE.stan$gpfit.post["sigma","mean"]+4.5*post.noODE.stan$gpfit.post["sigma","sd"])
+
+sigLow <- quantile(gpfit_ss$sigma, 0.001)
+
+sigHigh <- quantile(gpfit_ss$sigma, 0.999)
