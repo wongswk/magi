@@ -4,7 +4,16 @@
 
 ### Load the variables above if necessary
 #load("fndata.rda")
+VRtrue <- read.csv("../data/FN.csv")
+fn.sim <- read.csv("../data/fn.sim.csv")[,-1]
 
+pram.true <- list(
+  abc=c(0.2,0.2,3),
+  rphi=c(0.9486433, 3.2682434),
+  vphi=c(1.9840824, 1.1185157)
+)
+
+source("visualization.R")
 source("helper/utilities.r")
 source("helper/basic_hmc.R")
 source("HMC-functions.R")
@@ -112,4 +121,21 @@ startsigma <- mean(phisig[2500:5000,5])
 sigLow <- quantile(phisig[2500:5000,5], 0.001)
 sigHigh <- quantile(phisig[2500:5000,5], 0.999)
 
+burnin <- 2500-1
+gpfit <- list(sigma=phisig[-(1:burnin),5],
+              rphi=phisig[-(1:burnin),3:4],
+              vphi=phisig[-(1:burnin),1:2],
+              rtrue=th.all[-(1:burnin),42:82],
+              vtrue=th.all[-(1:burnin),1:41],
+              lp__=lliklist[-(1:burnin)],
+              lglik=full_llik[-(1:burnin)])
 
+pram.true$sigma <- noise
+fn.true <- VRtrue
+fn.true$time <- seq(0,20,0.05)
+fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtrue))
+fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
+
+post.noODE <- summary.post.noODE(paste0("../results/R-GPfit-",noise,".pdf"), fn.true, fn.sim, gpfit, pram.true)
+
+post.noODE$init.epost

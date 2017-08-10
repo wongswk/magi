@@ -3,6 +3,7 @@
 ### - fn.sim with 41 rows (noisy V and R in cols 1 & 2, using sigma = 0.1)
 ### - VRtrue with 401 rows (V and R true)
 
+source("visualization.R")
 source("helper/utilities.r")
 source("helper/basic_hmc.R")
 source("HMC-functions.R")
@@ -98,3 +99,21 @@ abline(v = noise, lwd=2, col="blue")
 dev.off()
 
 
+burnin <- 500
+gpode <- list(abc=th.all[-(1:burnin),83:85],
+              sigma=phisig[-(1:burnin),5],
+              rphi=phisig[-(1:burnin),3:4],
+              vphi=phisig[-(1:burnin),1:2],
+              rtrue=th.all[-(1:burnin),42:82],
+              vtrue=th.all[-(1:burnin),1:41],
+              lp__=lliklist[-(1:burnin)],
+              lglik=full_llik[-(1:burnin)])
+gpode$fode <- sapply(1:length(gpode$lp__), function(t) 
+  with(gpode, fODE(abc[t,], cbind(vtrue[t,],rtrue[t,]))), simplify = "array")
+
+fn.true <- VRtrue
+fn.true$time <- seq(0,20,0.05)
+fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtrue))
+fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
+
+plot.post.samples(paste0("../results/R-ode-",noise,"-.pdf"), fn.true, fn.sim, gpode, pram.true)

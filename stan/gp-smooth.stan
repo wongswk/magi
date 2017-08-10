@@ -11,6 +11,7 @@ data {
   real hyperparm[10];
   matrix[N,2] hyperreta;
   matrix[N,2] hyperveta;
+  real ubsigma;
 }
 transformed data {
   vector[N] mu;
@@ -31,7 +32,7 @@ transformed data {
 parameters {
   // vector[N1+N2+N3] f;
   real<lower=0> abc[3];
-  real<lower=0> sigma;
+  real<lower=0, upper=ubsigma> sigma;
   // real<lower=0> gamma;
   real<lower=0> rphi[2];
   real<lower=0> vphi[2];

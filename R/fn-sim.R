@@ -1,5 +1,6 @@
 #### start of code ####
 source("R/func.R")
+source("R/visualization.R")
 library(rstan)
 fn.true <- read.csv("data/FN.csv")
 fn.true$time <- seq(0,20,0.05)
@@ -133,131 +134,28 @@ gpfit <- stan(file="stan/gp-initialfit.stan",
                         robs=fn.sim$Rtrue,
                         vobs=fn.sim$Vtrue,
                         time=fn.sim$time),
-              iter=200, chains=7, warmup = 100, cores=7)
+              iter=600, chains=7, warmup = 100, cores=7)
 gpfit_ss <- extract(gpfit, permuted=TRUE)
 
-id.plot <- seq(1,length(gpfit_ss$lp__),length=100)
-id.plot <- unique(as.integer(id.plot))
-
-gptrue <- stan(file="stan/gp-initialfit.stan",
-              data=list(N=nrow(fn.sim),
-                        robs=fn.sim$Rtrue,
-                        vobs=fn.sim$Vtrue,
-                        time=fn.sim$time),
-              iter=2, chains=1, warmup = 0, cores=1, init = list(init))
-extract(gptrue, permuted=TRUE)$lp__
-
 # looking at MAP - colored blue, posterior mean is colored green
-id.max <- which.max(gpfit_ss$lp__)
-# looking at posterior distribution
-
-init.map <- list(
-  reta = gpfit_ss$reta[id.max,],
-  veta = gpfit_ss$veta[id.max,],
-  rphi = gpfit_ss$rphi[id.max,],
-  vphi = gpfit_ss$vphi[id.max,],
-  sigma = gpfit_ss$sigma[id.max]
-)
-
-
-init.marmode <- list(
-  reta = apply(gpfit_ss$reta,2,mode.density),
-  veta = apply(gpfit_ss$veta,2,mode.density),
-  rphi = apply(gpfit_ss$rphi,2,mode.density),
-  vphi = apply(gpfit_ss$vphi,2,mode.density),
-  sigma = mode.density(gpfit_ss$sigma)
-)
-
-init.epost <- list(
-  reta = colMeans(gpfit_ss$reta),
-  veta = colMeans(gpfit_ss$veta),
-  rphi = colMeans(gpfit_ss$rphi),
-  vphi = colMeans(gpfit_ss$vphi),
-  sigma = mean(gpfit_ss$sigma)
-)
 
 hyperreta <- cbind(mean=colMeans(gpfit_ss$reta),
                    sd=apply(gpfit_ss$reta,2,sd))
 hyperveta <- cbind(colMeans(gpfit_ss$veta),
                    apply(gpfit_ss$veta,2,sd))
 
-
-
-gpfit.post <- list()
-
-pdf("GP fit (no ODE information).pdf", width = 8, height = 8)
-layout(1)
-matplot(fn.true$time, data.matrix(fn.true[,c(1:2)]), type="l", lty=1, col=c(2,1), 
-        ylab="R & V", main="full posterior")
-points(fn.sim$time, fn.sim$Rtrue, col=1)
-points(fn.sim$time, fn.sim$Vtrue, col=2)
-matplot(fn.sim$time, t(gpfit_ss$rtrue[id.plot,]), col="grey",add=TRUE, type="p",lty=1, pch=20)
-matplot(fn.sim$time, t(gpfit_ss$vtrue[id.plot,]), col="pink",add=TRUE, type="p",lty=1, pch=20)
-
-matplot(fn.true$time, data.matrix(fn.true[,c(1:2)]), type="l", lty=1, col=c(2,1), 
-        ylab="R & V", main="full posterior", add=TRUE)
-
-lines(fn.sim$time, colMeans(gpfit_ss$rtrue), col=3)
-lines(fn.sim$time, colMeans(gpfit_ss$vtrue), col=3)
-
-lines(fn.sim$time, gpfit_ss$rtrue[id.max,], col=4)
-lines(fn.sim$time, gpfit_ss$vtrue[id.max,], col=4)
-
-layout(matrix(1:4,2,byrow = TRUE))
-hist(gpfit_ss$rphi[,1], probability = TRUE, breaks = 20)
-abline(v=init$rphi[1], col=2)
-abline(v=init.epost$rphi[1], col=3)
-abline(v=init.map$rphi[1], col=4)
-abline(v=init.marmode$rphi[1], col=5)
-gpfit.post[["rhpi1"]] <- plot.add.dlnorm(gpfit_ss$rphi[,1])
-
-hist(gpfit_ss$rphi[,2], probability = TRUE, breaks = 20)
-abline(v=init$rphi[2], col=2)
-abline(v=init.epost$rphi[2], col=3)
-abline(v=init.map$rphi[2], col=4)
-abline(v=init.marmode$rphi[2], col=5)
-gpfit.post[["rhpi2"]] <- plot.add.dlnorm(gpfit_ss$rphi[,2])
-
-hist(gpfit_ss$vphi[,1], probability = TRUE, breaks = 20)
-abline(v=init$vphi[1], col=2)
-abline(v=init.epost$vphi[1], col=3)
-abline(v=init.map$vphi[1], col=4)
-abline(v=init.marmode$vphi[1], col=5)
-gpfit.post[["vhpi1"]] <- plot.add.dlnorm(gpfit_ss$vphi[,1])
-
-hist(gpfit_ss$vphi[,2], probability = TRUE, breaks = 20)
-abline(v=init$vphi[2], col=2)
-abline(v=init.epost$vphi[2], col=3)
-abline(v=init.map$vphi[2], col=4)
-abline(v=init.marmode$vphi[2], col=5)
-gpfit.post[["vhpi2"]] <- plot.add.dlnorm(gpfit_ss$vphi[,2])
-
-layout(1)
-hist(gpfit_ss$sigma, probability = TRUE, breaks = 20)
-abline(v=init$sigma, col=2)
-abline(v=init.epost$sigma, col=3)
-abline(v=init.map$sigma, col=4)
-abline(v=init.marmode$sigma, col=5)
-gpfit.post[["sigma"]] <- plot.add.dlnorm(gpfit_ss$sigma)
-dev.off()
-
-gpfit.post <- do.call(rbind, gpfit.post)
-
+post.noODE <- summary.post.noODE("results/STAN-noODE-noise-0.1.pdf", fn.true, fn.sim, gpfit_ss, init)
 
 #### real simulation ####
-# rphi[1] ~ lognormal(hyperparm[1],hyperparm[6]);
-# rphi[2] ~ lognormal(hyperparm[2],hyperparm[7]);
-# vphi[1] ~ lognormal(hyperparm[3],hyperparm[8]);
-# vphi[2] ~ lognormal(hyperparm[4],hyperparm[9]);
-# sigma ~ lognormal(hyperparm[5],hyperparm[10]);
-gpsmooth <- stan(file="stan/gp-smooth.stan",
+gpsmooth1 <- stan(file="stan/gp-smooth.stan",
                  data=list(N=nrow(fn.sim),
                            robs=fn.sim$Rtrue,
                            vobs=fn.sim$Vtrue,
                            time=fn.sim$time,
                            hyperparm=c(gpfit.post[,"mean"], gpfit.post[,"sd"]),
                            hyperreta=hyperreta,
-                           hyperveta=hyperveta),
+                           hyperveta=hyperveta,
+                           ubsigma=100),
                  iter=100, chains=5, warmup = 50, cores=5) #init = list(init,init.map,init.epost,init.marmode,"random","0",list())
 
 init.rand <- lapply(1:10, function(dummy){
@@ -271,6 +169,9 @@ init.rand <- lapply(1:10, function(dummy){
   )
 })
   
+init.full <- c(post.noODE[c("init.epost","init.map","init.marmode")],
+               list(init,init.rand[[1]],init.rand[[2]],init.rand[[3]],init.rand[[4]]))
+
 gpsmooth2 <- stan(file="stan/gp-smooth.stan",
                  data=list(N=nrow(fn.sim),
                            robs=fn.sim$Rtrue,
@@ -279,13 +180,10 @@ gpsmooth2 <- stan(file="stan/gp-smooth.stan",
                            hyperparm=hyperparm0,
                            hyperreta=hyperreta0,
                            hyperveta=hyperveta0,
-                           ubsigma=0.25),
-                 init = list(init,init.map,init.epost,init.marmode,
-                             init.rand[[1]],init.rand[[2]],init.rand[[3]],init.rand[[4]]),
-                 iter=100, chains=8, warmup = 50, cores=8) #
+                           ubsigma=0.22),
+                 init = init.full, iter=50, chains=8, warmup = 20, cores=8) #
 
-init.pR <- list(init,init.map,init.epost,init.marmode,
-                init.rand[[1]],init.rand[[2]],init.rand[[3]],init.rand[[4]])
+init.pR <- init.full
 init.pR <- lapply(init.pR, function(x) {x$veta <- NULL; x$vphi <- NULL; x})
 gpsmooth.pR <- stan(file="stan/gp-smooth-partial-robs.stan",
                   data=list(N=nrow(fn.sim),
@@ -294,12 +192,11 @@ gpsmooth.pR <- stan(file="stan/gp-smooth-partial-robs.stan",
                             hyperparm=hyperparm0,
                             hyperreta=hyperreta0,
                             hyperveta=hyperveta0,
-                            ubsigma=0.25),
+                            ubsigma=0.22),
                   init = init.pR,
                   iter=100, chains=8, warmup = 50, cores=8) 
 
-init.pV <- list(init,init.map,init.epost,init.marmode,
-                init.rand[[1]],init.rand[[2]],init.rand[[3]],init.rand[[4]])
+init.pV <- init.full
 init.pV <- lapply(init.pV, function(x) {x$reta <- NULL; x$rphi <- NULL; x})
 gpsmooth.pV <- stan(file="stan/gp-smooth-partial-vobs.stan",
                     data=list(N=nrow(fn.sim),
@@ -309,28 +206,14 @@ gpsmooth.pV <- stan(file="stan/gp-smooth-partial-vobs.stan",
                               hyperreta=hyperreta0,
                               hyperveta=hyperveta0,
                               ubsigma=0.25),
-                    init = list(init,init.map,init.epost,init.marmode,
-                                init.rand[[1]],init.rand[[2]],init.rand[[3]],init.rand[[4]]),
-                    iter=100, chains=8, warmup = 50, cores=8) #
+                    init = init.pV,
+                    iter=50, chains=8, warmup = 20, cores=8) #
 
+plot.post.samples("results/STAN-ode-noise-0.1.pdf", fn.true, fn.sim, extract(gpsmooth2, permuted=TRUE), init)
+plot.post.samples("results/STAN-ode-noise-0.1-partial-robs.pdf", fn.true, fn.sim, extract(gpsmooth.pR, permuted=TRUE), init)
+plot.post.samples("results/STAN-ode-noise-0.1-partial-vobs.pdf", fn.true, fn.sim, extract(gpsmooth.pV, permuted=TRUE), init)
 
-gpsmooth_ss <- extract(gpsmooth.pV, permuted=TRUE)
-max(gpsmooth_ss$lp__)
-id.max <- which.max(gpsmooth_ss$lp__)
-
-plot(gpsmooth_ss$sigma, type="l",main="sigma")
-abline(h=0.1, col=2)
-hist(gpsmooth_ss$sigma, breaks = 50,main="sigma")
-abline(v=0.1, col=2)
-plot(gpsmooth_ss$lp__, type="l")
-
-
-vdRpostcurve <- getMeanDerivCurve(x=fn.sim$time, y.mat=gpsmooth_ss$rtrue, dy.mat=gpsmooth_ss$drobs, x.new=fn.true$time,
-                                  sigma.mat = gpsmooth_ss$sigma, phi.mat = gpsmooth_ss$rphi, gamma.mat=gpsmooth_ss$gamma)
-
-vdVpostcurve <- getMeanDerivCurve(x=fn.sim$time, y.mat=gpsmooth_ss$vtrue, dy.mat=gpsmooth_ss$dvobs, x.new=fn.true$time,
-                                  sigma.mat = gpsmooth_ss$sigma, phi.mat = gpsmooth_ss$vphi, gamma.mat=gpsmooth_ss$gamma)
-
+#### ad hoc analysis ####
 lglik <- lapply(1:length(gpsmooth_ss$lp__), function(it){
   loglik( cbind(gpsmooth_ss$vtrue[it,], gpsmooth_ss$rtrue[it,]), 
           gpsmooth_ss$abc[it,], 
@@ -340,94 +223,7 @@ lglik <- lapply(1:length(gpsmooth_ss$lp__), function(it){
           r)
 })
 
-#### reporting and plot for real simulation ####
 
-summary(unlist(lglik))
-summary(gpsmooth_ss$lp__)
-lglik[[id.max]]
-gpsmooth_ss$rphi[id.max,]
-gpsmooth_ss$vphi[id.max,]
-gpsmooth_ss$abc[id.max,]
-gpsmooth_ss$sigma[id.max]
-
-
-pdf("partial system only observes V.pdf", width = 8, height = 8)
-id.plot <- seq(1,nrow(gpsmooth_ss$abc),length=100)
-id.plot <- unique(as.integer(id.plot))
-
-traceplot(gpsmooth.pV, pars=names(gpsmooth.pV)[1:8])
-
-matplot(fn.true$time, data.matrix(fn.true[,c(2,5)]), type="l", lty=1, col=c(2,1), 
-        ylab="R", main="full posterior")
-points(fn.sim$time, fn.sim$Rtrue, col=2)
-matplot(fn.sim$time, t(gpsmooth_ss$rtrue[id.plot,]), col="skyblue",add=TRUE, type="p",lty=1, pch=20)
-matplot(fn.true$time, head(t(vdRpostcurve[id.plot,]),nrow(fn.true)), col="skyblue",add=TRUE, type="l",lty=1)
-matplot(fn.sim$time, t(gpsmooth_ss$drobs[id.plot,]), col="grey",add=TRUE, type="p",lty=1, pch=20)
-matplot(fn.true$time, tail(t(vdRpostcurve[id.plot,]),nrow(fn.true)), col="grey",add=TRUE, type="l",lty=1)
-
-
-matplot(fn.true$time, data.matrix(fn.true[,c(1,4)]), type="l", lty=1, col=c(2,1),
-        ylab="V", main="full posterior")
-points(fn.sim$time, fn.sim$Vtrue, col=2)
-matplot(fn.sim$time, t(gpsmooth_ss$vtrue[id.plot,]), col="skyblue",add=TRUE, type="p",lty=1, pch=20)
-matplot(fn.true$time, head(t(vdVpostcurve[id.plot,]),nrow(fn.true)), col="skyblue",add=TRUE, type="l",lty=1)
-matplot(fn.sim$time, t(gpsmooth_ss$dvobs[id.plot,]), col="grey",add=TRUE, type="p",lty=1, pch=20)
-matplot(fn.true$time, tail(t(vdVpostcurve[id.plot,]),nrow(fn.true)), col="grey",add=TRUE, type="l",lty=1)
-
-
-
-
-layout(matrix(1:4,2,byrow = TRUE))
-hist(gpsmooth_ss$abc[,1], main="a")
-abline(v=init$abc[1], col=2)
-hist(gpsmooth_ss$abc[,2], main="b")
-abline(v=init$abc[2], col=2)
-hist(gpsmooth_ss$abc[,3], main="c")
-abline(v=init$abc[3], col=2)
-
-hist(gpsmooth_ss$sigma, main="sigma")
-abline(v=init$sigma, col=2)
-
-hist(gpsmooth_ss$rphi[,1], main="phi1_R")
-hist(gpsmooth_ss$rphi[,2], main="phi2_R")
-hist(gpsmooth_ss$vphi[,1], main="phi1_V")
-hist(gpsmooth_ss$vphi[,2], main="phi2_V")
-
-layout(1)
-
-#' discrepency between STAN log posterior and log likelihood
-#' need to implement the model in plain R later
-plot(unlist(lglik), gpsmooth_ss$lp__, xlab="log likelihood from Rscript",
-     ylab="log posterior from STAN")
-
-
-matplot(fn.true$time, data.matrix(fn.true[,c(2,5)]), type="l", lty=1, col=c(2,1),
-        ylab="R", main="maximum a posterior")
-points(fn.sim$time, fn.sim$Rtrue, col=2)
-matplot(fn.sim$time, t(gpsmooth_ss$rtrue[id.max,,drop=FALSE]), col="skyblue",add=TRUE, type="p",lty=1, pch=20)
-matplot(fn.true$time, head(t(vdRpostcurve[id.max,,drop=FALSE]),nrow(fn.true)), col="skyblue",add=TRUE, type="l",lty=1)
-matplot(fn.sim$time, t(gpsmooth_ss$drobs[id.max,,drop=FALSE]), col="grey",add=TRUE, type="p",lty=1, pch=20)
-matplot(fn.true$time, tail(t(vdRpostcurve[id.max,,drop=FALSE]),nrow(fn.true)), col="grey",add=TRUE, type="l",lty=1)
-
-
-matplot(fn.true$time, data.matrix(fn.true[,c(1,4)]), type="l", lty=1, col=c(2,1),
-        ylab="V", main="maximum a posterior")
-points(fn.sim$time, fn.sim$Vtrue, col=2)
-matplot(fn.sim$time, t(gpsmooth_ss$vtrue[id.max,,drop=FALSE]), col="skyblue",add=TRUE, type="p",lty=1, pch=20)
-matplot(fn.true$time, head(t(vdVpostcurve[id.max,,drop=FALSE]),nrow(fn.true)), col="skyblue",add=TRUE, type="l",lty=1)
-matplot(fn.sim$time, t(gpsmooth_ss$dvobs[id.max,,drop=FALSE]), col="grey",add=TRUE, type="p",lty=1, pch=20)
-matplot(fn.true$time, tail(t(vdVpostcurve[id.max,,drop=FALSE]),nrow(fn.true)), col="grey",add=TRUE, type="l",lty=1)
-
-layout(1:2)
-plot(gpsmooth_ss$sigma, type="l",main="sigma")
-abline(h=0.1, col=2)
-hist(gpsmooth_ss$sigma, breaks = 50,main="sigma")
-abline(v=0.1, col=2)
-plot(gpsmooth_ss$lp__, type="l")
-
-dev.off()
-
-save(gpsmooth.pV, vdRpostcurve, vdVpostcurve, file="dump.RData")
 
 loglik(x = matrix(0, ncol=2,nrow=nrow(fn.sim)), 
        theta = c(0, 0.2, 1.0), 

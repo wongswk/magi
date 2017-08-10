@@ -85,58 +85,7 @@ getDerivCurve2 <- function(x, y, x.new, phi.mat, delta = 1e-9, sigma.mat, gamma.
   }))
 }
 
-getMeanDerivCurve <- function(x, y.mat, dy.mat, x.new, phi.mat, delta = 1e-9, sigma.mat, gamma.mat){
-  tvec <- c(x.new,x,x.new,x)
-  id.dnew <- 1:length(x.new)
-  id.dobs <- 1:length(x) + length(x.new)
-  id.vnew <- length(tvec)/2 + 1:length(x.new)
-  id.vobs <- tail(1:length(tvec), length(x))
-  
-  foo <- outer(tvec, t(tvec),'-')[,1,]
-  r <- abs(foo)
-  r2 <- r^2
-  
-  signr <- -sign(foo)
-  
-  t(sapply(1:nrow(phi.mat), function(it){
-    y <- y.mat[it,]
-    dy <- dy.mat[it,]
-    sigma <- sigma.mat[it]
-    phi <- phi.mat[it,]
-    if(is.null(gamma.mat)){
-      gamma <- 0
-    }else{
-      gamma <- gamma.mat[it]
-    }
-    
-    if(is.null(sigma.mat)){
-      sigma <- 0.1
-    }else{
-      sigma <- sigma.mat[it]
-    }
-    
-    
-    C <- phi[1] * (1 + ((sqrt(5)*r)/phi[2]) + ((5*r2)/(3*phi[2]^2))) * exp((-sqrt(5)*r)/phi[2])
-    Cprime  <- signr* (phi[1] * exp((-sqrt(5)*r)/phi[2])) * (((5*r)/(3*phi[2]^2)) + ((5*sqrt(5)*r2)/(3*phi[2]^3)))
-    Cdoubleprime <- (phi[1]*exp((-sqrt(5)*r)/phi[2])) * ((5/(3*phi[2]^2)) + ((5*sqrt(5)*r)/(3*phi[2]^3)) - ((25*r2)/(3*phi[2]^4)))
-    
-    M <- matrix(NA, ncol=length(tvec), nrow=length(tvec))
-    
-    M[c(id.dnew,id.dobs),c(id.dnew,id.dobs)] <- Cdoubleprime[c(id.dnew,id.dobs),c(id.dnew,id.dobs)]
-    M[c(id.vnew,id.vobs),c(id.vnew,id.vobs)] <- C[c(id.vnew,id.vobs),c(id.vnew,id.vobs)]
-    
-    M[c(id.dnew,id.dobs),c(id.vnew,id.vobs)] <- Cprime[c(id.dnew,id.dobs),c(id.vnew,id.vobs)]
-    M[c(id.vnew,id.vobs),c(id.dnew,id.dobs)] <- t(Cprime[c(id.dnew,id.dobs),c(id.vnew,id.vobs)])
-    
-    diag(M)[id.vobs] <- diag(M)[id.vobs]+sigma^2
-    diag(M)[id.dobs] <- diag(M)[id.dobs]+gamma^2
-    
-    stopifnot(is.finite(M))
-    diag(M) <- diag(M)+delta
-    
-    M[c(id.vnew,id.dnew),c(id.vobs,id.dobs)]%*%solve(M[c(id.vobs,id.dobs),c(id.vobs,id.dobs)], c(y,dy))
-  }))
-}
+
 
 getX <- function(r, phi.mat, eta.mat, delta = 1e-9){
   r2 <- r^2
@@ -227,15 +176,3 @@ loglik <- function(x, theta, phi, sigma, y, r)  {
   
 }
 
-mode.density <- function(x){
-  den <- density(x)
-  den$x[which.max(den$y)]
-}
-
-plot.add.dlnorm <- function(samples, col=6){
-  plot.function(function(x) dlnorm(x, mean(log(samples)), sd(log(samples))),
-                add=TRUE, from = min(samples), to = max(samples), n=1001, col=col)
-  c(mean=mean(log(samples)), sd=sd(log(samples)))
-}
-  
-  
