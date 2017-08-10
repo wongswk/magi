@@ -8,7 +8,8 @@ source("helper/utilities.r")
 source("helper/basic_hmc.R")
 source("HMC-functions.R")
 
-lam <- 12.5 # tuning parameter for weight on GP level fitting component
+temperature <- c(1,100,1)
+lam <- 1/temperature # tuning parameter for weight on GP level fitting component
 
 numparam <- 41*2+3  # num HMC parameters
 n.iter <- 5000  # number of HMC iterations
@@ -23,12 +24,14 @@ ref.th <- c( VRtrue[seq(1, 401, length = 41),1], VRtrue[seq(1, 401, length = 41)
 bestCovV <- calCov( c(1.9840824, 1.1185157 ))
 bestCovR <- calCov( c( 0.9486433, 3.2682434) )
 loglik( VRtrue[seq(1,401,length=41),], c(0.2,0.2,3), bestCovV, bestCovR, noise, fn.sim[,1:2], lambda=lam)
-xthetallik( VRtrue[seq(1,401,length=41),], c(0.2,0.2,3), bestCovV, bestCovR, noise, fn.sim[,1:2], lambda=lam)
+loglik( VRtrue[seq(1,401,length=41),], c(0.2,0.2,3), bestCovV, bestCovR, noise, fn.sim[,1:2], lambda=1)
+loglik( VRtrue[seq(1,401,length=41),], c(0.2,0.2,3), bestCovV, bestCovR, noise*2, fn.sim[,1:2], lambda=4)
+
+loglik( VRtrue[seq(1,401,length=41),], c(0.2,0.2,3), bestCovV, bestCovR, sigHigh, fn.sim[,1:2], lambda=lam)
 
 ## loglik at degenerate case (zero curve)
 loglik(matrix(0,nrow=41,ncol=2),c(0,1,1),calCov(c(.1,10)), calCov(c(.1,10)), 0.25, fn.sim[,1:2], lambda=lam)
 loglik(matrix(0,nrow=41,ncol=2),c(0,1,1),calCov(c(.1,10)), calCov(c(.1,10)), sigHigh, fn.sim[,1:2], lambda=lam)
-xthetallik( matrix(0,nrow=41,ncol=2),c(0,1,1),calCov(c(.1,10)), calCov(c(.1,10)), sigHigh, fn.sim[,1:2], lambda=lam)
 loglik(matrix(0,nrow=41,ncol=2),c(0,1,1),calCov(c(.1,10)), calCov(c(.1,10)), noise, fn.sim[,1:2], lambda=lam)
 
 ## Bounds on phi and sigma
