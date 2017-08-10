@@ -8,6 +8,8 @@ source("helper/utilities.r")
 source("helper/basic_hmc.R")
 source("HMC-functions.R")
 
+lam <- 1 # tuning parameter for weight on GP level fitting component
+
 numparam <- 41*2+3  # num HMC parameters
 n.iter <- 5000  # number of HMC iterations
 th.all <- matrix(NA,n.iter,numparam)  # X and theta
@@ -24,6 +26,8 @@ loglik( VRtrue[seq(1,401,length=41),], c(0.2,0.2,3), bestCovV, bestCovR, noise, 
 
 ## loglik at degenerate case (zero curve)
 loglik(matrix(0,nrow=41,ncol=2),c(0,1,1),calCov(c(.1,10)), calCov(c(.1,10)), 0.25, fn.sim[,1:2])
+loglik(matrix(0,nrow=41,ncol=2),c(0,1,1),calCov(c(.1,10)), calCov(c(.1,10)), sigHigh, fn.sim[,1:2])
+loglik(matrix(0,nrow=41,ncol=2),c(0,1,1),calCov(c(.1,10)), calCov(c(.1,10)), noise, fn.sim[,1:2])
 
 ## Bounds on phi and sigma
 lower_b <- c( 0, 0, 0, 0, sigLow )
@@ -50,7 +54,8 @@ for (t in 2:n.iter) {
   
   # Update X and theta
   #foo <- basic_hmc(xthU, step=runif(1,0.004,0.008), nsteps= 20, initial=th.all[t-1,], return.traj = T)
-  foo <- basic_hmc(xthU, step=runif(1,0.001,0.002), nsteps= 20, initial=th.all[t-1,], return.traj = T)
+  xthU.tempered <- function(q, grad) xthU(q, grad, lambda=lam)
+  foo <- basic_hmc(xthU.tempered, step=runif(1,0.001,0.002), nsteps= 20, initial=th.all[t-1,], return.traj = T)
   lliklist[t] <- foo$lpr
   th.all[t,] <- foo$final
   #deltas[t] <- foo$delta
@@ -99,7 +104,7 @@ abline(v = noise, lwd=2, col="blue")
 dev.off()
 
 
-burnin <- 500
+burnin <- 2500
 gpode <- list(abc=th.all[-(1:burnin),83:85],
               sigma=phisig[-(1:burnin),5],
               rphi=phisig[-(1:burnin),3:4],
