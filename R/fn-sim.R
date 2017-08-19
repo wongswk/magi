@@ -4,18 +4,19 @@ source("R/visualization.R")
 library(rstan)
 fn.true <- read.csv("data/FN.csv")
 fn.true$time <- seq(0,20,0.05)
+noise.true <- 0.5
 matplot(fn.true$time, data.matrix(fn.true[,-3]), type="l", lty=1)
 
 abc = c(0.2, 0.2, 3)
 
-read.fn.sim <- TRUE
+read.fn.sim <- FALSE
 # set.seed(123)
 
 fn.true$dVtrue = with(fn.true, abc[3] * (Vtrue - Vtrue^3/3.0 + Rtrue))
 fn.true$dRtrue = with(fn.true, -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
 
 fn.sim <- fn.true
-fn.sim[,1:2] <- fn.sim[,1:2]+rnorm(length(unlist(fn.sim[,1:2])), sd=0.1)
+fn.sim[,1:2] <- fn.sim[,1:2]+rnorm(length(unlist(fn.sim[,1:2])), sd=noise.true)
 fn.sim <- fn.sim[seq(1,nrow(fn.sim), length=41),]
 
 if(read.fn.sim){
@@ -28,7 +29,7 @@ init <- list(
   abc=c(0.2,0.2,3),
   rphi=c(0.9486433, 3.2682434),
   vphi=c(1.9840824, 1.1185157),
-  sigma=0.1
+  sigma=noise.true
 )
 
 tvec41 <- fn.sim$time
@@ -101,14 +102,15 @@ id.max <- which.max(gpsmooth_ss$lp__)
 
 # "best" log-likelihood based on truth. phi vector found by optim with other inputs set at truth
 loglik( data.matrix(fn.true[seq(1,401,length=41),c("Vtrue","Rtrue")]), init$abc, 
-        c(init$vphi, init$rphi), 0.1,  fn.sim[,1:2], r)
+        c(init$vphi, init$rphi), noise.true,  fn.sim[,1:2], r)
 gpsmooth_ss$lp__[id.max]
 gpsmooth_ss$rphi[id.max,]
 gpsmooth_ss$vphi[id.max,]
 gpsmooth_ss$abc[id.max,]
 gpsmooth_ss$sigma[id.max]
 
-pdf("Gaussian Process behavior at true parameter.pdf", width = 8, height = 8)
+pdf(paste0("results/stan-GpOde at true parameter-",noise.true,"-.pdf"), 
+    width = 8, height = 8)
 
 matplot(fn.true$time, data.matrix(fn.true[,c(2,5)]), type="l", lty=1, col=c(2,1),
         ylab="R", main="at true parm")
@@ -144,19 +146,8 @@ hyperreta <- cbind(mean=colMeans(gpfit_ss$reta),
 hyperveta <- cbind(colMeans(gpfit_ss$veta),
                    apply(gpfit_ss$veta,2,sd))
 
-post.noODE <- summary.post.noODE("results/STAN-noODE-noise-0.1.pdf", fn.true, fn.sim, gpfit_ss, init)
-
-#### real simulation ####
-gpsmooth1 <- stan(file="stan/gp-smooth.stan",
-                 data=list(N=nrow(fn.sim),
-                           robs=fn.sim$Rtrue,
-                           vobs=fn.sim$Vtrue,
-                           time=fn.sim$time,
-                           hyperparm=c(gpfit.post[,"mean"], gpfit.post[,"sd"]),
-                           hyperreta=hyperreta,
-                           hyperveta=hyperveta,
-                           ubsigma=100),
-                 iter=100, chains=5, warmup = 50, cores=5) #init = list(init,init.map,init.epost,init.marmode,"random","0",list())
+post.noODE <- summary.post.noODE(paste0("results/STAN-noODE-noise-",noise.true,".pdf"), 
+                                 fn.true, fn.sim, gpfit_ss, init)
 
 init.rand <- lapply(1:10, function(dummy){
   id.max <- sample(nrow(gpfit_ss$reta),1)
@@ -168,9 +159,55 @@ init.rand <- lapply(1:10, function(dummy){
     sigma = gpfit_ss$sigma[id.max]
   )
 })
-  
+
 init.full <- c(post.noODE[c("init.epost","init.map","init.marmode")],
                list(init,init.rand[[1]],init.rand[[2]],init.rand[[3]],init.rand[[4]]))
+
+#### real simulation ####
+id.prior <- sample(length(gpfit_ss$sigma), 100)
+gpsmooth0 <- mclapply(id.prior, function(dummy.i) 
+  stan(file="stan/gp-smooth-extphi.stan",
+       data=list(N=nrow(fn.sim),
+                 robs=fn.sim$Rtrue,
+                 vobs=fn.sim$Vtrue,
+                 time=fn.sim$time,
+                 hyperparm=hyperparm0,
+                 hyperreta=hyperreta0,
+                 hyperveta=hyperveta0,
+                 sigma=gpfit_ss$sigma[dummy.i],
+                 rphi=gpfit_ss$rphi[dummy.i,],
+                 vphi=gpfit_ss$vphi[dummy.i,]
+       ),
+       iter=40, chains=1, warmup = 30, cores=1), mc.cores = 8) #
+gpsmooth0_ss <- lapply(gpsmooth0, extract, permuted=TRUE)
+gpsmooth0_ss <- lapply(1:length(gpsmooth0_ss), function(i){
+  x <- gpsmooth0_ss[[i]]
+  dummy.i <- id.prior[i]
+  x$vphi <- matrix(gpfit_ss$vphi[dummy.i,], ncol=2, nrow=length(x$lp__), byrow = T)
+  x$rphi <- matrix(gpfit_ss$rphi[dummy.i,], ncol=2, nrow=length(x$lp__), byrow = T)
+  x$sigma <- array(rep(gpfit_ss$sigma[dummy.i], length(x$lp__)), dim=length(x$lp__))
+  x
+})
+library(abind)
+gpsmooth0_ss.list <- sapply(names(gpsmooth0_ss[[1]]), function(parm.name){
+  do.call(abind, c(lapply(gpsmooth0_ss, function(x) x[[parm.name]]), along=1))
+})
+plot.post.samples(paste0("results/STAN-ode-noise-extphi-",noise.true,"-posterior-as-prior.pdf"), 
+                  fn.true, fn.sim, gpsmooth0_ss.list, init)
+
+gpsmooth1 <- stan(file="stan/gp-smooth.stan",
+                 data=list(N=nrow(fn.sim),
+                           robs=fn.sim$Rtrue,
+                           vobs=fn.sim$Vtrue,
+                           time=fn.sim$time,
+                           hyperparm=c(post.noODE$gpfit.post[,"mean"], post.noODE$gpfit.post[,"sd"]/10000),
+                           hyperreta=hyperreta,
+                           hyperveta=hyperveta,
+                           ubsigma=exp(post.noODE$gpfit.post["sigma","mean"]+
+                                         4.5*post.noODE$gpfit.post["sigma","sd"])),
+                 init = init.full[1:7],
+                 iter=100, chains=7, warmup = 50, cores=7) 
+
 
 gpsmooth2 <- stan(file="stan/gp-smooth.stan",
                  data=list(N=nrow(fn.sim),
@@ -180,7 +217,8 @@ gpsmooth2 <- stan(file="stan/gp-smooth.stan",
                            hyperparm=hyperparm0,
                            hyperreta=hyperreta0,
                            hyperveta=hyperveta0,
-                           ubsigma=0.22),
+                           ubsigma=exp(post.noODE$gpfit.post["sigma","mean"]+
+                                         4.5*post.noODE$gpfit.post["sigma","sd"])),
                  init = init.full, iter=50, chains=8, warmup = 20, cores=8) #
 
 init.pR <- init.full
@@ -208,17 +246,21 @@ gpsmooth.pV <- stan(file="stan/gp-smooth-partial-vobs.stan",
                               ubsigma=0.25),
                     init = init.pV,
                     iter=50, chains=8, warmup = 20, cores=8) #
-
-plot.post.samples("results/STAN-ode-noise-0.1.pdf", fn.true, fn.sim, extract(gpsmooth2, permuted=TRUE), init)
-plot.post.samples("results/STAN-ode-noise-0.1-partial-robs.pdf", fn.true, fn.sim, extract(gpsmooth.pR, permuted=TRUE), init)
-plot.post.samples("results/STAN-ode-noise-0.1-partial-vobs.pdf", fn.true, fn.sim, extract(gpsmooth.pV, permuted=TRUE), init)
+plot.post.samples(paste0("results/STAN-ode-noise-",noise.true,"-posterior-as-prior.pdf"), 
+                  fn.true, fn.sim, extract(gpsmooth1, permuted=TRUE), init)
+plot.post.samples(paste0("results/STAN-ode-noise-",noise.true,".pdf"), 
+                  fn.true, fn.sim, extract(gpsmooth2, permuted=TRUE), init)
+plot.post.samples(paste0("results/STAN-ode-noise-",noise.true,"-partial-robs.pdf"), 
+                  fn.true, fn.sim, extract(gpsmooth.pR, permuted=TRUE), init)
+plot.post.samples(paste0("results/STAN-ode-noise-",noise.true,"-partial-vobs.pdf"), 
+                  fn.true, fn.sim, extract(gpsmooth.pV, permuted=TRUE), init)
 
 #### ad hoc analysis ####
 lglik <- lapply(1:length(gpsmooth_ss$lp__), function(it){
   loglik( cbind(gpsmooth_ss$vtrue[it,], gpsmooth_ss$rtrue[it,]), 
           gpsmooth_ss$abc[it,], 
           c(gpsmooth_ss$vphi[it,],gpsmooth_ss$rphi[it,]), 
-          0.1,
+          noise.true,
           fn.sim[,1:2], 
           r)
 })
