@@ -8,7 +8,8 @@ source("helper/utilities.r")
 source("helper/basic_hmc.R")
 source("HMC-functions.R")
 
-temperature <- c(1,100,1)
+temperature <- c(1,1,1)
+obswgt <- 2
 lam <- 1/temperature # tuning parameter for weight on GP level fitting component
 
 numparam <- 41*2+3  # num HMC parameters
@@ -26,28 +27,30 @@ bestCovR <- calCov( c( 0.9486433, 3.2682434) )
 loglik( VRtrue[seq(1,401,length=41),], c(0.2,0.2,3), bestCovV, bestCovR, noise, fn.sim[,1:2], lambda=lam)
 loglik( VRtrue[seq(1,401,length=41),], c(0.2,0.2,3), bestCovV, bestCovR, noise, fn.sim[,1:2], lambda=1)
 loglik( VRtrue[seq(1,401,length=41),], c(0.2,0.2,3), bestCovV, bestCovR, noise*2, fn.sim[,1:2], lambda=4)
+loglik( VRtrue[seq(1,401,length=41),], c(0.2,0.2,3), bestCovV, bestCovR, noise, fn.sim[,1:2], obswgt = 10000)
 
 loglik( VRtrue[seq(1,401,length=41),], c(0.2,0.2,3), bestCovV, bestCovR, sigHigh, fn.sim[,1:2], lambda=lam)
 
 ## loglik at degenerate case (zero curve)
 loglik(matrix(0,nrow=41,ncol=2),c(0,1,1),calCov(c(.1,10)), calCov(c(.1,10)), 0.25, fn.sim[,1:2], lambda=lam)
 loglik(matrix(0,nrow=41,ncol=2),c(0,1,1),calCov(c(.1,10)), calCov(c(.1,10)), sigHigh, fn.sim[,1:2], lambda=lam)
-loglik(matrix(0,nrow=41,ncol=2),c(0,1,1),calCov(c(.1,10)), calCov(c(.1,10)), noise, fn.sim[,1:2], lambda=lam)
+loglik(matrix(0,nrow=41,ncol=2),c(0,1,1),calCov(c(.1,10)), calCov(c(.1,10)), 1.2, fn.sim[,1:2], lambda=lam)
+loglik(matrix(0,nrow=41,ncol=2),c(0,1,1),calCov(c(.1,10)), calCov(c(.1,10)), 1.2, fn.sim[,1:2], obswgt = 100)
 
 ## Bounds on phi and sigma
-lower_b <- c( 0, 0, 0, 0, sigLow )
-upper_b <- c( Inf, Inf, Inf, 10, sigHigh)
+lower_b <- c( 0, 0, 0, 0, 0)
+upper_b <- c( Inf, Inf, Inf, 10, sigHigh / sqrt(temperature[1]))
 
 
 curCovV <- calCov(phisig[1,1:2])
 curCovR <- calCov(phisig[1,3:4])
 cursigma <- phisig[1,5]
-curllik <- xthU(th.all[1,], lambda = lam)
+curllik <- xthU(th.all[1,], lambda = lam, obswgt = obswgt)
 
 full_llik <- c()
 lliklist <- c()
 lliklist[1] <- curllik
-full_llik[1] <- loglik( cbind(th.all[1,1:41],th.all[1,42:82]), th.all[1,83:85], curCovV, curCovR, cursigma,  fn.sim[,1:2], lambda=lam)
+full_llik[1] <- loglik( cbind(th.all[1,1:41],th.all[1,42:82]), th.all[1,83:85], curCovV, curCovR, cursigma,  fn.sim[,1:2], lambda=lam, obswgt = obswgt)
 accepts <- 0
 paccepts <- 0
 #deltas <- c()
@@ -59,7 +62,7 @@ for (t in 2:n.iter) {
   
   # Update X and theta
   #foo <- basic_hmc(xthU, step=runif(1,0.004,0.008), nsteps= 20, initial=th.all[t-1,], return.traj = T)
-  xthU.tempered <- function(q, grad) xthU(q, grad, lambda=lam)
+  xthU.tempered <- function(q, grad) xthU(q, grad, lambda=lam, obswgt=obswgt)
   foo <- basic_hmc(xthU.tempered, step=runif(1,0.001,0.002), nsteps= 20, initial=th.all[t-1,], return.traj = T)
   lliklist[t] <- foo$lpr
   th.all[t,] <- foo$final
@@ -69,12 +72,12 @@ for (t in 2:n.iter) {
   # Update phi and sigma using random-walk M-H.
   oldCovV <- curCovV
   oldCovR <- curCovR
-  old_ll <- loglik( cbind(th.all[t,1:41], th.all[t,42:82]), th.all[t,83:85], oldCovV, oldCovR, phisig[t-1,5], fn.sim[,1:2], lambda=lam)
+  old_ll <- loglik( cbind(th.all[t,1:41], th.all[t,42:82]), th.all[t,83:85], oldCovV, oldCovR, phisig[t-1,5], fn.sim[,1:2], lambda=lam, obswgt = obswgt)
   ps_prop <- phisig[t-1,] + rnorm(5, 0, 0.05 * phisig[1,])
   if( min(ps_prop - lower_b) > 0 && min(upper_b - ps_prop) > 0) {  # check bounds
     propCovV <- calCov(ps_prop[1:2])
     propCovR <- calCov(ps_prop[3:4])
-    prop_ll <- loglik( cbind(th.all[t,1:41], th.all[t,42:82]), th.all[t,83:85], propCovV, propCovR, ps_prop[5], fn.sim[,1:2], lambda=lam)
+    prop_ll <- loglik( cbind(th.all[t,1:41], th.all[t,42:82]), th.all[t,83:85], propCovV, propCovR, ps_prop[5], fn.sim[,1:2], lambda=lam, obswgt = obswgt)
   } else {
     prop_ll <- -1e9  # reject if outside bounds
   }
@@ -89,12 +92,14 @@ for (t in 2:n.iter) {
     phisig[t,] <- phisig[t-1,]
   }
   
-  full_llik[t] <- loglik( cbind(th.all[t,1:41],th.all[t,42:82]), th.all[t,83:85], curCovV, curCovR, cursigma,  fn.sim[,1:2], lambda=lam)
+  full_llik[t] <- loglik( cbind(th.all[t,1:41],th.all[t,42:82]), th.all[t,83:85], curCovV, curCovR, cursigma,  fn.sim[,1:2], lambda=lam, obswgt = obswgt)
 }  
 
 ## Best sampled
 id.best <- which.max(full_llik)
-loglik( cbind(th.all[id.best,1:41],th.all[id.best,42:82]), th.all[id.best,83:85], calCov(phisig[id.best,1:2]),calCov(phisig[id.best,3:4]), phisig[id.best,5],  fn.sim[,1:2])
+loglik( cbind(th.all[id.best,1:41],th.all[id.best,42:82]), th.all[id.best,83:85], 
+        calCov(phisig[id.best,1:2]),calCov(phisig[id.best,3:4]), phisig[id.best,5],  
+        fn.sim[,1:2], lambda = lam, obswgt = obswgt)
 
 pdf(file=paste0("R-HMC-output-",noise,".pdf"))
 par(mfrow=c(2,2))
@@ -126,4 +131,4 @@ fn.true$time <- seq(0,20,0.05)
 fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtrue))
 fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
 
-plot.post.samples(paste0("../results/R-ode-",noise,"-.pdf"), fn.true, fn.sim, gpode, pram.true)
+plot.post.samples(paste0("../results/R-ode-",noise,"-obswgt-",obswgt,"-.pdf"), fn.true, fn.sim, gpode, pram.true)
