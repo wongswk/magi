@@ -249,6 +249,10 @@ summary.post.noODE <- function(filename, fn.true, fn.sim, gpfit, init){
   pdf(filename, width = 8, height = 8)
   layout(1)
   matplot(fn.true$time, data.matrix(fn.true[,c(1:2)]), type="l", lty=1, col=c(2,1), 
+          ylab="R & V", main="full posterior", ylim=range(c(fn.sim$Rtrue, fn.sim$Vtrue)))
+  points(fn.sim$time, fn.sim$Rtrue, col=1)
+  points(fn.sim$time, fn.sim$Vtrue, col=2)
+  matplot(fn.true$time, data.matrix(fn.true[,c(1:2)]), type="l", lty=1, col=c(2,1), 
           ylab="R & V", main="full posterior")
   points(fn.sim$time, fn.sim$Rtrue, col=1)
   points(fn.sim$time, fn.sim$Vtrue, col=2)
