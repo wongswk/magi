@@ -95,6 +95,26 @@ logliknoODE <- function(x, CovV, CovR, sigma, y)  {
   
 }
 
+library(mvtnorm)
+logliknoODE.mar <- function(CovV, CovR, sigma, y)  {
+  n <- nrow(y)
+  
+  #f <- fODE(theta, x)
+  res <- c(0,0)
+  
+  # V 
+  #CovV <- calCov(phi[1:2])
+  #fr <- (f[,1] - CovV$mphi %*% Vsm)
+  res[1] <- dmvnorm(y[,1], sigma = CovV$C+diag(sigma^2, nrow = n), log=TRUE)
+  # R
+  #CovR <- calCov(phi[3:4])
+  #fr <- (f[,2] - CovR$mphi %*% Rsm)
+  res[2] <- dmvnorm(y[,2], sigma = CovR$C+diag(sigma^2, nrow = n), log=TRUE)
+  ret <- sum(res)
+  attr(ret,"components") <- res
+  return(ret)
+}
+
 
 loglikVmis <- function(x, theta, CovV, CovR, sigma, y)  {
   a <- theta[1]
