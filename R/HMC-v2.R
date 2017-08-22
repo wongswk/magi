@@ -1,6 +1,6 @@
 ### Required variables
 ### - Run HMC-noODE.R first with chosen noise level to generate data and get preliminary GP fit
-### - fn.sim with 41 rows (noisy V and R in cols 1 & 2, using sigma = 0.1)
+### - fn.sim with nobs rows (noisy V and R in cols 1 & 2, using sigma = 0.1)
 ### - VRtrue with 401 rows (V and R true)
 
 source("visualization.R")
@@ -11,7 +11,7 @@ source("HMC-functions.R")
 temperature <- c(1,1,1)
 lam <- 1/temperature # tuning parameter for weight on GP level fitting component
 
-numparam <- 41*2+3  # num HMC parameters
+numparam <- nobs*2+3  # num HMC parameters
 phi.ind <- seq(500,nrow(gpfit_ss$vphi), length.out=100)  ## which phi/sigma to use from initial fit
 n.iter <- 500  # number of HMC iterations per phi
 th.all <- matrix(NA,length(phi.ind),numparam)  # X and theta
@@ -19,24 +19,24 @@ phisig <- matrix(NA,length(phi.ind),5)   # phi and sigma
 
 #th.all[1,] <-  c( startX, 1, 1, 1)
 #th.all[1,] <-  c( startX, .2, .2, 3)
-#th.all[1,] <- c( VRtrue[seq(1, 401, length = 41),1], VRtrue[seq(1, 401, length = 41),2], .2, .2, 3)
+#th.all[1,] <- c( VRtrue[seq(1, 401, length = nobs),1], VRtrue[seq(1, 401, length = nobs),2], .2, .2, 3)
 #phisig[1,] <- c( startphi, startsigma)
 #phisig[1,] <- c( apply(gpfit_ss$vphi,2,median), apply(gpfit_ss$rphi,2,median), 0.5)
 
 ##### Reference values (truth)
-ref.th <- c( VRtrue[seq(1, 401, length = 41),1], VRtrue[seq(1, 401, length = 41),2], .2, .2, 3)
+ref.th <- c( VRtrue[seq(1, 401, length = nobs),1], VRtrue[seq(1, 401, length = nobs),2], .2, .2, 3)
 bestCovV <- calCov( c(1.9840824, 1.1185157 ))
 bestCovR <- calCov( c( 0.9486433, 3.2682434) )
-loglik( VRtrue[seq(1,401,length=41),], c(0.2,0.2,3), bestCovV, bestCovR, noise, fn.sim[,1:2], lambda=lam)
-loglik( VRtrue[seq(1,401,length=41),], c(0.2,0.2,3), bestCovV, bestCovR, noise, fn.sim[,1:2], lambda=1)
-loglik( VRtrue[seq(1,401,length=41),], c(0.2,0.2,3), bestCovV, bestCovR, noise*2, fn.sim[,1:2], lambda=4)
+loglik( VRtrue[seq(1,401,length=nobs),], c(0.2,0.2,3), bestCovV, bestCovR, noise, fn.sim[,1:2], lambda=lam)
+loglik( VRtrue[seq(1,401,length=nobs),], c(0.2,0.2,3), bestCovV, bestCovR, noise, fn.sim[,1:2], lambda=1)
+loglik( VRtrue[seq(1,401,length=nobs),], c(0.2,0.2,3), bestCovV, bestCovR, noise*2, fn.sim[,1:2], lambda=4)
 
-loglik( VRtrue[seq(1,401,length=41),], c(0.2,0.2,3), bestCovV, bestCovR, sigHigh, fn.sim[,1:2], lambda=lam)
+loglik( VRtrue[seq(1,401,length=nobs),], c(0.2,0.2,3), bestCovV, bestCovR, sigHigh, fn.sim[,1:2], lambda=lam)
 
 ## loglik at degenerate case (zero curve)
-loglik(matrix(0,nrow=41,ncol=2),c(0,1,1),calCov(c(.1,10)), calCov(c(.1,10)), 0.25, fn.sim[,1:2], lambda=lam)
-loglik(matrix(0,nrow=41,ncol=2),c(0,1,1),calCov(c(.1,10)), calCov(c(.1,10)), sigHigh, fn.sim[,1:2], lambda=lam)
-loglik(matrix(0,nrow=41,ncol=2),c(0,1,1),calCov(c(.1,10)), calCov(c(.1,10)), noise, fn.sim[,1:2], lambda=lam)
+loglik(matrix(0,nrow=nobs,ncol=2),c(0,1,1),calCov(c(.1,10)), calCov(c(.1,10)), 0.25, fn.sim[,1:2], lambda=lam)
+loglik(matrix(0,nrow=nobs,ncol=2),c(0,1,1),calCov(c(.1,10)), calCov(c(.1,10)), sigHigh, fn.sim[,1:2], lambda=lam)
+loglik(matrix(0,nrow=nobs,ncol=2),c(0,1,1),calCov(c(.1,10)), calCov(c(.1,10)), noise, fn.sim[,1:2], lambda=lam)
 
 ## Bounds on phi and sigma
 #lower_b <- c( 0, 0, 0, 0, sigLow )
@@ -51,9 +51,9 @@ upper_b <- c( Inf, Inf, Inf, Inf, Inf)
 full_llik <- c()
 lliklist <- c()
 #lliklist[1] <- curllik
-#full_llik[1] <- loglik( cbind(th.all[1,1:41],th.all[1,42:82]), th.all[1,83:85], curCovV, curCovR, cursigma,  fn.sim[,1:2], lambda=lam)
+#full_llik[1] <- loglik( cbind(th.all[1,1:nobs],th.all[1,(nobs+1):(nobs*2)]), th.all[1,(nobs*2+1):(nobs*2+3)], curCovV, curCovR, cursigma,  fn.sim[,1:2], lambda=lam)
 
-#loglik( cbind(th.all[1,1:41],th.all[1,42:82]), th.all[1,83:85], curCovV, curCovR, cursigma,  fn.sim[,1:2], lambda=lam)
+#loglik( cbind(th.all[1,1:nobs],th.all[1,(nobs+1):(nobs*2)]), th.all[1,(nobs*2+1):(nobs*2+3)], curCovV, curCovR, cursigma,  fn.sim[,1:2], lambda=lam)
 #accepts <- 0
 #paccepts <- 0
 #deltas <- c()
@@ -66,7 +66,7 @@ for (w in 1:length(phi.ind)) {
   curCovR <- calCov(phisig[w,3:4])
   cursigma <- phisig[w,5]
   
-  stepLow <- 0.001
+  stepLow <- 0.0001
   th.temp <- matrix(NA, n.iter, numparam)
   th.temp[1,] <- c( gpfit_ss$vtrue[phi.ind[w],], gpfit_ss$rtrue[phi.ind[w],], 1, 1, 1)
 
@@ -98,8 +98,8 @@ for (w in 1:length(phi.ind)) {
     # # Update phi and sigma using random-walk M-H.
     # oldCovV <- curCovV
     # oldCovR <- curCovR
-    # old_ll <- loglik( cbind(th.all[t,1:41], th.all[t,42:82]), th.all[t,83:85], oldCovV, oldCovR, phisig[t-1,5], fn.sim[,1:2], lambda=lam) + logEB(oldCovV, oldCovR, phisig[t-1,5], fn.sim[,1:2])
-    # #old_ll <- loglik( cbind(th.all[t,1:41], th.all[t,42:82]), th.all[t,83:85], oldCovV, oldCovR, phisig[t-1,5], fn.sim[,1:2], lambda=lam) 
+    # old_ll <- loglik( cbind(th.all[t,1:nobs], th.all[t,(nobs+1):(nobs*2)]), th.all[t,(nobs*2+1):(nobs*2+3)], oldCovV, oldCovR, phisig[t-1,5], fn.sim[,1:2], lambda=lam) + logEB(oldCovV, oldCovR, phisig[t-1,5], fn.sim[,1:2])
+    # #old_ll <- loglik( cbind(th.all[t,1:nobs], th.all[t,(nobs+1):(nobs*2)]), th.all[t,(nobs*2+1):(nobs*2+3)], oldCovV, oldCovR, phisig[t-1,5], fn.sim[,1:2], lambda=lam) 
     # 
     # ps_prop <- phisig[t-1,] + rnorm(5, 0, 0.05 * phisig[1,])
     # #ps_prop <- phisig[t-1,] + rnorm(5, 0, c(rep(0.00,4),0.25) * phisig[1,])
@@ -109,8 +109,8 @@ for (w in 1:length(phi.ind)) {
     # if( min(ps_prop - lower_b) > 0 && min(upper_b - ps_prop) > 0) {  # check bounds
     #   propCovV <- calCov(ps_prop[1:2])
     #   propCovR <- calCov(ps_prop[3:4])
-    #   prop_ll <- loglik( cbind(th.all[t,1:41], th.all[t,42:82]), th.all[t,83:85], propCovV, propCovR, ps_prop[5], fn.sim[,1:2], lambda=lam) + logEB(propCovV, propCovR, ps_prop[5], fn.sim[,1:2])
-    #   #prop_ll <- loglik( cbind(th.all[t,1:41], th.all[t,42:82]), th.all[t,83:85], propCovV, propCovR, ps_prop[5], fn.sim[,1:2], lambda=lam)
+    #   prop_ll <- loglik( cbind(th.all[t,1:nobs], th.all[t,(nobs+1):(nobs*2)]), th.all[t,(nobs*2+1):(nobs*2+3)], propCovV, propCovR, ps_prop[5], fn.sim[,1:2], lambda=lam) + logEB(propCovV, propCovR, ps_prop[5], fn.sim[,1:2])
+    #   #prop_ll <- loglik( cbind(th.all[t,1:nobs], th.all[t,(nobs+1):(nobs*2)]), th.all[t,(nobs*2+1):(nobs*2+3)], propCovV, propCovR, ps_prop[5], fn.sim[,1:2], lambda=lam)
     # } else {
     #   prop_ll <- -1e9  # reject if outside bounds
     # }
@@ -125,18 +125,18 @@ for (w in 1:length(phi.ind)) {
     #   phisig[t,] <- phisig[t-1,]
     # }
     # 
-    #full_llik[t] <- loglik( cbind(th.all[t,1:41],th.all[t,42:82]), th.all[t,83:85], curCovV, curCovR, cursigma,  fn.sim[,1:2], lambda=lam)
+    #full_llik[t] <- loglik( cbind(th.all[t,1:nobs],th.all[t,(nobs+1):(nobs*2)]), th.all[t,(nobs*2+1):(nobs*2+3)], curCovV, curCovR, cursigma,  fn.sim[,1:2], lambda=lam)
   }
   
   th.all[w,] <- th.temp[t,]
-  full_llik[w] <- loglik( cbind(th.temp[t,1:41],th.temp[t,42:82]), th.temp[t,83:85], curCovV, curCovR, cursigma,  fn.sim[,1:2], lambda=lam)
+  full_llik[w] <- loglik( cbind(th.temp[t,1:nobs],th.temp[t,(nobs+1):(nobs*2)]), th.temp[t,(nobs*2+1):(nobs*2+3)], curCovV, curCovR, cursigma,  fn.sim[,1:2], lambda=lam)
   lliklist[w] <- foo$lpr
-  show(c(w, full_llik[w], accepts/t, th.all[w,83:85]))
+  show(c(w, full_llik[w], accepts/t, th.all[w,(nobs*2+1):(nobs*2+3)]))
 }
 
 ## Best sampled
 id.best <- which.max(full_llik)
-loglik( cbind(th.all[id.best,1:41],th.all[id.best,42:82]), th.all[id.best,83:85], calCov(phisig[id.best,1:2]),calCov(phisig[id.best,3:4]), phisig[id.best,5],  fn.sim[,1:2])
+loglik( cbind(th.all[id.best,1:nobs],th.all[id.best,(nobs+1):(nobs*2)]), th.all[id.best,(nobs*2+1):(nobs*2+3)], calCov(phisig[id.best,1:2]),calCov(phisig[id.best,3:4]), phisig[id.best,5],  fn.sim[,1:2])
 
 # pdf(file=paste0("R-HMC-output-",noise,".pdf"))
 # par(mfrow=c(2,2))
@@ -151,20 +151,15 @@ loglik( cbind(th.all[id.best,1:41],th.all[id.best,42:82]), th.all[id.best,83:85]
 # dev.off()
 
 
-gpode <- list(abc=th.all[,83:85],
+gpode <- list(abc=th.all[,(nobs*2+1):(nobs*2+3)],
               sigma=phisig[,5],
               rphi=phisig[,3:4],
               vphi=phisig[,1:2],
-              rtrue=th.all[,42:82],
-              vtrue=th.all[,1:41],
+              rtrue=th.all[,(nobs+1):(nobs*2)],
+              vtrue=th.all[,1:nobs],
               lp__=lliklist,
               lglik=full_llik)
 gpode$fode <- sapply(1:length(phi.ind), function(t) 
   with(gpode, fODE(abc[t,], cbind(vtrue[t,],rtrue[t,]))), simplify = "array")
-
-fn.true <- VRtrue
-fn.true$time <- seq(0,20,0.05)
-fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtrue))
-fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
 
 plot.post.samples(paste0("../results/R-ode-",noise,".pdf"), fn.true, fn.sim, gpode, pram.true)

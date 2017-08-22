@@ -1,12 +1,3 @@
-
-# Set up for 41 points
-tvec41 <- seq(0,20, by = 0.05*10)  
-foo <- outer(tvec41, t(tvec41),'-')[,1,]
-r <- abs(foo)
-r2 <- r^2
-signr <- -sign(foo)
-
-
 calCov <- function(phi) {
   C <- phi[1] * (1 + ((sqrt(5)*r)/phi[2]) + ((5*r2)/(3*phi[2]^2))) * exp((-sqrt(5)*r)/phi[2])
   Cprime  <- (signr)* (phi[1] * exp((-sqrt(5)*r)/phi[2])) * (((5*r)/(3*phi[2]^2)) + ((5*sqrt(5)*r2)/(3*phi[2]^3)))
@@ -180,7 +171,7 @@ xthetallikRmis <- function(x, theta, CovV, CovR, sigma, y, grad = F)  {
   
   if (min(theta) < 0) {
     ret <- -1e+9
-    attr(ret,"grad") <- rep(1e9, 85)
+    attr(ret,"grad") <- rep(1e9, (nobs*2+3))
     return(ret)
     
   }
@@ -225,7 +216,7 @@ xthetallikRmis <- function(x, theta, CovV, CovR, sigma, y, grad = F)  {
     RC2 <- 2 * t(cbind(Vtemp,Rtemp,aTemp,bTemp,cTemp)) %*% CovR$Kinv %*% frR
     
     C3 <- c(2 * CovV$Cinv %*% Vsm,  2 * CovR$Cinv %*% Rsm ,0,0,0)
-    C1 <- c( 2 * (Vsm - y[,1]) / sigma^2 ,  rep(0,41) ,0,0,0)
+    C1 <- c( 2 * (Vsm - y[,1]) / sigma^2 ,  rep(0,nobs) ,0,0,0)
     
     attr(ret,"grad") <- c((VC2 + RC2 + C3 + C1) * (-0.5))
   }
@@ -299,7 +290,7 @@ xthetallik <- function(x, theta, CovV, CovR, sigma, y, grad = F, lambda = 1)  {
   
   if (min(theta) < 0) {
     ret <- -1e+9
-    attr(ret,"grad") <- rep(1e9, 85)
+    attr(ret,"grad") <- rep(1e9, (nobs*2+3))
     return(ret)
     
   }
@@ -365,7 +356,7 @@ xthetallikVmis <- function(x, theta, CovV, CovR, sigma, y, grad = F)  {
   
   if (min(theta) < 0) {
     ret <- -1e+9
-    attr(ret,"grad") <- rep(1e9, 85)
+    attr(ret,"grad") <- rep(1e9, (nobs*2+3))
     return(ret)
     
   }
@@ -410,7 +401,7 @@ xthetallikVmis <- function(x, theta, CovV, CovR, sigma, y, grad = F)  {
     RC2 <- 2 * t(cbind(Vtemp,Rtemp,aTemp,bTemp,cTemp)) %*% CovR$Kinv %*% frR
     
     C3 <- c(2 * CovV$Cinv %*% Vsm,  2 * CovR$Cinv %*% Rsm ,0,0,0)
-    C1 <- c( rep(0,41),  2 * (Rsm - y[,2]) / sigma^2,0,0,0)
+    C1 <- c( rep(0,nobs),  2 * (Rsm - y[,2]) / sigma^2,0,0,0)
     
     attr(ret,"grad") <- c((VC2 + RC2 + C3 + C1) * (-0.5))
   }
@@ -422,29 +413,29 @@ xthetallikVmis <- function(x, theta, CovV, CovR, sigma, y, grad = F)  {
 
 
 xthU <- function(q, grad=FALSE, lambda=1) {
-  x <- cbind(q[1:41], q[42:82])
-  theta <- q[83:85]
+  x <- cbind(q[1:nobs], q[(nobs+1):(nobs*2)])
+  theta <- q[(nobs*2+1):(nobs*2+3)]
   
   #xthetallik(x,theta, c(1.9840824, 1.1185157, 0.9486433, 3.268243), 0.1, fn.sim[,1:2], grad)
   xthetallik(x,theta, curCovV, curCovR, cursigma, fn.sim[,1:2], grad, lambda)
 }
 
 xthUnoODE <- function(q, grad=FALSE) {
-  x <- cbind(q[1:41], q[42:82])
+  x <- cbind(q[1:nobs], q[(nobs+1):(nobs*2)])
   
   xthetalliknoODE(x, curCovV, curCovR, cursigma, fn.sim[,1:2], grad)
 }
 
 xthURmis <- function(q, grad=FALSE) {
-  x <- cbind(q[1:41], q[42:82])
-  theta <- q[83:85]
+  x <- cbind(q[1:nobs], q[(nobs+1):(nobs*2)])
+  theta <- q[(nobs*2+1):(nobs*2+3)]
   
   xthetallikRmis(x,theta, curCovV, curCovR, cursigma, fn.sim[,1:2], grad)
 }
 
 xthUVmis <- function(q, grad=FALSE) {
-  x <- cbind(q[1:41], q[42:82])
-  theta <- q[83:85]
+  x <- cbind(q[1:nobs], q[(nobs+1):(nobs*2)])
+  theta <- q[(nobs*2+1):(nobs*2+3)]
   
   xthetallikVmis(x,theta, curCovV, curCovR, cursigma, fn.sim[,1:2], grad)
 }
