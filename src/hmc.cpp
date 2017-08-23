@@ -38,7 +38,7 @@ struct hmcstate{
   lp lprfinal;
 };
 
-const std::default_random_engine randgen;
+std::default_random_engine randgen;
 std::uniform_real_distribution<double> unifdistr(0.0,1.0);
 
 //' basic_hmcC
@@ -72,11 +72,12 @@ hmcstate basic_hmcC(lp (*lpr)(vec), const vec & initial, vec step,
     trajq = new mat(zeros<mat>(nsteps+1,initial.size()));
     trajp = new mat(zeros<mat>(nsteps+1,initial.size()));
     trajH = new vec(zeros<vec>(nsteps+1));
-    cout << "trajq" << (*trajq)(1,1) << endl;
+    // cout << "trajq" << (*trajq)(1,1) << endl;
   }
   
   // Evaluate the log probability and gradient at the initial position
   lp lpx = (*lpr)(initial);
+  // cout << "Finish Evaluate the log probability and gradient at the initial position" << endl;
   
   // Compute the kinetic energy at the start of the trajectory
   vec initialp = randn<vec>(initial.size());
@@ -87,11 +88,12 @@ hmcstate basic_hmcC(lp (*lpr)(vec), const vec & initial, vec step,
   vec p = initialp;
   vec gr = lpx.gradient;
   if (traj){ 
-    (*trajq).row(0) = initial;
-    (*trajp).row(0) = initialp;
+    (*trajq).row(0) = initial.t();
+    (*trajp).row(0) = initialp.t();
     (*trajH)(0) = kineticinitial - lpx.value;
   } 
   double Hinitial = -lpx.value + kineticinitial;
+  // cout << "Finish Compute the trajectory by the leapfrog method" << endl;
   
   // Make a half step for momentum at the beginning
   p = p + ((step/2.0) % lpx.gradient);
@@ -106,8 +108,8 @@ hmcstate basic_hmcC(lp (*lpr)(vec), const vec & initial, vec step,
     
     // Record trajectory if asked to, with half-step for momentum.
     if (traj){ 
-      (*trajq).row(i+1) = q;
-      (*trajp).row(i+1) = p + (step/2.0) % gr;
+      (*trajq).row(i+1) = q.t();
+      (*trajp).row(i+1) = (p + (step/2.0) % gr).t();
       (*trajH)(i+1) = sum(square( (*trajp).row(i+1) ))/2.0 - lprq.value;
       
       if ((*trajH)(i+1) - Hinitial > 50.0) {
@@ -120,7 +122,7 @@ hmcstate basic_hmcC(lp (*lpr)(vec), const vec & initial, vec step,
       p = p + step % gr;
   }
   // Make a half step for momentum at the end.  
-  p = p + (step/2.0) * gr;
+  p = p + (step/2.0) % gr;
   
   // Negate momentum at end of trajectory to make the proposal symmetric.
   p = -p;
@@ -191,8 +193,8 @@ vec test(vec x, vec y){
 
 lp lpnormal(vec x){
   lp lpx;
-  lpx.value = sum(square(x))/2.0;
-  lpx.gradient = x;
+  lpx.value = -sum(square(x))/2.0;
+  lpx.gradient = -x;
   return lpx;
 }
 
