@@ -30,6 +30,17 @@ struct lp{
   vec gradient;
 };
 
+struct hmcstate{
+  vec final, finalp, step, trajH;
+  double lprvalue, apr, delta;
+  int acc;
+  mat trajq, trajp;
+  lp lprfinal;
+};
+
+const std::default_random_engine randgen;
+std::uniform_real_distribution<double> unifdistr(0.0,1.0);
+
 //' basic_hmcC
 //' 
 //' BASIC HAMILTONIAN MONTE CARLO UPDATE
@@ -39,16 +50,14 @@ struct lp{
 //'                  of the state, plus an arbitrary constant, with gradient
 //'                  as an attribute if grad=TRUE is passed.
 //' @param initial   The initial position part of the state (a vector).
-//' @param initialp  The initial momentum part of the state (a vector), default
-//'                  is to use momentum variables generated as standard normals.
 //' @param nsteps    Number of steps in trajectory used to propose a new state.
 //'                  (Default is 1, giving the "Langevin" method.)
 //' @param step      Stepsize or stepsizes.  May be scalar or a vector of length 
 //'                  equal to the dimensionality of the state.
 //' @param traj      TRUE if values of q and p along the trajectory should be 
 //'                  returned (default is FALSE).
-int basic_hmcC(lp (*lpr)(vec), const vec & initial, vec step,
-                int nsteps = 1, bool traj = false){
+hmcstate basic_hmcC(lp (*lpr)(vec), const vec & initial, vec step,
+               int nsteps = 1, bool traj = false){
   // Check and process the arguments
   if(step.size() != initial.size())
     throw "step and initial dimention note matched";
@@ -68,21 +77,102 @@ int basic_hmcC(lp (*lpr)(vec), const vec & initial, vec step,
   
   // Evaluate the log probability and gradient at the initial position
   lp lpx = (*lpr)(initial);
-  cout << lpx.value << lpx.gradient << endl;
   
+  // Compute the kinetic energy at the start of the trajectory
+  vec initialp = randn<vec>(initial.size());
+  double kineticinitial = sum(square(initialp)) / 2.0;
   
+  // Compute the trajectory by the leapfrog method
+  vec q = initial;
+  vec p = initialp;
+  vec gr = lpx.gradient;
+  if (traj){ 
+    (*trajq).row(0) = initial;
+    (*trajp).row(0) = initialp;
+    (*trajH)(0) = kineticinitial - lpx.value;
+  } 
+  double Hinitial = -lpx.value + kineticinitial;
+  
+  // Make a half step for momentum at the beginning
+  p = p + ((step/2.0) % lpx.gradient);
+  
+  // Alternate full steps for position and momentum.
+  lp lprq;
+  for( int i = 0; i < nsteps; i++){
+    // Make a full step for the position, and evaluate the gradient at the new position.
+    q = q + step % p;
+    lprq = lpr(q);
+    gr = lprq.gradient;
+    
+    // Record trajectory if asked to, with half-step for momentum.
+    if (traj){ 
+      (*trajq).row(i+1) = q;
+      (*trajp).row(i+1) = p + (step/2.0) % gr;
+      (*trajH)(i+1) = sum(square( (*trajp).row(i+1) ))/2.0 - lprq.value;
+      
+      if ((*trajH)(i+1) - Hinitial > 50.0) {
+        break;
+      }
+    }
+    
+    // Make a full step for the momentum, except when we're coming to the end of the trajectory.  
+    if (i != nsteps-1)
+      p = p + step % gr;
+  }
+  // Make a half step for momentum at the end.  
+  p = p + (step/2.0) * gr;
+  
+  // Negate momentum at end of trajectory to make the proposal symmetric.
+  p = -p;
+  
+  // Look at log probability and kinetic energy at the end of the trajectory.
+  double lprprop = lprq.value;
+  double kineticprop = sum(square(p)) / 2.0;
+  
+  // Accept or reject the state at the end of the trajectory.
+  double Hprop = -lprprop + kineticprop;
+  double delta = Hprop - Hinitial;
+  double apr = std::min(1.0,  std::exp(-delta));
+  
+  // default REJECT 
+  vec finalq = initial;
+  vec finalp = initialp;
+  double lprfinal = lpx.value;
+  int acc = 0;
+  
+  if (double(unifdistr(randgen)) < apr) { // ACCEPT
+    finalq = q;
+    finalp = p;
+    lprfinal = lprq.value;
+    acc = 1;
+  }
+  
+  // Return new state, its log probability and gradient, plus additional
+  // information, including the trajectory, if requested.
+  
+  hmcstate ret;
+  ret.final = finalq;
+  ret.finalp = finalp;
+  ret.lprvalue = lprfinal;
+  ret.step = step;
+  ret.apr = apr;
+  ret.acc = acc;
+  ret.delta = delta;
+  
+  if (traj) { 
+    ret.trajq = (*trajq);
+    ret.trajp = (*trajp);
+    ret.trajH = (*trajH);
+  }
+  
+  // clean up and return;
   delete trajq;
   delete trajp;
   delete trajH;
-  return 0;
+  
+  return ret;
 }
 
-
-//' R wrapper for basic_hmcC
-// [[Rcpp::export]]
-vec hmc(const arma::mat &MgrPos, const arma::cube &OppPos, const arma::mat &ConstitRet){
-  return randu<vec>(4);
-}
 
 // [[Rcpp::export]]
 vec GetMod(vec x, int n){
@@ -99,17 +189,24 @@ vec test(vec x, vec y){
   return x % y;
 }
 
-lp lpr(vec x){
-  double v = 5.0;
-  vec g = zeros<vec>(5);
+lp lpnormal(vec x){
   lp lpx;
-  lpx.value = v;
-  lpx.gradient = g;
+  lpx.value = sum(square(x))/2.0;
+  lpx.gradient = x;
   return lpx;
 }
 
+//' R wrapper for basic_hmcC
 // [[Rcpp::export]]
-int test2(const vec & initial, vec step,
+Rcpp::List hmc(const vec & initial, vec step,
           int nsteps = 1, bool traj = false){
-  return basic_hmcC(lpr, initial, step, nsteps, traj);
+  hmcstate post = basic_hmcC(lpnormal, initial, step, nsteps, traj);
+  
+  return List::create(Named("final")=post.final,
+                      Named("final.p")=post.finalp,
+                      Named("lpr")=post.lprvalue,
+                      Named("step")=post.step,
+                      Named("apr")=post.apr,
+                      Named("acc")=post.acc,
+                      Named("delta")=post.delta);
 }
