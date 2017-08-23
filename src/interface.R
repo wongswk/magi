@@ -1,3 +1,11 @@
+setwd("src")
 library(Rcpp)
 sourceCpp("hmc.cpp")
 main()
+GetMod(1:6, 3)
+test(1:4,4:1)
+1:4*(4:1)
+1:4*(2)
+test(1:4,2)
+
+test2(1:4, rep(1,4), 1, TRUE)
