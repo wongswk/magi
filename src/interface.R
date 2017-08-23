@@ -2,11 +2,6 @@ setwd("src")
 library(Rcpp)
 sourceCpp("hmc.cpp")
 main()
-GetMod(1:6, 3)
-test(1:4,4:1)
-1:4*(4:1)
-1:4*(2)
-test(1:4,2)
 
 out.all.c <- matrix(nrow=1e5, ncol=4)
 out.all.c[1,] <- 1:4

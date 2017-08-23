@@ -14,17 +14,6 @@ using namespace std;
 using namespace arma;
 using namespace Rcpp;
 
-// [[Rcpp::export]]
-int main()
-{
-  mat A = randu<mat>(4,5);
-  mat B = randu<mat>(4,5);
-  
-  cout << A*B.t() << endl;
-  
-  return 0;
-}
-
 struct lp{
   double value;
   vec gradient;
@@ -175,22 +164,6 @@ hmcstate basic_hmcC(lp (*lpr)(vec), const vec & initial, vec step,
   return ret;
 }
 
-
-// [[Rcpp::export]]
-vec GetMod(vec x, int n){
-  vec mod(x.size());
-  for(int i=0; i<x.size(); ++i){
-    int num = x(i);
-    mod(i) = num % n;
-  }
-  return mod;
-}
-
-// [[Rcpp::export]]
-vec test(vec x, vec y){
-  return x % y;
-}
-
 lp lpnormal(vec x){
   lp lpx;
   lpx.value = -sum(square(x))/2.0;
@@ -211,4 +184,18 @@ Rcpp::List hmc(const vec & initial, vec step,
                       Named("apr")=post.apr,
                       Named("acc")=post.acc,
                       Named("delta")=post.delta);
+}
+
+// [[Rcpp::export]]
+int main(){
+  vec initial = zeros<vec>(4);
+  vec step(4);
+  step.fill(0.05);
+  int nsteps = 20;
+  bool traj = true;
+  hmcstate post = basic_hmcC(lpnormal, initial, step, nsteps, traj);
+  // for(int i; i < post.final.size(); i++)
+  //   cout << post.final(i) << endl;
+  cout << post.final << endl;
+  return 0;
 }
