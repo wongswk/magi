@@ -1,31 +1,4 @@
-// #include <Rcpp.h>
-// using namespace Rcpp;
-
-#include <cmath>
-#include <random>
-#include <vector>
-#include <iostream>
-#include <stdio.h>
-#include <armadillo>
-// [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>
-
-using namespace std;
-using namespace arma;
-using namespace Rcpp;
-
-struct lp{
-  double value;
-  vec gradient;
-};
-
-struct hmcstate{
-  vec final, finalp, step, trajH;
-  double lprvalue, apr, delta;
-  int acc;
-  mat trajq, trajp;
-  lp lprfinal;
-};
+#include "hmc.h"
 
 std::default_random_engine randgen;
 std::uniform_real_distribution<double> unifdistr(0.0,1.0);
@@ -171,21 +144,6 @@ lp lpnormal(vec x){
   return lpx;
 }
 
-//' R wrapper for basic_hmcC
-// [[Rcpp::export]]
-Rcpp::List hmc(const vec & initial, vec step,
-          int nsteps = 1, bool traj = false){
-  hmcstate post = basic_hmcC(lpnormal, initial, step, nsteps, traj);
-  
-  return List::create(Named("final")=post.final,
-                      Named("final.p")=post.finalp,
-                      Named("lpr")=post.lprvalue,
-                      Named("step")=post.step,
-                      Named("apr")=post.apr,
-                      Named("acc")=post.acc,
-                      Named("delta")=post.delta);
-}
-
 // [[Rcpp::export]]
 int main(){
   vec initial = zeros<vec>(4);
@@ -199,3 +157,4 @@ int main(){
   cout << post.final << endl;
   return 0;
 }
+

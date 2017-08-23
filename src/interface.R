@@ -1,6 +1,6 @@
 setwd("src")
 library(Rcpp)
-sourceCpp("hmc.cpp")
+sourceCpp("wrapper.cpp")
 main()
 
 out.all.c <- matrix(nrow=1e5, ncol=4)
@@ -21,3 +21,4 @@ plot.function(dnorm, from=-4,to=4,col=2,add=T)
 
 hist(out.all.c[,1], breaks=100, probability = T)
 plot.function(dnorm, from=-4,to=4,col=2,add=T)
+
