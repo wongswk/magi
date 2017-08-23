@@ -3,10 +3,10 @@
 ### - fn.sim with nobs rows (noisy V and R in cols 1 & 2, using sigma = 0.1)
 ### - VRtrue with 401 rows (V and R true)
 
-source("visualization.R")
-source("helper/utilities.r")
-source("helper/basic_hmc.R")
-source("HMC-functions.R")
+source("../R/visualization.R")
+source("../R/helper/utilities.r")
+source("../R/helper/basic_hmc.R")
+source("../R/HMC-functions.R")
 
 load("../data/ody.RData")
 args <- commandArgs(trailingOnly = TRUE)
