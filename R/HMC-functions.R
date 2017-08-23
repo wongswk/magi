@@ -9,8 +9,11 @@ calCov <- function(phi) {
   mphi <-  Cprime %*% Cinv
   Kphi <- Cdoubleprime - (Cprime %*% Cinv %*% t(Cprime))  + 1e-7 * diag( nrow(r))
   Kinv <- solve(Kphi)
-  
-  return(list(C = C, Cinv = Cinv, mphi = mphi, Kphi = Kphi, Kinv = Kinv))
+  dCdphi <- list(
+    C/phi[1],
+    phi[1] * ( - ((sqrt(5)*r)/phi[2]^2) - ((10*r2)/(3*phi[2]^3))) * exp((-sqrt(5)*r)/phi[2]) + C * (sqrt(5)*r)/phi[2]^2
+  )
+  return(list(C = C, Cinv = Cinv, mphi = mphi, Kphi = Kphi, Kinv = Kinv, dCdphi = dCdphi))
 }
 
 
@@ -458,4 +461,48 @@ xthUVmis <- function(q, grad=FALSE) {
   theta <- q[(nobs*2+1):(nobs*2+3)]
   
   xthetallikVmis(x,theta, curCovV, curCovR, cursigma, fn.sim[,1:2], grad)
+}
+
+phisigllik <- function(phisig, y, grad = F){
+  n <- nrow(y)
+  sigma <- phisig[5]
+  res <- c(0,0)
+  
+  # V 
+  CovV <- calCov(phisig[1:2])
+  Kv <- CovV$C+diag(sigma^2, nrow = n)
+  Kv.l <- t(chol(Kv))
+  Kv.l.inv <- solve(Kv.l)
+  veta <- Kv.l.inv %*% y[,1]
+  res[1] <- -n/2*log(2*pi) - sum(log(diag(Kv.l))) - 0.5*sum(veta^2)
+  # R
+  CovR <- calCov(phisig[3:4])
+  Kr <- CovR$C+diag(sigma^2, nrow = n)
+  Kr.l <- t(chol(Kr))
+  Kr.l.inv <- solve(Kr.l)
+  reta <- Kr.l.inv %*% y[,2]
+  res[2] <- -n/2*log(2*pi) - sum(log(diag(Kr.l))) - 0.5*sum(reta^2)
+  ret <- sum(res)
+  attr(ret,"components") <- res
+  
+  if(grad) {
+    # V contrib
+    Kv.inv <- t(Kv.l.inv)%*%Kv.l.inv
+    alphaV <- t(Kv.l.inv)%*%veta
+    facVtemp <- alphaV%*%t(alphaV) - Kv.inv
+    dVdsig <- sigma*sum(diag(facVtemp))
+    dVdphi1 <- sum(facVtemp*CovV$dCdphi[[1]])/2
+    dVdphi2 <- sum(facVtemp*CovV$dCdphi[[2]])/2
+    
+    # R contrib
+    Kr.inv <- t(Kr.l.inv)%*%Kr.l.inv
+    alphaR <- t(Kr.l.inv)%*%reta
+    facRtemp <- alphaR%*%t(alphaR) - Kr.inv
+    dRdsig <- sigma*sum(diag(facRtemp))
+    dRdphi1 <- sum(facRtemp*CovR$dCdphi[[1]])/2
+    dRdphi2 <- sum(facRtemp*CovR$dCdphi[[2]])/2
+    
+    attr(ret,"grad") <- c(dVdphi1, dVdphi2, dRdphi1, dRdphi2, dVdsig+dRdsig)
+  }
+  return(ret)
 }
