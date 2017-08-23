@@ -61,7 +61,7 @@ lliklist <- c()
 #paccepts <- 0
 #deltas <- c()
 
-w <- args
+w <- as.numeric(args)
 
 phisig[w,] <- c( gpfit_ss$vphi[phi.ind[w],], gpfit_ss$rphi[phi.ind[w],], gpfit_ss$sigma[phi.ind[w]])
 
@@ -77,7 +77,7 @@ accepts <- 0
 
 for (t in 2:n.iter) {
   
-  # if (t %% 10 == 0) { show(c(t, full_llik[t-1], accepts/t, paccepts/t, stepLow)) }
+  if (t %% 10 == 0) { show(c(t, full_llik[t-1], accepts/t, paccepts/t, stepLow)) }
   
   # Update X and theta
   #foo <- basic_hmc(xthU, step=runif(1,0.004,0.008), nsteps= 20, initial=th.all[t-1,], return.traj = T)
@@ -101,7 +101,7 @@ for (t in 2:n.iter) {
 th.all[w,] <- th.temp[t,]
 full_llik[w] <- loglik( cbind(th.temp[t,1:nobs],th.temp[t,(nobs+1):(nobs*2)]), th.temp[t,(nobs*2+1):(nobs*2+3)], curCovV, curCovR, cursigma,  fn.sim[,1:2], lambda=lam)
 lliklist[w] <- foo$lpr
-# show(c(w, full_llik[w], accepts/t, th.all[w,(nobs*2+1):(nobs*2+3)]))
+show(c(w, full_llik[w], accepts/t, th.all[w,(nobs*2+1):(nobs*2+3)]))
 ret <- list(th.all[w,], full_llik[w], lliklist[w])
 saveRDS(ret, paste0("/n/regal/kou_lab/shihaoyang/dynamic_sys/DynamicSystem", w, ".rds"))
 
