@@ -18,7 +18,7 @@ std::uniform_real_distribution<double> unifdistr(0.0,1.0);
 //'                  equal to the dimensionality of the state.
 //' @param traj      TRUE if values of q and p along the trajectory should be 
 //'                  returned (default is FALSE).
-hmcstate basic_hmcC(lp (*lpr)(vec), const vec & initial, vec step,
+hmcstate basic_hmcC(std::function<lp (vec)> lpr, const vec & initial, vec step,
                int nsteps = 1, bool traj = false){
   // Check and process the arguments
   if(step.size() != initial.size())
@@ -38,7 +38,7 @@ hmcstate basic_hmcC(lp (*lpr)(vec), const vec & initial, vec step,
   }
   
   // Evaluate the log probability and gradient at the initial position
-  lp lpx = (*lpr)(initial);
+  lp lpx = lpr(initial);
   // cout << "Finish Evaluate the log probability and gradient at the initial position" << endl;
   
   // Compute the kinetic energy at the start of the trajectory

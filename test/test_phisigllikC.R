@@ -46,3 +46,6 @@ bestCovR <- calCov( c( 0.9486433, 3.2682434) )
 logliknoODE.mar( bestCovV, bestCovR, noise, fn.sim[,1:2])
 phisigllikTest( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), data.matrix(fn.sim[,1:2]), r)
 phisigllik( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), fn.sim[,1:2], TRUE)
+
+phisigSample(data.matrix(fn.sim[,1:2]), r, c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise),
+             rep(0.1,5), 20, T)

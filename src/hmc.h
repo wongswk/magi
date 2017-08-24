@@ -24,7 +24,7 @@ struct hmcstate{
   lp lprfinal;
 };
 
-hmcstate basic_hmcC(lp (*lpr)(vec), const vec &, vec, int, bool);
+hmcstate basic_hmcC(std::function<lp (vec)>, const vec &, vec, int, bool);
 int main();
 lp lpnormal(vec);
 

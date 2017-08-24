@@ -11,6 +11,7 @@ gpcov maternCov( vec phi, mat dist, int complexity = 0){
   mat dist2 = square(dist);
   out.C = phi(0) * (1.0 + ((sqrt(5.0)*dist)/phi(1)) + 
     ((5.0*dist2)/(3.0*pow(phi(1),2)))) % exp((-sqrt(5.0)*dist)/phi(1));
+  out.C.diag() += 1e-7;
   // cout << out.C << endl;
   if (complexity == 0) return out;
   
