@@ -1,24 +1,12 @@
-#include <cmath>
-#include <random>
-#include <vector>
-#include <iostream>
-#include <stdio.h>
-#include <armadillo>
-#include "hmc.h"
+#include "tgtdistr.h"
 
-using namespace std;
-using namespace arma;
-
-struct gpcov {
-  mat C, Cinv, Kphi, Kinv, dCdphi1, dCdphi2;
-};
 
 //' matern variance covariance matrix with derivatives
 //' 
 //' @param phi         the parameter of (sigma_c_sq, alpha)
 //' @param dist        distance matrix
 //' @param complexity  how much derivative information should be calculated
-gpcov maternCov(vec phi, mat dist, int complexity = 0){
+gpcov maternCov( vec phi, mat dist, int complexity = 0){
   gpcov out;
   mat dist2 = square(dist);
   out.C = phi(0) * (1.0 + ((sqrt(5.0)*dist)/phi(1)) + 
@@ -40,7 +28,7 @@ gpcov maternCov(vec phi, mat dist, int complexity = 0){
 //' 
 //' @param phisig      the parameter phi and sigma
 //' @param yobs        observed data
-lp phisigllik (vec phisig, mat yobs, mat dist){
+lp phisigllik( vec phisig, mat yobs, mat dist){
   int n = yobs.n_rows;
   double sigma = phisig(4);
   vec res(2);
@@ -89,7 +77,8 @@ lp phisigllik (vec phisig, mat yobs, mat dist){
   ret.gradient(3) = dRdphi2;
   ret.gradient(4) = dVdsig+dRdsig;
   
+  cout << ret.value << endl << ret.gradient;
+  
   return ret;
 }
-  
   
