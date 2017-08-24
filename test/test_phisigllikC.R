@@ -59,3 +59,9 @@ xc$grad - attr(xr, "grad")
 
 phisigSample(data.matrix(fn.sim[,1:2]), r, c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise),
              rep(0.03,5), 20, F)
+
+
+xthetaSample(data.matrix(fn.sim[,1:2]), bestCovV, bestCovR, noise, 
+             rep(1, nobs*2+3), rep(0.03,nobs*2+3), 1, T)
+
+xthetallik(matrix(1, nrow=nobs, ncol=2), rep(1,3), bestCovV, bestCovR, noise, data.matrix(fn.sim[,1:2]), grad = T)

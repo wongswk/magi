@@ -10,6 +10,7 @@ source("HMC-functions.R")
 
 temperature <- c(1,1,1)
 lam <- 1/temperature # tuning parameter for weight on GP level fitting component
+if(!exists("gpfit_ss")) gpfit_ss <- gpfit
 
 numparam <- nobs*2+3  # num HMC parameters
 phi.ind <- seq(500,nrow(gpfit_ss$vphi), length.out=100)  ## which phi/sigma to use from initial fit
@@ -80,7 +81,11 @@ for (w in 1:length(phi.ind)) {
     #foo <- basic_hmc(xthU, step=runif(1,0.004,0.008), nsteps= 20, initial=th.all[t-1,], return.traj = T)
     xthU.tempered <- function(q, grad) xthU(q, grad, lambda=lam)
     #foo <- basic_hmc(xthU.tempered, step=runif(1,0.001,0.002), nsteps= 20, initial=th.all[t-1,], return.traj = T)
-    foo <- basic_hmc(xthU.tempered, step=runif(1,stepLow,2*stepLow), nsteps= 20, initial=th.temp[t-1,], return.traj = T)
+    # foo <- basic_hmc(xthU.tempered, step=runif(1,stepLow,2*stepLow), nsteps= 20, initial=th.temp[t-1,], return.traj = T)
+    foo <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
+                        th.temp[t-1,], rep(runif(1,stepLow,2*stepLow),ncol(th.temp)), 20, T)
+    
+    
     #slliklist[t] <- foo$lpr
     th.temp[t,] <- foo$final
     #deltas[t] <- foo$delta
@@ -166,3 +171,52 @@ fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtru
 fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
 
 plot.post.samples(paste0("../results/R-ode-",noise,".pdf"), fn.true, fn.sim, gpode, pram.true)
+
+
+#### fixing phi sigma at marginal likelihood ####
+phisigllikTest( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), data.matrix(fn.sim[,1:2]), r)
+fn <- function(par) -phisigllikTest( par, data.matrix(fn.sim[,1:2]), r)$value
+gr <- function(par) -as.vector(phisigllikTest( par, data.matrix(fn.sim[,1:2]), r)$grad)
+marlikmap <- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0)
+marlikmap$par
+
+curCovV <- calCov(marlikmap$par[1:2])
+curCovR <- calCov(marlikmap$par[3:4])
+cursigma <- marlikmap$par[5]
+
+n.iter <- 3000
+stepLow <- c(rep(0.0001, nobs*2), rep(0.0001,3))
+th.temp <- matrix(NA, n.iter, numparam)
+th.temp[1,] <- c( colMeans(gpfit_ss$vtrue), colMeans(gpfit_ss$rtrue), 1, 1, 1)
+
+accepts <- 0  
+
+for (t in 2:n.iter) {
+  foo <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
+                      th.temp[t-1,], stepLow, 20, T)
+  th.temp[t,] <- foo$final
+  accepts <- accepts + foo$acc
+  if (t < n.iter/2) {
+    if (accepts/t > 0.8) {
+      stepLow <- stepLow * 1.01
+    }
+    if (accepts/t < 0.5) {
+      stepLow <- stepLow * .99
+    }
+  }
+  if( t %% 100 == 0) show(c(t, accepts/t, foo$final[(nobs*2+1):(nobs*2+3)]))
+}
+
+
+
+burnin <- 500
+pdf(file=paste0("../results/C-HMC-output-",noise,".pdf"))
+par(mfrow=c(2,2))
+hist(th.temp[-(1:burnin),nobs*2+1], main="a")
+abline(v = 0.2, lwd=2, col="blue")
+hist(th.temp[-(1:burnin),nobs*2+2], main="b")
+abline(v = 0.2, lwd=2, col="blue")
+hist(th.temp[-(1:burnin),nobs*2+3], main="c")
+abline(v = 3, lwd=2, col="blue")
+dev.off()
+

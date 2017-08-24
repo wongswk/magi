@@ -59,13 +59,63 @@ Rcpp::List phisigSample( mat yobs, mat dist, const vec & initial, vec step,
                              std::vector<double>({0.0}), 
                              std::vector<double>({datum::inf}), 
                              nsteps, traj);
-  lp ret = tgt(initial);
-  return List::create(Named("final")=post.final,
-                      Named("final.p")=post.finalp,
-                      Named("lpr")=post.lprvalue,
-                      Named("step")=post.step,
-                      Named("apr")=post.apr,
-                      Named("acc")=post.acc,
-                      Named("delta")=post.delta);
+  
+  Rcpp::List ret = List::create(Named("final")=post.final,
+                                Named("final.p")=post.finalp,
+                                Named("lpr")=post.lprvalue,
+                                Named("step")=post.step,
+                                Named("apr")=post.apr,
+                                Named("acc")=post.acc,
+                                Named("delta")=post.delta);
+  if(traj){
+    ret.push_back(post.trajp, "traj.p");
+    ret.push_back(post.trajq, "traj.q");
+    ret.push_back(post.trajH, "traj.H");
+  }
+  return ret;
 }
+
+gpcov cov_r2cpp(List cov_r){
+  gpcov cov_v;
+  cov_v.C = as<mat>(cov_r["C"]);
+  cov_v.Cinv = as<mat>(cov_r["Cinv"]);
+  cov_v.mphi = as<mat>(cov_r["mphi"]);
+  cov_v.Kphi = as<mat>(cov_r["Kphi"]);
+  cov_v.Kinv = as<mat>(cov_r["Kinv"]);
+  return cov_v;
+}
+
+//' sample from GP ODE for latent x and theta
+// [[Rcpp::export]]
+Rcpp::List xthetaSample( mat yobs, List covVr, List covRr, double sigma, const vec & initial, vec step,
+                         int nsteps = 1, bool traj = false){
+  gpcov covV = cov_r2cpp(covVr);
+  gpcov covR = cov_r2cpp(covRr);
+  std::function<lp(vec)> tgt = std::bind(xthetallik, std::placeholders::_1, 
+                   covV, covR, sigma, yobs, fnmodelODE);
+  vec lb = ones<vec>(initial.size()) * (-datum::inf);
+  lb.subvec(lb.size() - 3, lb.size() - 1).fill(0.0);
+  
+  // cout << lb << endl;
+  
+  // lp tmp = tgt(initial);
+  // cout << tmp.value << "\n" << tmp.gradient << endl;
+  
+  hmcstate post = basic_hmcC(tgt, initial, step, lb, {datum::inf}, nsteps, traj);
+  
+  Rcpp::List ret = List::create(Named("final")=post.final,
+                                Named("final.p")=post.finalp,
+                                Named("lpr")=post.lprvalue,
+                                Named("step")=post.step,
+                                Named("apr")=post.apr,
+                                Named("acc")=post.acc,
+                                Named("delta")=post.delta);
+  if(traj){
+    ret.push_back(post.trajp, "traj.p");
+    ret.push_back(post.trajq, "traj.q");
+    ret.push_back(post.trajH, "traj.H");
+  }
+  return ret;
+}
+
 

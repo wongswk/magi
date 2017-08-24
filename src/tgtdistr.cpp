@@ -82,4 +82,91 @@ lp phisigllik( vec phisig, mat yobs, mat dist){
   
   return ret;
 }
+
+//' log likelihood for latent states and ODE theta conditional on phi sigma
+//' 
+//' @param phisig      the parameter phi and sigma
+//' @param yobs        observed data
+lp xthetallik( vec xtheta, gpcov CovV, gpcov CovR, double sigma, mat yobs, 
+               std::function<mat (vec, mat)> fODE) {
+  vec xlatent = xtheta.subvec(0, xtheta.size() - 4);
+  vec theta = xtheta.subvec(xtheta.size() - 3, xtheta.size() - 1);
+  lp ret;
   
+  if (min(theta) < 0) {
+    ret.value = -1e+9;
+    ret.gradient = zeros<vec>(xlatent.size());
+    ret.gradient.subvec(xtheta.size() - 3, xtheta.size() - 1).fill(1e9);
+    return ret;
+  }
+  
+  vec Vsm = xlatent.subvec(0, xlatent.size()/2 - 1);
+  vec Rsm = xlatent.subvec(xlatent.size()/2, xlatent.size() - 1);
+  int n = xlatent.size()/2;
+  
+  mat fderiv = fODE(theta, join_horiz(Vsm, Rsm));
+  mat res(2,3);
+  
+  // V 
+  vec frV = (fderiv.col(0) - CovV.mphi * Vsm);
+  res(0,0) = -0.5 * sum(square( Vsm - yobs.col(0) )) / pow(sigma,2);
+  res(0,1) = -0.5 * as_scalar( frV.t() * CovV.Kinv * frV);
+  res(0,2) = -0.5 * as_scalar( Vsm.t() * CovV.Cinv * Vsm);
+  // R
+  vec frR = (fderiv.col(1) - CovR.mphi * Rsm);
+  res(1,0) = -0.5 * sum(square( Rsm - yobs.col(1) )) / pow(sigma,2);
+  res(1,1) = -0.5 * as_scalar( frR.t() * CovR.Kinv * frR);
+  res(1,2) = -0.5 * as_scalar( Rsm.t() * CovR.Cinv * Rsm);
+  
+  // cout << "lglik component = \n" << res << endl;
+  
+  ret.value = accu(res);
+  
+  // cout << "lglik = " << ret.value << endl;
+  
+  // gradient 
+  // V contrib
+  mat Vtemp = eye<mat>(n, n);
+  Vtemp.diag() = theta(2)*(1 - square(Vsm));
+  Vtemp = Vtemp - CovV.mphi;
+  mat Rtemp = eye<mat>(n, n)*theta(2);
+  vec aTemp = zeros<vec>(n); 
+  vec bTemp = zeros<vec>(n); 
+  vec cTemp = fderiv.col(0) / theta(2);
+  mat VC2 = join_horiz(join_horiz(join_horiz(join_horiz(Vtemp,Rtemp),aTemp),bTemp),cTemp);
+  VC2 = 2.0 * VC2.t() * CovV.Kinv * frV;
+  
+  // cout << "VC2 = \n" << VC2 << endl;
+  
+  // R contrib
+  Vtemp = eye<mat>(n, n) * -1.0/theta(2);
+  Rtemp = eye<mat>(n, n) * -1.0*theta(1)/theta(2) - CovR.mphi;
+  aTemp = ones<vec>(n) / theta(2);
+  bTemp = -Rsm/theta(2);
+  cTemp = -fderiv.col(1) / theta(2);
+  mat RC2 = join_horiz(join_horiz(join_horiz(join_horiz(Vtemp,Rtemp),aTemp),bTemp),cTemp);
+  RC2 = 2.0 * RC2.t() * CovR.Kinv * frR;
+  
+  // cout << "RC2 = \n" << RC2 << endl;
+  
+  vec C3 = join_vert(join_vert( 2.0 * CovV.Cinv * Vsm,  
+                                2.0 * CovR.Cinv * Rsm ), 
+                                zeros<vec>(theta.size()));
+  vec C1 = join_vert(join_vert( 2.0 * (Vsm - yobs.col(0)) / pow(sigma,2) ,  
+                                2.0 * (Rsm - yobs.col(1)) / pow(sigma,2) ),
+                                zeros<vec>(theta.size()));
+      
+  ret.gradient = ((VC2 + RC2)  + C3 + C1 ) * -0.5;
+  
+  return ret;
+}
+
+mat fnmodelODE(vec theta, mat x) {
+  vec V = x.col(0);
+  vec R = x.col(1);
+  
+  vec Vdt = theta(2) * (V - pow(V,3) / 3.0 + R);
+  vec Rdt = -1.0/theta(2) * ( V - theta(0) + theta(1) * R);
+  
+  return join_horiz(Vdt, Rdt);
+}

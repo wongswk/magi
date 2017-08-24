@@ -66,7 +66,7 @@ yobs <- data.matrix(fn.sim[,1:2])
 phisigU <- function(phisigval, grad = F) phisigllik(phisigval, y = yobs, grad = grad)  
 
 stepLow <- 0.01
-
+st <- Sys.time()
 gpmcmc <- mclapply(1:8, function(dummy.chain){
   
   for (t in 2:n.iter) {
@@ -89,6 +89,8 @@ gpmcmc <- mclapply(1:8, function(dummy.chain){
     phisig=phisig
   ))
 }, mc.cores = 8)
+ed <- Sys.time()
+print(ed - st)
 
 burnin <- 200
 full_llik <- do.call(c,lapply(gpmcmc, function(x) x$full_llik[-(1:burnin)]))
@@ -136,7 +138,7 @@ gpfit$rtrue <- getMeanCurve(fn.sim$time, fn.sim$Rtrue, fn.sim$time,
 
 startX <- colMeans(cbind(gpfit$vtrue, gpfit$rtrue))
 
-post.noODE <- summary.post.noODE(paste0("../results/R-GPfit-",noise,".pdf"), fn.true, fn.sim, gpfit, pram.true)
+post.noODE <- summary.post.noODE(paste0("../results/C-GPfit-",noise,".pdf"), fn.true, fn.sim, gpfit, pram.true)
 
 post.noODE$init.epost
 
