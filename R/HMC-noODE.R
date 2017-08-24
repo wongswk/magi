@@ -74,7 +74,7 @@ gpmcmc <- mclapply(1:8, function(dummy.chain){
     # if (t %% 10 == 0) { cat(c(t, full_llik[t-1], accepts/t), "\n") }
 
     foo <- phisigSample(data.matrix(fn.sim[,1:2]), r, phisig[t-1,],
-                        runif(5,stepLow,2*stepLow), 20, F)
+                        rep(runif(1,stepLow,2*stepLow),5), 20, T)
     phisig[t,] <- foo$final
     accepts <- accepts + foo$acc
     if (t < n.iter/2) {

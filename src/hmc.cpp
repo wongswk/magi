@@ -1,3 +1,4 @@
+// [[Rcpp::plugins(cpp11)]]
 #include "hmc.h"
 
 std::default_random_engine randgen;
@@ -189,21 +190,37 @@ int main(){
 
 mat bouncebyconstraint(vec x, vec lb, vec ub){
   uvec toolow = x < lb;
+  uvec toohigh = x > ub;
   vec uturn = ones<vec>(x.size());
+  
   for(int i = 0; i < toolow.size(); i++){
     if(toolow(i)){
-      int k = ceil((lb(i) - x(i))/(2.0*(ub(i)-lb(i))));
-      // cout << k << " ";
-      x(i) = x(i) + 2.0*(ub(i)-lb(i))*double(k);
+      if(is_finite(ub(i))){
+        int k = ceil((lb(i) - x(i))/(2.0*(ub(i)-lb(i))));
+        x(i) = x(i) + 2.0*(ub(i)-lb(i))*double(k);
+        if(x(i) > ub(i)){
+          x(i) = 2.0*ub(i) - x(i);
+          uturn(i) = -uturn(i);
+        }
+      }else{
+        x(i) = 2.0*lb(i) - x(i);
+        uturn(i) = -uturn(i);
+      }
+    }
+    if(toohigh(i)){
+      if(is_finite(lb(i))){
+        int k = ceil((lb(i) - x(i))/(2.0*(ub(i)-lb(i))));
+        x(i) = x(i) + 2.0*(ub(i)-lb(i))*double(k);
+        if(x(i) > ub(i)){
+          x(i) = 2.0*ub(i) - x(i);
+          uturn(i) = -uturn(i);
+        }
+      }else{
+        x(i) = 2.0*ub(i) - x(i);
+        uturn(i) = -uturn(i);
+      }
     }
   }
   // cout << x << endl;
-  uvec toohigh = x > ub;
-  for(int i = 0; i < toohigh.size(); i++){
-    if(toohigh(i)){
-      x(i) = 2.0*ub(i) - x(i);
-      uturn(i) = -uturn(i);
-    }
-  }
   return join_horiz(x,uturn);
 }
