@@ -16,10 +16,12 @@ nobs <- 201
 
 
 library(parallel)
-source("visualization.R")
-source("helper/utilities.r")
-source("helper/basic_hmc.R")
-source("HMC-functions.R")
+library(Rcpp)
+sourceCpp("../src/wrapper.cpp")
+source("../R/visualization.R")
+source("../R/helper/utilities.r")
+source("../R/helper/basic_hmc.R")
+source("../R/HMC-functions.R")
 
 #noise level
 noise <- 0.5
@@ -37,7 +39,7 @@ r <- abs(foo)
 r2 <- r^2
 signr <- -sign(foo)
 
-n.iter <- 100  # number of HMC iterations
+n.iter <- 600  # number of HMC iterations
 phisig <- matrix(NA,n.iter,5)   # phi and sigma
 
 phisig[1,] <- rep(1,5)
@@ -71,7 +73,8 @@ gpmcmc <- mclapply(1:8, function(dummy.chain){
     
     # if (t %% 10 == 0) { cat(c(t, full_llik[t-1], accepts/t), "\n") }
 
-    foo <- basic_hmc(phisigU, step=runif(1,stepLow,2*stepLow), nsteps= 20, initial=phisig[t-1,], return.traj = T)
+    foo <- phisigSample(data.matrix(fn.sim[,1:2]), r, phisig[t-1,],
+                        runif(5,stepLow,2*stepLow), 20, F)
     phisig[t,] <- foo$final
     accepts <- accepts + foo$acc
     if (t < n.iter/2) {
@@ -87,7 +90,7 @@ gpmcmc <- mclapply(1:8, function(dummy.chain){
   ))
 }, mc.cores = 8)
 
-burnin <- 20
+burnin <- 200
 full_llik <- do.call(c,lapply(gpmcmc, function(x) x$full_llik[-(1:burnin)]))
 phisig <- do.call(rbind,lapply(gpmcmc, function(x) x$phisig[-(1:burnin),]))
 

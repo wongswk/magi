@@ -58,4 +58,4 @@ xc$value - xr
 xc$grad - attr(xr, "grad")
 
 phisigSample(data.matrix(fn.sim[,1:2]), r, c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise),
-             rep(0.08,5), 20, T)
+             rep(0.03,5), 20, F)
