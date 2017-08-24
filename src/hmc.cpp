@@ -18,13 +18,32 @@ std::uniform_real_distribution<double> unifdistr(0.0,1.0);
 //'                  equal to the dimensionality of the state.
 //' @param traj      TRUE if values of q and p along the trajectory should be 
 //'                  returned (default is FALSE).
-hmcstate basic_hmcC(std::function<lp (vec)> lpr, const vec & initial, vec step,
+hmcstate basic_hmcC(std::function<lp (vec)> lpr, const vec & initial, vec step, vec lb, vec ub,
                int nsteps = 1, bool traj = false){
   // Check and process the arguments
   if(step.size() != initial.size())
     throw "step and initial dimention note matched";
   if(nsteps <= 0)
     throw "Invalid nsteps argument";
+  if(lb.size() != initial.size()){
+    if(lb.size() == 1){
+      double lbval = lb(0);
+      lb = vec(initial.size());
+      lb.fill(lbval);
+    }else{
+      throw "lb and initial dimention note matched";  
+    }
+  }
+  if(ub.size() != initial.size()){
+    if(ub.size() == 1){
+      double ubval = ub(0);
+      ub = vec(initial.size());
+      ub.fill(ubval);
+    }else{
+      throw "ub and initial dimention note matched";  
+    }
+  }
+  
   
   // Allocate space for the trajectory, if its return is requested.
   mat* trajq = 0;
@@ -65,6 +84,11 @@ hmcstate basic_hmcC(std::function<lp (vec)> lpr, const vec & initial, vec step,
   for( int i = 0; i < nsteps; i++){
     // Make a full step for the position, and evaluate the gradient at the new position.
     q = q + step % p;
+    // Fig 8: Modification to the leapfrog update of q (eq 2.29) to handle constraints
+    mat bounces = bouncebyconstraint(q, lb, ub);
+    q = bounces.col(0);
+    p = p % bounces.col(1);
+    
     lprq = lpr(q);
     gr = lprq.gradient;
     
@@ -144,6 +168,8 @@ lp lpnormal(vec x){
   return lpx;
 }
 
+
+
 // [[Rcpp::export]]
 int main(){
   vec initial = zeros<vec>(4);
@@ -151,10 +177,33 @@ int main(){
   step.fill(0.05);
   int nsteps = 20;
   bool traj = true;
-  hmcstate post = basic_hmcC(lpnormal, initial, step, nsteps, traj);
+  hmcstate post = basic_hmcC(lpnormal, initial, step, 
+                             {-datum::inf}, 
+                             {datum::inf}, 
+                             nsteps, traj);
   // for(int i; i < post.final.size(); i++)
   //   cout << post.final(i) << endl;
   cout << post.final << endl;
   return 0;
 }
 
+mat bouncebyconstraint(vec x, vec lb, vec ub){
+  uvec toolow = x < lb;
+  vec uturn = ones<vec>(x.size());
+  for(int i = 0; i < toolow.size(); i++){
+    if(toolow(i)){
+      int k = ceil((lb(i) - x(i))/(2.0*(ub(i)-lb(i))));
+      // cout << k << " ";
+      x(i) = x(i) + 2.0*(ub(i)-lb(i))*double(k);
+    }
+  }
+  // cout << x << endl;
+  uvec toohigh = x > ub;
+  for(int i = 0; i < toohigh.size(); i++){
+    if(toohigh(i)){
+      x(i) = 2.0*ub(i) - x(i);
+      uturn(i) = -uturn(i);
+    }
+  }
+  return join_horiz(x,uturn);
+}
