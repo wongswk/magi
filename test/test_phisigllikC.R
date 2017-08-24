@@ -10,7 +10,7 @@ pram.true <- list(
   vphi=c(1.9840824, 1.1185157)
 )
 
-nobs <- 6
+nobs <- 41
 
 
 library(parallel)
@@ -44,8 +44,18 @@ phisig[1,] <- rep(1,5)
 bestCovV <- calCov( c( 1.9840824, 1.1185157) )
 bestCovR <- calCov( c( 0.9486433, 3.2682434) )
 logliknoODE.mar( bestCovV, bestCovR, noise, fn.sim[,1:2])
-phisigllikTest( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), data.matrix(fn.sim[,1:2]), r)
-phisigllik( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), fn.sim[,1:2], TRUE)
+xc <- phisigllikTest( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), data.matrix(fn.sim[,1:2]), r)
+xr <- phisigllik( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), fn.sim[,1:2], TRUE)
+
+phisigllik( c(-1, -1, -1, -1, -1), fn.sim[,1:2], TRUE)
+phisigllikTest( c(-1, -1, -1, -1, -1), data.matrix(fn.sim[,1:2]), r)
+# need to handle contraint on HMC
+
+testpoint <- abs(rnorm(5))
+xc <- phisigllikTest( testpoint, data.matrix(fn.sim[,1:2]), r)
+xr <- phisigllik( testpoint, fn.sim[,1:2], TRUE)
+xc$value - xr
+xc$grad - attr(xr, "grad")
 
 phisigSample(data.matrix(fn.sim[,1:2]), r, c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise),
-             rep(0.1,5), 20, T)
+             rep(0.08,5), 20, T)
