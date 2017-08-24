@@ -1,5 +1,5 @@
 #include "tgtdistr.h"
-
+#include "hmc.h"
 
 //' matern variance covariance matrix with derivatives
 //' 
@@ -11,14 +11,13 @@ gpcov maternCov( vec phi, mat dist, int complexity = 0){
   mat dist2 = square(dist);
   out.C = phi(0) * (1.0 + ((sqrt(5.0)*dist)/phi(1)) + 
     ((5.0*dist2)/(3.0*pow(phi(1),2)))) % exp((-sqrt(5.0)*dist)/phi(1));
-  cout << out.C << endl;
+  // cout << out.C << endl;
   if (complexity == 0) return out;
   
   out.dCdphi1 = out.C/phi(0);
   out.dCdphi2 = phi(0) * ( - ((sqrt(5.0)*dist)/pow(phi(1),2)) - 
-    ((10.0*dist2)/(3.0*pow(phi(1),3)))) * exp((-sqrt(5.0)*dist)/phi(1)) + 
-    out.C * (sqrt(5.0)*dist)/pow(phi(1),2);
-  cout << out.dCdphi2 << endl;
+    ((10.0*dist2)/(3.0*pow(phi(1),3)))) % exp((-sqrt(5.0)*dist)/phi(1)) + 
+    out.C % ((sqrt(5.0)*dist)/pow(phi(1),2));
   if (complexity == 1) return out;
   // work from here continue for gp derivative
   return out;
@@ -44,11 +43,11 @@ lp phisigllik( vec phisig, mat yobs, mat dist){
   res(0) = -n/2.0*log(2.0*datum::pi) - sum(log(Kvl.diag())) - 0.5*sum(square(veta));
   
   // R
-  gpcov CovR = maternCov(phisig.subvec(0,1), dist, 1);
+  gpcov CovR = maternCov(phisig.subvec(2,3), dist, 1);
   mat Kr = CovR.C+ eye<mat>(n,n)*pow(sigma, 2);
   mat Krl = chol(Kr, "lower");
   mat Krlinv = inv(Krl);
-  vec reta = Krlinv * yobs.col(0);
+  vec reta = Krlinv * yobs.col(1);
   res(1) = -n/2.0*log(2.0*datum::pi) - sum(log(Krl.diag())) - 0.5*sum(square(reta));
   
   lp ret;  
@@ -65,19 +64,20 @@ lp phisigllik( vec phisig, mat yobs, mat dist){
   
   // R contrib
   mat Krinv = Krlinv.t() * Krlinv;
-  mat alphaR = Krlinv.t() * veta;
+  mat alphaR = Krlinv.t() * reta;
   mat facRtemp = alphaR * alphaR.t() - Krinv;
   double dRdsig = sigma * sum(facRtemp.diag());
   double dRdphi1 = accu(facRtemp % CovR.dCdphi1)/2.0;
   double dRdphi2 = accu(facRtemp % CovR.dCdphi2)/2.0;
   
+  ret.gradient = zeros<vec>(5);
   ret.gradient(0) = dVdphi1;
   ret.gradient(1) = dVdphi2;
   ret.gradient(2) = dRdphi1;
   ret.gradient(3) = dRdphi2;
   ret.gradient(4) = dVdsig+dRdsig;
   
-  cout << ret.value << endl << ret.gradient;
+  // cout << ret.value << endl << ret.gradient;
   
   return ret;
 }
