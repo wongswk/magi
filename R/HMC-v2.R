@@ -14,7 +14,7 @@ if(!exists("gpfit_ss")) gpfit_ss <- gpfit
 
 numparam <- nobs*2+3  # num HMC parameters
 phi.ind <- seq(500,nrow(gpfit_ss$vphi), length.out=100)  ## which phi/sigma to use from initial fit
-n.iter <- 500  # number of HMC iterations per phi
+n.iter <- 1500  # number of HMC iterations per phi
 th.all <- matrix(NA,length(phi.ind),numparam)  # X and theta
 phisig <- matrix(NA,length(phi.ind),5)   # phi and sigma
 
@@ -67,7 +67,7 @@ for (w in 1:length(phi.ind)) {
   curCovR <- calCov(phisig[w,3:4])
   cursigma <- phisig[w,5]
   
-  stepLow <- 0.0001
+  stepLow <- 0.001
   th.temp <- matrix(NA, n.iter, numparam)
   th.temp[1,] <- c( gpfit_ss$vtrue[phi.ind[w],], gpfit_ss$rtrue[phi.ind[w],], 1, 1, 1)
 
@@ -177,19 +177,27 @@ plot.post.samples(paste0("../results/R-ode-",noise,".pdf"), fn.true, fn.sim, gpo
 phisigllikTest( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), data.matrix(fn.sim[,1:2]), r)
 fn <- function(par) -phisigllikTest( par, data.matrix(fn.sim[,1:2]), r)$value
 gr <- function(par) -as.vector(phisigllikTest( par, data.matrix(fn.sim[,1:2]), r)$grad)
-marlikmap <- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0)
+marlikmap <- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
 marlikmap$par
 
 curCovV <- calCov(marlikmap$par[1:2])
 curCovR <- calCov(marlikmap$par[3:4])
 cursigma <- marlikmap$par[5]
 
-n.iter <- 3000
+n.iter <- 5000
 stepLow <- c(rep(0.0001, nobs*2), rep(0.0001,3))
 th.temp <- matrix(NA, n.iter, numparam)
-th.temp[1,] <- c( colMeans(gpfit_ss$vtrue), colMeans(gpfit_ss$rtrue), 1, 1, 1)
+th.temp[1,] <- c( colMeans(gpfit_ss$vtrue), colMeans(gpfit_ss$rtrue), 0.2, 0.2, 3)
+#' initiating at 1,1,1 was not working.
+#' reason is HMC sampler stuck in weird local mode
+#' local model problem is more severe when observation is large and error is small
+#' need something like parallel tempering to make the chain move away from local mode
+#' anyway this is a sampler problem, not a method problem
+full_llik <- c()
+lliklist <- c()
 
 accepts <- 0  
+
 
 for (t in 2:n.iter) {
   foo <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
@@ -204,19 +212,30 @@ for (t in 2:n.iter) {
       stepLow <- stepLow * .99
     }
   }
+  full_llik[t] <- loglik( cbind(th.temp[t,1:nobs],th.temp[t,(nobs+1):(nobs*2)]), 
+                          th.temp[t,(nobs*2+1):(nobs*2+3)], curCovV, curCovR, 
+                          cursigma,  fn.sim[,1:2], lambda=lam)
+  lliklist[t] <- foo$lpr
+  
   if( t %% 100 == 0) show(c(t, accepts/t, foo$final[(nobs*2+1):(nobs*2+3)]))
 }
 
 
 
 burnin <- 500
-pdf(file=paste0("../results/C-HMC-output-",noise,".pdf"))
-par(mfrow=c(2,2))
-hist(th.temp[-(1:burnin),nobs*2+1], main="a")
-abline(v = 0.2, lwd=2, col="blue")
-hist(th.temp[-(1:burnin),nobs*2+2], main="b")
-abline(v = 0.2, lwd=2, col="blue")
-hist(th.temp[-(1:burnin),nobs*2+3], main="c")
-abline(v = 3, lwd=2, col="blue")
-dev.off()
 
+gpode <- list(abc=th.temp[-(1:burnin),(nobs*2+1):(nobs*2+3)],
+              sigma=rep(marlikmap$par[5], n.iter-burnin),
+              rphi=matrix(marlikmap$par[3:4], ncol=2,nrow=n.iter-burnin,byrow=T),
+              vphi=matrix(marlikmap$par[1:2], ncol=2,nrow=n.iter-burnin,byrow=T),
+              rtrue=th.temp[-(1:burnin),(nobs+1):(nobs*2)],
+              vtrue=th.temp[-(1:burnin),1:nobs],
+              lp__=lliklist[-(1:burnin)],
+              lglik=full_llik[-(1:burnin)])
+gpode$fode <- sapply(1:length(gpode$lp__), function(t) 
+  with(gpode, fODE(abc[t,], cbind(vtrue[t,],rtrue[t,]))), simplify = "array")
+
+fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtrue))
+fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
+
+plot.post.samples(paste0("../results/R-ode-",noise,".pdf"), fn.true, fn.sim, gpode, pram.true)
