@@ -47,6 +47,15 @@ logliknoODE.mar( bestCovV, bestCovR, noise, fn.sim[,1:2])
 xc <- phisigllikTest( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), data.matrix(fn.sim[,1:2]), r)
 xr <- phisigllik( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), fn.sim[,1:2], TRUE)
 
+x0 <- c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise)
+phisigllik(x0, fn.sim[,1:2], TRUE)
+for(i in 1:5){
+  # check derivative
+  x1 = x0
+  x1[i] = x1[i] + 1e-9
+  print(as.numeric((phisigllik(x1, fn.sim[,1:2]) - phisigllik(x0, fn.sim[,1:2]))/1e-9))
+}
+
 phisigllik( c(-1, -1, -1, -1, -1), fn.sim[,1:2], TRUE)
 phisigllikTest( c(-1, -1, -1, -1, -1), data.matrix(fn.sim[,1:2]), r)
 # need to handle contraint on HMC
