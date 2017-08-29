@@ -6,6 +6,8 @@
 #include <random>
 #include <armadillo>
 // #include "hmc.h"
+// [[Rcpp::depends(RcppArmadillo)]]
+#include <RcppArmadillo.h>
 
 using namespace std;
 using arma::vec;
@@ -25,7 +27,7 @@ struct mcmcstate {
   double lpv;
 };
 
-mat parallel_termperingC(std::function<double (arma::vec)> & lpv, 
+cube parallel_termperingC(std::function<double (arma::vec)> & lpv, 
                           std::function<mcmcstate (function<double(vec)>, mcmcstate)> & mcmc, 
                           const arma::vec & temperature, 
                           const arma::vec & initial, 
@@ -36,45 +38,28 @@ mat parallel_termperingC(std::function<double (arma::vec)> & lpv,
   vector<mcmcstate> paralxs(temperature.size());
 
   cube retstate(initial.size()+1, temperature.size(), niter);
-  
-  cout << "begin initial setup" << endl;
+
   // initial setup
   for(int i=0; i<temperature.size(); i++){
-    cout << "i = " << i << endl;
     lpvtempered[i] = [&lpv, &temperature, i](vec x) -> double { return lpv(x)/temperature(i); };
     paralxs[i].state = initial;
     slave_eval[i] = async(lpvtempered[i], paralxs[i].state);
   }
   
-  cout << "finish slave" << endl;
-  cout << "length of slave_eval = " << slave_eval.size() << endl;
-  
   for(int i=0; i<temperature.size(); i++){
     paralxs[i].lpv = slave_eval[i].get();
-    cout << "paralxs["<< i << "].lpv = " << paralxs[i].lpv << endl;
   }
-  
-  cout << "finish initial setup" << endl;
-  
-  
   
   for(int it=0; it<niter; it++){
     // MCMC update
     
-    cout << "paralxs[0] =\n" << paralxs[0].lpv << paralxs[0].state << endl;
-    cout << "mcmc eval =\n" << mcmc(lpvtempered[0], paralxs[0]).state << endl;
-    cout << "finish mcmc eval" << endl;
-    
     for(int i=0; i<temperature.size(); i++){
-      cout << i << endl;
       slave_mcmc[i] = async(mcmc, lpvtempered[i], paralxs[i]);
     }
-    cout << "finish async setup" << endl;
     
     for(int i=0; i<temperature.size(); i++){
       paralxs[i] = slave_mcmc[i].get();
     }
-    cout << "finish MCMC update" << endl;
     // swapping
     if(unifdistr(randgen) < alpha0){
       double moveinfo = unifdistr(randgen)*double(temperature.size());
@@ -116,7 +101,7 @@ mcmcstate metropolis (function<double(vec)> lpv, mcmcstate current, double steps
   vec proposal = current.state;
   proposal += arma::randn<vec>(current.state.size())*stepsize;
   
-  cout << proposal << endl;
+  // cout << proposal << endl;
   
   double proplpv = lpv(proposal);
   mcmcstate ret = current;
@@ -128,13 +113,13 @@ mcmcstate metropolis (function<double(vec)> lpv, mcmcstate current, double steps
 }
 
 // [[Rcpp::export]]
-arma::mat main2() {
+arma::cube main2() {
   function<double(vec)> lpnormalvalue = [](vec x) {return -arma::sum(arma::square(x))/2.0;};
   vec temperature = arma::linspace<vec>(8, 1, 8);
   function<mcmcstate(function<double(vec)>, mcmcstate)> metropolis_tuned =
     std::bind(metropolis, std::placeholders::_1, std::placeholders::_2, 1.0);
   
-  mat samples = parallel_termperingC(lpnormalvalue, 
+  cube samples = parallel_termperingC(lpnormalvalue, 
                                      metropolis_tuned, 
                                      temperature, 
                                      arma::zeros<vec>(4), 
