@@ -165,17 +165,25 @@ arma::cube main2() {
   return samples;
 }
 
-arma::mat main3() {
-  function<double(vec)> lpnormalvalue = [](vec x) {return -arma::sum(arma::square(x))/2.0;};
-  vec temperature = arma::linspace<vec>(8, 1, 8);
+// [[Rcpp::export]]
+arma::cube main3() {
+  function<double(vec)> lpnormalvalue = [](vec x) {
+    return log(exp(-arma::sum(arma::square(x+4))/2.0) + exp(-arma::sum(arma::square(x-4))/2.0));
+  };
+  vec temperature = {1, 1.5, 2, 3, 4.5, 6, 8};
   function<mcmcstate(function<double(vec)>, mcmcstate)> metropolis_tuned =
     std::bind(metropolis, std::placeholders::_1, std::placeholders::_2, 1.0);
   
-  mcmcstate initial;
-  initial.state = arma::zeros<vec>(4);
-  initial.lpv = lpnormalvalue(initial.state);
-  return metropolis_tuned(lpnormalvalue, initial).state;
+  cube samples = parallel_termperingC(lpnormalvalue, 
+                                      metropolis_tuned, 
+                                      temperature, 
+                                      arma::zeros<vec>(4), 
+                                      0.10, 
+                                      1e5);
+  
+  return samples;
 }
+
 
 int main() {
   cout << main2() << endl;
