@@ -30,11 +30,10 @@ mat parallel_termperingC(std::function<double (arma::vec)> & lpv,
                           const arma::vec & temperature, 
                           const arma::vec & initial, 
                           double alpha0, int niter){
-  vector<future<mcmcstate>> slave_mcmc;
+  vector<future<mcmcstate>> slave_mcmc(temperature.size());
   vector<future<double>> slave_eval(temperature.size());
-  future<double> slave_eval_one;
-  vector<function<double(vec)>> lpvtempered;
-  vector<mcmcstate> paralxs;
+  vector<function<double(vec)>> lpvtempered(temperature.size());
+  vector<mcmcstate> paralxs(temperature.size());
 
   cube retstate(initial.size()+1, temperature.size(), niter);
   
@@ -52,20 +51,30 @@ mat parallel_termperingC(std::function<double (arma::vec)> & lpv,
   
   for(int i=0; i<temperature.size(); i++){
     paralxs[i].lpv = slave_eval[i].get();
+    cout << "paralxs["<< i << "].lpv = " << paralxs[i].lpv << endl;
   }
   
   cout << "finish initial setup" << endl;
   
+  
+  
   for(int it=0; it<niter; it++){
     // MCMC update
+    
+    cout << "paralxs[0] =\n" << paralxs[0].lpv << paralxs[0].state << endl;
+    cout << "mcmc eval =\n" << mcmc(lpvtempered[0], paralxs[0]).state << endl;
+    cout << "finish mcmc eval" << endl;
+    
     for(int i=0; i<temperature.size(); i++){
-      slave_mcmc.push_back(async(mcmc, lpvtempered[i], paralxs[i]));
+      cout << i << endl;
+      slave_mcmc[i] = async(mcmc, lpvtempered[i], paralxs[i]);
     }
+    cout << "finish async setup" << endl;
     
     for(int i=0; i<temperature.size(); i++){
       paralxs[i] = slave_mcmc[i].get();
     }
-    
+    cout << "finish MCMC update" << endl;
     // swapping
     if(unifdistr(randgen) < alpha0){
       double moveinfo = unifdistr(randgen)*double(temperature.size());
@@ -107,6 +116,8 @@ mcmcstate metropolis (function<double(vec)> lpv, mcmcstate current, double steps
   vec proposal = current.state;
   proposal += arma::randn<vec>(current.state.size())*stepsize;
   
+  cout << proposal << endl;
+  
   double proplpv = lpv(proposal);
   mcmcstate ret = current;
   if(log(unifdistr(randgen)) < proplpv - current.lpv){
@@ -131,6 +142,18 @@ arma::mat main2() {
                                      1e4);
   
   return samples;
+}
+
+arma::mat main3() {
+  function<double(vec)> lpnormalvalue = [](vec x) {return -arma::sum(arma::square(x))/2.0;};
+  vec temperature = arma::linspace<vec>(8, 1, 8);
+  function<mcmcstate(function<double(vec)>, mcmcstate)> metropolis_tuned =
+    std::bind(metropolis, std::placeholders::_1, std::placeholders::_2, 1.0);
+  
+  mcmcstate initial;
+  initial.state = arma::zeros<vec>(4);
+  initial.lpv = lpnormalvalue(initial.state);
+  return metropolis_tuned(lpnormalvalue, initial).state;
 }
 
 int main() {
