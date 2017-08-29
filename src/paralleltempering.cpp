@@ -5,6 +5,7 @@
 #include <chrono>
 #include <random>
 #include <armadillo>
+// #include "hmc.h"
 
 using namespace std;
 using arma::vec;
@@ -18,19 +19,6 @@ int square(int x) {
   return x * x;
 }
 
-int main() {
-  vector<future<int>> a;
-  for(int i=0; i<20; i++){
-    a.push_back(async(&square, i));
-  }
-  int v=0;
-  cout << "Main thread " << endl;
-  for(auto& aeach : a){
-    v += aeach.get();
-  }
-  cout << "The thread returned " << v << endl;
-  return 0;
-}
 
 struct mcmcstate {
   vec state;
@@ -90,7 +78,7 @@ mat parallel_termperingC(std::function<double (arma::vec)> & lpv,
       slave_eval[1] = async(lpvtempered[movetoid], paralxs[movefromid].state);
       double log_accp_prob = slave_eval[0].get() + slave_eval[1].get() - 
         paralxs[movefromid].lpv - paralxs[movetoid].lpv;
-      if(unifdistr(randgen) < log_accp_prob){
+      if(log(unifdistr(randgen)) < log_accp_prob){
         mcmcstate tmp = paralxs[movefromid];
         paralxs[movefromid] = paralxs[movetoid];
         paralxs[movetoid] = tmp;
@@ -104,4 +92,40 @@ mat parallel_termperingC(std::function<double (arma::vec)> & lpv,
     }
   }
   return retstate;
+}
+
+
+mcmcstate metropolis (function<double(vec)> lpv, mcmcstate current, double stepsize=1.0){
+  vec proposal = current.state;
+  proposal += arma::randn<vec>(current.state.size())*stepsize;
+  
+  double proplpv = lpv(proposal);
+  mcmcstate ret = current;
+  if(log(unifdistr(randgen)) < proplpv - current.lpv){
+    ret.state = proposal;
+    ret.lpv = proplpv;
+  }
+  return ret;
+}
+
+// [[Rcpp::export]]
+arma::mat main2() {
+  function<double(vec)> lpnormalvalue = [](vec x) {return -arma::sum(arma::square(x))/2.0;};
+  vec temperature = arma::linspace<vec>(8, 1, 8);
+  function<mcmcstate(function<double(vec)>, mcmcstate)> metropolis_tuned =
+    std::bind(metropolis, std::placeholders::_1, std::placeholders::_2, 1.0);
+  
+  mat samples = parallel_termperingC(lpnormalvalue, 
+                                     metropolis_tuned, 
+                                     temperature, 
+                                     arma::zeros<vec>(4), 
+                                     0.05, 
+                                     1e4);
+  
+  return samples;
+}
+
+int main() {
+  cout << main2() << endl;
+  return 0;
 }
