@@ -41,7 +41,7 @@ mat parallel_termperingC(std::function<double (arma::vec)> & lpv,
   // initial setup
   for(int i=0; i<temperature.size(); i++){
     cout << "i = " << i << endl;
-    lpvtempered[i] = [&](vec x) -> double { return lpv(x)/temperature(i); };
+    lpvtempered[i] = [&lpv, &temperature, i](vec x) -> double { return lpv(x)/temperature(i); };
     paralxs[i].state = initial;
     slave_eval[i] = async(lpvtempered[i], paralxs[i].state);
   }
