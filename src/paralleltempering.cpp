@@ -1,32 +1,34 @@
 // [[Rcpp::plugins(cpp11)]]
-// #include "paralleltempering.h"
-#include <iostream>
-#include <future>
-#include <chrono>
-#include <random>
-#include <armadillo>
-// #include "hmc.h"
-// [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>
-
-using namespace std;
-using arma::vec;
-using arma::mat;
-using arma::cube;
+#include "paralleltempering.h"
 
 std::default_random_engine randgen;
 std::uniform_real_distribution<double> unifdistr(0.0,1.0);
 
-int square(int x) {
-  return x * x;
+
+void print_info(const arma::umat & swapindicator, const arma::umat & mcmcindicator,
+                const vec & temperature, const int & niter) {
+  cout << "Parallel tempering finished:\n" 
+       << "\tOut of " << niter << " iterations, " 
+       << arma::accu(swapindicator.col(0) > 0) << " swap is performed, \n"
+       << "swap rate is " << double(arma::accu(swapindicator.col(0) > 0)) / niter
+       << endl;
+  
+  for(int i=0; i<temperature.size(); i++){
+    cout << "Chain " << i+1 << " acceptance rate = " 
+         << arma::accu(mcmcindicator.row(i))/double(niter) << endl;
+  }
+  
+  cout << "\n========================\n";
+  
+  for(int i=1; i<temperature.size(); i++){
+    int nswap = arma::accu(swapindicator.col(0)==i);
+    int nacceptswap = arma::accu(swapindicator.col(0)==i && swapindicator.col(2)==1);
+    cout << "Swap between chain " << i << " and chain " << i+1 << ":\n" 
+         << "\ttotal swap is " << nswap
+         << ", acceptance number = " << nacceptswap
+         << ", acceptance rate = " << double(nacceptswap) / double(nswap) << endl;
+  }
 }
-
-
-struct mcmcstate {
-  vec state;
-  double lpv;
-  int acc;
-};
 
 cube parallel_termperingC(std::function<double (arma::vec)> & lpv, 
                           std::function<mcmcstate (function<double(vec)>, mcmcstate)> & mcmc, 
@@ -102,31 +104,7 @@ cube parallel_termperingC(std::function<double (arma::vec)> & lpv,
       mcmcindicator(i, it) = paralxs[i].acc;
     }
   }
-  
-  cout << "Parallel tempering finished:\n" 
-      << "\tOut of " << niter << " iterations, " 
-      << arma::accu(swapindicator.col(0) > 0) << " swap is performed, \n"
-      << "swap rate is " << double(arma::accu(swapindicator.col(0) > 0)) / niter
-      << endl;
-  
-  for(int i=0; i<temperature.size(); i++){
-    cout << "Chain " << i+1 << " acceptance rate = " 
-         << arma::accu(mcmcindicator.row(i))/double(niter) << endl;
-  }
-  
-  cout << "\n========================\n";
-  
-  for(int i=1; i<temperature.size(); i++){
-    int nswap = arma::accu(swapindicator.col(0)==i);
-    int nacceptswap = arma::accu(swapindicator.col(0)==i && swapindicator.col(2)==1);
-    cout << "Swap between chain " << i << " and chain " << i+1 << ":\n" 
-         << "\ttotal swap is " << nswap
-         << ", acceptance number = " << nacceptswap
-         << ", acceptance rate = " << double(nacceptswap) / double(nswap) << endl;
-  }
-  
-    
-  
+  print_info(swapindicator, mcmcindicator, temperature, niter);
   return retstate;
 }
 
@@ -184,8 +162,3 @@ arma::cube main3() {
   return samples;
 }
 
-
-int main() {
-  cout << main2() << endl;
-  return 0;
-}
