@@ -38,6 +38,7 @@ cube parallel_termperingC(std::function<double (arma::vec)> & lpv,
   vector<mcmcstate> paralxs(temperature.size());
 
   cube retstate(initial.size()+1, temperature.size(), niter);
+  arma::umat swapindicator(niter, 3, arma::fill::zeros);
 
   // initial setup
   for(int i=0; i<temperature.size(); i++){
@@ -76,6 +77,9 @@ cube parallel_termperingC(std::function<double (arma::vec)> & lpv,
           movetoid --;
         }
       }
+      swapindicator(it, 0) = min(movefromid, movetoid)+1;
+      swapindicator(it, 1) = max(movefromid, movetoid)+1;
+      
       slave_eval[0] = async(lpvtempered[movefromid], paralxs[movetoid].state);
       slave_eval[1] = async(lpvtempered[movetoid], paralxs[movefromid].state);
       double log_accp_prob = slave_eval[0].get() + slave_eval[1].get() - 
@@ -84,6 +88,7 @@ cube parallel_termperingC(std::function<double (arma::vec)> & lpv,
         mcmcstate tmp = paralxs[movefromid];
         paralxs[movefromid] = paralxs[movetoid];
         paralxs[movetoid] = tmp;
+        swapindicator(it, 2) = 1;
       }
     }
     
@@ -93,6 +98,24 @@ cube parallel_termperingC(std::function<double (arma::vec)> & lpv,
       retstate.slice(it).col(i).subvec(1, initial.size()) = paralxs[i].state;
     }
   }
+  
+  cout << "Parallel tempering finished:\n" 
+      << "\tOut of " << niter << " iterations, " 
+      << arma::accu(swapindicator.col(0) > 0) << " swap is performed, \n"
+      << "\tswap rate is " << double(arma::accu(swapindicator.col(0) > 0)) / niter
+      << endl;
+  
+  for(int i=1; i<temperature.size(); i++){
+    int nswap = arma::accu(swapindicator.col(0)==i);
+    int nacceptswap = arma::accu(swapindicator.col(0)==i && swapindicator.col(2)==1);
+    cout << "Swap between chain " << i << " and chain " << i+1 << ":\n" 
+         << "\ttotal swap is " << nswap
+         << ", acceptance number = " << nacceptswap
+         << ", acceptance rate = " << double(nacceptswap) / double(nswap) << endl;
+  }
+  
+    
+  
   return retstate;
 }
 
