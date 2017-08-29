@@ -30,14 +30,14 @@ void print_info(const arma::umat & swapindicator, const arma::umat & mcmcindicat
   }
 }
 
-cube parallel_termperingC(std::function<double (arma::vec)> & lpv, 
-                          std::function<mcmcstate (function<double(vec)>, mcmcstate)> & mcmc, 
+cube parallel_termperingC(std::function<lp (arma::vec)> & lpr, 
+                          std::function<mcmcstate (function<lp(vec)>, mcmcstate)> & mcmc, 
                           const arma::vec & temperature, 
                           const arma::vec & initial, 
                           double alpha0, int niter){
   vector<future<mcmcstate>> slave_mcmc(temperature.size());
-  vector<future<double>> slave_eval(temperature.size());
-  vector<function<double(vec)>> lpvtempered(temperature.size());
+  vector<future<lp>> slave_eval(temperature.size());
+  vector<function<lp(vec)>> lprtempered(temperature.size());
   vector<mcmcstate> paralxs(temperature.size());
 
   cube retstate(initial.size()+1, temperature.size(), niter);
@@ -46,21 +46,26 @@ cube parallel_termperingC(std::function<double (arma::vec)> & lpv,
 
   // initial setup
   for(int i=0; i<temperature.size(); i++){
-    lpvtempered[i] = [&lpv, &temperature, i](vec x) -> double { return lpv(x)/temperature(i); };
+    lprtempered[i] = [&lpr, &temperature, i](vec x) -> lp { 
+      lp ret = lpr(x);
+      ret.value = ret.value/temperature(i);
+      ret.gradient = ret.gradient/temperature(i);
+      return ret; 
+      };
     paralxs[i].state = initial;
     paralxs[i].acc = 1;
-    slave_eval[i] = async(lpvtempered[i], paralxs[i].state);
+    slave_eval[i] = async(lprtempered[i], paralxs[i].state);
   }
   
   for(int i=0; i<temperature.size(); i++){
-    paralxs[i].lpv = slave_eval[i].get();
+    paralxs[i].lpv = slave_eval[i].get().value;
   }
   
   for(int it=0; it<niter; it++){
     // MCMC update
     
     for(int i=0; i<temperature.size(); i++){
-      slave_mcmc[i] = async(mcmc, lpvtempered[i], paralxs[i]);
+      slave_mcmc[i] = async(mcmc, lprtempered[i], paralxs[i]);
     }
     
     for(int i=0; i<temperature.size(); i++){
@@ -85,9 +90,9 @@ cube parallel_termperingC(std::function<double (arma::vec)> & lpv,
       swapindicator(it, 0) = min(movefromid, movetoid)+1;
       swapindicator(it, 1) = max(movefromid, movetoid)+1;
       
-      slave_eval[0] = async(lpvtempered[movefromid], paralxs[movetoid].state);
-      slave_eval[1] = async(lpvtempered[movetoid], paralxs[movefromid].state);
-      double log_accp_prob = slave_eval[0].get() + slave_eval[1].get() - 
+      slave_eval[0] = async(lprtempered[movefromid], paralxs[movetoid].state);
+      slave_eval[1] = async(lprtempered[movetoid], paralxs[movefromid].state);
+      double log_accp_prob = slave_eval[0].get().value + slave_eval[1].get().value - 
         paralxs[movefromid].lpv - paralxs[movetoid].lpv;
       if(log(unifdistr(randgen)) < log_accp_prob){
         mcmcstate tmp = paralxs[movefromid];
@@ -109,13 +114,13 @@ cube parallel_termperingC(std::function<double (arma::vec)> & lpv,
 }
 
 
-mcmcstate metropolis (function<double(vec)> lpv, mcmcstate current, double stepsize=1.0){
+mcmcstate metropolis (function<lp(vec)> lpv, mcmcstate current, double stepsize=1.0){
   vec proposal = current.state;
   proposal += arma::randn<vec>(current.state.size())*stepsize;
   
   // cout << proposal << endl;
   
-  double proplpv = lpv(proposal);
+  double proplpv = lpv(proposal).value;
   mcmcstate ret = current;
   ret.acc = 0;
   if(log(unifdistr(randgen)) < proplpv - current.lpv){
@@ -126,14 +131,15 @@ mcmcstate metropolis (function<double(vec)> lpv, mcmcstate current, double steps
   return ret;
 }
 
+
 // [[Rcpp::export]]
 arma::cube main2() {
-  function<double(vec)> lpnormalvalue = [](vec x) {return -arma::sum(arma::square(x))/2.0;};
+  function<lp(vec)> lpnormal = [](vec x) {return lp(-arma::sum(arma::square(x))/2.0);};
   vec temperature = arma::linspace<vec>(8, 1, 8);
-  function<mcmcstate(function<double(vec)>, mcmcstate)> metropolis_tuned =
+  std::function<mcmcstate(function<lp(vec)>, mcmcstate)> metropolis_tuned =
     std::bind(metropolis, std::placeholders::_1, std::placeholders::_2, 1.0);
   
-  cube samples = parallel_termperingC(lpnormalvalue, 
+  cube samples = parallel_termperingC(lpnormal, 
                                      metropolis_tuned, 
                                      temperature, 
                                      arma::zeros<vec>(4), 
@@ -145,18 +151,18 @@ arma::cube main2() {
 
 // [[Rcpp::export]]
 arma::cube main3() {
-  function<double(vec)> lpnormalvalue = [](vec x) {
-    return log(exp(-arma::sum(arma::square(x+4))/2.0) + exp(-arma::sum(arma::square(x-4))/2.0));
+  function<lp(vec)> lpnormalvalue = [](vec x) {
+    return lp(log(exp(-arma::sum(arma::square(x+4))/2.0) + exp(-arma::sum(arma::square(x-4))/2.0)));
   };
-  vec temperature = {1, 1.5, 2, 3, 4.5, 6, 8};
-  function<mcmcstate(function<double(vec)>, mcmcstate)> metropolis_tuned =
+  vec temperature = {1, 1.3, 1.8, 2.5, 3.8, 5.7, 8};
+  function<mcmcstate(function<lp(vec)>, mcmcstate)> metropolis_tuned =
     std::bind(metropolis, std::placeholders::_1, std::placeholders::_2, 1.0);
-  
+    
   cube samples = parallel_termperingC(lpnormalvalue, 
                                       metropolis_tuned, 
                                       temperature, 
                                       arma::zeros<vec>(4), 
-                                      0.10, 
+                                      0.125, 
                                       1e5);
   
   return samples;

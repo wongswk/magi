@@ -1,8 +1,6 @@
 // [[Rcpp::plugins(cpp11)]]
 #include "hmc.h"
 
-std::default_random_engine randgen;
-std::uniform_real_distribution<double> unifdistr(0.0,1.0);
 
 //' basic_hmcC
 //' 
@@ -21,6 +19,9 @@ std::uniform_real_distribution<double> unifdistr(0.0,1.0);
 //'                  returned (default is FALSE).
 hmcstate basic_hmcC(std::function<lp (vec)> lpr, const vec & initial, vec step, vec lb, vec ub,
                int nsteps = 1, bool traj = false){
+  std::default_random_engine randgen;
+  std::uniform_real_distribution<double> unifdistr(0.0,1.0);
+  
   // Check and process the arguments
   if(step.size() != initial.size())
     throw "step and initial dimention note matched";

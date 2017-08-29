@@ -14,6 +14,9 @@ using namespace arma;
 struct lp{
   double value;
   vec gradient;
+  lp (const double & tgtv) : value(tgtv) {}
+  lp (){}
+  lp (const lp & lp2) : value(lp2.value), gradient(lp2.gradient) {}
 };
 
 struct hmcstate{
@@ -21,7 +24,6 @@ struct hmcstate{
   double lprvalue, apr, delta;
   int acc;
   mat trajq, trajp;
-  lp lprfinal;
 };
 
 hmcstate basic_hmcC(std::function<lp (vec)>, const vec &, vec, vec, vec, int, bool);

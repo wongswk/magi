@@ -21,15 +21,21 @@ struct mcmcstate {
     lpv = x.lprvalue;
     acc = x.acc;
   }
+  mcmcstate(){}
+  mcmcstate(const mcmcstate & another){
+    state = another.state;
+    lpv = another.lpv;
+    acc = another.acc;
+  }
 };
 
 void print_info(const arma::umat &, const arma::umat &, const vec &, const int &);
-cube parallel_termperingC(std::function<double (arma::vec)> & lpv, 
-                          std::function<mcmcstate (function<double(vec)>, mcmcstate)> & mcmc, 
-                          const arma::vec & temperature, 
-                          const arma::vec & initial, 
-                          double alpha0, int niter);
-mcmcstate metropolis (function<double(vec)>, mcmcstate, double);
+cube parallel_termperingC(std::function<lp (arma::vec)> & , 
+                          std::function<mcmcstate (function<lp(vec)>, mcmcstate)> &, 
+                          const arma::vec &, 
+                          const arma::vec &, 
+                          double, int);
+mcmcstate metropolis (function<lp(vec)>, mcmcstate, double);
 arma::cube main2();
-arma::cube main3();
+// arma::cube main3();
   
