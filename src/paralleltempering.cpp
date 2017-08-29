@@ -25,6 +25,7 @@ int square(int x) {
 struct mcmcstate {
   vec state;
   double lpv;
+  int acc;
 };
 
 cube parallel_termperingC(std::function<double (arma::vec)> & lpv, 
@@ -39,11 +40,13 @@ cube parallel_termperingC(std::function<double (arma::vec)> & lpv,
 
   cube retstate(initial.size()+1, temperature.size(), niter);
   arma::umat swapindicator(niter, 3, arma::fill::zeros);
+  arma::umat mcmcindicator(temperature.size(), niter, arma::fill::zeros);
 
   // initial setup
   for(int i=0; i<temperature.size(); i++){
     lpvtempered[i] = [&lpv, &temperature, i](vec x) -> double { return lpv(x)/temperature(i); };
     paralxs[i].state = initial;
+    paralxs[i].acc = 1;
     slave_eval[i] = async(lpvtempered[i], paralxs[i].state);
   }
   
@@ -96,14 +99,22 @@ cube parallel_termperingC(std::function<double (arma::vec)> & lpv,
     for(int i=0; i < temperature.size(); i++){
       retstate(0, i, it) = paralxs[i].lpv;
       retstate.slice(it).col(i).subvec(1, initial.size()) = paralxs[i].state;
+      mcmcindicator(i, it) = paralxs[i].acc;
     }
   }
   
   cout << "Parallel tempering finished:\n" 
       << "\tOut of " << niter << " iterations, " 
       << arma::accu(swapindicator.col(0) > 0) << " swap is performed, \n"
-      << "\tswap rate is " << double(arma::accu(swapindicator.col(0) > 0)) / niter
+      << "swap rate is " << double(arma::accu(swapindicator.col(0) > 0)) / niter
       << endl;
+  
+  for(int i=0; i<temperature.size(); i++){
+    cout << "Chain " << i+1 << " acceptance rate = " 
+         << arma::accu(mcmcindicator.row(i))/double(niter) << endl;
+  }
+  
+  cout << "\n========================\n";
   
   for(int i=1; i<temperature.size(); i++){
     int nswap = arma::accu(swapindicator.col(0)==i);
@@ -128,9 +139,11 @@ mcmcstate metropolis (function<double(vec)> lpv, mcmcstate current, double steps
   
   double proplpv = lpv(proposal);
   mcmcstate ret = current;
+  ret.acc = 0;
   if(log(unifdistr(randgen)) < proplpv - current.lpv){
     ret.state = proposal;
     ret.lpv = proplpv;
+    ret.acc = 1;
   }
   return ret;
 }
