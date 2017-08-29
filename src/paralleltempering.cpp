@@ -31,22 +31,30 @@ mat parallel_termperingC(std::function<double (arma::vec)> & lpv,
                           const arma::vec & initial, 
                           double alpha0, int niter){
   vector<future<mcmcstate>> slave_mcmc;
-  vector<future<double>> slave_eval;
+  vector<future<double>> slave_eval(temperature.size());
+  future<double> slave_eval_one;
   vector<function<double(vec)>> lpvtempered;
   vector<mcmcstate> paralxs;
 
   cube retstate(initial.size()+1, temperature.size(), niter);
   
+  cout << "begin initial setup" << endl;
   // initial setup
   for(int i=0; i<temperature.size(); i++){
+    cout << "i = " << i << endl;
     lpvtempered[i] = [&](vec x) -> double { return lpv(x)/temperature(i); };
     paralxs[i].state = initial;
-    slave_eval.push_back(async(lpvtempered[i], paralxs[i].state));
+    slave_eval[i] = async(lpvtempered[i], paralxs[i].state);
   }
+  
+  cout << "finish slave" << endl;
+  cout << "length of slave_eval = " << slave_eval.size() << endl;
   
   for(int i=0; i<temperature.size(); i++){
     paralxs[i].lpv = slave_eval[i].get();
   }
+  
+  cout << "finish initial setup" << endl;
   
   for(int it=0; it<niter; it++){
     // MCMC update
