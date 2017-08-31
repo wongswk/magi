@@ -119,9 +119,8 @@ Rcpp::List xthetaSample( mat yobs, List covVr, List covRr, double sigma, const v
   return ret;
 }
 
-
 // [[Rcpp::export]]
-arma::cube parallel_temper_hmc_xtheta( 
+void parallel_temper_hmc_xtheta( 
     mat yobs, List covVr, List covRr, double sigma, 
     const vec & initial, const vec & step, int nsteps = 1){
   gpcov covV = cov_r2cpp(covVr);
@@ -133,7 +132,9 @@ arma::cube parallel_temper_hmc_xtheta(
   lb.subvec(lb.size() - 3, lb.size() - 1).fill(0.0);
   
   std::function<mcmcstate(std::function<lp(vec)>, mcmcstate)> hmc_simple =
-    [&](std::function<lp(vec)> tgt_tempered, mcmcstate currstate) -> mcmcstate{
+    [=](std::function<lp(vec)> tgt_tempered, mcmcstate currstate) -> mcmcstate{
+      cout << "test tgt_tempered value = " << tgt_tempered(currstate.state).value;
+      //      << " &tgt_tempered = " << &tgt_tempered << endl;
       hmcstate post = basic_hmcC(tgt_tempered, currstate.state, step, lb,
                                  {datum::inf}, nsteps, false);
       return mcmcstate(post);
@@ -141,12 +142,26 @@ arma::cube parallel_temper_hmc_xtheta(
     
   vec temperature = {1, 1.5, 2, 3, 4.5, 6, 8};
   
-  cube samples = parallel_termperingC(tgt, 
-                                      hmc_simple, 
-                                      temperature, 
-                                      initial, 
-                                      0.10, 
-                                      1e5);
-  return samples;
+  
+  cout << "test tgt value = " << tgt(initial).value 
+       << " &tgt = " << &tgt << endl;
+  cout << "test & HMC func = " << &basic_hmcC << endl;
+  
+  mcmcstate init_mcmcstate;
+  init_mcmcstate.state = initial;
+  mcmcstate initpost_mcmcstate = hmc_simple(tgt, init_mcmcstate);
+  cout << "test hmc_simple = " << initpost_mcmcstate.lpv << endl
+       << initpost_mcmcstate.acc << endl;
+  
+  cout << "prepare to call parallel_termperingC" << endl;
+  
+  // cube samples = parallel_termperingC(tgt, 
+  //                                     hmc_simple, 
+  //                                     temperature, 
+  //                                     initial, 
+  //                                     0.10, 
+  //                                     1e5);
+  // return samples;
+  
 }
 
