@@ -132,11 +132,11 @@ void parallel_temper_hmc_xtheta(
   lb.subvec(lb.size() - 3, lb.size() - 1).fill(0.0);
   
   std::function<mcmcstate(std::function<lp(vec)>, mcmcstate)> hmc_simple =
-    [=](std::function<lp(vec)> tgt_tempered, mcmcstate currstate) -> mcmcstate{
+    [step, lb, nsteps](std::function<lp(vec)> tgt_tempered, mcmcstate currstate) -> mcmcstate{
       cout << "test tgt_tempered value = " << tgt_tempered(currstate.state).value;
       //      << " &tgt_tempered = " << &tgt_tempered << endl;
       hmcstate post = basic_hmcC(tgt_tempered, currstate.state, step, lb,
-                                 {datum::inf}, nsteps, false);
+                                 {arma::datum::inf}, nsteps, false);
       return mcmcstate(post);
     };
     
