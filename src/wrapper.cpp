@@ -9,6 +9,7 @@
 #include <armadillo>
 #include "hmc.h"
 #include "tgtdistr.h"
+#include "paralleltempering.h"
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
 // [[Rcpp::plugins(cpp11)]]
@@ -118,4 +119,34 @@ Rcpp::List xthetaSample( mat yobs, List covVr, List covRr, double sigma, const v
   return ret;
 }
 
+
+// [[Rcpp::export]]
+arma::cube parallel_temper_hmc_xtheta( 
+    mat yobs, List covVr, List covRr, double sigma, 
+    const vec & initial, const vec & step, int nsteps = 1){
+  gpcov covV = cov_r2cpp(covVr);
+  gpcov covR = cov_r2cpp(covRr);
+  std::function<lp(vec)> tgt = std::bind(xthetallik, std::placeholders::_1, 
+                   covV, covR, sigma, yobs, fnmodelODE);
+  
+  vec lb = ones<vec>(initial.size()) * (-datum::inf);
+  lb.subvec(lb.size() - 3, lb.size() - 1).fill(0.0);
+  
+  std::function<mcmcstate(std::function<lp(vec)>, mcmcstate)> hmc_simple =
+    [&lb, &step, nsteps](std::function<lp(vec)> tgt_tempered, mcmcstate currstate){
+      hmcstate post = basic_hmcC(tgt_tempered, currstate.state, step, lb, 
+                                 {datum::inf}, nsteps, false);
+      return mcmcstate(post);
+    };
+    
+  vec temperature = {1, 1.5, 2, 3, 4.5, 6, 8};
+  
+  cube samples = parallel_termperingC(tgt, 
+                                      hmc_simple, 
+                                      temperature, 
+                                      initial, 
+                                      0.10, 
+                                      1e5);
+  return samples;
+}
 
