@@ -1,8 +1,6 @@
 // [[Rcpp::plugins(cpp11)]]
 #include "paralleltempering.h"
 
-std::default_random_engine randgen;
-std::uniform_real_distribution<double> unifdistr(0.0,1.0);
 
 
 void print_info(const arma::umat & swapindicator, const arma::umat & mcmcindicator,
@@ -35,6 +33,9 @@ cube parallel_termperingC(std::function<lp (arma::vec)> & lpr,
                           const arma::vec & temperature, 
                           const arma::vec & initial, 
                           double alpha0, int niter){
+  std::default_random_engine randgen;
+  std::uniform_real_distribution<double> unifdistr(0.0,1.0);
+  
   vector<future<mcmcstate>> slave_mcmc(temperature.size());
   vector<future<lp>> slave_eval(temperature.size());
   vector<function<lp(vec)>> lprtempered(temperature.size());
@@ -115,6 +116,9 @@ cube parallel_termperingC(std::function<lp (arma::vec)> & lpr,
 
 
 mcmcstate metropolis (function<lp(vec)> lpv, mcmcstate current, double stepsize=1.0){
+  std::default_random_engine randgen;
+  std::uniform_real_distribution<double> unifdistr(0.0,1.0);
+  
   vec proposal = current.state;
   proposal += arma::randn<vec>(current.state.size())*stepsize;
   

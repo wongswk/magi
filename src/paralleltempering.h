@@ -37,5 +37,5 @@ cube parallel_termperingC(std::function<lp (arma::vec)> & ,
                           double, int);
 mcmcstate metropolis (function<lp(vec)>, mcmcstate, double);
 arma::cube main2();
-// arma::cube main3();
+arma::cube main3();
   

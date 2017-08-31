@@ -184,10 +184,11 @@ curCovV <- calCov(marlikmap$par[1:2])
 curCovR <- calCov(marlikmap$par[3:4])
 cursigma <- marlikmap$par[5]
 
+numparam <- nobs*2+3  # num HMC parameters
 n.iter <- 5000
 stepLow <- c(rep(0.0001, nobs*2), rep(0.0001,3))
 th.temp <- matrix(NA, n.iter, numparam)
-th.temp[1,] <- c( colMeans(gpfit_ss$vtrue), colMeans(gpfit_ss$rtrue), 0.2, 0.2, 3)
+th.temp[1,] <- c( colMeans(gpfit$vtrue), colMeans(gpfit$rtrue), 1, 1, 1)
 #' initiating at 1,1,1 was not working.
 #' reason is HMC sampler stuck in weird local mode
 #' local model problem is more severe when observation is large and error is small
@@ -198,7 +199,7 @@ lliklist <- c()
 
 accepts <- 0  
 
-
+#### basic HMC ####
 for (t in 2:n.iter) {
   foo <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
                       th.temp[t-1,], stepLow, 20, T)
@@ -222,7 +223,7 @@ for (t in 2:n.iter) {
 
 
 
-burnin <- 500
+burnin <- 2500
 
 gpode <- list(abc=th.temp[-(1:burnin),(nobs*2+1):(nobs*2+3)],
               sigma=rep(marlikmap$par[5], n.iter-burnin),
@@ -238,4 +239,34 @@ gpode$fode <- sapply(1:length(gpode$lp__), function(t)
 fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtrue))
 fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
 
-plot.post.samples(paste0("../results/R-ode-",noise,".pdf"), fn.true, fn.sim, gpode, pram.true)
+plot.post.samples(paste0("../results/C-ode-HMC-fixphi-",noise,".pdf"), fn.true, fn.sim, gpode, pram.true)
+
+#### parallel tempered HMC ####
+
+load("../test.rda")
+Rcpp::sourceCpp('~/Workspace/DynamicSys/dynamic-systems/src/wrapper.cpp')
+stepLow <- rep(0.0085, nobs*2+3)
+temperature = c(1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7);
+ret.gpodeptemphmc <- parallel_temper_hmc_xtheta(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
+                                                temperature, 0.15, th.temp[1,], stepLow, 20, 50000)
+
+th.temp <- t(ret.gpodeptemphmc[-1,1,])
+
+burnin <- 2500
+n.iter <- 5000
+
+gpode <- list(abc=th.temp[-(1:burnin),(nobs*2+1):(nobs*2+3)],
+              sigma=rep(marlikmap$par[5], n.iter-burnin),
+              rphi=matrix(marlikmap$par[3:4], ncol=2,nrow=n.iter-burnin,byrow=T),
+              vphi=matrix(marlikmap$par[1:2], ncol=2,nrow=n.iter-burnin,byrow=T),
+              rtrue=th.temp[-(1:burnin),(nobs+1):(nobs*2)],
+              vtrue=th.temp[-(1:burnin),1:nobs],
+              lp__=ret.gpodeptemphmc[1,1,-(1:burnin)],
+              lglik=ret.gpodeptemphmc[1,1,-(1:burnin)])
+gpode$fode <- sapply(1:length(gpode$lp__), function(t) 
+  with(gpode, fODE(abc[t,], cbind(vtrue[t,],rtrue[t,]))), simplify = "array")
+
+fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtrue))
+fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
+
+plot.post.samples(paste0("../results/C-ode-ptemperHMC-fixphi-",noise,".pdf"), fn.true, fn.sim, gpode, pram.true)
