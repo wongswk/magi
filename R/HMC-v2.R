@@ -174,6 +174,14 @@ plot.post.samples(paste0("../results/R-ode-",noise,".pdf"), fn.true, fn.sim, gpo
 
 
 #### fixing phi sigma at marginal likelihood ####
+save(startX, fn.sim,r,noise,r2,signr, nobs,fn.true, pram.true,file="low_noise.RData")
+load("low_noise.RData")
+Rcpp::sourceCpp('../src/wrapper.cpp')
+source("visualization.R")
+source("helper/utilities.r")
+source("helper/basic_hmc.R")
+source("HMC-functions.R")
+
 phisigllikTest( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), data.matrix(fn.sim[,1:2]), r)
 fn <- function(par) -phisigllikTest( par, data.matrix(fn.sim[,1:2]), r)$value
 gr <- function(par) -as.vector(phisigllikTest( par, data.matrix(fn.sim[,1:2]), r)$grad)
@@ -185,10 +193,10 @@ curCovR <- calCov(marlikmap$par[3:4])
 cursigma <- marlikmap$par[5]
 
 numparam <- nobs*2+3  # num HMC parameters
-n.iter <- 500
+n.iter <- 100
 stepLow <- c(rep(0.0001, nobs*2), rep(0.0001,3))
 th.temp <- matrix(NA, n.iter, numparam)
-th.temp[1,] <- c( rep(0,nobs), rep(0,nobs), 1, 1, 1)
+th.temp[1,] <- c( startX, 1, 1, 1)
 #' initiating at 1,1,1 was not working.
 #' reason is HMC sampler stuck in weird local mode
 #' local model problem is more severe when observation is large and error is small
@@ -201,8 +209,9 @@ accepts <- 0
 
 #### basic HMC ####
 for (t in 2:n.iter) {
+  rstep <- runif(length(stepLow), stepLow, 2*stepLow)
   foo <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
-                      th.temp[t-1,], stepLow, 20, T)
+                      th.temp[t-1,], rstep, 20, T)
   th.temp[t,] <- foo$final
   accepts <- accepts + foo$acc
   if (t < n.iter/2) {
@@ -215,7 +224,7 @@ for (t in 2:n.iter) {
   }
   full_llik[t] <- loglik( cbind(th.temp[t,1:nobs],th.temp[t,(nobs+1):(nobs*2)]), 
                           th.temp[t,(nobs*2+1):(nobs*2+3)], curCovV, curCovR, 
-                          cursigma,  fn.sim[,1:2], lambda=lam)
+                          cursigma,  fn.sim[,1:2], lambda=rep(1,3))
   lliklist[t] <- foo$lpr
   
   if( t %% 100 == 0) show(c(t, accepts/t, foo$final[(nobs*2+1):(nobs*2+3)]))
@@ -223,7 +232,7 @@ for (t in 2:n.iter) {
 
 
 
-burnin <- 2500
+burnin <- n.iter/10
 
 gpode <- list(abc=th.temp[-(1:burnin),(nobs*2+1):(nobs*2+3)],
               sigma=rep(marlikmap$par[5], n.iter-burnin),
