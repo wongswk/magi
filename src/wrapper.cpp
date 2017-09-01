@@ -136,7 +136,8 @@ arma::cube parallel_temper_hmc_xtheta(
     [step, lb, nsteps](std::function<lp(vec)> tgt_tempered, mcmcstate currstate) -> mcmcstate{
       currstate.lpv = tgt_tempered(currstate.state).value;
       hmcstate post = basic_hmcC(tgt_tempered, currstate.state, step, lb,
-                                 {arma::datum::inf}, nsteps, false);
+                                 {arma::datum::inf}, nsteps, true);
+      // cout << post.trajH;
       return mcmcstate(post);
     };
     
@@ -150,6 +151,7 @@ arma::cube parallel_temper_hmc_xtheta(
   mcmcstate initpost_mcmcstate = hmc_simple(tgt, init_mcmcstate);
   cout << "test hmc_simple = " << initpost_mcmcstate.lpv << endl
        << initpost_mcmcstate.acc << endl;
+       // << initpost_mcmcstate.state << endl;
   
   cout << "prepare to call parallel_termperingC" << endl;
   
@@ -160,6 +162,6 @@ arma::cube parallel_temper_hmc_xtheta(
                                       alpha0,
                                       niter);
   return samples;
-  
+  // return arma::zeros<cube>(1,1,1);
 }
 

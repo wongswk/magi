@@ -66,6 +66,7 @@ cube parallel_termperingC(std::function<lp (arma::vec)> & lpr,
     // MCMC update
     
     for(int i=0; i<temperature.size(); i++){
+      // cout << paralxs[i].lpv << endl;
       slave_mcmc[i] = async(mcmc, lprtempered[i], paralxs[i]);
     }
     
