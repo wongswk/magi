@@ -33,7 +33,7 @@ for(it.pilot in 1:nfold.pilot){
   if(it.pilot == 1){
     xth.pilot[-(1:(2*nobs.pilot)),1,it.pilot] <- rep(1,3)
   }else{
-    xth.pilot[-(1:(2*nobs.pilot)),1,it.pilot] <- xth.pilot[-(1:(2*nobs.pilot)),n.iter.pilot,it.pilot-1]
+    xth.pilot[-(1:(2*nobs.pilot)),1,it.pilot] <- rep(1,3)
   }
   fn.sim.pilot <- fn.sim[id.pilot[,it.pilot],]
   xth.pilot[1:(2*nobs.pilot),1,it.pilot] <- startX[id.pilot[,it.pilot]]
