@@ -62,7 +62,12 @@ cube parallel_termperingC(std::function<lp (arma::vec)> & lpr,
     paralxs[i].lpv = slave_eval[i].get().value;
   }
   
+  int nmilestone = niter/10;
   for(int it=0; it<niter; it++){
+    if(it % nmilestone == 0){
+      cout << "\n === mile stone ===> processed " << it / nmilestone * 10 
+           << "% of MCMC iterations\n";
+    }
     // MCMC update
     
     for(int i=0; i<temperature.size(); i++){

@@ -135,7 +135,8 @@ arma::cube parallel_temper_hmc_xtheta(
   std::function<mcmcstate(std::function<lp(vec)>, mcmcstate)> hmc_simple =
     [step, lb, nsteps](std::function<lp(vec)> tgt_tempered, mcmcstate currstate) -> mcmcstate{
       currstate.lpv = tgt_tempered(currstate.state).value;
-      hmcstate post = basic_hmcC(tgt_tempered, currstate.state, step, lb,
+      vec rstep = arma::randu<vec>(step.size()) % step  + step;
+      hmcstate post = basic_hmcC(tgt_tempered, currstate.state, rstep, lb,
                                  {arma::datum::inf}, nsteps, true);
       // cout << post.trajH;
       return mcmcstate(post);
