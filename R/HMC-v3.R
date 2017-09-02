@@ -123,6 +123,7 @@ lliklist <- stepLow.scaler <- accepts <- rep(NA, n.iter)
 accepts[1] <- 0
 stepLow.scaler[1] <- stepLow
 stepLow <- stepLow.scaler[1]*scalefac
+burnin <- as.integer(n.iter*0.3)
 for (t in 2:n.iter) {
   rstep <- runif(length(stepLow), stepLow, 2*stepLow)
   foo <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
@@ -131,7 +132,7 @@ for (t in 2:n.iter) {
   accepts[t] <- foo$acc
   stepLow.scaler[t] <- mean(stepLow)
   
-  if (t < n.iter/2) {
+  if (t < burnin) {
     if (mean(tail(accepts[1:t],100)) > 0.9) {
       stepLow <- stepLow * 1.01
     } else if (mean(tail(accepts[1:t],100)) < 0.6) {
@@ -143,7 +144,7 @@ for (t in 2:n.iter) {
   if( t %% 100 == 0) show(c(t, mean(tail(accepts[1:t],100)), foo$final[(nobs*2+1):(nobs*2+3)]))
 }
 
-burnin <- as.integer(n.iter*0.3)
+
 
 gpode <- list(abc=xth.formal[-(1:burnin), (nobs*2+1):(nobs*2+3)],
               sigma=rep(marlikmap$par[5], n.iter-burnin),
