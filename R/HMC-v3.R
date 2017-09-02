@@ -1,9 +1,32 @@
-load("low_noise.RData")
-Rcpp::sourceCpp('../src/wrapper.cpp')
-source("visualization.R")
-source("helper/utilities.r")
-source("helper/basic_hmc.R")
-source("HMC-functions.R")
+library(parallel)
+library(Rcpp)
+sourceCpp("../src/wrapper.cpp")
+source("../R/visualization.R")
+source("../R/helper/utilities.r")
+source("../R/helper/basic_hmc.R")
+source("../R/HMC-functions.R")
+
+nobs <- 201
+noise <- 0.1
+
+VRtrue <- read.csv("../data/FN.csv")
+pram.true <- list(
+  abc=c(0.2,0.2,3),
+  rphi=c(0.9486433, 3.2682434),
+  vphi=c(1.9840824, 1.1185157),
+  sigma=noise
+)
+fn.true <- VRtrue
+fn.true$time <- seq(0,20,0.05)
+fn.sim <- fn.true
+fn.sim[,1:2] <- fn.sim[,1:2]+rnorm(length(unlist(fn.sim[,1:2])), sd=noise)
+fn.sim <- fn.sim[seq(1,nrow(fn.sim), length=nobs),]
+
+tvec.nobs <- fn.sim$time
+foo <- outer(tvec.nobs, t(tvec.nobs),'-')[,1,]
+r <- abs(foo)
+r2 <- r^2
+signr <- -sign(foo)
 
 phisigllikTest( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), data.matrix(fn.sim[,1:2]), r)
 fn <- function(par) -phisigllikTest( par, data.matrix(fn.sim[,1:2]), r)$value
@@ -20,14 +43,16 @@ startVR <- rbind(getMeanCurve(fn.sim$time, fn.sim$Vtrue, fn.sim$time,
                  getMeanCurve(fn.sim$time, fn.sim$Rtrue, fn.sim$time, 
                               t(marlikmap$par[3:4]), sigma.mat=matrix(cursigma)))
 startVR <- t(startVR)
-nfold.pilot <- 5
+nfold.pilot <- as.integer(nobs/40)
 nobs.pilot <- nobs%/%nfold.pilot
 numparam.pilot <- nobs.pilot*2+3  # num HMC parameters
 n.iter.pilot <- 1000
 stepLow.scaler.pilot <- matrix(NA, n.iter.pilot, nfold.pilot)
 stepLow.scaler.pilot[1,] <-  0.001
-accepts.pilot <- matrix(NA, n.iter.pilot, nfold.pilot)
-accepts.pilot[1,] <- 0
+apr.pilot <- accepts.pilot <- matrix(NA, n.iter.pilot, nfold.pilot)
+apr.pilot[1,] <- accepts.pilot[1,] <- 0
+rstep.pilot <- array(NA, dim=c(numparam.pilot, n.iter.pilot, nfold.pilot))
+rstep.pilot[,1,] <- stepLow.scaler.pilot[1,]
 xth.pilot <- array(NA, dim=c(numparam.pilot, n.iter.pilot, nfold.pilot))
 lliklist.pilot <- matrix(NA, n.iter.pilot, nfold.pilot)
 
@@ -54,7 +79,9 @@ for(it.pilot in 1:nfold.pilot){
                         xth.pilot[,t-1,it.pilot], rstep, 20, T)
     xth.pilot[,t,it.pilot] <- foo$final
     accepts.pilot[t,it.pilot] <- foo$acc
+    apr.pilot[t,it.pilot] <- foo$apr
     stepLow.scaler.pilot[t,it.pilot] <- tail(stepLow,1)
+    rstep.pilot[,t,it.pilot] <- rstep
     if (mean(tail(accepts.pilot[1:t,it.pilot],100)) > 0.9) {
       stepLow <- stepLow * 1.01
     }else if (mean(tail(accepts.pilot[1:t,it.pilot],100)) < 0.6) {
@@ -75,7 +102,17 @@ dev.off()
 #### setup parameters from pilot run ####
 startTheta <- apply(xth.pilot[(nobs.pilot*2+1):(nobs.pilot*2+3),-(1:(dim(xth.pilot)[[2]]/2)),], 1, mean)
 stepLow <- mean(stepLow.scaler.pilot[rbind(0,diff(accepts.pilot))==1])/nfold.pilot^2
-
+steptwopart <- apply(rstep.pilot, 1, function(x) sum(x*(apr.pilot>0.8))/sum(apr.pilot>0.8))
+mean(steptwopart[1:(2*nobs.pilot)])
+mean(tail(steptwopart,3))
+scalefac <- apply(xth.pilot[,-(1:(dim(xth.pilot)[[2]]/2)),], c(1,3), sd)
+scalefacV <- as.vector(t(scalefac[1:nobs.pilot,]))
+scalefacV <- c(scalefacV, rep(mean(scalefacV), nobs-nobs.pilot*nfold.pilot))
+scalefacR <- as.vector(t(scalefac[(nobs.pilot+1):(2*nobs.pilot),]))
+scalefacR <- c(scalefacR, rep(mean(scalefacR), nobs-nobs.pilot*nfold.pilot))
+scalefacTheta <- rowMeans(tail(scalefac,3))
+scalefac <- c(scalefacV, scalefacR, scalefacTheta)
+scalefac <- scalefac/mean(scalefac)
 
 #### formal running ####
 numparam <- nobs*2+3
@@ -85,14 +122,14 @@ xth.formal[1,] <- c(startVR,startTheta)
 lliklist <- stepLow.scaler <- accepts <- rep(NA, n.iter)
 accepts[1] <- 0
 stepLow.scaler[1] <- stepLow
-stepLow <- rep(stepLow, 2*nobs+3)
+stepLow <- stepLow.scaler[1]*scalefac
 for (t in 2:n.iter) {
   rstep <- runif(length(stepLow), stepLow, 2*stepLow)
   foo <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
                       xth.formal[t-1,], rstep, 20, T)
   xth.formal[t,] <- foo$final
   accepts[t] <- foo$acc
-  stepLow.scaler[t] <- tail(stepLow,1)
+  stepLow.scaler[t] <- mean(stepLow)
   
   if (t < n.iter/2) {
     if (mean(tail(accepts[1:t],100)) > 0.9) {
