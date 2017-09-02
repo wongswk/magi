@@ -27,19 +27,24 @@ lliklist.pilot <- matrix(NA, n.iter.pilot, nfold.pilot)
 #### pilot HMC ####
 # quickly navigate the initial value to right region
 id.pilot <- matrix(1:(nfold.pilot*nobs.pilot), nobs.pilot, byrow = T)
+it.pilot <- 1
 for(it.pilot in 1:nfold.pilot){
   accepts <- c()
   stepLow <- c(rep(0.0002, nobs.pilot*2), rep(0.0002,3))
-  if(it.pilot == 1){
-    xth.pilot[-(1:(2*nobs.pilot)),1,it.pilot] <- rep(1,3)
-  }else{
-    xth.pilot[-(1:(2*nobs.pilot)),1,it.pilot] <- rep(1,3)
-  }
+  xth.pilot[,1,it.pilot] <- c(startX[c(id.pilot[,it.pilot], id.pilot[,it.pilot]+nobs)], rep(1,3))
   fn.sim.pilot <- fn.sim[id.pilot[,it.pilot],]
-  xth.pilot[1:(2*nobs.pilot),1,it.pilot] <- startX[id.pilot[,it.pilot]]
+  
   pilotSignedDist <- outer(fn.sim.pilot$time, t(fn.sim.pilot$time),'-')[,1,]
-  pilotCovV <- calCov2(marlikmap$par[1:2], abs(pilotSignedDist), sign(pilotSignedDist))
-  pilotCovR <- calCov2(marlikmap$par[3:4], abs(pilotSignedDist), sign(pilotSignedDist))
+  
+  fn.pilot <- function(par)
+    -phisigllikTest( par, data.matrix(fn.sim.pilot[,1:2]), abs(pilotSignedDist))$value
+  gr.pilot <- function(par)
+    -as.vector(phisigllikTest( par, data.matrix(fn.sim.pilot[,1:2]), abs(pilotSignedDist))$grad)
+  marlikmap.pilot <- optim(rep(1,5), fn.pilot, gr.pilot, method="L-BFGS-B", lower = 0.0001)
+  # marlikmap.pilot <- marlikmap
+  
+  pilotCovV <- calCov2(marlikmap.pilot$par[1:2], abs(pilotSignedDist), sign(pilotSignedDist))
+  pilotCovR <- calCov2(marlikmap.pilot$par[3:4], abs(pilotSignedDist), sign(pilotSignedDist))
   
   for (t in 2:n.iter.pilot) {
     rstep <- runif(length(stepLow), stepLow, 2*stepLow)
