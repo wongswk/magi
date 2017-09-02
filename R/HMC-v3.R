@@ -25,7 +25,7 @@ nobs.pilot <- nobs%/%nfold.pilot
 numparam.pilot <- nobs.pilot*2+3  # num HMC parameters
 n.iter.pilot <- 1000
 stepLow.scaler.pilot <- matrix(NA, n.iter.pilot, nfold.pilot)
-stepLow.scaler.pilot[1,] <-  0.01
+stepLow.scaler.pilot[1,] <-  0.001
 accepts.pilot <- matrix(NA, n.iter.pilot, nfold.pilot)
 accepts.pilot[1,] <- 0
 xth.pilot <- array(NA, dim=c(numparam.pilot, n.iter.pilot, nfold.pilot))
@@ -55,9 +55,9 @@ for(it.pilot in 1:nfold.pilot){
     xth.pilot[,t,it.pilot] <- foo$final
     accepts.pilot[t,it.pilot] <- foo$acc
     stepLow.scaler.pilot[t,it.pilot] <- tail(stepLow,1)
-    if (mean(tail(accepts.pilot[1:t,it.pilot],100)) > 0.8) {
+    if (mean(tail(accepts.pilot[1:t,it.pilot],100)) > 0.9) {
       stepLow <- stepLow * 1.01
-    }else if (mean(tail(accepts.pilot[1:t,it.pilot],100)) < 0.5) {
+    }else if (mean(tail(accepts.pilot[1:t,it.pilot],100)) < 0.6) {
       stepLow <- stepLow * .99
     }
     lliklist.pilot[t,it.pilot] <- foo$lpr
@@ -80,8 +80,8 @@ stepLow <- mean(stepLow.scaler.pilot[rbind(0,diff(accepts.pilot))==1])/nfold.pil
 #### formal running ####
 numparam <- nobs*2+3
 n.iter <- 5e3
-xth.formal <- matrix(NA, numparam, n.iter)
-xth.formal[,1] <- c(startVR,startTheta)
+xth.formal <- matrix(NA, n.iter, numparam)
+xth.formal[1,] <- c(startVR,startTheta)
 lliklist <- stepLow.scaler <- accepts <- rep(NA, n.iter)
 accepts[1] <- 0
 stepLow.scaler[1] <- stepLow
@@ -89,15 +89,15 @@ stepLow <- rep(stepLow, 2*nobs+3)
 for (t in 2:n.iter) {
   rstep <- runif(length(stepLow), stepLow, 2*stepLow)
   foo <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
-                      xth.formal[,t-1], rstep, 20, T)
-  xth.formal[,t] <- foo$final
+                      xth.formal[t-1,], rstep, 20, T)
+  xth.formal[t,] <- foo$final
   accepts[t] <- foo$acc
   stepLow.scaler[t] <- tail(stepLow,1)
   
   if (t < n.iter/2) {
-    if (mean(tail(accepts[1:t],100)) > 0.8) {
+    if (mean(tail(accepts[1:t],100)) > 0.9) {
       stepLow <- stepLow * 1.01
-    } else if (mean(tail(accepts[1:t],100)) < 0.5) {
+    } else if (mean(tail(accepts[1:t],100)) < 0.6) {
       stepLow <- stepLow * .99
     }
   }
@@ -105,3 +105,45 @@ for (t in 2:n.iter) {
   
   if( t %% 100 == 0) show(c(t, mean(tail(accepts[1:t],100)), foo$final[(nobs*2+1):(nobs*2+3)]))
 }
+
+burnin <- as.integer(n.iter*0.3)
+
+gpode <- list(abc=xth.formal[-(1:burnin), (nobs*2+1):(nobs*2+3)],
+              sigma=rep(marlikmap$par[5], n.iter-burnin),
+              rphi=matrix(marlikmap$par[3:4], ncol=2,nrow=n.iter-burnin,byrow=T),
+              vphi=matrix(marlikmap$par[1:2], ncol=2,nrow=n.iter-burnin,byrow=T),
+              rtrue=xth.formal[-(1:burnin), (nobs+1):(nobs*2)],
+              vtrue=xth.formal[-(1:burnin), 1:nobs],
+              lp__=lliklist[-(1:burnin)],
+              lglik=lliklist[-(1:burnin)])
+gpode$fode <- sapply(1:length(gpode$lp__), function(t) 
+  with(gpode, fODE(abc[t,], cbind(vtrue[t,],rtrue[t,]))), simplify = "array")
+
+fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtrue))
+fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
+
+plot.post.samples(paste0("../results/C-ode-HMC-fixphi-",noise,".pdf"), fn.true, fn.sim, gpode, pram.true)
+mean(accepts)
+mean(stepLow.scaler)
+
+#### parallel tempering for faster mixing ####
+init_xtheta <- c(startVR,startTheta)
+temperature <- 2^(seq(0,1,length=8))
+stepLow.ptemper <- stepLow
+ret.gpodeptemphmc <- parallel_temper_hmc_xtheta(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
+                                                temperature, 0.20, init_xtheta, stepLow.ptemper, 20, n.iter)
+th.temp <- t(ret.gpodeptemphmc[-1,1,])
+burnin <- n.iter*0.3
+
+gpode_ptemper <- list(abc=th.temp[-(1:burnin),(nobs*2+1):(nobs*2+3)],
+                      sigma=rep(marlikmap$par[5], n.iter-burnin),
+                      rphi=matrix(marlikmap$par[3:4], ncol=2,nrow=n.iter-burnin,byrow=T),
+                      vphi=matrix(marlikmap$par[1:2], ncol=2,nrow=n.iter-burnin,byrow=T),
+                      rtrue=th.temp[-(1:burnin),(nobs+1):(nobs*2)],
+                      vtrue=th.temp[-(1:burnin),1:nobs],
+                      lp__=ret.gpodeptemphmc[1,1,-(1:burnin)],
+                      lglik=ret.gpodeptemphmc[1,1,-(1:burnin)])
+gpode_ptemper$fode <- sapply(1:length(gpode_ptemper$lp__), function(t) 
+  with(gpode_ptemper, fODE(abc[t,], cbind(vtrue[t,],rtrue[t,]))), simplify = "array")
+
+plot.post.samples(paste0("../results/C-ode-ptemperHMC-fixphi-",noise,".pdf"), fn.true, fn.sim, gpode_ptemper, pram.true)
