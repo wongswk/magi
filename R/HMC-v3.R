@@ -30,8 +30,9 @@ id.pilot <- matrix(1:(nfold.pilot*nobs.pilot), nobs.pilot, byrow = T)
 it.pilot <- 1
 for(it.pilot in 1:nfold.pilot){
   accepts <- c()
-  stepLow <- c(rep(0.0002, nobs.pilot*2), rep(0.0002,3))
-  xth.pilot[,1,it.pilot] <- c(startX[c(id.pilot[,it.pilot], id.pilot[,it.pilot]+nobs)], rep(1,3))
+  stepLow <- c(rep(0.00023, nobs.pilot*2), rep(0.00023,3))
+  
+  
   fn.sim.pilot <- fn.sim[id.pilot[,it.pilot],]
   
   pilotSignedDist <- outer(fn.sim.pilot$time, t(fn.sim.pilot$time),'-')[,1,]
@@ -41,14 +42,22 @@ for(it.pilot in 1:nfold.pilot){
   gr.pilot <- function(par)
     -as.vector(phisigllikTest( par, data.matrix(fn.sim.pilot[,1:2]), abs(pilotSignedDist))$grad)
   marlikmap.pilot <- optim(rep(1,5), fn.pilot, gr.pilot, method="L-BFGS-B", lower = 0.0001)
+  pilotsigma <- marlikmap.pilot$par[5]
   # marlikmap.pilot <- marlikmap
   
-  pilotCovV <- calCov2(marlikmap.pilot$par[1:2], abs(pilotSignedDist), sign(pilotSignedDist))
-  pilotCovR <- calCov2(marlikmap.pilot$par[3:4], abs(pilotSignedDist), sign(pilotSignedDist))
+  xth.pilot[,1,it.pilot] <- c(
+    getMeanCurve(fn.sim.pilot$time, fn.sim.pilot$Vtrue, fn.sim.pilot$time, 
+                 t(marlikmap.pilot$par[1:2]), sigma.mat=matrix(pilotsigma)),
+    getMeanCurve(fn.sim.pilot$time, fn.sim.pilot$Rtrue, fn.sim.pilot$time, 
+                 t(marlikmap.pilot$par[3:4]), sigma.mat=matrix(pilotsigma)),
+    rep(1,3))
   
+  pilotCovV <- calCov2(marlikmap.pilot$par[1:2], abs(pilotSignedDist), -sign(pilotSignedDist))
+  pilotCovR <- calCov2(marlikmap.pilot$par[3:4], abs(pilotSignedDist), -sign(pilotSignedDist))
+  t <- 2
   for (t in 2:n.iter.pilot) {
     rstep <- runif(length(stepLow), stepLow, 2*stepLow)
-    foo <- xthetaSample(data.matrix(fn.sim.pilot[,1:2]), pilotCovV, pilotCovR, cursigma, 
+    foo <- xthetaSample(data.matrix(fn.sim.pilot[,1:2]), pilotCovV, pilotCovR, pilotsigma, 
                         xth.pilot[,t-1,it.pilot], rstep, 20, T)
     xth.pilot[,t,it.pilot] <- foo$final
     accepts <- c(accepts, foo$acc)
@@ -65,7 +74,7 @@ for(it.pilot in 1:nfold.pilot){
   cat("================\npilot iteration ", it.pilot, " finished\n================\n")
 }
 
-pdf("pilot.pdf", height = 3*6, width = 5*6)
+pdf("../results/pilot.pdf", height = 3*6, width = 5*6)
 layout(matrix(1:15,3))
 x <- apply(xth.pilot[-(1:(2*nobs.pilot)),,], c(1,3), plot)
 dev.off()
