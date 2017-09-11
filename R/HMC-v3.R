@@ -6,7 +6,7 @@ source("../R/helper/utilities.r")
 source("../R/helper/basic_hmc.R")
 source("../R/HMC-functions.R")
 
-nobs <- 201
+nobs <- 41
 noise <- 0.1
 
 VRtrue <- read.csv("../data/FN.csv")
@@ -94,9 +94,9 @@ for(it.pilot in 1:nfold.pilot){
   cat("================\npilot iteration ", it.pilot, " finished\n================\n")
 }
 
-pdf("../results/pilot.pdf", height = 3*6, width = 5*6)
-layout(matrix(1:15,3))
-x <- apply(xth.pilot[-(1:(2*nobs.pilot)),,], c(1,3), plot)
+pdf(paste0("../results/HMC-v3-pilot-noise",noise,"-nobs",nobs,".pdf"), height = 3*6, width = 5*nfold.pilot)
+layout(matrix(1:(3*nfold.pilot),3))
+x <- apply(xth.pilot[-(1:(2*nobs.pilot)),,,drop=FALSE], c(1,3), plot)
 dev.off()
 
 #### setup parameters from pilot run ####
@@ -160,7 +160,7 @@ gpode$fode <- sapply(1:length(gpode$lp__), function(t)
 fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtrue))
 fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
 
-plot.post.samples(paste0("../results/C-ode-HMC-fixphi-",noise,".pdf"), fn.true, fn.sim, gpode, pram.true)
+plot.post.samples(paste0("../results/C-ode-HMC-fixphi-noise",noise,"-nobs",nobs,".pdf"), fn.true, fn.sim, gpode, pram.true)
 mean(accepts)
 mean(stepLow.scaler)
 
