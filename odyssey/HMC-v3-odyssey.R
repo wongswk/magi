@@ -6,8 +6,20 @@ source("../R/helper/utilities.r")
 source("../R/helper/basic_hmc.R")
 source("../R/HMC-functions.R")
 
-nobs <- 41
-noise <- 0.1
+nobs.candidates <- (2:20)^2+1
+noise.candidates <- seq(0.05, 1.5, 0.05)
+
+nobs <- 21
+noise <- 0.05
+
+args <- commandArgs(trailingOnly = TRUE)
+if(length(args)>0){
+  args <- as.numeric(args)
+  noise <- noise.candidates[args%%length(noise.candidates)+1]
+  args <- args%/%length(noise.candidates)
+  nobs <- nobs.candidates[args%%length(nobs.candidates)+1]
+  print(c(noise, nobs))
+}
 
 VRtrue <- read.csv("../data/FN.csv")
 pram.true <- list(
@@ -19,6 +31,7 @@ pram.true <- list(
 fn.true <- VRtrue
 fn.true$time <- seq(0,20,0.05)
 fn.sim <- fn.true
+
 fn.sim[,1:2] <- fn.sim[,1:2]+rnorm(length(unlist(fn.sim[,1:2])), sd=noise)
 fn.sim <- fn.sim[seq(1,nrow(fn.sim), length=nobs),]
 
@@ -43,7 +56,7 @@ startVR <- rbind(getMeanCurve(fn.sim$time, fn.sim$Vtrue, fn.sim$time,
                  getMeanCurve(fn.sim$time, fn.sim$Rtrue, fn.sim$time, 
                               t(marlikmap$par[3:4]), sigma.mat=matrix(cursigma)))
 startVR <- t(startVR)
-nfold.pilot <- as.integer(nobs/40)
+nfold.pilot <- ceiling(nobs/40)
 nobs.pilot <- nobs%/%nfold.pilot
 numparam.pilot <- nobs.pilot*2+3  # num HMC parameters
 n.iter.pilot <- 1000
@@ -105,7 +118,7 @@ stepLow <- mean(stepLow.scaler.pilot[rbind(0,diff(accepts.pilot))==1])/nfold.pil
 steptwopart <- apply(rstep.pilot, 1, function(x) sum(x*(apr.pilot>0.8))/sum(apr.pilot>0.8))
 mean(steptwopart[1:(2*nobs.pilot)])
 mean(tail(steptwopart,3))
-scalefac <- apply(xth.pilot[,-(1:(dim(xth.pilot)[[2]]/2)),], c(1,3), sd)
+scalefac <- apply(xth.pilot[,-(1:(dim(xth.pilot)[[2]]/2)),,drop=FALSE], c(1,3), sd)
 scalefacV <- as.vector(t(scalefac[1:nobs.pilot,]))
 scalefacV <- c(scalefacV, rep(mean(scalefacV), nobs-nobs.pilot*nfold.pilot))
 scalefacR <- as.vector(t(scalefac[(nobs.pilot+1):(2*nobs.pilot),]))
@@ -160,6 +173,7 @@ gpode$fode <- sapply(1:length(gpode$lp__), function(t)
 fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtrue))
 fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
 
-plot.post.samples(paste0("../results/C-ode-HMC-fixphi-noise",noise,"-nobs",nobs,".pdf"), fn.true, fn.sim, gpode, pram.true)
+plot.post.samples(paste0("../results/HMC-v3-fixphi-noise",noise,"-nobs",nobs,".pdf"), fn.true, fn.sim, gpode, pram.true)
 mean(accepts)
 mean(stepLow.scaler)
+save.image(paste0("../results/C-ode-HMC-fixphi-noise",noise,"-nobs",nobs,".rda"))
