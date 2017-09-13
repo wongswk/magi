@@ -9,7 +9,7 @@ source("../R/HMC-functions.R")
 nobs.candidates <- (2:20)^2+1
 noise.candidates <- seq(0.05, 1.5, 0.05)
 
-nobs <- 21
+nobs <- 201
 noise <- 0.05
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -56,10 +56,13 @@ startVR <- rbind(getMeanCurve(fn.sim$time, fn.sim$Vtrue, fn.sim$time,
                  getMeanCurve(fn.sim$time, fn.sim$Rtrue, fn.sim$time, 
                               t(marlikmap$par[3:4]), sigma.mat=matrix(cursigma)))
 startVR <- t(startVR)
-nfold.pilot <- ceiling(nobs/40)
-nobs.pilot <- nobs%/%nfold.pilot
+nfold.pilot <- ceiling(nobs/50)
+id.pilot <- matrix(c(1:nobs, rep(NA, nfold.pilot-nobs%%nfold.pilot)), 
+                   ncol=nfold.pilot, byrow = F)
+nobs.pilot <- nrow(id.pilot)
 numparam.pilot <- nobs.pilot*2+3  # num HMC parameters
-n.iter.pilot <- 1000
+n.iter.pilot <- 10000
+burnin.pilot <- 6000
 stepLow.scaler.pilot <- matrix(NA, n.iter.pilot, nfold.pilot)
 stepLow.scaler.pilot[1,] <-  0.001
 apr.pilot <- accepts.pilot <- matrix(NA, n.iter.pilot, nfold.pilot)
@@ -71,13 +74,13 @@ lliklist.pilot <- matrix(NA, n.iter.pilot, nfold.pilot)
 
 #### pilot HMC ####
 # quickly navigate the initial value to right region
-id.pilot <- matrix(1:(nfold.pilot*nobs.pilot), nobs.pilot, byrow = T)
 it.pilot <- 1
 for(it.pilot in 1:nfold.pilot){
+  nobs.pilot <- length(na.omit(id.pilot[,it.pilot]))
   accepts <- c()
   stepLow <- rep(stepLow.scaler.pilot[1,it.pilot], nobs.pilot*2+3)
   
-  fn.sim.pilot <- fn.sim[id.pilot[,it.pilot],]
+  fn.sim.pilot <- fn.sim[na.omit(id.pilot[,it.pilot]),]
   
   pilotSignedDist <- outer(fn.sim.pilot$time, t(fn.sim.pilot$time),'-')[,1,]
   
@@ -89,12 +92,12 @@ for(it.pilot in 1:nfold.pilot){
   for (t in 2:n.iter.pilot) {
     rstep <- runif(length(stepLow), stepLow, 2*stepLow)
     foo <- xthetaSample(data.matrix(fn.sim.pilot[,1:2]), pilotCovV, pilotCovR, cursigma, 
-                        xth.pilot[,t-1,it.pilot], rstep, 20, T)
-    xth.pilot[,t,it.pilot] <- foo$final
+                        na.omit(xth.pilot[,t-1,it.pilot]), rstep, 20, T)
+    xth.pilot[,t,it.pilot][is.finite(xth.pilot[,t-1,it.pilot])] <- foo$final
     accepts.pilot[t,it.pilot] <- foo$acc
     apr.pilot[t,it.pilot] <- foo$apr
     stepLow.scaler.pilot[t,it.pilot] <- tail(stepLow,1)
-    rstep.pilot[,t,it.pilot] <- rstep
+    rstep.pilot[,t,it.pilot][is.finite(xth.pilot[,t-1,it.pilot])] <- rstep
     if (mean(tail(accepts.pilot[1:t,it.pilot],100)) > 0.9) {
       stepLow <- stepLow * 1.01
     }else if (mean(tail(accepts.pilot[1:t,it.pilot],100)) < 0.6) {
@@ -106,23 +109,24 @@ for(it.pilot in 1:nfold.pilot){
   }  
   cat("================\npilot iteration ", it.pilot, " finished\n================\n")
 }
-
+nobs.pilot <- nrow(id.pilot)
 pdf(paste0("../results/HMC-v3-pilot-noise",noise,"-nobs",nobs,".pdf"), height = 3*6, width = 5*nfold.pilot)
 layout(matrix(1:(3*nfold.pilot),3))
 x <- apply(xth.pilot[-(1:(2*nobs.pilot)),,,drop=FALSE], c(1,3), plot)
 dev.off()
 
+
+
 #### setup parameters from pilot run ####
 startTheta <- apply(xth.pilot[(nobs.pilot*2+1):(nobs.pilot*2+3),-(1:(dim(xth.pilot)[[2]]/2)),], 1, mean)
 stepLow <- mean(stepLow.scaler.pilot[rbind(0,diff(accepts.pilot))==1])/nfold.pilot^2
-steptwopart <- apply(rstep.pilot, 1, function(x) sum(x*(apr.pilot>0.8))/sum(apr.pilot>0.8))
-mean(steptwopart[1:(2*nobs.pilot)])
-mean(tail(steptwopart,3))
-scalefac <- apply(xth.pilot[,-(1:(dim(xth.pilot)[[2]]/2)),,drop=FALSE], c(1,3), sd)
-scalefacV <- as.vector(t(scalefac[1:nobs.pilot,]))
-scalefacV <- c(scalefacV, rep(mean(scalefacV), nobs-nobs.pilot*nfold.pilot))
-scalefacR <- as.vector(t(scalefac[(nobs.pilot+1):(2*nobs.pilot),]))
-scalefacR <- c(scalefacR, rep(mean(scalefacR), nobs-nobs.pilot*nfold.pilot))
+scalefac <- apply(xth.pilot[,-(1:burnin.pilot),,drop=FALSE], c(1,3), sd)
+# scalefacV <- as.vector(t(scalefac[1:nobs.pilot,]))
+# scalefacV <- c(scalefacV, rep(mean(scalefacV), nobs-nobs.pilot*nfold.pilot))
+scalefacV <- na.omit(as.vector(scalefac[1:nobs.pilot,]))
+# scalefacR <- as.vector(t(scalefac[(nobs.pilot+1):(2*nobs.pilot),]))
+# scalefacR <- c(scalefacR, rep(mean(scalefacR), nobs-nobs.pilot*nfold.pilot))
+scalefacR <- na.omit(as.vector(scalefac[(nobs.pilot+1):(2*nobs.pilot),]))
 scalefacTheta <- rowMeans(tail(scalefac,3))
 scalefac <- c(scalefacV, scalefacR, scalefacTheta)
 scalefac <- scalefac/mean(scalefac)
