@@ -13,7 +13,7 @@ nobs <- 26
 noise <- 0.05
 
 # fill.candidates <- 2^(0:6)
-filllevel <- 1
+filllevel <- 0
 
 args <- commandArgs(trailingOnly = TRUE)
 if(length(args)>0){
@@ -153,8 +153,12 @@ CR <- C.Rxmxm - C.Rxmx %*% solve(C.Rxx) %*% t(C.Rxmx)
 CV[upper.tri(CV)] <- t(CV)[upper.tri(CV)]
 CR[upper.tri(CR)] <- t(CR)[upper.tri(CR)]
 
-V_upsamp <- rmvnorm(1,C.Vxmx %*% solve(C.Vxx) %*% startVR[,1], CV)
-R_upsamp <- rmvnorm(1,C.Rxmx %*% solve(C.Rxx) %*% startVR[,2], CR)
+if(filllevel==0){
+  V_upsamp <- R_upsamp <- numeric(0)
+}else{
+  V_upsamp <- rmvnorm(1,C.Vxmx %*% solve(C.Vxx) %*% startVR[,1], CV)
+  R_upsamp <- rmvnorm(1,C.Rxmx %*% solve(C.Rxx) %*% startVR[,2], CR)
+}
 
 fullstartVR <- rep(NA, numparam-3)
 fullstartVR[c(obs.ind,nall+obs.ind)] <- startVR
