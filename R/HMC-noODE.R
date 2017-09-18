@@ -142,6 +142,15 @@ post.noODE <- summary.post.noODE(paste0("../results/C-GPfit-",noise,".pdf"), fn.
 
 post.noODE$init.epost
 
+logliknoODE( data.matrix(fn.sim[,1:2]), 
+             calCov( c(1.9840824, 0.1185157 )), calCov( c(1.9840824, 0.1185157 )), 0.00001,  
+             fn.sim[,1:2])
+
+logliknoODE( cbind(colMeans(gpfit$vtrue), colMeans(gpfit$rtrue)), 
+             calCov( colMeans(gpfit$vphi)), calCov( colMeans(gpfit$rphi)), mean(gpfit$sigma),  
+             fn.sim[,1:2])
+
+
 #### check with STAN ####
 gpfit.stan <- stan(file="../stan/gp-initialfit-mar.stan",
                    data=list(N=nrow(fn.sim),
