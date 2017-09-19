@@ -103,6 +103,7 @@ lp xthetallik( vec xtheta, gpcov CovV, gpcov CovR, double sigma, mat yobs,
   vec Vsm = xlatent.subvec(0, xlatent.size()/2 - 1);
   vec Rsm = xlatent.subvec(xlatent.size()/2, xlatent.size() - 1);
   int n = xlatent.size()/2;
+  int nobs = 0;
   
   mat fderiv = fODE(theta, join_horiz(Vsm, Rsm));
   mat res(2,3);
@@ -112,13 +113,15 @@ lp xthetallik( vec xtheta, gpcov CovV, gpcov CovR, double sigma, mat yobs,
   //res(0,0) = -0.5 * sum(square( Vsm - yobs.col(0) )) / pow(sigma,2);
   res(0,0) = 0.0;
   for (int i=0; i < n; i++) {
-    if (!std::isnan(yobs(i,0)))
+    if (!std::isnan(yobs(i,0))) {
       res(0,0) += pow(Vsm[i] - yobs(i,0),2);
+	  nobs++;
+	}
   }
   res(0,0) = -0.5 * res(0,0) / pow(sigma,2);
   
-  res(0,1) = -0.5 * as_scalar( frV.t() * CovV.Kinv * frV);
-  res(0,2) = -0.5 * as_scalar( Vsm.t() * CovV.Cinv * Vsm);
+  res(0,1) = -0.5 * as_scalar( frV.t() * CovV.Kinv * frV) * (double)nobs/(double)n;
+  res(0,2) = -0.5 * as_scalar( Vsm.t() * CovV.Cinv * Vsm) * (double)nobs/(double)n;
   // R
   vec frR = (fderiv.col(1) - CovR.mphi * Rsm);
   res(1,0) = 0.0;
@@ -129,8 +132,8 @@ lp xthetallik( vec xtheta, gpcov CovV, gpcov CovR, double sigma, mat yobs,
   res(1,0) = -0.5 * res(1,0) / pow(sigma,2);
   
   //res(1,0) = -0.5 * sum(square( Rsm - yobs.col(1) )) / pow(sigma,2);
-  res(1,1) = -0.5 * as_scalar( frR.t() * CovR.Kinv * frR);
-  res(1,2) = -0.5 * as_scalar( Rsm.t() * CovR.Cinv * Rsm);
+  res(1,1) = -0.5 * as_scalar( frR.t() * CovR.Kinv * frR) * (double)nobs/(double)n;
+  res(1,2) = -0.5 * as_scalar( Rsm.t() * CovR.Cinv * Rsm) * (double)nobs/(double)n;
   
   //cout << "lglik component = \n" << res << endl;
   
@@ -148,7 +151,7 @@ lp xthetallik( vec xtheta, gpcov CovV, gpcov CovR, double sigma, mat yobs,
   vec bTemp = zeros<vec>(n); 
   vec cTemp = fderiv.col(0) / theta(2);
   mat VC2 = join_horiz(join_horiz(join_horiz(join_horiz(Vtemp,Rtemp),aTemp),bTemp),cTemp);
-  VC2 = 2.0 * VC2.t() * CovV.Kinv * frV;
+  VC2 = 2.0 * VC2.t() * CovV.Kinv * frV * (double)nobs/(double)n;
   
   // cout << "VC2 = \n" << VC2 << endl;
   
@@ -159,13 +162,14 @@ lp xthetallik( vec xtheta, gpcov CovV, gpcov CovR, double sigma, mat yobs,
   bTemp = -Rsm/theta(2);
   cTemp = -fderiv.col(1) / theta(2);
   mat RC2 = join_horiz(join_horiz(join_horiz(join_horiz(Vtemp,Rtemp),aTemp),bTemp),cTemp);
-  RC2 = 2.0 * RC2.t() * CovR.Kinv * frR;
+  RC2 = 2.0 * RC2.t() * CovR.Kinv * frR * (double)nobs/(double)n;
   
   // cout << "RC2 = \n" << RC2 << endl;
   
   vec C3 = join_vert(join_vert( 2.0 * CovV.Cinv * Vsm,  
                                 2.0 * CovR.Cinv * Rsm ), 
                                 zeros<vec>(theta.size()));
+  C3 = C3 * (double)nobs/(double)n;
   vec C1 = join_vert(join_vert( 2.0 * (Vsm - yobs.col(0)) / pow(sigma,2) ,  
                                 2.0 * (Rsm - yobs.col(1)) / pow(sigma,2) ),
                                 zeros<vec>(theta.size()));
