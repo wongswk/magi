@@ -89,11 +89,17 @@ gpcov cov_r2cpp(List cov_r){
 //' sample from GP ODE for latent x and theta
 // [[Rcpp::export]]
 Rcpp::List xthetaSample( mat yobs, List covVr, List covRr, double sigma, const vec & initial, vec step,
-                         int nsteps = 1, bool traj = false){
+                         int nsteps = 1, bool traj = false, bool rescaleloglik = false){
   gpcov covV = cov_r2cpp(covVr);
   gpcov covR = cov_r2cpp(covRr);
-  std::function<lp(vec)> tgt = std::bind(xthetallik, std::placeholders::_1, 
-                   covV, covR, sigma, yobs, fnmodelODE);
+  std::function<lp(vec)> tgt;
+  if(rescaleloglik){
+    tgt = std::bind(xthetallik_rescaled, std::placeholders::_1, 
+                    covV, covR, sigma, yobs, fnmodelODE);
+  }else{
+    tgt = std::bind(xthetallik, std::placeholders::_1, 
+                    covV, covR, sigma, yobs, fnmodelODE);
+  }
   vec lb = ones<vec>(initial.size()) * (-datum::inf);
   lb.subvec(lb.size() - 3, lb.size() - 1).fill(0.0);
   
