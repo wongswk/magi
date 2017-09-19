@@ -13,7 +13,7 @@ nobs <- 26
 noise <- 0.05
 
 # fill.candidates <- 2^(0:6)
-filllevel <- 0
+filllevel <- 1
 
 args <- commandArgs(trailingOnly = TRUE)
 if(length(args)>0){
@@ -33,6 +33,9 @@ fn.sim <- fn.true
 fn.sim[,1:2] <- fn.sim[,1:2]+rnorm(length(unlist(fn.sim[,1:2])), sd=noise)
 
 fn.sim.obs <- fn.sim[seq(1,nrow(fn.sim), length=nobs),]
+if(nobs==26){
+  fn.sim.obs <- read.csv("../data/fn.sim.obs.26.csv")
+}
 fn.sim <- insert_nan(fn.sim.obs,filllevel)
 
 tvec.full <- fn.sim$time
@@ -201,7 +204,7 @@ for (t in 2:n.iter) {
 }
 
 
-
+burnin <- 100
 gpode <- list(abc=xth.formal[-(1:burnin), (nall*2+1):(nall*2+3)],
               sigma=rep(marlikmap$par[5], n.iter-burnin),
               rphi=matrix(marlikmap$par[3:4], ncol=2,nrow=n.iter-burnin,byrow=T),
@@ -221,3 +224,23 @@ plot.post.samples(paste0("../results/HMC-v4-fixphi-noise",noise,"-nobs",nobs,"-f
 mean(accepts)
 mean(stepLow.scaler)
 save.image(paste0("../results/C-v4-ode-HMC-fixphi-noise",noise,"-nobs",nobs,"-filllevel", filllevel,".rda"))
+
+xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
+             xth.formal[1,],
+             step=rep(1e5,length(xth.formal[1,])), nsteps=1, T)$lpr
+
+xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
+             xth.formal[t-1,],
+             step=rep(1e5,length(xth.formal[1,])), nsteps=1, T)$lpr
+
+xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
+             c(data.matrix(fn.true[,1:2]), 0.2, 0.2, 3),
+             step=rep(1e5,length(xth.formal[1,])), nsteps=1, T)$lpr
+
+xth.formal[1,] <- c(data.matrix(fn.true[,1:2]), 0.2, 0.2, 3)
+fn.true.fill <- insert_nan(fn.true, 1)
+fn.true.fill$Vtrue <- approx(fn.true$time, fn.true$Vtrue,fn.true.fill$time)$y
+fn.true.fill$Rtrue <- approx(fn.true$time, fn.true$Rtrue,fn.true.fill$time)$y
+
+
+xth.formal[1,] <- c(data.matrix(fn.true.fill[,1:2]), 0.2, 0.2, 3)
