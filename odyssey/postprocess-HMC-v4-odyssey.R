@@ -1,3 +1,6 @@
+library(parallel)
+library(Rcpp)
+
 nobs.candidates <- (2:14)^2+1
 noise.candidates <- seq(0.05, 1.5, 0.05)
 
