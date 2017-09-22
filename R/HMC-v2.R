@@ -193,8 +193,8 @@ curCovR <- calCov(marlikmap$par[3:4])
 cursigma <- marlikmap$par[5]
 
 numparam <- nobs*2+3  # num HMC parameters
-n.iter <- 100
-stepLow <- c(rep(0.0001, nobs*2), rep(0.0001,3))
+n.iter <- 5000
+stepLow <- c(rep(0.00023, nobs*2), rep(0.00023,3))
 th.temp <- matrix(NA, n.iter, numparam)
 th.temp[1,] <- c( startX, 1, 1, 1)
 #' initiating at 1,1,1 was not working.
@@ -254,21 +254,24 @@ plot.post.samples(paste0("../results/C-ode-HMC-fixphi-",noise,".pdf"), fn.true, 
 
 
 Rcpp::sourceCpp('~/Workspace/DynamicSys/dynamic-systems/src/wrapper.cpp')
-stepLow <- rep(0.000085, nobs*2+3)
-temperature = c(1, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.5);
+stepLow <- rep(0.00024, nobs*2+3)
+temperature = c(1, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.5)
+temperature <- exp(seq(0,1,length=16))
 niter <- 50
-init_xtheta <- c(colMeans(gpfit$vtrue), colMeans(gpfit$rtrue), rep(1,3))
+init_xtheta <- c(startX, rep(1,3))
 for(stage in 1:5){
   ret.gpodeptemphmc <- parallel_temper_hmc_xtheta(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
-                                                  temperature, 0.15, init_xtheta, stepLow, 20, niter)
+                                                  temperature, 1, init_xtheta, stepLow, 20, niter)
   init_xtheta <- ret.gpodeptemphmc[-1,8,niter]
   stepLow <- stepLow * 1.1
 }
-init_xtheta <- rowMeans(ret.gpodeptemphmc[-1,1,])
-niter = 500
+init_xtheta <- tail(t(ret.gpodeptemphmc[-1,1,]), 1)
+niter = 5000
 mean(stepLow)
+stepLow[] <- 0.00023
+temperature <- exp(seq(0,0.5,length=8))
 ret.gpodeptemphmc <- parallel_temper_hmc_xtheta(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
-                                                temperature, 0.15, init_xtheta, stepLow, 20, niter)
+                                                temperature, 0.20, init_xtheta, stepLow, 20, niter)
 
 th.temp <- t(ret.gpodeptemphmc[-1,1,])
 plot(th.temp[,405])
@@ -276,6 +279,7 @@ plot(th.temp[,404])
 plot(th.temp[,403])
 
 burnin <- 250
+n.iter <- niter
 
 gpode <- list(abc=th.temp[-(1:burnin),(nobs*2+1):(nobs*2+3)],
               sigma=rep(marlikmap$par[5], n.iter-burnin),
