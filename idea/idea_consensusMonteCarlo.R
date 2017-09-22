@@ -17,41 +17,6 @@ plot.post.samples(paste0("../idea/HMC-v3-fixphi-noise",noise,"-nobs",nobs,".pdf"
 
 system(paste0("open ../idea/HMC-v3-fixphi-noise",noise,"-nobs",nobs,".pdf"))
 
-VRtrue <- read.csv("../data/FN.csv")
-pram.true <- list(
-  abc=c(0.2,0.2,3),
-  rphi=c(0.9486433, 3.2682434),
-  vphi=c(1.9840824, 1.1185157),
-  sigma=noise
-)
-fn.true <- VRtrue
-fn.true$time <- seq(0,20,0.05)
-fn.sim <- fn.true
-
-fn.sim[,1:2] <- fn.sim[,1:2]+rnorm(length(unlist(fn.sim[,1:2])), sd=noise)
-fn.sim <- fn.sim[seq(1,nrow(fn.sim), length=nobs),]
-
-tvec.nobs <- fn.sim$time
-foo <- outer(tvec.nobs, t(tvec.nobs),'-')[,1,]
-r <- abs(foo)
-r2 <- r^2
-signr <- -sign(foo)
-
-phisigllikTest( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), data.matrix(fn.sim[,1:2]), r)
-fn <- function(par) -phisigllikTest( par, data.matrix(fn.sim[,1:2]), r)$value
-gr <- function(par) -as.vector(phisigllikTest( par, data.matrix(fn.sim[,1:2]), r)$grad)
-marlikmap <- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
-marlikmap$par
-
-curCovV <- calCov(marlikmap$par[1:2])
-curCovR <- calCov(marlikmap$par[3:4])
-cursigma <- marlikmap$par[5]
-
-startVR <- rbind(getMeanCurve(fn.sim$time, fn.sim$Vtrue, fn.sim$time, 
-                              t(marlikmap$par[1:2]), sigma.mat=matrix(cursigma)),
-                 getMeanCurve(fn.sim$time, fn.sim$Rtrue, fn.sim$time, 
-                              t(marlikmap$par[3:4]), sigma.mat=matrix(cursigma)))
-startVR <- t(startVR)
 nfold.pilot <- ceiling(nobs/50)
 id.pilot <- matrix(c(1:nobs, rep(NA, nfold.pilot-nobs%%nfold.pilot)), 
                    ncol=nfold.pilot, byrow = F)
@@ -89,7 +54,7 @@ for(it.pilot in 1:nfold.pilot){
   for (t in 2:n.iter.pilot) {
     rstep <- runif(length(stepLow), stepLow, 2*stepLow)
     foo <- xthetaSample(data.matrix(fn.sim.pilot[,1:2]), pilotCovV, pilotCovR, cursigma, 
-                        na.omit(xth.pilot[,t-1,it.pilot]), rstep, 200, T)
+                        na.omit(xth.pilot[,t-1,it.pilot]), rstep, 400, T)
     xth.pilot[,t,it.pilot][is.finite(xth.pilot[,t-1,it.pilot])] <- foo$final
     accepts.pilot[t,it.pilot] <- foo$acc
     apr.pilot[t,it.pilot] <- foo$apr
@@ -112,11 +77,11 @@ nobs.pilot <- nrow(id.pilot)
 
 
 
-pdf(paste0("../results/HMC-v3-pilot-noise",noise,"-nobs",nobs,".pdf"), height = 3*6, width = 5*nfold.pilot)
+pdf(paste0("../idea/HMC-v3-pilot-noise",noise,"-nobs",nobs,".pdf"), height = 3*6, width = 5*nfold.pilot)
 layout(matrix(1:(3*nfold.pilot),3))
 x <- apply(xth.pilot[-(1:(2*nobs.pilot)),-(1:burnin.pilot),,drop=FALSE], c(1,3), plot)
 dev.off()
-system(paste0("open ../results/HMC-v3-pilot-noise",noise,"-nobs",nobs,".pdf"))
+system(paste0("open ../idea/HMC-v3-pilot-noise",noise,"-nobs",nobs,".pdf"))
 
 
 theta.pilot <- xth.pilot[(dim(xth.pilot)[[1]]-2):dim(xth.pilot)[[1]],,,drop=FALSE]
@@ -129,30 +94,19 @@ hist(consensus[1,-(1:burnin.pilot)])
 hist(consensus[2,-(1:burnin.pilot)])
 hist(consensus[3,-(1:burnin.pilot)])
 
-
+pdf(paste0("../idea/HMC-v3-pilot-noise",noise,"-nobs",nobs,"-consensus.pdf"), height = 6, width = 6)
 hist(consensus[1,-(1:(ncol(consensus)/2))], col=rgb(0.5,0,0,0.5), 
      border=NA, main="consensus MC a", probability = TRUE, 
      xlim = range(consensus[1,-(1:(ncol(consensus)/2))], gpode$abc[,1]))
 hist(gpode$abc[,1], col=rgb(0,0,0.5,0.5), add=TRUE, border=NA, probability = TRUE)
 abline(v=pram.true$abc[1], col=2)
 
-dev.off()
-
-png(paste0("plot/C-ode-HMC-fixphi-noise",noise,"-nobs",nobs,"-consensus-b.png"), 
-    width = 3, height = 3, units = "in", res=40)
-par(mar=c(2,1,1,1))
 
 hist(consensus[2,-(1:(ncol(consensus)/2))], col=rgb(0.5,0,0,0.5), 
      border=NA, main="consensus MC b", probability = TRUE,
      xlim = range(consensus[2,-(1:(ncol(consensus)/2))], gpode$abc[,2]))
 hist(gpode$abc[,2], col=rgb(0,0,0.5,0.5), add=TRUE, border=NA, probability = TRUE)
 abline(v=pram.true$abc[2], col=2)
-
-dev.off()
-
-png(paste0("plot/C-ode-HMC-fixphi-noise",noise,"-nobs",nobs,"-consensus-c.png"), 
-    width = 3, height = 3, units = "in", res=40)
-par(mar=c(2,1,1,1))
 
 hist(consensus[3,-(1:(ncol(consensus)/2))], col=rgb(0.5,0,0,0.5), 
      border=NA, main="consensus MC c", probability = TRUE,
