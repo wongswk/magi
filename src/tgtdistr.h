@@ -14,7 +14,8 @@ struct gpcov {
 };
 
 gpcov maternCov( vec, mat, int);
-lp phisigllik( vec, mat, mat);
+gpcov rbfCov( vec, mat, int);
+lp phisigllik( vec, mat, mat, string kernel = "matern");
 lp xthetallik( vec, gpcov, gpcov, double, mat, std::function<mat (vec, mat)> );
 lp xthetallik_rescaled( vec, gpcov, gpcov, double, mat, std::function<mat (vec, mat)> );
 mat fnmodelODE( vec, mat);

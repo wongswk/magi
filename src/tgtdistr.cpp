@@ -24,19 +24,44 @@ gpcov maternCov( vec phi, mat dist, int complexity = 0){
   return out;
 }
 
+gpcov rbfCov( vec phi, mat dist, int complexity = 0){
+  gpcov out;
+  mat dist2 = square(dist);
+  out.C = phi(0) * exp(-dist2/(2.0*pow(phi(1), 2)));
+  out.C.diag() += 1e-7;
+  // cout << out.C << endl;
+  if (complexity == 0) return out;
+  
+  out.dCdphi1 = out.C/phi(0);
+  out.dCdphi2 = out.C % dist2 / pow(phi(1), 3);
+  if (complexity == 1) return out;
+  // work from here continue for gp derivative
+  return out;
+}
+
+
 //' log likelihood for Gaussian Process marginal likelihood with Matern kernel
 //' 
 //' @param phisig      the parameter phi and sigma
 //' @param yobs        observed data
-lp phisigllik( vec phisig, mat yobs, mat dist){
+lp phisigllik( vec phisig, 
+               mat yobs, 
+               mat dist, 
+               string kernel){
   int n = yobs.n_rows;
   double sigma = phisig(4);
   vec res(2);
   
   // likelihood value part
+  std::function<gpcov(vec, mat, int)> kernelCov;
+  if(kernel == "matern"){
+    kernelCov = maternCov;
+  }else if(kernel == "rbf"){
+    kernelCov = rbfCov;
+  }
   
   // V 
-  gpcov CovV = maternCov(phisig.subvec(0,1), dist, 1);
+  gpcov CovV = kernelCov(phisig.subvec(0,1), dist, 1);
   mat Kv = CovV.C+ eye<mat>(n,n)*pow(sigma, 2);
   mat Kvl = chol(Kv, "lower");
   mat Kvlinv = inv(Kvl);
@@ -44,7 +69,7 @@ lp phisigllik( vec phisig, mat yobs, mat dist){
   res(0) = -n/2.0*log(2.0*datum::pi) - sum(log(Kvl.diag())) - 0.5*sum(square(veta));
   
   // R
-  gpcov CovR = maternCov(phisig.subvec(2,3), dist, 1);
+  gpcov CovR = kernelCov(phisig.subvec(2,3), dist, 1);
   mat Kr = CovR.C+ eye<mat>(n,n)*pow(sigma, 2);
   mat Krl = chol(Kr, "lower");
   mat Krlinv = inv(Krl);

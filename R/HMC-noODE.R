@@ -12,7 +12,9 @@ pram.true <- list(
   vphi=c(1.9840824, 1.1185157)
 )
 
-nobs <- 201
+nobs <- 41
+
+kerneltype <- "rbf"
 
 
 library(parallel)
@@ -24,7 +26,7 @@ source("../R/helper/basic_hmc.R")
 source("../R/HMC-functions.R")
 
 #noise level
-noise <- 0.5
+noise <- 0.1
 pram.true$sigma <- noise
 
 fn.true <- VRtrue
@@ -45,25 +47,24 @@ phisig <- matrix(NA,n.iter,5)   # phi and sigma
 phisig[1,] <- rep(1,5)
 
 ##### Reference values (truth)
-bestCovV <- calCov( c( 1.9840824, 1.1185157) )
-bestCovR <- calCov( c( 0.9486433, 3.2682434) )
+bestCovV <- calCov( c( 1.9840824, 1.1185157), kerneltype )
+bestCovR <- calCov( c( 0.9486433, 3.2682434), kerneltype )
 logliknoODE.mar( bestCovV, bestCovR, noise, fn.sim[,1:2])
-phisigllik( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), fn.sim[,1:2])
+phisigllik( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), fn.sim[,1:2], F, kerneltype)
 
 ## loglik at degenerate case (zero curve)
-logliknoODE.mar(calCov(c(.1,10)), calCov(c(.1,10)), 1.25, fn.sim[,1:2])
-phisigllik( c(.1,10,.1,10, 1.25), fn.sim[,1:2])
+logliknoODE.mar(calCov(c(.1,10), kerneltype), calCov(c(.1,10), kerneltype), 1.25, fn.sim[,1:2])
+phisigllik( c(.1,10,.1,10, 1.25), fn.sim[,1:2], F, kerneltype)
 
 ## Bounds on phi and sigma
 lower_b <- c( 0, 0, 0, 0, 0 )
 upper_b <- c( Inf, Inf, Inf, Inf, Inf)
 
 full_llik <- c()
-full_llik[1] <- phisigllik( phisig[1,], fn.sim[,1:2])
+full_llik[1] <- phisigllik( phisig[1,], fn.sim[,1:2], F, kerneltype)
 accepts <- 0
 paccepts <- 0
 yobs <- data.matrix(fn.sim[,1:2])
-phisigU <- function(phisigval, grad = F) phisigllik(phisigval, y = yobs, grad = grad)  
 
 stepLow <- 0.01
 st <- Sys.time()
@@ -74,7 +75,7 @@ gpmcmc <- mclapply(1:8, function(dummy.chain){
     # if (t %% 10 == 0) { cat(c(t, full_llik[t-1], accepts/t), "\n") }
 
     foo <- phisigSample(data.matrix(fn.sim[,1:2]), r, phisig[t-1,],
-                        rep(runif(1,stepLow,2*stepLow),5), 20, T)
+                        rep(runif(1,stepLow,2*stepLow),5), 200, T, kerneltype)
     phisig[t,] <- foo$final
     accepts <- accepts + foo$acc
     if (t < n.iter/2) {
@@ -99,7 +100,7 @@ phisig <- do.call(rbind,lapply(gpmcmc, function(x) x$phisig[-(1:burnin),]))
 
 ## Best sampled
 id.best <- which.max(full_llik)
-phisigllik( phisig[id.best,],  fn.sim[,1:2])
+phisigllik( phisig[id.best,],  fn.sim[,1:2], F, kerneltype)
 
 # pdf(file="R-HMC-output.pdf")
 # par(mfrow=c(2,2))
@@ -130,24 +131,27 @@ gpfit <- list(sigma=phisig[,5],
               lp__=full_llik,
               lglik=full_llik)
 
-
-gpfit$vtrue <- getMeanCurve(fn.sim$time, fn.sim$Vtrue, fn.sim$time, 
-                            gpfit$vphi, sigma.mat=gpfit$sigma)
-gpfit$rtrue <- getMeanCurve(fn.sim$time, fn.sim$Rtrue, fn.sim$time, 
-                            gpfit$rphi, sigma.mat=gpfit$sigma)
+plotx <- fn.sim$time
+gpfit$vtrue <- getMeanCurve(fn.sim$time, fn.sim$Vtrue, plotx, 
+                            gpfit$vphi, sigma.mat=gpfit$sigma, kerneltype)
+gpfit$rtrue <- getMeanCurve(fn.sim$time, fn.sim$Rtrue, plotx, 
+                            gpfit$rphi, sigma.mat=gpfit$sigma, kerneltype)
 
 startX <- colMeans(cbind(gpfit$vtrue, gpfit$rtrue))
 
-post.noODE <- summary.post.noODE(paste0("../results/C-GPfit-",noise,".pdf"), fn.true, fn.sim, gpfit, pram.true)
+post.noODE <- summary.post.noODE(paste0("../results/C-GPfit-",noise,"-",kerneltype,".pdf"), 
+                                 fn.true, fn.sim, gpfit, pram.true, plotx)
 
 post.noODE$init.epost
 
 logliknoODE( data.matrix(fn.sim[,1:2]), 
-             calCov( c(1.9840824, 0.1185157 )), calCov( c(1.9840824, 0.1185157 )), 0.00001,  
+             calCov( c(1.9840824, 0.1185157 ), kerneltype),
+             calCov( c(1.9840824, 0.1185157 ), kerneltype), 0.00001,  
              fn.sim[,1:2])
 
 logliknoODE( cbind(colMeans(gpfit$vtrue), colMeans(gpfit$rtrue)), 
-             calCov( colMeans(gpfit$vphi)), calCov( colMeans(gpfit$rphi)), mean(gpfit$sigma),  
+             calCov( colMeans(gpfit$vphi), kerneltype), 
+             calCov( colMeans(gpfit$rphi), kerneltype), mean(gpfit$sigma),  
              fn.sim[,1:2])
 
 

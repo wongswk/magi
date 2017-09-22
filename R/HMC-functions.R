@@ -1,5 +1,20 @@
-calCov <- function(phi) {
+calCov <- function(phi, kerneltype="matern") {
+  if(kerneltype=="matern"){
+    ret <- calCov2(phi, r, signr)
+  }else if(kerneltype=="rbf"){
+    ret <- calCovRBF(phi, r, signr)
+  }else{
+    stop("kerneltype not specified correctly")
+  }
+  return(ret)
+}
+
+calCov2 <- function(phi, r, signr, complexity=3) {
+  r2 <- r^2
   C <- phi[1] * (1 + ((sqrt(5)*r)/phi[2]) + ((5*r2)/(3*phi[2]^2))) * exp((-sqrt(5)*r)/phi[2])
+  if(complexity==0){
+    return(list(C = C))
+  }
   Cprime  <- (signr)* (phi[1] * exp((-sqrt(5)*r)/phi[2])) * (((5*r)/(3*phi[2]^2)) + ((5*sqrt(5)*r2)/(3*phi[2]^3)))
   Cdoubleprime <- (-phi[1] * (sqrt(5)/phi[2]) * exp((-sqrt(5)*r)/phi[2])) * (((5*r)/(3*phi[2]^2)) + ((5*sqrt(5)*r2)/(3*phi[2]^3))) + (phi[1]*exp((-sqrt(5)*r)/phi[2])) * ((5/(3*phi[2]^2)) + ((10*sqrt(5)*r)/(3*phi[2]^3)))
   
@@ -16,11 +31,15 @@ calCov <- function(phi) {
   return(list(C = C, Cinv = Cinv, mphi = mphi, Kphi = Kphi, Kinv = Kinv, dCdphi = dCdphi))
 }
 
-calCov2 <- function(phi, r, signr) {
+calCovRBF <- function(phi, r, signr, complexity=3) {
   r2 <- r^2
-  C <- phi[1] * (1 + ((sqrt(5)*r)/phi[2]) + ((5*r2)/(3*phi[2]^2))) * exp((-sqrt(5)*r)/phi[2])
-  Cprime  <- (signr)* (phi[1] * exp((-sqrt(5)*r)/phi[2])) * (((5*r)/(3*phi[2]^2)) + ((5*sqrt(5)*r2)/(3*phi[2]^3)))
-  Cdoubleprime <- (-phi[1] * (sqrt(5)/phi[2]) * exp((-sqrt(5)*r)/phi[2])) * (((5*r)/(3*phi[2]^2)) + ((5*sqrt(5)*r2)/(3*phi[2]^3))) + (phi[1]*exp((-sqrt(5)*r)/phi[2])) * ((5/(3*phi[2]^2)) + ((10*sqrt(5)*r)/(3*phi[2]^3)))
+  
+  C <- phi[1] * exp(-r2/(2*phi[2]^2))
+  if(complexity==0){
+    return(list(C = C))
+  }
+  Cprime  <- signr * C * r / (phi[2]^2)
+  Cdoubleprime <- C * (1/phi[2]^2 - r2 / phi[2]^4)
   
   C <- C + 1e-7 * diag( nrow(r))
   
@@ -30,10 +49,11 @@ calCov2 <- function(phi, r, signr) {
   Kinv <- solve(Kphi)
   dCdphi <- list(
     C/phi[1],
-    phi[1] * ( - ((sqrt(5)*r)/phi[2]^2) - ((10*r2)/(3*phi[2]^3))) * exp((-sqrt(5)*r)/phi[2]) + C * (sqrt(5)*r)/phi[2]^2
+    C*r2/phi[2]^3
   )
   return(list(C = C, Cinv = Cinv, mphi = mphi, Kphi = Kphi, Kinv = Kinv, dCdphi = dCdphi))
 }
+
 
 fODE <- function(theta, x) {
   a <- theta[1]
@@ -481,20 +501,20 @@ xthUVmis <- function(q, grad=FALSE) {
   xthetallikVmis(x,theta, curCovV, curCovR, cursigma, fn.sim[,1:2], grad)
 }
 
-phisigllik <- function(phisig, y, grad = F){
+phisigllik <- function(phisig, y, grad = F, kerneltype="matern"){
   n <- nrow(y)
   sigma <- phisig[5]
   res <- c(0,0)
   
   # V 
-  CovV <- calCov(phisig[1:2])
+  CovV <- calCov(phisig[1:2], kerneltype)
   Kv <- CovV$C+diag(sigma^2, nrow = n)
   Kv.l <- t(chol(Kv))
   Kv.l.inv <- solve(Kv.l)
   veta <- Kv.l.inv %*% y[,1]
   res[1] <- -n/2*log(2*pi) - sum(log(diag(Kv.l))) - 0.5*sum(veta^2)
   # R
-  CovR <- calCov(phisig[3:4])
+  CovR <- calCov(phisig[3:4], kerneltype)
   Kr <- CovR$C+diag(sigma^2, nrow = n)
   Kr.l <- t(chol(Kr))
   Kr.l.inv <- solve(Kr.l)

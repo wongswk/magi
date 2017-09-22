@@ -74,3 +74,22 @@ xthetaSample(data.matrix(fn.sim[,1:2]), bestCovV, bestCovR, noise,
              rep(1, nobs*2+3), rep(0.03,nobs*2+3), 1, T)
 
 xthetallik(matrix(1, nrow=nobs, ncol=2), rep(1,3), bestCovV, bestCovR, noise, data.matrix(fn.sim[,1:2]), grad = T)
+
+#### test RBF kernel ####
+testpoint <- abs(rnorm(5))
+xc <- phisigllikTest( testpoint, data.matrix(fn.sim[,1:2]), r, "rbf")
+xr <- phisigllik( testpoint, fn.sim[,1:2], TRUE, "rbf")
+as.numeric(xc$value - xr)
+xc$grad - attr(xr, "grad")
+
+phisigllikTest(x1, data.matrix(fn.sim[,1:2]), r, "rbf")$grad
+for(i in 1:5){
+  # check derivative
+  x1 = x0
+  x1[i] = x1[i] + 1e-9
+  print(as.numeric((phisigllikTest(x1, data.matrix(fn.sim[,1:2]), r, "rbf")$value - 
+                      phisigllikTest(x0, data.matrix(fn.sim[,1:2]), r, "rbf")$value)/1e-9))
+}
+
+phisigSample(data.matrix(fn.sim[,1:2]), r, c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise),
+             rep(0.03,5), 20, F, "rbf")

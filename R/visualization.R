@@ -1,6 +1,6 @@
 # get posterior mean curve for value conditioning on
 # observed y, phi, sigma
-getMeanCurve <- function(x, y, x.new, phi.mat, delta = 1e-9, sigma.mat){
+getMeanCurve <- function(x, y, x.new, phi.mat, delta = 1e-9, sigma.mat, kerneltype="matern"){
   tvec <- c(x.new,x)
   
   foo <- outer(tvec, t(tvec),'-')[,1,]
@@ -13,8 +13,12 @@ getMeanCurve <- function(x, y, x.new, phi.mat, delta = 1e-9, sigma.mat){
     sigma <- sigma.mat[it]
     phi <- phi.mat[it,]
     
-    C <- phi[1] * (1 + ((sqrt(5)*r)/phi[2]) + ((5*r2)/(3*phi[2]^2))) * exp((-sqrt(5)*r)/phi[2])
-    diag(C) <- diag(C)+delta
+    if(kerneltype=="matern"){
+      C <- calCov2(phi, r, signr, complexity = 0)$C
+    }else if(kerneltype=="rbf"){
+      C <- calCovRBF(phi, r, signr, complexity = 0)$C
+    }
+    
     diag(C)[-(1:length(x.new))] <- diag(C)[-(1:length(x.new))]+sigma^2
     C[1:length(x.new),-(1:length(x.new))]%*%solve(C[-(1:length(x.new)),-(1:length(x.new))], y)
   }))
@@ -231,7 +235,10 @@ plot.add.dlnorm <- function(samples, col=6){
 #               lp__=lliklist[-(1:burnin)],
 #               lglik=full_llik[-(1:burnin)])
 #' 
-summary.post.noODE <- function(filename, fn.true, fn.sim, gpfit, init){
+summary.post.noODE <- function(filename, fn.true, fn.sim, gpfit, init, plotx=NULL){
+  if(is.null(plotx)){
+    plotx <- fn.sim$time
+  }
   noeta <- is.null(gpfit$reta) || is.null(gpfit$veta)
   gpfit.post <- list()
   id.plot <- seq(1,length(gpfit$lp__),length=20)
@@ -278,17 +285,17 @@ summary.post.noODE <- function(filename, fn.true, fn.sim, gpfit, init){
           ylab="R & V", main="full posterior")
   points(fn.sim$time, fn.sim$Rtrue, col=1)
   points(fn.sim$time, fn.sim$Vtrue, col=2)
-  matplot(fn.sim$time, t(gpfit$rtrue[id.plot,]), col="grey",add=TRUE, type="p",lty=1, pch=20)
-  matplot(fn.sim$time, t(gpfit$vtrue[id.plot,]), col="pink",add=TRUE, type="p",lty=1, pch=20)
+  matplot(plotx, t(gpfit$rtrue[id.plot,]), col="grey",add=TRUE, type="p",lty=1, pch=20)
+  matplot(plotx, t(gpfit$vtrue[id.plot,]), col="pink",add=TRUE, type="p",lty=1, pch=20)
   
   matplot(fn.true$time, data.matrix(fn.true[,c(1:2)]), type="l", lty=1, col=c(2,1), 
           ylab="R & V", main="full posterior", add=TRUE)
   
-  lines(fn.sim$time, colMeans(gpfit$rtrue), col=3)
-  lines(fn.sim$time, colMeans(gpfit$vtrue), col=3)
+  lines(plotx, colMeans(gpfit$rtrue), col=3)
+  lines(plotx, colMeans(gpfit$vtrue), col=3)
   
-  lines(fn.sim$time, gpfit$rtrue[id.max,], col=4)
-  lines(fn.sim$time, gpfit$vtrue[id.max,], col=4)
+  lines(plotx, gpfit$rtrue[id.max,], col=4)
+  lines(plotx, gpfit$vtrue[id.max,], col=4)
   
   layout(matrix(1:6,3,byrow = TRUE))
   hist(gpfit$rphi[,1], probability = TRUE, breaks = 20)

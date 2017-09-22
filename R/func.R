@@ -1,23 +1,4 @@
 #### utility functions ####
-getMeanCurve <- function(x, y, x.new, phi.mat, delta = 1e-9, sigma.mat){
-  tvec <- c(x.new,x)
-  
-  foo <- outer(tvec, t(tvec),'-')[,1,]
-  r <- abs(foo)
-  r2 <- r^2
-  
-  signr <- -sign(foo)
-  
-  t(sapply(1:nrow(phi.mat), function(it){
-    sigma <- sigma.mat[it]
-    phi <- phi.mat[it,]
-    
-    C <- phi[1] * (1 + ((sqrt(5)*r)/phi[2]) + ((5*r2)/(3*phi[2]^2))) * exp((-sqrt(5)*r)/phi[2])
-    diag(C) <- diag(C)+delta
-    diag(C)[-(1:length(x.new))] <- diag(C)[-(1:length(x.new))]+sigma^2
-    C[1:length(x.new),-(1:length(x.new))]%*%solve(C[-(1:length(x.new)),-(1:length(x.new))], y)
-  }))
-}
 
 getDerivCurve <- function(x, y, dy, x.new, phi.mat, delta = 1e-9, sigma.mat, gamma.mat){
   tvec.d <- c(x.new,x)

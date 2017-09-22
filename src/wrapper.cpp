@@ -45,8 +45,8 @@ Rcpp::List hmc(const vec & initial, vec step, vec lb, vec ub,
 
 //' R wrapper for phisigllik
 // [[Rcpp::export]]
-Rcpp::List phisigllikTest(vec phisig, mat yobs, mat dist){
-  lp ret = phisigllik(phisig, yobs, dist);
+Rcpp::List phisigllikTest(vec phisig, mat yobs, mat dist, string kernel="matern"){
+  lp ret = phisigllik(phisig, yobs, dist, kernel);
   return List::create(Named("value")=ret.value,
                       Named("grad")=ret.gradient);
 }
@@ -54,8 +54,8 @@ Rcpp::List phisigllikTest(vec phisig, mat yobs, mat dist){
 //' sample from GP marginal likelihood for phi and sigma
 // [[Rcpp::export]]
 Rcpp::List phisigSample( mat yobs, mat dist, const vec & initial, vec step,
-                         int nsteps = 1, bool traj = false){
-  std::function<lp(vec)> tgt = std::bind(phisigllik, std::placeholders::_1, yobs, dist);
+                         int nsteps = 1, bool traj = false, string kernel = "matern"){
+  std::function<lp(vec)> tgt = std::bind(phisigllik, std::placeholders::_1, yobs, dist, kernel);
   hmcstate post = basic_hmcC(tgt, initial, step, 
                              std::vector<double>({0.0}), 
                              std::vector<double>({datum::inf}), 
