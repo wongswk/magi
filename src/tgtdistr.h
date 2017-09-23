@@ -29,4 +29,4 @@ lp xthetallik_rescaled( const vec & xtheta,
                         const double & sigma, 
                         const mat & yobs, 
                         const std::function<mat (vec, mat)> & fODE);
-mat fnmodelODE( vec, mat);
+mat fnmodelODE(const vec &, const mat &);
