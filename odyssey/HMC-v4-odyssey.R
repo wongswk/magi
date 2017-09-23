@@ -9,6 +9,8 @@ source("../R/HMC-functions.R")
 nobs.candidates <- (2:14)^2+1
 noise.candidates <- seq(0.05, 1.5, 0.05)
 
+kerneltype <- "rbf"
+
 nobs <- 21
 noise <- 0.05
 
@@ -48,20 +50,20 @@ r.nobs <- abs(foo)
 r2.nobs <- r.nobs^2
 signr.nobs <- -sign(foo)
 
-phisigllikTest( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), r.nobs)
-fn <- function(par) -phisigllikTest( par, data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), r.nobs)$value
-gr <- function(par) -as.vector(phisigllikTest( par, data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), r.nobs)$grad)
+phisigllikTest( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), r.nobs, kerneltype)
+fn <- function(par) -phisigllikTest( par, data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), r.nobs, kerneltype)$value
+gr <- function(par) -as.vector(phisigllikTest( par, data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), r.nobs, kerneltype)$grad)
 marlikmap <- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
 marlikmap$par
 
-curCovV <- calCov(marlikmap$par[1:2])
-curCovR <- calCov(marlikmap$par[3:4])
+curCovV <- calCov(marlikmap$par[1:2], kerneltype)
+curCovR <- calCov(marlikmap$par[3:4], kerneltype)
 cursigma <- marlikmap$par[5]
 
-startVR <- rbind(getMeanCurve(fn.sim$time[!is.nan(fn.sim$time)], fn.sim$Vtrue[!is.nan(fn.sim$time)], fn.sim$time[!is.nan(fn.sim$time)], 
-                              t(marlikmap$par[1:2]), sigma.mat=matrix(cursigma)),
-                 getMeanCurve(fn.sim$time[!is.nan(fn.sim$time)], fn.sim$Rtrue[!is.nan(fn.sim$time)], fn.sim$time[!is.nan(fn.sim$time)], 
-                              t(marlikmap$par[3:4]), sigma.mat=matrix(cursigma)))
+startVR <- rbind(getMeanCurve(fn.sim$time[!is.nan(fn.sim$time)], fn.sim$Vtrue[!is.nan(fn.sim$time)], fn.sim$time[!is.nan(fn.sim$time)],
+                              t(marlikmap$par[1:2]), sigma.mat=matrix(cursigma), kerneltype),
+                 getMeanCurve(fn.sim$time[!is.nan(fn.sim$time)], fn.sim$Rtrue[!is.nan(fn.sim$time)], fn.sim$time[!is.nan(fn.sim$time)],
+                              t(marlikmap$par[3:4]), sigma.mat=matrix(cursigma), kerneltype))
 startVR <- t(startVR)
 nfold.pilot <- ceiling(nobs/40)
 nobs.pilot <- nobs%/%nfold.pilot
@@ -89,9 +91,15 @@ for(it.pilot in 1:nfold.pilot){
   pilotSignedDist <- outer(fn.sim.pilot$time, t(fn.sim.pilot$time),'-')[,1,]
   
   xth.pilot[,1,it.pilot] <- c(startVR[id.pilot[,it.pilot],],rep(1,3))
-  
-  pilotCovV <- calCov2(marlikmap$par[1:2], abs(pilotSignedDist), -sign(pilotSignedDist))
-  pilotCovR <- calCov2(marlikmap$par[3:4], abs(pilotSignedDist), -sign(pilotSignedDist))
+
+  if(kerneltype=="matern"){
+    pilotCovV <- calCov2(marlikmap$par[1:2], abs(pilotSignedDist), -sign(pilotSignedDist))
+    pilotCovR <- calCov2(marlikmap$par[3:4], abs(pilotSignedDist), -sign(pilotSignedDist))
+  }else if(kerneltype =="rbf"){
+    pilotCovV <- calCovRBF(marlikmap$par[1:2], abs(pilotSignedDist), -sign(pilotSignedDist))
+    pilotCovR <- calCovRBF(marlikmap$par[3:4], abs(pilotSignedDist), -sign(pilotSignedDist))
+  }
+
   t <- 2
   for (t in 2:n.iter.pilot) {
     rstep <- runif(length(stepLow), stepLow, 2*stepLow)
@@ -114,7 +122,7 @@ for(it.pilot in 1:nfold.pilot){
   cat("================\npilot iteration ", it.pilot, " finished\n================\n")
 }
 
-pdf(paste0("../results/HMC-v3-pilot-noise",noise,"-nobs",nobs,".pdf"), height = 3*6, width = 5*nfold.pilot)
+pdf(paste0("../results/HMC-v3-pilot-noise",noise,"-nobs",nobs,"-",kerneltype,".pdf"), height = 3*6, width = 5*nfold.pilot)
 layout(matrix(1:(3*nfold.pilot),3))
 x <- apply(xth.pilot[-(1:(2*nobs.pilot)),,,drop=FALSE], c(1,3), plot)
 dev.off()
@@ -161,6 +169,7 @@ fullstartVR[c(obs.ind,nall+obs.ind)] <- startVR
 fullstartVR[-c(obs.ind,nall+obs.ind)] <- c(V_upsamp, R_upsamp)
 
 xth.formal[1,] <- c(fullstartVR,startTheta)
+xth.formal[1,] <- c(fn.true$Vtrue,fn.true$Rtrue, pram.true$abc)
 lliklist <- stepLow.scaler <- accepts <- rep(NA, n.iter)
 accepts[1] <- 0
 stepLow.scaler[1] <- stepLow
