@@ -82,7 +82,28 @@ xr <- phisigllik( testpoint, fn.sim[,1:2], TRUE, "rbf")
 as.numeric(xc$value - xr)
 xc$grad - attr(xr, "grad")
 
-phisigllikTest(x1, data.matrix(fn.sim[,1:2]), r, "rbf")$grad
+x0 <- c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise)
+phisigllikTest(x0, data.matrix(fn.sim[,1:2]), r, "rbf")$grad
+for(i in 1:5){
+  # check derivative
+  x1 = x0
+  x1[i] = x1[i] + 1e-9
+  print(as.numeric((phisigllikTest(x1, data.matrix(fn.sim[,1:2]), r, "rbf")$value - 
+                      phisigllikTest(x0, data.matrix(fn.sim[,1:2]), r, "rbf")$value)/1e-9))
+}
+
+phisigSample(data.matrix(fn.sim[,1:2]), r, c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise),
+             rep(0.03,5), 20, F, "rbf")
+
+#### test compact1 kernel ####
+testpoint <- abs(rnorm(5))
+xc <- phisigllikTest( testpoint, data.matrix(fn.sim[,1:2]), r, "compact1")
+xr <- phisigllik( testpoint, fn.sim[,1:2], TRUE, "compact1")
+as.numeric(xc$value - xr)
+xc$grad - attr(xr, "grad")
+
+x0 <- c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise)
+phisigllikTest(x0, data.matrix(fn.sim[,1:2]), r, "rbf")$grad
 for(i in 1:5){
   # check derivative
   x1 = x0

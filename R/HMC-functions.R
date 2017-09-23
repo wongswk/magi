@@ -3,6 +3,8 @@ calCov <- function(phi, kerneltype="matern") {
     ret <- calCov2(phi, r, signr)
   }else if(kerneltype=="rbf"){
     ret <- calCovRBF(phi, r, signr)
+  }else if(kerneltype=="compact1"){
+    ret <- calCovCompact1(phi, r, signr)
   }else{
     stop("kerneltype not specified correctly")
   }
@@ -51,6 +53,39 @@ calCovRBF <- function(phi, r, signr, complexity=3) {
     C/phi[1],
     C*r2/phi[2]^3
   )
+  return(list(C = C, Cinv = Cinv, mphi = mphi, Kphi = Kphi, Kinv = Kinv, dCdphi = dCdphi))
+}
+
+calCovCompact1 <- function(phi, r, signr, complexity=3, D=3) {
+  r2 <- r^2
+  jsmooth <- floor(D/2)+2
+  C <- phi[1] * pmax(1-(r/phi[2]),0)^(jsmooth+1) * ((jsmooth+1)*(r/phi[2])+1)
+  
+  if(complexity==0){
+    return(list(C = C))
+  }
+  Cprime  <- signr * phi[1] * (jsmooth+1)/phi[2] * pmax(1-r/phi[2],0)^jsmooth * (jsmooth+2) * r/phi[2]
+  Cdoubleprime <- phi[1] * pmax(1-r/phi[2],0)^(jsmooth-1) * (jsmooth+1) * (jsmooth+2) / phi[2]^2 * (1-r/phi[2]-r*jsmooth/phi[2])
+  
+  if(complexity==1){
+    return(list(C = C, Cprime=Cprime, Cdoubleprime=Cdoubleprime))
+  }
+  C <- C + 1e-7 * diag( nrow(r))
+  
+  dCdphi <- list(
+    C/phi[1],
+    phi[1] * pmax(1-r/phi[2],0)^jsmooth * r^2/phi[2]^3 * (jsmooth+1)*(jsmooth+2)
+  )
+  
+  if(complexity==2){
+    return(list(C = C, Cprime=Cprime, Cdoubleprime=Cdoubleprime, dCdphi=dCdphi))
+  }
+  
+  Cinv <- solve(C)
+  mphi <-  Cprime %*% Cinv
+  Kphi <- Cdoubleprime - (Cprime %*% Cinv %*% t(Cprime))  + 1e-7 * diag( nrow(r))
+  Kinv <- solve(Kphi)
+  
   return(list(C = C, Cinv = Cinv, mphi = mphi, Kphi = Kphi, Kinv = Kinv, dCdphi = dCdphi))
 }
 

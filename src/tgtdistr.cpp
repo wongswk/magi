@@ -39,6 +39,25 @@ gpcov rbfCov( vec phi, mat dist, int complexity = 0){
   return out;
 }
 
+gpcov compact1Cov( vec phi, mat dist, int complexity = 0){
+  int dimension = 3;
+  mat zeromat = zeros<mat>(dist.n_rows, dist.n_cols);
+  int p = floor((double)dimension / 2.0) + 2;
+  gpcov out;
+  mat dist2 = square(dist);
+  out.C = phi(0) * pow( arma::max(1 - dist / phi(1), zeromat), p+1) % ((p+1)*dist/phi(1)+1);
+  out.C.diag() += 1e-7;
+  // cout << out.C << endl;
+  if (complexity == 0) return out;
+  
+  out.dCdphi1 = out.C/phi(0);
+  out.dCdphi2 = phi(0) * pow( arma::max(1 - dist / phi(1), zeromat), p) 
+    % pow(dist,2)/pow(phi(1),3) * (p+1) * (p+2);
+  if (complexity == 1) return out;
+  // work from here continue for gp derivative
+  return out;
+}
+
 
 //' log likelihood for Gaussian Process marginal likelihood with Matern kernel
 //' 
@@ -58,6 +77,10 @@ lp phisigllik( vec phisig,
     kernelCov = maternCov;
   }else if(kernel == "rbf"){
     kernelCov = rbfCov;
+  }else if(kernel == "compact1"){
+    kernelCov = compact1Cov;
+  }else{
+    throw "kernel is not specified correctly";
   }
   
   // V 

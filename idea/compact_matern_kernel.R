@@ -64,3 +64,31 @@ plot(x, kdistm[,length(x)/2], type="l")
 plot(x, invkdistm[,length(x)/2], type="l")
 plot.ts(invkdistm[(length(x)*0.45):(length(x)*0.55),length(x)/2])
 
+#### test compact kernel ####
+r <- seq(0,1.2,0.001)
+out <- calCovCompact1(c(1, 1), r, -1, complexity=1)
+
+plot(r, out$C, type="l")
+
+x <- out$C
+dxNum <- c(diff(head(x,2))/(r[2]-r[1]),
+           (x[-(1:2)]-x[1:(length(x)-2)])/(r[3]-r[1]),
+           diff(tail(x,2))/(r[2]-r[1]))
+
+plot(r, out$Cprime, type="l")
+lines(r, dxNum, col=2)
+
+x <- out$Cprime
+dxNum <- c(diff(head(x,2))/(r[2]-r[1]),
+           (x[-(1:2)]-x[1:(length(x)-2)])/(r[3]-r[1]),
+           diff(tail(x,2))/(r[2]-r[1]))
+
+plot(r, -out$Cdoubleprime, type="l")
+lines(r, dxNum, col=2)
+
+out <- calCovCompact1(c(1, 1), r, -1, complexity=2)
+delta <- 1e-5
+outdeta <- calCovCompact1(c(1, 1+delta), r, -1, complexity=2)
+y <- (outdeta$C - out$C)/delta
+plot(r, y, type="l")
+lines(r, out$dCdphi[[2]], col=2)
