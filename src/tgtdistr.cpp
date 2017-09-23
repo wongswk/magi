@@ -135,8 +135,12 @@ lp phisigllik( vec phisig,
 //' 
 //' @param phisig      the parameter phi and sigma
 //' @param yobs        observed data
-lp xthetallik( vec xtheta, gpcov CovV, gpcov CovR, double sigma, mat yobs, 
-               std::function<mat (vec, mat)> fODE) {
+lp xthetallik( const vec & xtheta, 
+               const gpcov & CovV, 
+               const gpcov & CovR, 
+               const double & sigma, 
+               const mat & yobs, 
+               const std::function<mat (vec, mat)> & fODE) {
   vec xlatent = xtheta.subvec(0, xtheta.size() - 4);
   vec theta = xtheta.subvec(xtheta.size() - 3, xtheta.size() - 1);
   lp ret;
@@ -231,8 +235,12 @@ lp xthetallik( vec xtheta, gpcov CovV, gpcov CovR, double sigma, mat yobs,
 //' 
 //' @param phisig      the parameter phi and sigma
 //' @param yobs        observed data
-lp xthetallik_rescaled( vec xtheta, gpcov CovV, gpcov CovR, double sigma, mat yobs, 
-               std::function<mat (vec, mat)> fODE) {
+lp xthetallik_rescaled( const vec & xtheta, 
+                        const gpcov & CovV, 
+                        const gpcov & CovR, 
+                        const double & sigma, 
+                        const mat & yobs, 
+                        const std::function<mat (vec, mat)> & fODE) {
   vec xlatent = xtheta.subvec(0, xtheta.size() - 4);
   vec theta = xtheta.subvec(xtheta.size() - 3, xtheta.size() - 1);
   lp ret;

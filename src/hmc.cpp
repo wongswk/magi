@@ -17,8 +17,13 @@
 //'                  equal to the dimensionality of the state.
 //' @param traj      TRUE if values of q and p along the trajectory should be 
 //'                  returned (default is FALSE).
-hmcstate basic_hmcC(std::function<lp (vec)> lpr, const vec & initial, vec step, vec lb, vec ub,
-               int nsteps = 1, bool traj = false){
+hmcstate basic_hmcC(const std::function<lp (vec)> & lpr, 
+                    const vec & initial, 
+                    const vec & step, 
+                    vec lb, 
+                    vec ub,
+                    int nsteps = 1, 
+                    bool traj = false){
   std::default_random_engine randgen;
   std::uniform_real_distribution<double> unifdistr(0.0,1.0);
   

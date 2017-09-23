@@ -17,6 +17,16 @@ gpcov maternCov( vec, mat, int);
 gpcov rbfCov( vec, mat, int);
 gpcov compact1Cov( vec, mat, int);
 lp phisigllik( vec, mat, mat, string kernel = "matern");
-lp xthetallik( vec, gpcov, gpcov, double, mat, std::function<mat (vec, mat)> );
-lp xthetallik_rescaled( vec, gpcov, gpcov, double, mat, std::function<mat (vec, mat)> );
+lp xthetallik( const vec & xtheta, 
+               const gpcov & CovV, 
+               const gpcov & CovR, 
+               const double & sigma, 
+               const mat & yobs, 
+               const std::function<mat (vec, mat)> & fODE);
+lp xthetallik_rescaled( const vec & xtheta, 
+                        const gpcov & CovV, 
+                        const gpcov & CovR, 
+                        const double & sigma, 
+                        const mat & yobs, 
+                        const std::function<mat (vec, mat)> & fODE);
 mat fnmodelODE( vec, mat);

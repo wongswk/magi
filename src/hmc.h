@@ -26,7 +26,13 @@ struct hmcstate{
   mat trajq, trajp;
 };
 
-hmcstate basic_hmcC(std::function<lp (vec)>, const vec &, vec, vec, vec, int, bool);
+hmcstate basic_hmcC(const std::function<lp (vec)> &, 
+                    const vec &, 
+                    const vec &, 
+                    vec, 
+                    vec,
+                    int, 
+                    bool);
 int main();
 lp lpnormal(vec);
 mat bouncebyconstraint(vec, vec, vec);
