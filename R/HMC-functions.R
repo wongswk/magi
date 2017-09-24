@@ -15,14 +15,15 @@ calCov <- function(phi, kerneltype="matern", rInput=NULL, signrInput=NULL) {
     stop("kerneltype not specified correctly")
   }
   
+  ret$C <- ret$C + 1e-7 * diag( nrow(rInput))
   retmore <- with(ret, {
-    C <- C + 1e-7 * diag( nrow(rInput))
     Cdecomp <- eigen(C)
     Ceigen1over <- 1/Cdecomp$value
     CeigenVec <- Cdecomp$vectors
     Cinv <- CeigenVec%*%(Ceigen1over*t(CeigenVec))
     mphi <-  Cprime %*% Cinv
-    Kphi <- Cdoubleprime - (Cprime %*% Cinv %*% t(Cprime))  + 1e-7 * diag( nrow(rInput))
+    Kright <- sqrt(Ceigen1over) * t(CeigenVec) %*% t(Cprime)
+    Kphi <- Cdoubleprime - t(Kright)%*%Kright  + 1e-7 * diag( nrow(rInput))
     Kdecomp <- eigen(Kphi)
     Keigen1over <- 1/Kdecomp$values
     KeigenVec <- Kdecomp$vectors

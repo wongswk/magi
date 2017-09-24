@@ -17,8 +17,8 @@ plot(curCovV$KeigenVec[,4])
 plot(curCovV$KeigenVec[,201])
 
 approxCovV <- truncCovByEigen(curCovV, 
-                              truncEigen(rev(curCovV$Ceigen1over)),
-                              truncEigen(rev(curCovV$Keigen1over)))
+                              truncEigen(rev(curCovV$Ceigen1over), 0.85),
+                              truncEigen(rev(curCovV$Keigen1over), 0.85))
 approxCovV$Keigen1over
 
 x <- approxCovV$KeigenVec%*%diag(approxCovV$Keigen1over)%*%t(approxCovV$KeigenVec)
@@ -26,8 +26,8 @@ sum((x - approxCovV$Kinv)^2)/sum(approxCovV$Kinv^2)
 diag(abs(x - approxCovV$Kinv)/abs(approxCovV$Kinv))
 
 approxCovR <- truncCovByEigen(curCovR, 
-                              truncEigen(rev(curCovR$Ceigen1over)),
-                              truncEigen(rev(curCovR$Keigen1over)))
+                              truncEigen(rev(curCovR$Ceigen1over), 0.85),
+                              truncEigen(rev(curCovR$Keigen1over), 0.85))
 
 outApprox <- xthetallikTest(dataInput, approxCovV, approxCovR, cursigma, xthInit)
 outApprox$value - outExpected$value
