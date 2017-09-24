@@ -1,14 +1,42 @@
-calCov <- function(phi, kerneltype="matern") {
+calCov <- function(phi, kerneltype="matern", rInput=NULL, signrInput=NULL) {
+  if(is.null(rInput)){
+    rInput <- r
+  }
+  if(is.null(signrInput)){
+    signrInput <- signr
+  }
   if(kerneltype=="matern"){
-    ret <- calCov2(phi, r, signr)
+    ret <- calCov2(phi, rInput, signrInput)
   }else if(kerneltype=="rbf"){
-    ret <- calCovRBF(phi, r, signr)
+    ret <- calCovRBF(phi, rInput, signrInput)
   }else if(kerneltype=="compact1"){
-    ret <- calCovCompact1(phi, r, signr)
+    ret <- calCovCompact1(phi, rInput, signrInput)
   }else{
     stop("kerneltype not specified correctly")
   }
-  return(ret)
+  
+  retmore <- with(ret, {
+    C <- C + 1e-7 * diag( nrow(rInput))
+    Cdecomp <- eigen(C)
+    Ceigen1over <- 1/Cdecomp$value
+    CeigenVec <- Cdecomp$vectors
+    Cinv <- CeigenVec%*%(Ceigen1over*t(CeigenVec))
+    mphi <-  Cprime %*% Cinv
+    Kphi <- Cdoubleprime - (Cprime %*% Cinv %*% t(Cprime))  + 1e-7 * diag( nrow(rInput))
+    Kdecomp <- eigen(Kphi)
+    Keigen1over <- 1/Kdecomp$values
+    KeigenVec <- Kdecomp$vectors
+    Kinv <- KeigenVec%*%(Keigen1over*t(KeigenVec))
+    list(Ceigen1over = Ceigen1over,
+         CeigenVec = CeigenVec,
+         Cinv = Cinv, 
+         mphi = mphi, 
+         Kphi = Kphi, 
+         Keigen1over = Keigen1over,
+         KeigenVec = KeigenVec,
+         Kinv = Kinv)
+  })
+  c(ret, retmore)
 }
 
 calCov2 <- function(phi, r, signr, complexity=3) {
@@ -20,17 +48,11 @@ calCov2 <- function(phi, r, signr, complexity=3) {
   Cprime  <- (signr)* (phi[1] * exp((-sqrt(5)*r)/phi[2])) * (((5*r)/(3*phi[2]^2)) + ((5*sqrt(5)*r2)/(3*phi[2]^3)))
   Cdoubleprime <- (-phi[1] * (sqrt(5)/phi[2]) * exp((-sqrt(5)*r)/phi[2])) * (((5*r)/(3*phi[2]^2)) + ((5*sqrt(5)*r2)/(3*phi[2]^3))) + (phi[1]*exp((-sqrt(5)*r)/phi[2])) * ((5/(3*phi[2]^2)) + ((10*sqrt(5)*r)/(3*phi[2]^3)))
   
-  C <- C + 1e-7 * diag( nrow(r))
-  
-  Cinv <- solve(C)
-  mphi <-  Cprime %*% Cinv
-  Kphi <- Cdoubleprime - (Cprime %*% Cinv %*% t(Cprime))  + 1e-7 * diag( nrow(r))
-  Kinv <- solve(Kphi)
   dCdphi <- list(
     C/phi[1],
     phi[1] * ( - ((sqrt(5)*r)/phi[2]^2) - ((10*r2)/(3*phi[2]^3))) * exp((-sqrt(5)*r)/phi[2]) + C * (sqrt(5)*r)/phi[2]^2
   )
-  return(list(C = C, Cinv = Cinv, mphi = mphi, Kphi = Kphi, Kinv = Kinv, dCdphi = dCdphi))
+  return(list(C = C, Cprime = Cprime, Cdoubleprime = Cdoubleprime, dCdphi = dCdphi))
 }
 
 calCovRBF <- function(phi, r, signr, complexity=3) {
@@ -42,18 +64,11 @@ calCovRBF <- function(phi, r, signr, complexity=3) {
   }
   Cprime  <- signr * C * r / (phi[2]^2)
   Cdoubleprime <- C * (1/phi[2]^2 - r2 / phi[2]^4)
-  
-  C <- C + 1e-7 * diag( nrow(r))
-  
-  Cinv <- solve(C)
-  mphi <-  Cprime %*% Cinv
-  Kphi <- Cdoubleprime - (Cprime %*% Cinv %*% t(Cprime))  + 1e-7 * diag( nrow(r))
-  Kinv <- solve(Kphi)
   dCdphi <- list(
     C/phi[1],
     C*r2/phi[2]^3
   )
-  return(list(C = C, Cinv = Cinv, mphi = mphi, Kphi = Kphi, Kinv = Kinv, dCdphi = dCdphi))
+  return(list(C = C, Cprime = Cprime, Cdoubleprime = Cdoubleprime, dCdphi = dCdphi))
 }
 
 calCovCompact1 <- function(phi, r, signr, complexity=3, D=3) {
@@ -70,23 +85,13 @@ calCovCompact1 <- function(phi, r, signr, complexity=3, D=3) {
   if(complexity==1){
     return(list(C = C, Cprime=Cprime, Cdoubleprime=Cdoubleprime))
   }
-  C <- C + 1e-7 * diag( nrow(r))
   
   dCdphi <- list(
     C/phi[1],
     phi[1] * pmax(1-r/phi[2],0)^jsmooth * r^2/phi[2]^3 * (jsmooth+1)*(jsmooth+2)
   )
   
-  if(complexity==2){
-    return(list(C = C, Cprime=Cprime, Cdoubleprime=Cdoubleprime, dCdphi=dCdphi))
-  }
-  
-  Cinv <- solve(C)
-  mphi <-  Cprime %*% Cinv
-  Kphi <- Cdoubleprime - (Cprime %*% Cinv %*% t(Cprime))  + 1e-7 * diag( nrow(r))
-  Kinv <- solve(Kphi)
-  
-  return(list(C = C, Cinv = Cinv, mphi = mphi, Kphi = Kphi, Kinv = Kinv, dCdphi = dCdphi))
+  return(list(C = C, Cprime = Cprime, Cdoubleprime = Cdoubleprime, dCdphi = dCdphi))
 }
 
 
