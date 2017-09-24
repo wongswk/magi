@@ -27,6 +27,7 @@ calCov <- function(phi, kerneltype="matern", rInput=NULL, signrInput=NULL) {
     Keigen1over <- 1/Kdecomp$values
     KeigenVec <- Kdecomp$vectors
     Kinv <- KeigenVec%*%(Keigen1over*t(KeigenVec))
+    mphiLeftHalf <- Cprime %*% CeigenVec
     list(Ceigen1over = Ceigen1over,
          CeigenVec = CeigenVec,
          Cinv = Cinv, 
@@ -34,7 +35,8 @@ calCov <- function(phi, kerneltype="matern", rInput=NULL, signrInput=NULL) {
          Kphi = Kphi, 
          Keigen1over = Keigen1over,
          KeigenVec = KeigenVec,
-         Kinv = Kinv)
+         Kinv = Kinv,
+         mphiLeftHalf = mphiLeftHalf)
   })
   c(ret, retmore)
 }
@@ -588,5 +590,17 @@ phisigllik <- function(phisig, y, grad = F, kerneltype="matern"){
 truncEigen <- function(eigenValues, frobeniusNormApprox = 0.99){
   frobeniusNorm <- sum(eigenValues^2)
   frobeniusNormTrunc <- cumsum(eigenValues^2)
-  min(which(frobeniusNormTrunc/frobeniusNorm > 0.99))
+  min(which(frobeniusNormTrunc/frobeniusNorm > frobeniusNormApprox))
+}
+
+truncCovByEigen <- function(gpCov, cKeep, kKeep){
+  cKeepId <- (ncol(gpCov$CeigenVec)-cKeep+1):ncol(gpCov$CeigenVec)
+  gpCov$Ceigen1over <- gpCov$Ceigen1over[cKeepId]
+  gpCov$CeigenVec <- gpCov$CeigenVec[,cKeepId]
+
+  kKeepId <- (ncol(gpCov$KeigenVec)-kKeep+1):ncol(gpCov$KeigenVec)  
+  gpCov$Keigen1over <- gpCov$Keigen1over[kKeepId]
+  gpCov$KeigenVec <- gpCov$KeigenVec[,kKeepId]
+  
+  gpCov
 }

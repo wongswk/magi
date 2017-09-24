@@ -159,21 +159,27 @@ lp xthetallik( const vec & xtheta,
   mat res(2,3);
   
   // V 
-  vec frV = (fderiv.col(0) - CovV.mphi * Vsm);
+  vec frV = (fderiv.col(0) - CovV.mphi * Vsm); // n^2 operation
+  vec VsmCTrans = CovV.CeigenVec.t() * Vsm;
+  // vec frV = fderiv.col(0) - CovV.mphiLeftHalf * (VsmCTrans % CovV.Ceigen1over);
+  vec frVKTrans = CovV.KeigenVec.t() * frV;
   vec fitLevelErrorV = Vsm - yobs.col(0);
   fitLevelErrorV(find_nonfinite(fitLevelErrorV)).fill(0.0);
   res(0,0) = -0.5 * sum(square( fitLevelErrorV )) / pow(sigma,2);
-  res(0,1) = -0.5 * as_scalar( frV.t() * CovV.Kinv * frV);
-  res(0,2) = -0.5 * as_scalar( Vsm.t() * CovV.Cinv * Vsm);
+  res(0,1) = -0.5 * sum( square(frVKTrans) % CovV.Keigen1over);
+  res(0,2) = -0.5 * sum( square(VsmCTrans) % CovV.Ceigen1over);
   
   // R
-  vec frR = (fderiv.col(1) - CovR.mphi * Rsm);
+  vec frR = (fderiv.col(1) - CovR.mphi * Rsm); // n^2 operation
+  vec RsmCTrans = CovR.CeigenVec.t() * Rsm;
+  // vec frR = fderiv.col(1) - CovR.mphiLeftHalf * (RsmCTrans % CovR.Ceigen1over);
+  vec frRKTrans = CovR.KeigenVec.t() * frR;
   vec fitLevelErrorR = Rsm - yobs.col(1);
   fitLevelErrorR(find_nonfinite(fitLevelErrorR)).fill(0.0);
   
   res(1,0) = -0.5 * sum(square( fitLevelErrorR )) / pow(sigma,2);
-  res(1,1) = -0.5 * as_scalar( frR.t() * CovR.Kinv * frR);
-  res(1,2) = -0.5 * as_scalar( Rsm.t() * CovR.Cinv * Rsm);
+  res(1,1) = -0.5 * sum( square(frRKTrans) % CovR.Keigen1over);
+  res(1,2) = -0.5 * sum( square(RsmCTrans) % CovR.Ceigen1over);
   
   //cout << "lglik component = \n" << res << endl;
   
@@ -183,34 +189,32 @@ lp xthetallik( const vec & xtheta,
   
   // gradient 
   // V contrib
-  mat Vtemp = eye<mat>(n, n);
-  Vtemp.diag() = theta(2)*(1 - square(Vsm));
-  Vtemp -= CovV.mphi;
-  mat Rtemp = eye<mat>(n, n)*theta(2);
-  vec aTemp = zeros<vec>(n); 
-  vec bTemp = zeros<vec>(n); 
-  vec cTemp = fderiv.col(0) / theta(2);
-  mat VC2 = join_horiz(join_horiz(join_horiz(join_horiz(Vtemp,Rtemp),aTemp),bTemp),cTemp);
-  VC2 = 2.0 * VC2.t() * (CovV.Kinv * frV);
+  mat Vtemp = -CovV.mphi;
+  Vtemp.diag() += theta(2)*(1 - square(Vsm));
   
-  // cout << "VC2 = \n" << VC2 << endl;
+  vec KinvFrV = (CovV.KeigenVec * (frVKTrans % CovV.Keigen1over));
+  vec abcTemp = zeros<vec>(3);
+  abcTemp(2) = sum(KinvFrV % fderiv.col(0)) / theta(2);
+  vec VC2 =  2.0 * join_vert(join_vert( Vtemp.t()*KinvFrV, // n^2 operation
+                                        theta(2) * KinvFrV ),
+                                        abcTemp );
+  
   
   // R contrib
-  Vtemp = zeros<mat>(n, n);
-  Vtemp.diag().fill(-1.0/theta(2));
-  Rtemp = zeros<mat>(n, n);
-  Rtemp.diag().fill(-1.0*theta(1)/theta(2));
-  Rtemp -= CovR.mphi;
-  aTemp = ones<vec>(n) / theta(2);
-  bTemp = -Rsm/theta(2);
-  cTemp = -fderiv.col(1) / theta(2);
-  mat RC2 = join_horiz(join_horiz(join_horiz(join_horiz(Vtemp,Rtemp),aTemp),bTemp),cTemp);
-  RC2 = 2.0 * RC2.t() * (CovR.Kinv * frR);
+  mat Rtemp = -CovR.mphi;
+  Rtemp.diag() -= theta(1)/theta(2);
   
-  // cout << "RC2 = \n" << RC2 << endl;
+  vec KinvFrR = (CovR.KeigenVec * (frRKTrans % CovR.Keigen1over));
+  abcTemp.fill(0);
+  abcTemp(0) = sum(KinvFrR) / theta(2);
+  abcTemp(1) = -sum(Rsm % KinvFrR) / theta(2);
+  abcTemp(2) = -sum(fderiv.col(1) % KinvFrR) / theta(2);
+  vec RC2 = 2.0 * join_vert(join_vert( -KinvFrR / theta(2),
+                                       Rtemp.t() * KinvFrR), // n^2 operation
+                                       abcTemp );
   
-  vec C3 = join_vert(join_vert( 2.0 * CovV.Cinv * Vsm,  
-                                2.0 * CovR.Cinv * Rsm ), 
+  vec C3 = join_vert(join_vert( 2.0 * CovV.CeigenVec * (VsmCTrans % CovV.Ceigen1over),  
+                                2.0 * CovR.CeigenVec * (RsmCTrans % CovR.Ceigen1over) ), 
                                 zeros<vec>(theta.size()));
   vec C1 = join_vert(join_vert( 2.0 * fitLevelErrorV / pow(sigma,2) ,  
                                 2.0 * fitLevelErrorR / pow(sigma,2) ),

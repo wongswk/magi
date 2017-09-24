@@ -10,7 +10,8 @@ using namespace std;
 using namespace arma;
 
 struct gpcov {
-  mat C, Cinv, mphi, Kphi, Kinv, dCdphi1, dCdphi2;
+  mat C, Cinv, mphi, Kphi, Kinv, dCdphi1, dCdphi2, CeigenVec, KeigenVec, mphiLeftHalf;
+  vec Ceigen1over, Keigen1over;
 };
 
 gpcov maternCov( vec, mat, int);

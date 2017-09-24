@@ -83,6 +83,10 @@ gpcov cov_r2cpp(List cov_r){
   cov_v.mphi = as<mat>(cov_r["mphi"]);
   cov_v.Kphi = as<mat>(cov_r["Kphi"]);
   cov_v.Kinv = as<mat>(cov_r["Kinv"]);
+  cov_v.Ceigen1over = as<vec>(cov_r["Ceigen1over"]);
+  cov_v.Keigen1over = as<vec>(cov_r["Keigen1over"]);
+  cov_v.CeigenVec = as<mat>(cov_r["CeigenVec"]);
+  cov_v.KeigenVec = as<mat>(cov_r["KeigenVec"]);
   return cov_v;
 }
 
