@@ -584,3 +584,9 @@ phisigllik <- function(phisig, y, grad = F, kerneltype="matern"){
   }
   return(ret)
 }
+
+truncEigen <- function(eigenValues, frobeniusNormApprox = 0.99){
+  frobeniusNorm <- sum(eigenValues^2)
+  frobeniusNormTrunc <- cumsum(eigenValues^2)
+  min(which(frobeniusNormTrunc/frobeniusNorm > 0.99))
+}
