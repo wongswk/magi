@@ -88,7 +88,7 @@ gpcov cov_r2cpp(List cov_r){
 
 //' sample from GP ODE for latent x and theta
 // [[Rcpp::export]]
-Rcpp::List xthetaSample( mat yobs, List covVr, List covRr, double sigma, const vec & initial, vec step,
+Rcpp::List xthetaSample( const mat & yobs, const List & covVr, const List & covRr, double sigma, const vec & initial, vec step,
                          int nsteps = 1, bool traj = false, bool rescaleloglik = false){
   gpcov covV = cov_r2cpp(covVr);
   gpcov covR = cov_r2cpp(covRr);
@@ -172,3 +172,12 @@ arma::cube parallel_temper_hmc_xtheta(
   // return arma::zeros<cube>(1,1,1);
 }
 
+//' R wrapper for xthetallik
+// [[Rcpp::export]]
+Rcpp::List xthetallikTest(mat yobs, List covVr, List covRr, double sigma, const vec & initial){
+  gpcov covV = cov_r2cpp(covVr);
+  gpcov covR = cov_r2cpp(covRr);
+  lp ret = xthetallik(initial, covV, covR, sigma, yobs, fnmodelODE);
+  return List::create(Named("value")=ret.value,
+                      Named("grad")=ret.gradient);
+}

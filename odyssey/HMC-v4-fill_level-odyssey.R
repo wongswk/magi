@@ -95,13 +95,8 @@ for(it.pilot in 1:nfold.pilot){
   
   xth.pilot[,1,it.pilot] <- c(startVR[id.pilot[,it.pilot],],rep(1,3))
   
-  if(kerneltype=="matern"){
-    pilotCovV <- calCov2(marlikmap$par[1:2], abs(pilotSignedDist), -sign(pilotSignedDist))
-    pilotCovR <- calCov2(marlikmap$par[3:4], abs(pilotSignedDist), -sign(pilotSignedDist))
-  }else if(kerneltype =="rbf"){
-    pilotCovV <- calCovRBF(marlikmap$par[1:2], abs(pilotSignedDist), -sign(pilotSignedDist))
-    pilotCovR <- calCovRBF(marlikmap$par[3:4], abs(pilotSignedDist), -sign(pilotSignedDist))
-  }
+  pilotCovV <- calCov(marlikmap$par[1:2], kerneltype, abs(pilotSignedDist), -sign(pilotSignedDist))
+  pilotCovR <- calCov(marlikmap$par[3:4], kerneltype, abs(pilotSignedDist), -sign(pilotSignedDist))
   t <- 2
   for (t in 2:n.iter.pilot) {
     rstep <- runif(length(stepLow), stepLow, 2*stepLow)
