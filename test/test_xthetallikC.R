@@ -47,3 +47,9 @@ summary(x)
 
 testthat::expect_equal(outApprox, outExpected)
 
+microbenchmark::microbenchmark(
+  xthetallikTest(dataInput, approxCovV, approxCovR, cursigma, xthInit),
+  xthetallikTest(dataInput, curCovV, curCovR, cursigma, xthInit)  
+)
+
+
