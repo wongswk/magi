@@ -603,5 +603,12 @@ truncCovByEigen <- function(gpCov, cKeep, kKeep){
   gpCov$Keigen1over <- gpCov$Keigen1over[kKeepId]
   gpCov$KeigenVec <- gpCov$KeigenVec[,kKeepId]
   
+  # mKeepId <- 1:mKeep
+  # gpCov$mphiu <- gpCov$mphiu[mKeepId,]
+  # gpCov$mphid <- gpCov$mphid[mKeepId]
+  # gpCov$mphiv <- gpCov$mphiv[mKeepId,]
+  #' mphi SVD not helping because complexity is 2mn, comparing to original n^2
+  #' however we need m to be around n/2 to preserve accuracy due to low decrease d
+  
   gpCov
 }
