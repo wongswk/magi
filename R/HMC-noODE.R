@@ -44,7 +44,12 @@ signr <- -sign(foo)
 n.iter <- 600  # number of HMC iterations
 phisig <- matrix(NA,n.iter,5)   # phi and sigma
 
-phisig[1,] <- rep(1,5)
+fn <- function(par) -phisigllikTest( par, data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), r, kerneltype)$value
+gr <- function(par) -as.vector(phisigllikTest( par, data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), r, kerneltype)$grad)
+marlikmap <- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
+marlikmap$par
+
+phisig[1,] <- marlikmap$par
 
 ##### Reference values (truth)
 bestCovV <- calCov( c( 1.9840824, 1.1185157), kerneltype )
@@ -93,7 +98,7 @@ gpmcmc <- mclapply(1:8, function(dummy.chain){
 ed <- Sys.time()
 print(ed - st)
 
-burnin <- 200
+burnin <- n.iter/2
 full_llik <- do.call(c,lapply(gpmcmc, function(x) x$full_llik[-(1:burnin)]))
 phisig <- do.call(rbind,lapply(gpmcmc, function(x) x$phisig[-(1:burnin),]))
 
