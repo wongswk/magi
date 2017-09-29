@@ -9,7 +9,7 @@ source("../R/HMC-functions.R")
 nobs.candidates <- (2:14)^2+1
 noise.candidates <- seq(0.05, 1.5, 0.05)
 
-kerneltype <- "rbf"
+kerneltype <- "compact1"
 
 nobs <- 21
 noise <- 0.05
@@ -60,10 +60,10 @@ curCovV <- calCov(marlikmap$par[1:2], kerneltype)
 curCovR <- calCov(marlikmap$par[3:4], kerneltype)
 cursigma <- marlikmap$par[5]
 
-startVR <- rbind(getMeanCurve(fn.sim$time[!is.nan(fn.sim$time)], fn.sim$Vtrue[!is.nan(fn.sim$time)], fn.sim$time[!is.nan(fn.sim$time)],
-                              t(marlikmap$par[1:2]), sigma.mat=matrix(cursigma), kerneltype),
-                 getMeanCurve(fn.sim$time[!is.nan(fn.sim$time)], fn.sim$Rtrue[!is.nan(fn.sim$time)], fn.sim$time[!is.nan(fn.sim$time)],
-                              t(marlikmap$par[3:4]), sigma.mat=matrix(cursigma), kerneltype))
+startVR <- rbind(getMeanCurve(fn.sim.obs$time, fn.sim.obs$Vtrue, fn.sim.obs$time, 
+                              t(marlikmap$par[1:2]), sigma.mat=rep(cursigma,nrow(fn.sim.obs)), kerneltype),
+                 getMeanCurve(fn.sim.obs$time, fn.sim.obs$Rtrue, fn.sim.obs$time, 
+                              t(marlikmap$par[3:4]), sigma.mat=rep(cursigma,nrow(fn.sim.obs)), kerneltype))
 startVR <- t(startVR)
 nfold.pilot <- ceiling(nobs/40)
 nobs.pilot <- nobs%/%nfold.pilot
@@ -92,14 +92,9 @@ for(it.pilot in 1:nfold.pilot){
   
   xth.pilot[,1,it.pilot] <- c(startVR[id.pilot[,it.pilot],],rep(1,3))
 
-  if(kerneltype=="matern"){
-    pilotCovV <- calCov2(marlikmap$par[1:2], abs(pilotSignedDist), -sign(pilotSignedDist))
-    pilotCovR <- calCov2(marlikmap$par[3:4], abs(pilotSignedDist), -sign(pilotSignedDist))
-  }else if(kerneltype =="rbf"){
-    pilotCovV <- calCovRBF(marlikmap$par[1:2], abs(pilotSignedDist), -sign(pilotSignedDist))
-    pilotCovR <- calCovRBF(marlikmap$par[3:4], abs(pilotSignedDist), -sign(pilotSignedDist))
-  }
-
+  pilotCovV <- calCov(marlikmap$par[1:2], kerneltype, abs(pilotSignedDist), -sign(pilotSignedDist))
+  pilotCovR <- calCov(marlikmap$par[3:4], kerneltype, abs(pilotSignedDist), -sign(pilotSignedDist))
+  
   t <- 2
   for (t in 2:n.iter.pilot) {
     rstep <- runif(length(stepLow), stepLow, 2*stepLow)
@@ -222,7 +217,7 @@ fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtru
 fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
 
 fn.sim$time <- fn.sim.all$time    
-plot.post.samples(paste0("../results/HMC-v4-fixphi-noise",noise,"-nobs",nobs,".pdf"), fn.true, fn.sim, gpode, pram.true)
+plot.post.samples(paste0("../results/HMC-v4-fixphi-noise",noise,"-nobs",nobs,"-",kerneltype,".pdf"), fn.true, fn.sim, gpode, pram.true)
 mean(accepts)
 mean(stepLow.scaler)
-save.image(paste0("../results/C-v4-ode-HMC-fixphi-noise",noise,"-nobs",nobs,".rda"))
+save.image(paste0("../results/C-v4-ode-HMC-fixphi-noise",noise,"-nobs",nobs,"-",kerneltype,".rda"))
