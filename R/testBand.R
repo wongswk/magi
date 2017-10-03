@@ -1,6 +1,8 @@
 system("R CMD SHLIB ../src/bandmatlik.cpp -lRlapack -lRblas")
 dyn.load("../src/bandmatlik.so")  # change to DLL if on Windows
 
+source("../odyssey/HMC-v4-odyssey.R")
+
 # Converts a matrix to banded form.
 mat2band <- function(a, bandsize) {
   N <- nrow(a)
@@ -39,7 +41,40 @@ VCinv <- mat2band(curCovV$Cinv, bandsize)
 Rmphi <- mat2band(curCovR$mphi, bandsize)
 RKinv <- mat2band(curCovR$Kinv, bandsize)
 RCinv <- mat2band(curCovR$Cinv, bandsize)
-fn.sim <- as.matrix(fn.sim)
-fn.sim[is.nan(fn.sim)] <- -99999  # can't use NaN for missing values to pass to C.
+fn.sim.c <- fn.sim <- as.matrix(fn.sim)
+fn.sim.c[is.nan(fn.sim.c)] <- -99999  # can't use NaN for missing values to pass to C.
 
-xthetallik(xth.formal[1,], Vmphi, VKinv, VCinv, Rmphi, RKinv, RCinv, bandsize, 201, cursigma, fn.sim[,1:2])
+approxCovV <- truncCovByEigen(curCovV, 
+                              truncEigen(rev(curCovV$Ceigen1over), 0.85),
+                              truncEigen(rev(curCovV$Keigen1over), 0.85))
+
+approxCovR <- truncCovByEigen(curCovR, 
+                              truncEigen(rev(curCovR$Ceigen1over), 0.85),
+                              truncEigen(rev(curCovR$Keigen1over), 0.85))
+
+out.appr <- xthetallik(xth.formal[1,], Vmphi, VKinv, VCinv, Rmphi, RKinv, RCinv, bandsize, 201, cursigma, fn.sim.c[,1:2])
+out.orig <- xthetallikTest(fn.sim[,1:2], curCovV, curCovR, cursigma, xth.formal[1,])
+out.lowr <- xthetallikTest(fn.sim[,1:2], approxCovV, approxCovR, cursigma, xth.formal[1,])  
+
+delta <- 1e-8
+gradNum <- c()
+xthInit <- xth.formal[1,]
+for(it in 1:length(xthInit)){
+  xthInit1 <- xthInit
+  xthInit1[it] <- xthInit1[it] + delta
+  gradNum[it] <- 
+    (xthetallik(xthInit1, Vmphi, VKinv, VCinv, Rmphi, RKinv, RCinv, bandsize, 201, cursigma, fn.sim.c[,1:2]) -
+       xthetallik(xthInit, Vmphi, VKinv, VCinv, Rmphi, RKinv, RCinv, bandsize, 201, cursigma, fn.sim.c[,1:2]))/delta
+}
+x <- (gradNum - attr(out.appr,"grad"))/abs(attr(out.appr,"grad"))
+plot(x)
+summary(x)
+
+(as.numeric(out.appr) - out.orig$value)/out.orig$value
+(out.lowr$value - out.orig$value)/out.orig$value
+
+microbenchmark::microbenchmark(
+  xthetallik(xth.formal[1,], Vmphi, VKinv, VCinv, Rmphi, RKinv, RCinv, bandsize, 201, cursigma, fn.sim.c[,1:2]),
+  xthetallikTest(fn.sim[,1:2], curCovV, curCovR, cursigma, xth.formal[1,]),
+  xthetallikTest(fn.sim[,1:2], approxCovV, approxCovR, cursigma, xth.formal[1,])  
+)

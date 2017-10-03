@@ -1,12 +1,4 @@
-
-#include <R.h>
-#include <R_ext/BLAS.h>
-#include <stdio.h>
-#include <iostream>
-
-using namespace std;
-
-
+#include "bandmatlik.h"
 
 extern "C" {
   
