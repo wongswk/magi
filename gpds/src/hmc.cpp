@@ -1,6 +1,7 @@
 // [[Rcpp::plugins(cpp11)]]
 #include "hmc.h"
 
+using namespace arma;
 
 //' basic_hmcC
 //' 
