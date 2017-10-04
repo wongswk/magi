@@ -29,3 +29,10 @@ system("R CMD SHLIB ../test/band.cpp")
 dyn.load("../test/band.so")  # change to DLL if on Windo
 
 .C("main")
+
+system("R CMD SHLIB ../test/sharecode.cpp")
+dyn.load("../test/sharecode.so")  # change to DLL if on Windo
+
+.C("mainsharecode")
+.C("simple")
+

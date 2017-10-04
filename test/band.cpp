@@ -1,13 +1,4 @@
-#include <f77blas.h>
-#include <stdio.h>
-#include <iostream>
-#include <fstream>
-#include <math.h>
-#include <numeric>
-
-using namespace std;
-
-
+#include "band.h"
 
 extern "C" {
 
@@ -257,7 +248,7 @@ extern "C" {
 }
 
 // [[Rcpp::export]]
-int main(){
+int main2(){
   const int datasize = 201, bandsize = 20;
 
   double xtheta[datasize * 2 + 3];
@@ -319,4 +310,9 @@ int main(){
   printf("\ncheck sum = %.20e\n", std::accumulate(grad, grad + datasize * 2 + 3, ret));
   return 0;
 };
+
+int simple(){
+  cout << "now in simple\n";
+  return 0;
+}
 // g++ band.cpp -o band.o -lopenblas -llapack -lm -Wall -L/opt/OpenBLAS/lib -I/opt/OpenBLAS/include

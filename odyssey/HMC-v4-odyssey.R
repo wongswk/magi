@@ -9,7 +9,7 @@ source("../R/HMC-functions.R")
 nobs.candidates <- (2:14)^2+1
 noise.candidates <- seq(0.05, 1.5, 0.05)
 
-kerneltype <- "compact1"
+kerneltype <- "matern"
 
 nobs <- 21
 noise <- 0.05
