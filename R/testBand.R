@@ -78,3 +78,16 @@ microbenchmark::microbenchmark(
   xthetallikTest(fn.sim[,1:2], curCovV, curCovR, cursigma, xth.formal[1,]),
   xthetallikTest(fn.sim[,1:2], approxCovV, approxCovR, cursigma, xth.formal[1,])  
 )
+
+cat(xth.formal[1,], "\n",
+    Vmphi, "\n",
+    VKinv, "\n",
+    VCinv, "\n",
+    Rmphi, "\n",
+    RKinv, "\n",
+    RCinv, "\n",
+    bandsize, "\n",
+    201, "\n",
+    cursigma, "\n",
+    fn.sim.c[,1:2],
+    file = "data_band.txt", sep="\t")

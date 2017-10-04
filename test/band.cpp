@@ -256,9 +256,8 @@ extern "C" {
 
 }
 
-double ddot_( const int *N, const double *a, const int *inca, const double *b, const int *incb );
-
-int main( int argc, char** argv ){
+// [[Rcpp::export]]
+int main(){
   const int datasize = 201, bandsize = 20;
 
   double xtheta[datasize * 2 + 3];

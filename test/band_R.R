@@ -25,3 +25,7 @@ foo <- xthetallik(xtheta = datainput[[1]],
 
 as.numeric(foo)+sum(attr(foo, "grad"))
 
+system("R CMD SHLIB ../test/band.cpp")
+dyn.load("../test/band.so")  # change to DLL if on Windo
+
+.C("main")

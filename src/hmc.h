@@ -33,7 +33,7 @@ hmcstate basic_hmcC(const std::function<lp (vec)> &,
                     vec,
                     int, 
                     bool);
-int main();
+
 lp lpnormal(vec);
 mat bouncebyconstraint(vec, vec, vec);
   
