@@ -24,6 +24,5 @@ extern "C" {
 
 }
 
-int mainBand();
 // g++ band.cpp -o band.o -lopenblas -llapack -lm -Wall -L/opt/OpenBLAS/lib -I/opt/OpenBLAS/include
 #endif

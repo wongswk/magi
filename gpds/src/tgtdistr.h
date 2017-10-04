@@ -7,7 +7,7 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
 
-#include "hmc.h"
+#include "classDefinition.h"
 
 using namespace std;
 using namespace arma;
