@@ -1,5 +1,6 @@
 #include "tgtdistr.h"
-#include "hmc.h"
+
+using namespace arma;
 
 //' matern variance covariance matrix with derivatives
 //' 

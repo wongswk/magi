@@ -5,32 +5,26 @@
 #include <stdio.h>
 // #include <armadillo>
 // [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>
+#include <armadillo>
 
 #include "classDefinition.h"
 
 using namespace std;
-using namespace arma;
 
-struct gpcov {
-  mat C, Cinv, mphi, Kphi, Kinv, dCdphi1, dCdphi2, CeigenVec, KeigenVec, mphiLeftHalf;
-  vec Ceigen1over, Keigen1over;
-};
-
-gpcov maternCov( vec, mat, int);
-gpcov rbfCov( vec, mat, int);
-gpcov compact1Cov( vec, mat, int);
-lp phisigllik( vec, mat, mat, string kernel = "matern");
-lp xthetallik( const vec & xtheta,
+gpcov maternCov( arma::vec, arma::mat, int);
+gpcov rbfCov( arma::vec, arma::mat, int);
+gpcov compact1Cov( arma::vec, arma::mat, int);
+lp phisigllik( arma::vec, arma::mat, arma::mat, string kernel = "matern");
+lp xthetallik( const arma::vec & xtheta,
                const gpcov & CovV,
                const gpcov & CovR,
                const double & sigma,
-               const mat & yobs,
-               const std::function<mat (vec, mat)> & fODE);
-lp xthetallik_rescaled( const vec & xtheta,
+               const arma::mat & yobs,
+               const std::function<arma::mat (arma::vec, arma::mat)> & fODE);
+lp xthetallik_rescaled( const arma::vec & xtheta,
                         const gpcov & CovV,
                         const gpcov & CovR,
                         const double & sigma,
-                        const mat & yobs,
-                        const std::function<mat (vec, mat)> & fODE);
-mat fnmodelODE(const vec &, const mat &);
+                        const arma::mat & yobs,
+                        const std::function<arma::mat (arma::vec, arma::mat)> & fODE);
+arma::mat fnmodelODE(const arma::vec &, const arma::mat &);
