@@ -1,6 +1,11 @@
 #include "band.h"
 
+typedef int blasint;
+
 extern "C" {
+  
+  void dgbmv_(char *, blasint *, blasint *, blasint *, blasint *, double *, double *, blasint *,
+                double *, blasint *, double *, double *, blasint *);
 
   void bmatvecmult(double *a, double *b, int *bandsize, int *matdim, double *result) {
 

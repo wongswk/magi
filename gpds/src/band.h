@@ -1,7 +1,6 @@
 #ifndef BAND_H
 #define BAND_H
 
-#include <f77blas.h>
 #include <stdio.h>
 #include <iostream>
 #include <fstream>

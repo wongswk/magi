@@ -1,4 +1,5 @@
 #include "hmc.h"
+#include "band.h"
 
 // [[Rcpp::export]]
 int hmcTest(){
@@ -17,3 +18,8 @@ int hmcTest(){
   return 0;
 }
 
+// [[Rcpp::export]]
+int bandTest(){
+  std::cout << "in bandTest\n";
+  return mainBand();
+}
