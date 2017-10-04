@@ -22,10 +22,68 @@ int hmcTest(){
 }
 
 // [[Rcpp::export]]
-int bandTest(){
-  std::cout << "in bandTest\n";
-  return mainBand();
-}
+int bandTest(std::string filename="data_band.txt"){
+  const int datasize = 201, bandsize = 20;
+  
+  double xtheta[datasize * 2 + 3];
+  double Vmphi[datasize * (bandsize * 2 + 1)];
+  double VKinv[datasize * (bandsize * 2 + 1)];
+  double VCinv[datasize * (bandsize * 2 + 1)];
+  double Rmphi[datasize * (bandsize * 2 + 1)];
+  double RKinv[datasize * (bandsize * 2 + 1)];
+  double RCinv[datasize * (bandsize * 2 + 1)];
+  int bandsizeInput, datasizeInput;
+  double cursigma;
+  double fnsim[datasize * 2];
+  
+  ifstream fin(filename);
+  for(int i = 0; i < datasize * 2 + 3; i++){
+    fin >> xtheta[i];
+  }
+  for(int i = 0; i < datasize * (bandsize * 2 + 1); i++){
+    fin >> Vmphi[i];
+  }
+  for(int i = 0; i < datasize * (bandsize * 2 + 1); i++){
+    fin >> VKinv[i];
+  }
+  for(int i = 0; i < datasize * (bandsize * 2 + 1); i++){
+    fin >> VCinv[i];
+  }
+  for(int i = 0; i < datasize * (bandsize * 2 + 1); i++){
+    fin >> Rmphi[i];
+  }
+  for(int i = 0; i < datasize * (bandsize * 2 + 1); i++){
+    fin >> RKinv[i];
+  }
+  for(int i = 0; i < datasize * (bandsize * 2 + 1); i++){
+    fin >> RCinv[i];
+  }
+  fin >> bandsizeInput;
+  fin >> datasizeInput;
+  if(bandsizeInput != bandsize || datasizeInput != datasize){
+    throw "size not matched";
+  }
+  fin >> cursigma;
+  for(int i = 0; i < datasize * 2; i++){
+    fin >> fnsim[i];
+  }
+  
+  double mysum=0;
+  cout << std::accumulate(xtheta, xtheta + 405, mysum) << endl;
+  
+  double ret=0;
+  double grad[datasize * 2 + 3];
+  
+  xthetallik(xtheta, Vmphi, VKinv, VCinv,
+             Rmphi, RKinv, RCinv, &bandsizeInput, &datasizeInput,
+             &cursigma, fnsim, &ret, grad);
+  cout << ret << endl;
+  for(int i = 0; i < datasize * 2 + 3; i++){
+    cout << grad[i] << ",";
+  }
+  printf("\ncheck sum = %.20e\n", std::accumulate(grad, grad + datasize * 2 + 3, ret));
+  return 0;
+};
 
 
 
