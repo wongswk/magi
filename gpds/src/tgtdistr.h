@@ -3,7 +3,10 @@
 #include <vector>
 #include <iostream>
 #include <stdio.h>
-#include <armadillo>
+// #include <armadillo>
+// [[Rcpp::depends(RcppArmadillo)]]
+#include <RcppArmadillo.h>
+
 #include "hmc.h"
 
 using namespace std;
@@ -18,16 +21,16 @@ gpcov maternCov( vec, mat, int);
 gpcov rbfCov( vec, mat, int);
 gpcov compact1Cov( vec, mat, int);
 lp phisigllik( vec, mat, mat, string kernel = "matern");
-lp xthetallik( const vec & xtheta, 
-               const gpcov & CovV, 
-               const gpcov & CovR, 
-               const double & sigma, 
-               const mat & yobs, 
+lp xthetallik( const vec & xtheta,
+               const gpcov & CovV,
+               const gpcov & CovR,
+               const double & sigma,
+               const mat & yobs,
                const std::function<mat (vec, mat)> & fODE);
-lp xthetallik_rescaled( const vec & xtheta, 
-                        const gpcov & CovV, 
-                        const gpcov & CovR, 
-                        const double & sigma, 
-                        const mat & yobs, 
+lp xthetallik_rescaled( const vec & xtheta,
+                        const gpcov & CovV,
+                        const gpcov & CovR,
+                        const double & sigma,
+                        const mat & yobs,
                         const std::function<mat (vec, mat)> & fODE);
 mat fnmodelODE(const vec &, const mat &);
