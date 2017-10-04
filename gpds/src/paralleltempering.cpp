@@ -1,7 +1,9 @@
 // [[Rcpp::plugins(cpp11)]]
 #include "paralleltempering.h"
 
-
+using arma::vec;
+using arma::mat;
+using arma::cube;
 
 void print_info(const arma::umat & swapindicator, const arma::umat & mcmcindicator,
                 const vec & temperature, const int & niter) {
@@ -139,42 +141,5 @@ mcmcstate metropolis (function<lp(vec)> lpv, mcmcstate current, double stepsize=
     ret.acc = 1;
   }
   return ret;
-}
-
-
-// [[Rcpp::export]]
-arma::cube main2() {
-  function<lp(vec)> lpnormal = [](vec x) {return lp(-arma::sum(arma::square(x))/2.0);};
-  vec temperature = arma::linspace<vec>(8, 1, 8);
-  std::function<mcmcstate(function<lp(vec)>, mcmcstate)> metropolis_tuned =
-    std::bind(metropolis, std::placeholders::_1, std::placeholders::_2, 1.0);
-  
-  cube samples = parallel_termperingC(lpnormal, 
-                                     metropolis_tuned, 
-                                     temperature, 
-                                     arma::zeros<vec>(4), 
-                                     0.05, 
-                                     1e4);
-  
-  return samples;
-}
-
-// [[Rcpp::export]]
-arma::cube main3() {
-  function<lp(vec)> lpnormalvalue = [](vec x) {
-    return lp(log(exp(-arma::sum(arma::square(x+4))/2.0) + exp(-arma::sum(arma::square(x-4))/2.0)));
-  };
-  vec temperature = {1, 1.3, 1.8, 2.5, 3.8, 5.7, 8};
-  function<mcmcstate(function<lp(vec)>, mcmcstate)> metropolis_tuned =
-    std::bind(metropolis, std::placeholders::_1, std::placeholders::_2, 1.0);
-    
-  cube samples = parallel_termperingC(lpnormalvalue, 
-                                      metropolis_tuned, 
-                                      temperature, 
-                                      arma::zeros<vec>(4), 
-                                      0.125, 
-                                      1e5);
-  
-  return samples;
 }
 

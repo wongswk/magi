@@ -8,12 +8,9 @@
 // #include <RcppArmadillo.h>
 
 using namespace std;
-using arma::vec;
-using arma::mat;
-using arma::cube;
 
 struct mcmcstate {
-  vec state;
+  arma::vec state;
   double lpv;
   int acc;
   mcmcstate(const hmcstate & x){
@@ -29,13 +26,11 @@ struct mcmcstate {
   }
 };
 
-void print_info(const arma::umat &, const arma::umat &, const vec &, const int &);
-cube parallel_termperingC(std::function<lp (arma::vec)> & , 
-                          std::function<mcmcstate (function<lp(vec)>, mcmcstate)> &, 
+void print_info(const arma::umat &, const arma::umat &, const arma::vec &, const int &);
+arma::cube parallel_termperingC(std::function<lp (arma::vec)> & , 
+                          std::function<mcmcstate (function<lp(arma::vec)>, mcmcstate)> &, 
                           const arma::vec &, 
                           const arma::vec &, 
                           double, int);
-mcmcstate metropolis (function<lp(vec)>, mcmcstate, double);
-arma::cube main2();
-arma::cube main3();
+mcmcstate metropolis (function<lp(arma::vec)>, mcmcstate, double);
   
