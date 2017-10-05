@@ -1,60 +1,41 @@
-// #include <Rcpp.h>
-// using namespace Rcpp;
-
 #include <cmath>
 #include <random>
 #include <vector>
-#include <iostream>
-#include <stdio.h>
-#include <armadillo>
+// [[Rcpp::plugins(cpp11)]]
+#include <functional>
+
+#include "classDefinition.h"
 #include "hmc.h"
 #include "tgtdistr.h"
 #include "paralleltempering.h"
-// [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>
-// [[Rcpp::plugins(cpp11)]]
-#include <functional>
 
 using namespace std;
 using namespace arma;
 using namespace Rcpp;
 
-//' R wrapper for basic_hmcC
-// [[Rcpp::export]]
-Rcpp::List hmc(const vec & initial, vec step, vec lb, vec ub,
-               int nsteps = 1, bool traj = false){
-  // cout << lb << "\t" << ub << endl;
-  hmcstate post = basic_hmcC(lpnormal, initial, step, 
-                             lb, 
-                             ub, 
-                             nsteps, traj);
-  Rcpp::List ret = List::create(Named("final")=post.final,
-                                Named("final.p")=post.finalp,
-                                Named("lpr")=post.lprvalue,
-                                Named("step")=post.step,
-                                Named("apr")=post.apr,
-                                Named("acc")=post.acc,
-                                Named("delta")=post.delta);
-  if(traj){
-    ret.push_back(post.trajp, "traj.p");
-    ret.push_back(post.trajq, "traj.q");
-    ret.push_back(post.trajH, "traj.H");
-  }
-  return ret;
-}
 
 //' R wrapper for phisigllik
+//' @export
 // [[Rcpp::export]]
-Rcpp::List phisigllikTest(vec phisig, mat yobs, mat dist, string kernel="matern"){
+Rcpp::List phisigllikC(const arma::vec & phisig, 
+                       const arma::mat & yobs, 
+                       const arma::mat & dist, 
+                       std::string kernel="matern"){
   lp ret = phisigllik(phisig, yobs, dist, kernel);
   return List::create(Named("value")=ret.value,
                       Named("grad")=ret.gradient);
 }
 
 //' sample from GP marginal likelihood for phi and sigma
+//' @export
 // [[Rcpp::export]]
-Rcpp::List phisigSample( mat yobs, mat dist, const vec & initial, vec step,
-                         int nsteps = 1, bool traj = false, string kernel = "matern"){
+Rcpp::List phisigSample( const arma::mat & yobs, 
+                         const arma::mat & dist, 
+                         const arma::vec & initial, 
+                         const arma::vec & step,
+                         int nsteps = 1, 
+                         bool traj = false, 
+                         std::string kernel = "matern"){
   std::function<lp(vec)> tgt = std::bind(phisigllik, std::placeholders::_1, yobs, dist, kernel);
   hmcstate post = basic_hmcC(tgt, initial, step, 
                              std::vector<double>({0.0}), 
@@ -76,7 +57,7 @@ Rcpp::List phisigSample( mat yobs, mat dist, const vec & initial, vec step,
   return ret;
 }
 
-gpcov cov_r2cpp(List cov_r){
+gpcov cov_r2cpp(Rcpp::List cov_r){
   gpcov cov_v;
   cov_v.C = as<mat>(cov_r["C"]);
   cov_v.Cinv = as<mat>(cov_r["Cinv"]);
@@ -91,9 +72,17 @@ gpcov cov_r2cpp(List cov_r){
 }
 
 //' sample from GP ODE for latent x and theta
+//' @export
 // [[Rcpp::export]]
-Rcpp::List xthetaSample( const mat & yobs, const List & covVr, const List & covRr, double sigma, const vec & initial, vec step,
-                         int nsteps = 1, bool traj = false, bool rescaleloglik = false){
+Rcpp::List xthetaSample( const arma::mat & yobs, 
+                         const Rcpp::List & covVr, 
+                         const Rcpp::List & covRr, 
+                         const double & sigma, 
+                         const arma::vec & initial, 
+                         const arma::vec & step,
+                         int nsteps = 1, 
+                         bool traj = false, 
+                         bool rescaleloglik = false){
   gpcov covV = cov_r2cpp(covVr);
   gpcov covR = cov_r2cpp(covRr);
   std::function<lp(vec)> tgt;
@@ -129,11 +118,19 @@ Rcpp::List xthetaSample( const mat & yobs, const List & covVr, const List & covR
   return ret;
 }
 
+//' parallel tempered version of hmc for xtheta sample
+//' @export
 // [[Rcpp::export]]
-arma::cube parallel_temper_hmc_xtheta( 
-    mat yobs, List covVr, List covRr, double sigma, const vec & temperature, 
-    const double & alpha0, const vec & initial, const vec & step, int nsteps = 1, 
-    int niter=1e4){
+arma::cube parallel_temper_hmc_xtheta( const arma::mat & yobs, 
+                                       const Rcpp::List & covVr, 
+                                       const Rcpp::List & covRr, 
+                                       const double & sigma, 
+                                       const arma::vec & temperature, 
+                                       const double & alpha0, 
+                                       const arma::vec & initial, 
+                                       const arma::vec & step, 
+                                       int nsteps = 1, 
+                                       int niter=1e4){
   gpcov covV = cov_r2cpp(covVr);
   gpcov covR = cov_r2cpp(covRr);
   std::function<lp(vec)> tgt = std::bind(xthetallik, std::placeholders::_1, 
@@ -177,8 +174,13 @@ arma::cube parallel_temper_hmc_xtheta(
 }
 
 //' R wrapper for xthetallik
+//' @export
 // [[Rcpp::export]]
-Rcpp::List xthetallikTest(mat yobs, List covVr, List covRr, double sigma, const vec & initial){
+Rcpp::List xthetallikC(const arma::mat & yobs, 
+                       const Rcpp::List & covVr, 
+                       const Rcpp::List & covRr, 
+                       const double & sigma, 
+                       const arma::vec & initial){
   gpcov covV = cov_r2cpp(covVr);
   gpcov covR = cov_r2cpp(covRr);
   lp ret = xthetallik(initial, covV, covR, sigma, yobs, fnmodelODE);
