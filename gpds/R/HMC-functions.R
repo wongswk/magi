@@ -1,3 +1,9 @@
+#' calculate stationary Gaussian process kernel
+#' 
+#' currently supports matern, rbf, compact1, 
+#' also returns m_phi and other matrix which will be needed for ODE inference
+#' 
+#' @export
 calCov <- function(phi, kerneltype="matern", rInput=NULL, signrInput=NULL) {
   if(is.null(rInput)){
     rInput <- r
@@ -6,7 +12,7 @@ calCov <- function(phi, kerneltype="matern", rInput=NULL, signrInput=NULL) {
     signrInput <- signr
   }
   if(kerneltype=="matern"){
-    ret <- calCov2(phi, rInput, signrInput)
+    ret <- calCovMatern(phi, rInput, signrInput)
   }else if(kerneltype=="rbf"){
     ret <- calCovRBF(phi, rInput, signrInput)
   }else if(kerneltype=="compact1"){
@@ -42,7 +48,12 @@ calCov <- function(phi, kerneltype="matern", rInput=NULL, signrInput=NULL) {
   c(ret, retmore)
 }
 
-calCov2 <- function(phi, r, signr, complexity=3) {
+#' calculate Matern Gaussian process kernel
+#' 
+#' only calculate core part of C, Cprime, Cprimeprime, dCdphi etc.
+#' 
+#' @export
+calCovMatern <- function(phi, r, signr, complexity=3) {
   r2 <- r^2
   C <- phi[1] * (1 + ((sqrt(5)*r)/phi[2]) + ((5*r2)/(3*phi[2]^2))) * exp((-sqrt(5)*r)/phi[2])
   if(complexity==0){
@@ -58,6 +69,11 @@ calCov2 <- function(phi, r, signr, complexity=3) {
   return(list(C = C, Cprime = Cprime, Cdoubleprime = Cdoubleprime, dCdphi = dCdphi))
 }
 
+#' calculate RBF Gaussian process kernel
+#' 
+#' only calculate core part of C, Cprime, Cprimeprime, dCdphi etc.
+#' 
+#' @export
 calCovRBF <- function(phi, r, signr, complexity=3) {
   r2 <- r^2
   
@@ -74,6 +90,12 @@ calCovRBF <- function(phi, r, signr, complexity=3) {
   return(list(C = C, Cprime = Cprime, Cdoubleprime = Cdoubleprime, dCdphi = dCdphi))
 }
 
+#' calculate Compact1 Gaussian process kernel
+#' 
+#' only calculate core part of C, Cprime, Cprimeprime, dCdphi etc. 
+#' See overleaf writeup for details
+#' 
+#' @export
 calCovCompact1 <- function(phi, r, signr, complexity=3, D=3) {
   r2 <- r^2
   jsmooth <- floor(D/2)+2
@@ -97,7 +119,9 @@ calCovCompact1 <- function(phi, r, signr, complexity=3, D=3) {
   return(list(C = C, Cprime = Cprime, Cdoubleprime = Cdoubleprime, dCdphi = dCdphi))
 }
 
-
+#' calculate fn model ODE derivatives
+#' 
+#' @export
 fODE <- function(theta, x) {
   a <- theta[1]
   b <- theta[2]
@@ -110,10 +134,14 @@ fODE <- function(theta, x) {
   Rdt <- -1/c * ( V - a + b * R)
   
   return(cbind(Vdt, Rdt))
-  #return(list(fit = res, Vfit = V, Rfit=R, Vfitdt = Vdt, Rfitdt = Rdt))
-  
 }
 
+#' full log likelihood in R with contribution from each component
+#' 
+#' value is exact for x, theta, phi, sigma. we simply need to sample from this
+#' if computation is feasible
+#' 
+#' @export
 loglik <- function(x, theta, CovV, CovR, sigma, y, lambda=1)  {
   if(length(lambda) < 3) lambda <- c(lambda, rep(1, 3-length(lambda)))
   a <- theta[1]
@@ -151,6 +179,15 @@ loglik <- function(x, theta, CovV, CovR, sigma, y, lambda=1)  {
   
 }
 
+#' full log likelihood without ODE
+#' 
+#' used for Gaussian process smoothing.
+#' full likelihood on latent x and phi sigma.
+#' If x is marginalized out, we get phisigllik
+#' 
+#' @seealso phisigllik
+#' 
+#' @export
 logliknoODE <- function(x, CovV, CovR, sigma, y)  {
   
   Vsm <- x[,1]
@@ -179,213 +216,13 @@ logliknoODE <- function(x, CovV, CovR, sigma, y)  {
   
 }
 
-library(mvtnorm)
-logliknoODE.mar <- function(CovV, CovR, sigma, y)  {
-  n <- nrow(y)
-  
-  #f <- fODE(theta, x)
-  res <- c(0,0)
-  
-  # V 
-  #CovV <- calCov(phi[1:2])
-  #fr <- (f[,1] - CovV$mphi %*% Vsm)
-  res[1] <- dmvnorm(y[,1], sigma = CovV$C+diag(sigma^2, nrow = n), log=TRUE)
-  # R
-  #CovR <- calCov(phi[3:4])
-  #fr <- (f[,2] - CovR$mphi %*% Rsm)
-  res[2] <- dmvnorm(y[,2], sigma = CovR$C+diag(sigma^2, nrow = n), log=TRUE)
-  ret <- sum(res)
-  attr(ret,"components") <- res
-  return(ret)
-}
-
-
-loglikVmis <- function(x, theta, CovV, CovR, sigma, y)  {
-  a <- theta[1]
-  b <- theta[2]
-  c <- theta[3]
-  
-  if (min(theta) < 0) { return(1e9)}
-  
-  Vsm <- x[,1]
-  Rsm <- x[,2]
-  n <- nrow(x)
-  
-  f <- fODE(theta, x)
-  res <- matrix(nrow=2,ncol=3)
-  
-  # V 
-  #CovV <- calCov(phi[1:2])
-  fr <- (f[,1] - CovV$mphi %*% Vsm)
-  res[1,] <- c( 0, -0.5 * as.numeric(determinant(CovV$Kphi)$modulus) -0.5 * t(fr) %*% solve(CovV$Kphi) %*% fr,  -0.5 * as.numeric(determinant(CovV$C)$modulus) - 0.5 * t(Vsm) %*% CovV$Cinv %*% Vsm)
-  
-  
-  # R
-  #CovR <- calCov(phi[3:4])
-  fr <- (f[,2] - CovR$mphi %*% Rsm)
-  res[2,] <- c( -0.5 * sum((Rsm - y[,2])^2) / sigma^2 - n * log(sigma), -0.5 * as.numeric(determinant(CovR$Kphi)$modulus) -0.5 * t(fr) %*% solve(CovR$Kphi) %*% fr,  -0.5 * as.numeric(determinant(CovR$C)$modulus) - 0.5 * t(Rsm) %*% CovR$Cinv %*% Rsm)
-  
-  
-  ret <- sum(res)
-  attr(ret,"components") <- res
-  
-  return(ret)
-  
-}
-
-
-loglikRmis <- function(x, theta, CovV, CovR, sigma, y)  {
-  # R mis don't use 2nd col of Y
-  a <- theta[1]
-  b <- theta[2]
-  c <- theta[3]
-  
-  if (min(theta) < 0) { return(1e9)}
-  
-  Vsm <- x[,1]
-  Rsm <- x[,2]
-  n <- nrow(x)
-  
-  f <- fODE(theta, x)
-  res <- matrix(nrow=2,ncol=3)
-  
-  # V 
-  #CovV <- calCov(phi[1:2])
-  fr <- (f[,1] - CovV$mphi %*% Vsm)
-  res[1,] <- c( -0.5 * sum((Vsm - y[,1])^2) / sigma^2 - n * log(sigma), -0.5 * as.numeric(determinant(CovV$Kphi)$modulus) -0.5 * t(fr) %*% solve(CovV$Kphi) %*% fr,  -0.5 * as.numeric(determinant(CovV$C)$modulus) - 0.5 * t(Vsm) %*% CovV$Cinv %*% Vsm)
-  
-  
-  # R
-  #CovR <- calCov(phi[3:4])
-  fr <- (f[,2] - CovR$mphi %*% Rsm)
-  res[2,] <- c( 0, -0.5 * as.numeric(determinant(CovR$Kphi)$modulus) -0.5 * t(fr) %*% solve(CovR$Kphi) %*% fr,  -0.5 * as.numeric(determinant(CovR$C)$modulus) - 0.5 * t(Rsm) %*% CovR$Cinv %*% Rsm)
-  
-  
-  ret <- sum(res)
-  attr(ret,"components") <- res
-  
-  return(ret)
-  
-}
-
-xthetallikRmis <- function(x, theta, CovV, CovR, sigma, y, grad = F)  {
-  a <- theta[1]
-  b <- theta[2]
-  c <- theta[3]
-  
-  if (min(theta) < 0) {
-    ret <- -1e+9
-    attr(ret,"grad") <- rep(1e9, (nobs*2+3))
-    return(ret)
-    
-  }
-  
-  Vsm <- x[,1]
-  Rsm <- x[,2]
-  n <- nrow(x)
-  
-  f <- fODE(theta, x)
-  res <- matrix(nrow=2,ncol=3)
-  
-  # V 
-  #CovV <- calCov(phi[1:2])
-  frV <- (f[,1] - CovV$mphi %*% Vsm)
-  
-  # R
-  #CovR <- calCov(phi[3:4])
-  frR <- (f[,2] - CovR$mphi %*% Rsm)
-  
-  res[1,] <- c( -0.5 * sum((Vsm - y[,1])^2) / sigma^2, -0.5 * t(frV) %*% CovV$Kinv %*% frV,   - 0.5 * t(Vsm) %*% CovV$Cinv %*% Vsm)
-  res[2,] <- c( 0, -0.5 * t(frR) %*% CovR$Kinv %*% frR,   - 0.5 * t(Rsm) %*% CovR$Cinv %*% Rsm)
-  
-  ret <- sum(res)
-  attr(ret,"components") <- res
-  
-  
-  if(grad) {
-    # V contrib
-    Vtemp <- diag( c*(1 - x[,1]^2)) - CovV$mphi
-    Rtemp <- diag( rep(c,n))
-    aTemp <- rep(0,n)
-    bTemp <- rep(0,n)
-    cTemp <- f[,1] / c
-    VC2 <- 2 * t(cbind(Vtemp,Rtemp,aTemp,bTemp,cTemp)) %*% CovV$Kinv %*% frV
-    
-    # R contrib
-    Vtemp <- diag( rep( -1/c, n) )
-    Rtemp <- diag( rep( -b/c, n) ) - CovR$mphi
-    aTemp <- rep(1/c,n)
-    bTemp <- -Rsm/c
-    cTemp <- f[,2] * (-1/c)
-    RC2 <- 2 * t(cbind(Vtemp,Rtemp,aTemp,bTemp,cTemp)) %*% CovR$Kinv %*% frR
-    
-    C3 <- c(2 * CovV$Cinv %*% Vsm,  2 * CovR$Cinv %*% Rsm ,0,0,0)
-    C1 <- c( 2 * (Vsm - y[,1]) / sigma^2 ,  rep(0,nobs) ,0,0,0)
-    
-    attr(ret,"grad") <- c((VC2 + RC2 + C3 + C1) * (-0.5))
-  }
-  
-  return(ret)
-  
-  
-}
-
-xthetalliknoODE <- function(x, CovV, CovR, sigma, y, grad = F)  {
-  #a <- theta[1]
-  #b <- theta[2]
-  #c <- theta[3]
-
-  Vsm <- x[,1]
-  Rsm <- x[,2]
-  n <- nrow(x)
-  
-  #f <- fODE(theta, x)
-  res <- matrix(nrow=2,ncol=3)
-  
-  # V 
-  #CovV <- calCov(phi[1:2])
-  #frV <- (f[,1] - CovV$mphi %*% Vsm)
-  
-  # R
-  #CovR <- calCov(phi[3:4])
-  #frR <- (f[,2] - CovR$mphi %*% Rsm)
-  
-  res[1,] <- c( -0.5 * sum((Vsm - y[,1])^2) / sigma^2, 0,   - 0.5 * t(Vsm) %*% CovV$Cinv %*% Vsm)
-  res[2,] <- c( -0.5 * sum((Rsm - y[,2])^2) / sigma^2, 0,   - 0.5 * t(Rsm) %*% CovR$Cinv %*% Rsm)
-  
-  ret <- sum(res)
-  attr(ret,"components") <- res
-  
-  
-  if(grad) {
-    # V contrib
-    # Vtemp <- diag( c*(1 - x[,1]^2)) - CovV$mphi
-    # Rtemp <- diag( rep(c,n))
-    # aTemp <- rep(0,n)
-    # bTemp <- rep(0,n)
-    # cTemp <- f[,1] / c
-    # VC2 <- 2 * t(cbind(Vtemp,Rtemp,aTemp,bTemp,cTemp)) %*% CovV$Kinv %*% frV
-    
-    # R contrib
-    # Vtemp <- diag( rep( -1/c, n) )
-    # Rtemp <- diag( rep( -b/c, n) ) - CovR$mphi
-    # aTemp <- rep(1/c,n)
-    # bTemp <- -Rsm/c
-    # cTemp <- f[,2] * (-1/c)
-    # RC2 <- 2 * t(cbind(Vtemp,Rtemp,aTemp,bTemp,cTemp)) %*% CovR$Kinv %*% frR
-    
-    C3 <- c(2 * CovV$Cinv %*% Vsm,  2 * CovR$Cinv %*% Rsm)
-    C1 <- c( 2 * (Vsm - y[,1]) / sigma^2 ,  2 * (Rsm - y[,2]) / sigma^2)
-    
-    #attr(ret,"grad") <- c((VC2 + RC2 + C3 + C1) * (-0.5))
-    attr(ret,"grad") <- c((C3 + C1) * (-0.5))
-  }
-  
-  return(ret)
-  
-  
-}
-
+#' full log likelihood for latent x and theta
+#' 
+#' used for Gaussian process ODE inference on x and theta only. 
+#' likelihood value is proportional to phi and sigma, so this cannot be used to
+#' draw phi and sigma
+#' 
+#' @export
 xthetallik <- function(x, theta, CovV, CovR, sigma, y, grad = F, lambda = 1)  {
   if(length(lambda) < 3) lambda <- c(lambda, rep(1, 3-length(lambda)))
   a <- theta[1]
@@ -453,97 +290,13 @@ xthetallik <- function(x, theta, CovV, CovR, sigma, y, grad = F, lambda = 1)  {
   
 }
 
-xthetallikVmis <- function(x, theta, CovV, CovR, sigma, y, grad = F)  {
-  a <- theta[1]
-  b <- theta[2]
-  c <- theta[3]
-  
-  if (min(theta) < 0) {
-    ret <- -1e+9
-    attr(ret,"grad") <- rep(1e9, (nobs*2+3))
-    return(ret)
-    
-  }
-  
-  Vsm <- x[,1]
-  Rsm <- x[,2]
-  n <- nrow(x)
-  
-  f <- fODE(theta, x)
-  res <- matrix(nrow=2,ncol=3)
-  
-  # V 
-  #CovV <- calCov(phi[1:2])
-  frV <- (f[,1] - CovV$mphi %*% Vsm)
-  
-  # R
-  #CovR <- calCov(phi[3:4])
-  frR <- (f[,2] - CovR$mphi %*% Rsm)
-  
-  res[1,] <- c( 0, -0.5 * t(frV) %*% CovV$Kinv %*% frV,   - 0.5 * t(Vsm) %*% CovV$Cinv %*% Vsm)
-  res[2,] <- c( -0.5 * sum((Rsm - y[,2])^2) / sigma^2, -0.5 * t(frR) %*% CovR$Kinv %*% frR,   - 0.5 * t(Rsm) %*% CovR$Cinv %*% Rsm)
-  
-  ret <- sum(res)
-  attr(ret,"components") <- res
-  
-  
-  if(grad) {
-    # V contrib
-    Vtemp <- diag( c*(1 - x[,1]^2)) - CovV$mphi
-    Rtemp <- diag( rep(c,n))
-    aTemp <- rep(0,n)
-    bTemp <- rep(0,n)
-    cTemp <- f[,1] / c
-    VC2 <- 2 * t(cbind(Vtemp,Rtemp,aTemp,bTemp,cTemp)) %*% CovV$Kinv %*% frV
-    
-    # R contrib
-    Vtemp <- diag( rep( -1/c, n) )
-    Rtemp <- diag( rep( -b/c, n) ) - CovR$mphi
-    aTemp <- rep(1/c,n)
-    bTemp <- -Rsm/c
-    cTemp <- f[,2] * (-1/c)
-    RC2 <- 2 * t(cbind(Vtemp,Rtemp,aTemp,bTemp,cTemp)) %*% CovR$Kinv %*% frR
-    
-    C3 <- c(2 * CovV$Cinv %*% Vsm,  2 * CovR$Cinv %*% Rsm ,0,0,0)
-    C1 <- c( rep(0,nobs),  2 * (Rsm - y[,2]) / sigma^2,0,0,0)
-    
-    attr(ret,"grad") <- c((VC2 + RC2 + C3 + C1) * (-0.5))
-  }
-  
-  return(ret)
-  
-  
-}
-
-
-xthU <- function(q, grad=FALSE, lambda=1) {
-  x <- cbind(q[1:nobs], q[(nobs+1):(nobs*2)])
-  theta <- q[(nobs*2+1):(nobs*2+3)]
-  
-  #xthetallik(x,theta, c(1.9840824, 1.1185157, 0.9486433, 3.268243), 0.1, fn.sim[,1:2], grad)
-  xthetallik(x,theta, curCovV, curCovR, cursigma, fn.sim[,1:2], grad, lambda)
-}
-
-xthUnoODE <- function(q, grad=FALSE) {
-  x <- cbind(q[1:nobs], q[(nobs+1):(nobs*2)])
-  
-  xthetalliknoODE(x, curCovV, curCovR, cursigma, fn.sim[,1:2], grad)
-}
-
-xthURmis <- function(q, grad=FALSE) {
-  x <- cbind(q[1:nobs], q[(nobs+1):(nobs*2)])
-  theta <- q[(nobs*2+1):(nobs*2+3)]
-  
-  xthetallikRmis(x,theta, curCovV, curCovR, cursigma, fn.sim[,1:2], grad)
-}
-
-xthUVmis <- function(q, grad=FALSE) {
-  x <- cbind(q[1:nobs], q[(nobs+1):(nobs*2)])
-  theta <- q[(nobs*2+1):(nobs*2+3)]
-  
-  xthetallikVmis(x,theta, curCovV, curCovR, cursigma, fn.sim[,1:2], grad)
-}
-
+#' marginal log likelihood for phi and sigma for Gaussian process smoothing
+#' 
+#' used for Gaussian process smoothing without ODE. 
+#' used to draw phi and sigma directly from marginal likelihood.
+#' mathematically, this is the integration of logliknoODE
+#' 
+#' @export
 phisigllik <- function(phisig, y, grad = F, kerneltype="matern"){
   n <- nrow(y)
   sigma <- phisig[5]
@@ -588,12 +341,25 @@ phisigllik <- function(phisig, y, grad = F, kerneltype="matern"){
   return(ret)
 }
 
+#' calculate number of eigen values to preserve based on frobenius norm
+#' @export
 truncEigen <- function(eigenValues, frobeniusNormApprox = 0.99){
   frobeniusNorm <- sum(eigenValues^2)
   frobeniusNormTrunc <- cumsum(eigenValues^2)
   min(which(frobeniusNormTrunc/frobeniusNorm > frobeniusNormApprox))
 }
 
+#' truncate gpCov object for low rank approximation
+#' 
+#' the largest 1-over-eigenvalue will be preserved, and the rest will be deleted
+#' for a low-rank representation from spectral decomposition
+#' 
+#' mphi SVD not helping because complexity is 2mn, comparing to original n^2
+#' however we need m to be around n/2 to preserve accuracy due to low decrease d
+#' 
+#' @param cKeep number of eigen values to keep for C matrix
+#' @param kKeep number of eigen values to keep for K matrix
+#' @export
 truncCovByEigen <- function(gpCov, cKeep, kKeep){
   cKeepId <- (ncol(gpCov$CeigenVec)-cKeep+1):ncol(gpCov$CeigenVec)
   gpCov$Ceigen1over <- gpCov$Ceigen1over[cKeepId]
@@ -607,8 +373,6 @@ truncCovByEigen <- function(gpCov, cKeep, kKeep){
   # gpCov$mphiu <- gpCov$mphiu[mKeepId,]
   # gpCov$mphid <- gpCov$mphid[mKeepId]
   # gpCov$mphiv <- gpCov$mphiv[mKeepId,]
-  #' mphi SVD not helping because complexity is 2mn, comparing to original n^2
-  #' however we need m to be around n/2 to preserve accuracy due to low decrease d
   
   gpCov
 }
