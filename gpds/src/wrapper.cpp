@@ -68,6 +68,9 @@ gpcov cov_r2cpp(Rcpp::List cov_r){
   cov_v.Keigen1over = as<vec>(cov_r["Keigen1over"]);
   cov_v.CeigenVec = as<mat>(cov_r["CeigenVec"]);
   cov_v.KeigenVec = as<mat>(cov_r["KeigenVec"]);
+  cov_v.CinvBand = as<vec>(cov_r["CinvBand"]);
+  cov_v.mphiBand = as<vec>(cov_r["mphiBand"]);
+  cov_v.KinvBand = as<vec>(cov_r["KinvBand"]);
   return cov_v;
 }
 

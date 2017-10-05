@@ -4,7 +4,7 @@
 #' also returns m_phi and other matrix which will be needed for ODE inference
 #' 
 #' @export
-calCov <- function(phi, rInput, signrInput, complexity=3, kerneltype="matern") {
+calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerneltype="matern") {
   if(kerneltype=="matern"){
     ret <- calCovMatern(phi, rInput, signrInput, complexity)
   }else if(kerneltype=="rbf"){
@@ -19,6 +19,10 @@ calCov <- function(phi, rInput, signrInput, complexity=3, kerneltype="matern") {
   
   if(complexity==0){
     return(ret)
+  }
+  
+  if(is.null(bandsize)){
+    bandsize <- nrow(rInput)
   }
   
   retmore <- with(ret, {
@@ -44,6 +48,7 @@ calCov <- function(phi, rInput, signrInput, complexity=3, kerneltype="matern") {
          Kinv = Kinv,
          mphiLeftHalf = mphiLeftHalf)
   })
+  retmore <- bandCov(retmore, bandsize)
   c(ret, retmore)
 }
 
@@ -185,8 +190,8 @@ loglik <- function(x, theta, CovV, CovR, sigma, y, lambda=1)  {
 #' 
 #' @export
 loglikOrig <- function(x, theta, phi, sigma, y, rInput, signrInput, kerneltype = "matern")  {
-  CovV <- calCov(phi[1:2], rInput, signrInput, complexity = 3, kerneltype)
-  CovR <- calCov(phi[3:4], rInput, signrInput, complexity = 3, kerneltype)
+  CovV <- calCov(phi[1:2], rInput, signrInput, complexity = 3, kerneltype=kerneltype)
+  CovR <- calCov(phi[3:4], rInput, signrInput, complexity = 3, kerneltype=kerneltype)
   loglik(x, theta, CovV, CovR, sigma, y)
 }
 
@@ -384,6 +389,16 @@ truncCovByEigen <- function(gpCov, cKeep, kKeep){
   # gpCov$mphiu <- gpCov$mphiu[mKeepId,]
   # gpCov$mphid <- gpCov$mphid[mKeepId]
   # gpCov$mphiv <- gpCov$mphiv[mKeepId,]
+  
+  gpCov
+}
+
+#' calculate number of eigen values to preserve based on frobenius norm
+#' @export
+bandCov <- function(gpCov, bandsize = 20){
+  gpCov$CinvBand <- mat2band(gpCov$Cinv, bandsize)
+  gpCov$mphiBand <- mat2band(gpCov$mphi, bandsize)
+  gpCov$KinvBand <- mat2band(gpCov$Kinv, bandsize)
   
   gpCov
 }

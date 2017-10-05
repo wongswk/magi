@@ -153,5 +153,8 @@ testthat::test_that("examine low rank approximation", {
   testthat::expect_true(x[1] < x[3] & x[2] < x[3])
 })
 
-
-
+bandsize <- 10
+testthat::test_that("examine band matrix approximation", {
+  curCovVband <<- bandCov(curCovV, bandsize)
+  curCovRband <<- bandCov(curCovR, bandsize)
+})
