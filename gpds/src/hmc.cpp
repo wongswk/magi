@@ -18,6 +18,7 @@ using namespace arma;
 //'                  equal to the dimensionality of the state.
 //' @param traj      TRUE if values of q and p along the trajectory should be 
 //'                  returned (default is FALSE).
+//' @noRd
 hmcstate basic_hmcC(const std::function<lp (vec)> & lpr, 
                     const vec & initial, 
                     const vec & step, 
