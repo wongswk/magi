@@ -18,9 +18,9 @@ extern "C" {
   void bmatvecmultT(double *a, double *b, int *bandsize, int *matdim, double *result);
 
 
-  void xthetallik( double *xtheta, double *Vmphi, double *VKinv, double *VCinv,
-                   double *Rmphi, double *RKinv, double *RCinv, int *bandsize, int *nn,
-                   double *sigma, double *yobs, double *ret, double *retgrad);
+  void xthetallikBandC( double *xtheta, double *Vmphi, double *VKinv, double *VCinv,
+                        double *Rmphi, double *RKinv, double *RCinv, int *bandsize, int *nn,
+                        double *sigma, double *yobs, double *ret, double *retgrad);
 
 }
 

@@ -74,9 +74,9 @@ int bandTest(std::string filename="data_band.txt"){
   double ret=0;
   double grad[datasize * 2 + 3];
   
-  xthetallik(xtheta, Vmphi, VKinv, VCinv,
-             Rmphi, RKinv, RCinv, &bandsizeInput, &datasizeInput,
-             &cursigma, fnsim, &ret, grad);
+  xthetallikBandC(xtheta, Vmphi, VKinv, VCinv,
+                  Rmphi, RKinv, RCinv, &bandsizeInput, &datasizeInput,
+                  &cursigma, fnsim, &ret, grad);
   cout << ret << endl;
   for(int i = 0; i < datasize * 2 + 3; i++){
     cout << grad[i] << ",";
