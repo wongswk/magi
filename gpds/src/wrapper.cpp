@@ -190,3 +190,18 @@ Rcpp::List xthetallikC(const arma::mat & yobs,
   return List::create(Named("value")=ret.value,
                       Named("grad")=ret.gradient);
 }
+
+//' R wrapper for xthetallikBandApprox
+//' @export
+// [[Rcpp::export]]
+Rcpp::List xthetallikBandApproxC( arma::mat & yobs, 
+                                  const Rcpp::List & covVr, 
+                                  const Rcpp::List & covRr, 
+                                  double & sigma, 
+                                  arma::vec & initial){
+  gpcov covV = cov_r2cpp(covVr);
+  gpcov covR = cov_r2cpp(covRr);
+  lp ret = xthetallikBandApprox(initial, covV, covR, sigma, yobs);
+  return List::create(Named("value")=ret.value,
+                      Named("grad")=ret.gradient);
+}

@@ -232,7 +232,7 @@ logliknoODE <- function(x, CovV, CovR, sigma, y)  {
   
 }
 
-#' full log likelihood for latent x and theta
+#' full log likelihood for latent x and theta in R
 #' 
 #' used for Gaussian process ODE inference on x and theta only. 
 #' likelihood value is proportional to phi and sigma, so this cannot be used to

@@ -157,4 +157,8 @@ bandsize <- 10
 testthat::test_that("examine band matrix approximation", {
   curCovVband <<- bandCov(curCovV, bandsize)
   curCovRband <<- bandCov(curCovR, bandsize)
+  outBandApprox <<- xthetallikBandApproxC(dataInput, curCovVband, curCovRband, cursigma, xthInit)
+  abs((outBandApprox$value - outExpectedvalue)/outExpectedvalue)
 })
+
+
