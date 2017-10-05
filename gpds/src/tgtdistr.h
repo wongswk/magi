@@ -1,11 +1,6 @@
 #include <cmath>
 #include <random>
 #include <vector>
-#include <iostream>
-#include <stdio.h>
-// #include <armadillo>
-// [[Rcpp::depends(RcppArmadillo)]]
-#include <armadillo>
 
 #include "classDefinition.h"
 

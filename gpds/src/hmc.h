@@ -4,9 +4,6 @@
 #include <cmath>
 #include <random>
 #include <vector>
-#include <iostream>
-#include <stdio.h>
-#include <armadillo>
 #include "classDefinition.h"
 
 using namespace std;

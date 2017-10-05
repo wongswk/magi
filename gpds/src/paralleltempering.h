@@ -1,11 +1,7 @@
-#include <iostream>
 #include <future>
 #include <chrono>
 #include <random>
-#include <armadillo>
 #include "classDefinition.h"
-// [[Rcpp::depends(RcppArmadillo)]]
-// #include <RcppArmadillo.h>
 
 using namespace std;
 
