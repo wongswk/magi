@@ -403,6 +403,24 @@ bandCov <- function(gpCov, bandsize = 20){
   gpCov
 }
 
+#' Converts a matrix to banded form
+#' 
+#' @export
+mat2band <- function(a, bandsize) {
+  N <- nrow(a)
+  A <- matrix(0,nrow = 2*bandsize+1, ncol = N)
+  
+  for (j in 1:N) {
+    k <- bandsize + 1 - j
+    for (i in max(1,j-bandsize):min(N,j+bandsize)) {
+      A[k+i,j] <- a[i,j] 
+    }
+  }
+  
+  as.double(A)
+}
+
+
 #' get posterior mean curve for value conditioning on observed y, phi, sigma
 #' 
 #' use to visulize Gaussian process smoothing without ODE, and for initialize 
