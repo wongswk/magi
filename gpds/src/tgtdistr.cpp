@@ -1,4 +1,5 @@
 #include "tgtdistr.h"
+#include "band.h"
 
 using namespace arma;
 
@@ -330,6 +331,40 @@ lp xthetallik_rescaled( const vec & xtheta,
   return ret;
 }
 
+//' approximate log likelihood for latent states and ODE theta conditional on phi sigma
+//' 
+//' band matrix approximation
+//' 
+//' @param phisig      the parameter phi and sigma
+//' @param yobs        observed data
+lp xthetallikBandApprox( vec & xtheta, 
+                         gpcov & CovV, 
+                         gpcov & CovR, 
+                         double & sigma, 
+                         mat & yobs) {
+  int n = (xtheta.size() - 3)/2;
+  lp ret;
+  ret.gradient.resize(xtheta.size());
+  
+  double *xthetaPtr = xtheta.memptr();
+  double *VmphiPtr = CovV.mphiBand.memptr();
+  double *VKinvPtr = CovV.KinvBand.memptr();
+  double *VCinvPtr = CovV.CinvBand.memptr();
+  double *RmphiPtr = CovR.mphiBand.memptr(); 
+  double *RKinvPtr = CovR.KinvBand.memptr(); 
+  double *RCinvPtr = CovR.CinvBand.memptr();
+  int bandsize = CovV.mphiBand.n_rows;
+  double *sigmaPtr = &sigma; 
+  double *yobsPtr = yobs.memptr();
+  double *retPtr = &ret.value;
+  double *retgradPtr = ret.gradient.memptr();
+  
+  xthetallikBandC( xthetaPtr, VmphiPtr, VKinvPtr, VCinvPtr,
+                   RmphiPtr, RKinvPtr, RCinvPtr, &bandsize, &n,
+                   sigmaPtr, yobsPtr, retPtr, retgradPtr);
+    
+  return ret;
+}
 
 
 mat fnmodelODE(const vec & theta, const mat & x) {
