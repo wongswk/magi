@@ -104,11 +104,11 @@ testthat::test_that("examine low rank approximation", {
   plot(curCovV$KeigenVec[,4])
   
   approxCovVgood <- truncCovByEigen(curCovV, 
-                                    truncEigen(rev(curCovV$Ceigen1over), 0.99),
-                                    truncEigen(rev(curCovV$Keigen1over), 0.99))
+                                    truncEigen(rev(curCovV$Ceigen1over), 0.95),
+                                    truncEigen(rev(curCovV$Keigen1over), 0.95))
   approxCovRgood <- truncCovByEigen(curCovR, 
-                                    truncEigen(rev(curCovR$Ceigen1over), 0.99),
-                                    truncEigen(rev(curCovR$Keigen1over), 0.99))
+                                    truncEigen(rev(curCovR$Ceigen1over), 0.95),
+                                    truncEigen(rev(curCovR$Keigen1over), 0.95))
   
   outApprox <- xthetallikC(dataInput, 
                            approxCovVgood, 
@@ -150,15 +150,40 @@ testthat::test_that("examine low rank approximation", {
     times=10
   )
   x <- tapply(x$time, x$expr, mean)
+  # print(x)
   testthat::expect_true(x[1] < x[3] & x[2] < x[3])
 })
 
-bandsize <- 10
+bandsize <- 15
 testthat::test_that("examine band matrix approximation", {
   curCovVband <<- bandCov(curCovV, bandsize)
   curCovRband <<- bandCov(curCovR, bandsize)
   outBandApprox <<- xthetallikBandApproxC(dataInput, curCovVband, curCovRband, cursigma, xthInit)
-  abs((outBandApprox$value - outExpectedvalue)/outExpectedvalue)
+  testthat::expect_lt(abs((outBandApprox$value - outExpectedvalue)/outExpectedvalue), 1e-3)
 })
 
+
+testthat::test_that("band matrix likelihood wrapped runs correctly", {
+  datainput <- scan(system.file("testdata/data_band.txt",package="gpds"), 
+                    sep = "\n", what = character())
+  datainput <- strsplit(datainput, "\t")
+  datainput <- lapply(datainput, function(x) as.numeric(na.omit(as.numeric(x))))
+  
+  covVpart <- curCovVband
+  covVpart$mphiBand <- datainput[[2]]
+  covVpart$KinvBand <- datainput[[3]]
+  covVpart$CinvBand <- datainput[[4]]
+  covVpart$bandsize <- datainput[[8]]
+  
+  covRpart <- curCovRband
+  covRpart$mphiBand <- datainput[[5]]
+  covRpart$KinvBand <- datainput[[6]]
+  covRpart$CinvBand <- datainput[[7]]
+  covRpart$bandsize <- datainput[[8]]
+  yobs <- matrix(datainput[[11]], ncol=2)
+  foo <- xthetallikBandApproxC(yobs, covVpart, covRpart, datainput[[10]], datainput[[1]])
+  
+  outsum <- as.numeric(foo$value)+sum(foo$grad)
+  testthat::expect_equal(outsum, -655203.16255410481244)
+})
 

@@ -353,14 +353,13 @@ lp xthetallikBandApprox( vec & xtheta,
   double *RmphiPtr = CovR.mphiBand.memptr(); 
   double *RKinvPtr = CovR.KinvBand.memptr(); 
   double *RCinvPtr = CovR.CinvBand.memptr();
-  int bandsize = CovV.mphiBand.n_rows;
   double *sigmaPtr = &sigma; 
   double *yobsPtr = yobs.memptr();
   double *retPtr = &ret.value;
   double *retgradPtr = ret.gradient.memptr();
   
   xthetallikBandC( xthetaPtr, VmphiPtr, VKinvPtr, VCinvPtr,
-                   RmphiPtr, RKinvPtr, RCinvPtr, &bandsize, &n,
+                   RmphiPtr, RKinvPtr, RCinvPtr, &CovV.bandsize, &n,
                    sigmaPtr, yobsPtr, retPtr, retgradPtr);
     
   return ret;

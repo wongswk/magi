@@ -71,6 +71,7 @@ gpcov cov_r2cpp(Rcpp::List cov_r){
   cov_v.CinvBand = as<vec>(cov_r["CinvBand"]);
   cov_v.mphiBand = as<vec>(cov_r["mphiBand"]);
   cov_v.KinvBand = as<vec>(cov_r["KinvBand"]);
+  cov_v.bandsize = as<int>(cov_r["bandsize"]);
   return cov_v;
 }
 

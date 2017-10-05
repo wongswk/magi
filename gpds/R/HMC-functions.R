@@ -399,7 +399,7 @@ bandCov <- function(gpCov, bandsize = 20){
   gpCov$CinvBand <- mat2band(gpCov$Cinv, bandsize)
   gpCov$mphiBand <- mat2band(gpCov$mphi, bandsize)
   gpCov$KinvBand <- mat2band(gpCov$Kinv, bandsize)
-  
+  gpCov$bandsize <- bandsize
   gpCov
 }
 
