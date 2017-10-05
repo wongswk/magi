@@ -6,7 +6,7 @@ results/*
 *.DS_Store
 .Rhistory
 .Rapp.history
-*.Rproj
+dynamic-systems.Rproj
 plot/*
 *.rda
 *.pdf
@@ -14,3 +14,4 @@ plot/*
 gpds/src/RcppExports.cpp
 gpds/R/RcppExports.R
 *.so
+gpds/man/*
