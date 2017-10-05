@@ -22,7 +22,7 @@ lp xthetallik_rescaled( const arma::vec & xtheta,
                         const double & sigma,
                         const arma::mat & yobs,
                         const std::function<arma::mat (arma::vec, arma::mat)> & fODE);
-lp xthetallikBandApprox( arma::vec & xtheta, 
+lp xthetallikBandApprox( arma::vec xtheta, 
                          gpcov & CovV, 
                          gpcov & CovR, 
                          double & sigma, 

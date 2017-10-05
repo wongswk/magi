@@ -57,7 +57,7 @@ Rcpp::List phisigSample( const arma::mat & yobs,
   return ret;
 }
 
-gpcov cov_r2cpp(Rcpp::List cov_r){
+gpcov cov_r2cpp(const Rcpp::List & cov_r){
   gpcov cov_v;
   cov_v.C = as<mat>(cov_r["C"]);
   cov_v.Cinv = as<mat>(cov_r["Cinv"]);
@@ -86,16 +86,21 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
                          const arma::vec & step,
                          int nsteps = 1, 
                          bool traj = false, 
-                         bool rescaleloglik = false){
+                         std::string loglikflag = "usual"){
   gpcov covV = cov_r2cpp(covVr);
   gpcov covR = cov_r2cpp(covRr);
   std::function<lp(vec)> tgt;
-  if(rescaleloglik){
+  if(loglikflag == "rescaled"){
     tgt = std::bind(xthetallik_rescaled, std::placeholders::_1, 
                     covV, covR, sigma, yobs, fnmodelODE);
-  }else{
+  }else if(loglikflag == "usual"){
     tgt = std::bind(xthetallik, std::placeholders::_1, 
                     covV, covR, sigma, yobs, fnmodelODE);
+  }else if(loglikflag == "band"){
+    tgt = std::bind(xthetallikBandApprox, std::placeholders::_1, 
+                    covV, covR, sigma, yobs);
+  }else{
+    throw "loglikflag must be 'usual', 'rescaled', or 'band'";
   }
   vec lb = ones<vec>(initial.size()) * (-datum::inf);
   lb.subvec(lb.size() - 3, lb.size() - 1).fill(0.0);

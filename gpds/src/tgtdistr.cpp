@@ -337,7 +337,9 @@ lp xthetallik_rescaled( const vec & xtheta,
 //' 
 //' @param phisig      the parameter phi and sigma
 //' @param yobs        observed data
-lp xthetallikBandApprox( vec & xtheta, 
+//' @noRd
+//' FIXME xtheta currently passed by value for Fortran code
+lp xthetallikBandApprox( vec xtheta, 
                          gpcov & CovV, 
                          gpcov & CovR, 
                          double & sigma, 
