@@ -1,32 +1,3 @@
-#' get posterior mean curve for value conditioning on observed y, phi, sigma
-#' 
-#' use to visulize Gaussian process smoothing without ODE
-#' 
-#' @export
-getMeanCurve <- function(x, y, x.new, phi.mat, sigma.mat, kerneltype="matern"){
-  tvec <- c(x.new,x)
-
-  foo <- outer(tvec, t(tvec),'-')[,1,]
-  r <- abs(foo)
-  r2 <- r^2
-
-  signr <- -sign(foo)
-
-  t(sapply(1:nrow(phi.mat), function(it){
-    sigma <- sigma.mat[it]
-    phi <- phi.mat[it,]
-
-    if(kerneltype=="matern"){
-      C <- calCov2(phi, r, signr, complexity = 0)$C
-    }else if(kerneltype=="rbf"){
-      C <- calCovRBF(phi, r, signr, complexity = 0)$C
-    }
-
-    diag(C)[-(1:length(x.new))] <- diag(C)[-(1:length(x.new))]+sigma^2
-    C[1:length(x.new),-(1:length(x.new))]%*%solve(C[-(1:length(x.new)),-(1:length(x.new))], y)
-  }))
-}
-
 #' get posterior mean curve for value and derivative conditioning on
 #' observed y, observed derivative dy, phi, sigma
 #' 

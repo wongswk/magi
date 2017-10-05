@@ -4,24 +4,23 @@
 #' also returns m_phi and other matrix which will be needed for ODE inference
 #' 
 #' @export
-calCov <- function(phi, kerneltype="matern", rInput=NULL, signrInput=NULL) {
-  if(is.null(rInput)){
-    rInput <- r
-  }
-  if(is.null(signrInput)){
-    signrInput <- signr
-  }
+calCov <- function(phi, rInput, signrInput, complexity=3, kerneltype="matern") {
   if(kerneltype=="matern"){
-    ret <- calCovMatern(phi, rInput, signrInput)
+    ret <- calCovMatern(phi, rInput, signrInput, complexity)
   }else if(kerneltype=="rbf"){
-    ret <- calCovRBF(phi, rInput, signrInput)
+    ret <- calCovRBF(phi, rInput, signrInput, complexity)
   }else if(kerneltype=="compact1"){
-    ret <- calCovCompact1(phi, rInput, signrInput)
+    ret <- calCovCompact1(phi, rInput, signrInput, complexity)
   }else{
     stop("kerneltype not specified correctly")
   }
   
   ret$C <- ret$C + 1e-7 * diag( nrow(rInput))
+  
+  if(complexity==0){
+    return(ret)
+  }
+  
   retmore <- with(ret, {
     Cdecomp <- eigen(C)
     Ceigen1over <- 1/Cdecomp$value
@@ -139,7 +138,7 @@ fODE <- function(theta, x) {
 #' full log likelihood in R with contribution from each component
 #' 
 #' value is exact for x, theta, phi, sigma. we simply need to sample from this
-#' if computation is feasible
+#' if computation is feasible. phi info is contained in CovV, CovR
 #' 
 #' @export
 loglik <- function(x, theta, CovV, CovR, sigma, y, lambda=1)  {
@@ -177,6 +176,18 @@ loglik <- function(x, theta, CovV, CovR, sigma, y, lambda=1)  {
   
   return(ret)
   
+}
+
+#' full log likelihood in R with contribution from each component
+#' 
+#' value is exact for x, theta, phi, sigma. we simply need to sample from this
+#' if computation is feasible. phi info is supplied explicitly
+#' 
+#' @export
+loglikOrig <- function(x, theta, phi, sigma, y, rInput, signrInput, kerneltype = "matern")  {
+  CovV <- calCov(phi[1:2], rInput, signrInput, complexity = 3, kerneltype)
+  CovR <- calCov(phi[3:4], rInput, signrInput, complexity = 3, kerneltype)
+  loglik(x, theta, CovV, CovR, sigma, y)
 }
 
 #' full log likelihood without ODE
@@ -375,4 +386,30 @@ truncCovByEigen <- function(gpCov, cKeep, kKeep){
   # gpCov$mphiv <- gpCov$mphiv[mKeepId,]
   
   gpCov
+}
+
+#' get posterior mean curve for value conditioning on observed y, phi, sigma
+#' 
+#' use to visulize Gaussian process smoothing without ODE, and for initialize 
+#' the x theta sampler
+#' 
+#' @export
+getMeanCurve <- function(x, y, x.new, phi.mat, sigma.mat, kerneltype="matern"){
+  tvec <- c(x.new,x)
+  
+  foo <- outer(tvec, t(tvec),'-')[,1,]
+  r <- abs(foo)
+  r2 <- r^2
+  
+  signr <- -sign(foo)
+  
+  t(sapply(1:nrow(phi.mat), function(it){
+    sigma <- sigma.mat[it]
+    phi <- phi.mat[it,]
+    
+    C <- calCov(phi, r, signr, complexity = 0, kerneltype)$C
+    
+    diag(C)[-(1:length(x.new))] <- diag(C)[-(1:length(x.new))]+sigma^2
+    C[1:length(x.new),-(1:length(x.new))]%*%solve(C[-(1:length(x.new)),-(1:length(x.new))], y)
+  }))
 }
