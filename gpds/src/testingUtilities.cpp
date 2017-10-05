@@ -119,7 +119,7 @@ arma::cube paralleltemperingTest2() {
                                       temperature, 
                                       arma::zeros<vec>(4), 
                                       0.125, 
-                                      1e5);
+                                      1e4);
   cout << "parallel_termperingC finished, before returning from paralleltemperingTest2\n";
   // FIXME segfault 'memory not mapped' when use with the package, 
   // but no error if simply sourcecpp
