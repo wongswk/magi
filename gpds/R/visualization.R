@@ -79,13 +79,13 @@ getMeanDerivCurve <- function(x, y.mat, dy.mat, x.new, phi.mat, delta = 1e-9, si
 #' lglik=full_llik[-(1:burnin)])
 #'
 #' @export
-plot.post.samples <- function(filename, fn.true, fn.sim, gpode, init){
+plot.post.samples <- function(filename, fn.true, fn.sim, gpode, init, npostplot = 20){
   id.max <- c(which.max(gpode$lp__), which.max(gpode$lglik))
   if(is.null(gpode$drobs)) gpode$drobs <- t(gpode$fode[,2,])
   if(is.null(gpode$dvobs)) gpode$dvobs <- t(gpode$fode[,1,])
 
   pdf(filename, width = 8, height = 8)
-  id.plot <- seq(1,nrow(gpode$abc),length=20)
+  id.plot <- seq(1,nrow(gpode$abc),length=npostplot)
   id.plot <- unique(as.integer(id.plot))
   id.plot <- unique(c(id.max, id.plot))
 
