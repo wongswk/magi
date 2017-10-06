@@ -13,14 +13,14 @@ void print_info(const arma::umat & swapindicator, const arma::umat & mcmcindicat
        << "swap rate is " << double(arma::accu(swapindicator.col(0) > 0)) / niter
        << endl;
   
-  for(int i=0; i<temperature.size(); i++){
+  for(unsigned int i=0; i<temperature.size(); i++){
     cout << "Chain " << i+1 << " acceptance rate = " 
          << arma::accu(mcmcindicator.row(i))/double(niter) << endl;
   }
   
   cout << "\n========================\n";
   
-  for(int i=1; i<temperature.size(); i++){
+  for(unsigned int i=1; i<temperature.size(); i++){
     int nswap = arma::accu(swapindicator.col(0)==i);
     int nacceptswap = arma::accu(swapindicator.col(0)==i && swapindicator.col(2)==1);
     cout << "Swap between chain " << i << " and chain " << i+1 << ":\n" 
@@ -48,7 +48,7 @@ cube parallel_termperingC(std::function<lp (arma::vec)> & lpr,
   arma::umat mcmcindicator(temperature.size(), niter, arma::fill::zeros);
 
   // initial setup
-  for(int i=0; i<temperature.size(); i++){
+  for(unsigned int i=0; i<temperature.size(); i++){
     lprtempered[i] = [&lpr, &temperature, i](vec x) -> lp { 
       lp ret = lpr(x);
       ret.value = ret.value/temperature(i);
@@ -60,7 +60,7 @@ cube parallel_termperingC(std::function<lp (arma::vec)> & lpr,
     slave_eval[i] = async(lprtempered[i], paralxs[i].state);
   }
   
-  for(int i=0; i<temperature.size(); i++){
+  for(unsigned int i=0; i<temperature.size(); i++){
     paralxs[i].lpv = slave_eval[i].get().value;
   }
   
@@ -72,12 +72,12 @@ cube parallel_termperingC(std::function<lp (arma::vec)> & lpr,
     }
     // MCMC update
     
-    for(int i=0; i<temperature.size(); i++){
+    for(unsigned int i=0; i<temperature.size(); i++){
       // cout << paralxs[i].lpv << endl;
       slave_mcmc[i] = async(mcmc, lprtempered[i], paralxs[i]);
     }
     
-    for(int i=0; i<temperature.size(); i++){
+    for(unsigned int i=0; i<temperature.size(); i++){
       paralxs[i] = slave_mcmc[i].get();
     }
     // swapping
@@ -87,7 +87,7 @@ cube parallel_termperingC(std::function<lp (arma::vec)> & lpr,
       int movetoid = movefromid;
       if(movefromid == 0){
         movetoid ++;
-      }else if(movetoid == temperature.size()-1){
+      }else if(movetoid == (int)temperature.size()-1){
         movetoid --;
       }else{
         if(moveinfo - movefromid > 0.5){
@@ -112,7 +112,7 @@ cube parallel_termperingC(std::function<lp (arma::vec)> & lpr,
     }
     
     // store states
-    for(int i=0; i < temperature.size(); i++){
+    for(unsigned int i=0; i < temperature.size(); i++){
       retstate(0, i, it) = paralxs[i].lpv;
       retstate.slice(it).col(i).subvec(1, initial.size()) = paralxs[i].state;
       mcmcindicator(i, it) = paralxs[i].acc;

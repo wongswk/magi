@@ -321,7 +321,7 @@ lp xthetallik_rescaled( const vec & xtheta,
   vec C1 = join_vert(join_vert( 2.0 * (Vsm - yobs.col(0)) / pow(sigma,2) ,  
                                 2.0 * (Rsm - yobs.col(1)) / pow(sigma,2) ),
                                 zeros<vec>(theta.size()));
-  for (int i=0; i < C1.size(); i++) {
+  for (unsigned int i=0; i < C1.size(); i++) {
     if (std::isnan(C1(i)))
       C1(i) = 0.0;
   }

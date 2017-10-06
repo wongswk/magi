@@ -183,7 +183,7 @@ mat bouncebyconstraint(vec x, vec lb, vec ub){
   uvec toohigh = x > ub;
   vec uturn = ones<vec>(x.size());
   
-  for(int i = 0; i < toolow.size(); i++){
+  for(unsigned int i = 0; i < toolow.size(); i++){
     if(toolow(i)){
       if(is_finite(ub(i))){
         int k = ceil((lb(i) - x(i))/(2.0*(ub(i)-lb(i))));
