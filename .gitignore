@@ -10,7 +10,6 @@ dynamic-systems.Rproj
 plot/*
 *.rda
 *.pdf
-*NAMESPACE
 gpds/src/RcppExports.cpp
 gpds/R/RcppExports.R
 *.so
