@@ -181,6 +181,7 @@ testthat::test_that("band matrix likelihood wrapped runs correctly", {
   covRpart$CinvBand <- datainput[[7]]
   covRpart$bandsize <- datainput[[8]]
   yobs <- matrix(datainput[[11]], ncol=2)
+  yobs[yobs==-99999] <- NaN
   foo <- xthetallikBandApproxC(yobs, covVpart, covRpart, datainput[[10]], datainput[[1]])
   
   outsum <- as.numeric(foo$value)+sum(foo$grad)
