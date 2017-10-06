@@ -2,7 +2,6 @@
 #define HMC_H
 
 #include <cmath>
-#include <random>
 #include <vector>
 #include "classDefinition.h"
 

@@ -26,9 +26,6 @@ hmcstate basic_hmcC(const std::function<lp (vec)> & lpr,
                     vec ub,
                     const int nsteps = 1, 
                     const bool traj = false){
-  std::default_random_engine randgen;
-  std::uniform_real_distribution<double> unifdistr(0.0,1.0);
-  
   // Check and process the arguments
   if(step.size() != initial.size())
     throw "step and initial dimention note matched";
@@ -137,7 +134,7 @@ hmcstate basic_hmcC(const std::function<lp (vec)> & lpr,
   double lprfinal = lpx.value;
   int acc = 0;
   
-  if (double(unifdistr(randgen)) < apr) { // ACCEPT
+  if (as_scalar(randu(1)) < apr) { // ACCEPT
     finalq = q;
     finalp = p;
     lprfinal = lprq.value;
