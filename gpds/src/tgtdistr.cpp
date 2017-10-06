@@ -339,24 +339,24 @@ lp xthetallik_rescaled( const vec & xtheta,
 //' @param yobs        observed data
 //' @noRd
 //' FIXME xtheta currently passed by value for Fortran code
-lp xthetallikBandApprox( vec xtheta, 
-                         gpcov & CovV, 
-                         gpcov & CovR, 
-                         double & sigma, 
-                         mat & yobs) {
+lp xthetallikBandApprox( const vec & xtheta, 
+                         const gpcov & CovV, 
+                         const gpcov & CovR, 
+                         const double & sigma, 
+                         const mat & yobs) {
   int n = (xtheta.size() - 3)/2;
   lp ret;
   ret.gradient.resize(xtheta.size());
   
-  double *xthetaPtr = xtheta.memptr();
-  double *VmphiPtr = CovV.mphiBand.memptr();
-  double *VKinvPtr = CovV.KinvBand.memptr();
-  double *VCinvPtr = CovV.CinvBand.memptr();
-  double *RmphiPtr = CovR.mphiBand.memptr(); 
-  double *RKinvPtr = CovR.KinvBand.memptr(); 
-  double *RCinvPtr = CovR.CinvBand.memptr();
-  double *sigmaPtr = &sigma; 
-  double *yobsPtr = yobs.memptr();
+  const double *xthetaPtr = xtheta.memptr();
+  const double *VmphiPtr = CovV.mphiBand.memptr();
+  const double *VKinvPtr = CovV.KinvBand.memptr();
+  const double *VCinvPtr = CovV.CinvBand.memptr();
+  const double *RmphiPtr = CovR.mphiBand.memptr(); 
+  const double *RKinvPtr = CovR.KinvBand.memptr(); 
+  const double *RCinvPtr = CovR.CinvBand.memptr();
+  const double *sigmaPtr = &sigma; 
+  const double *yobsPtr = yobs.memptr();
   double *retPtr = &ret.value;
   double *retgradPtr = ret.gradient.memptr();
   

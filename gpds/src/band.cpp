@@ -4,10 +4,10 @@ typedef int blasint;
 
 extern "C" {
   
-  void dgbmv_(char *, blasint *, blasint *, blasint *, blasint *, double *, double *, blasint *,
-                double *, blasint *, double *, double *, blasint *);
+  void dgbmv_(const char *, const blasint *, const blasint *, const blasint *, const blasint *, const double *, const double *, const blasint *,
+                const double *, const blasint *, const double *, double *, const blasint *);
 
-  void bmatvecmult(double *a, double *b, int *bandsize, int *matdim, double *result) {
+  void bmatvecmult(const double *a, const double *b, const int *bandsize, const int *matdim, double *result) {
 
     double zero = 0.0;
     double one = 1.0;
@@ -24,7 +24,7 @@ extern "C" {
 
   }
 
-  void bmatvecmultT(double *a, double *b, int *bandsize, int *matdim, double *result) {
+  void bmatvecmultT(const double *a, const double *b, const int *bandsize, const int *matdim, double *result) {
 
     double zero = 0.0;
     double one = 1.0;
@@ -38,9 +38,9 @@ extern "C" {
   }
 
 
-  void xthetallikBandC( double *xtheta, double *Vmphi, double *VKinv, double *VCinv,
-                        double *Rmphi, double *RKinv, double *RCinv, int *bandsize, int *nn,
-                        double *sigma, double *yobs, double *ret, double *retgrad) {
+  void xthetallikBandC( const double *xtheta, const double *Vmphi, const double *VKinv, const double *VCinv,
+                        const double *Rmphi, const double *RKinv, const double *RCinv, const int *bandsize, const int *nn,
+                        const double *sigma, const double *yobs, double *ret, double *retgrad) {
 
     int n = *nn;
     int i,j;
