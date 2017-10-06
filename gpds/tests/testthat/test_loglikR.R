@@ -34,25 +34,28 @@ testthat::test_that("xthetallikC runs without error and is correct", {
   marlikmap <<- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
   testthat::expect_equal(marlikmap$par,
                          c(1.94957912838359, 1.06073179913222, 0.703951749929781, 2.74496621777115, 
-                           0.0497280144187114))
+                           0.0497280144187114),
+                         tolerance = 1e-5)
 })
 
 testthat::test_that("calCov runs without error and is correct", {
   curCovV <<- calCov(marlikmap$par[1:2], r, signr)
   curCovR <<- calCov(marlikmap$par[3:4], r, signr)
   varnames <- c("C", "Cprime", "Cdoubleprime", "Cinv", "mphi", "Kphi", "Kinv")
-  curCovV.checksum <- sapply(curCovV[varnames], sum)
+  curCovV.checksum <- sapply(curCovV[varnames], function(x) sum(abs(x)))
   expect_equal(curCovV.checksum, 
-               structure(c(387.258476932602, -4.33680868994202e-19, 18.9915012185013, 
-                           4.54580185807132, 2.77122075287295e-16, 3.56097233411689, 565.445767848231
+               structure(c(387.258476932602, 289.658301140539, 369.687853445841, 
+                           1859.64654809337, 224.085486080059, 35.0849556047908, 565.445767848267
                ), .Names = c("C", "Cprime", "Cdoubleprime", "Cinv", "mphi", 
-                             "Kphi", "Kinv")))
-  curCovR.checksum <- sapply(curCovR[varnames], sum)
+                             "Kphi", "Kinv")),
+               tolerance = 1e-5)
+  curCovR.checksum <- sapply(curCovR[varnames], function(x) sum(abs(x)))
   expect_equal(curCovR.checksum, 
-               structure(c(335.611085502683, -3.25260651745651e-18, 5.6676295529988, 
-                           5.81607236583291, -1.591760143832e-12, 0.0154034834126055, 168699.947542838
+               structure(c(335.611085502683, 96.4763661864788, 45.1452675162526, 
+                           443546.019796851, 244.910143264427, 0.154503453415642, 168699.947543871
                ), .Names = c("C", "Cprime", "Cdoubleprime", "Cinv", "mphi", 
-                             "Kphi", "Kinv")))
+                             "Kphi", "Kinv")),
+               tolerance = 1e-5)
 })
 cursigma <- marlikmap$par[5]
 
@@ -61,7 +64,7 @@ testthat::test_that("getMeanCurve runs without error and is correct", {
                                 t(marlikmap$par[1:2]), sigma.mat=matrix(cursigma)),
                    getMeanCurve(fn.sim$time, fn.sim$Rtrue, fn.sim$time, 
                                 t(marlikmap$par[3:4]), sigma.mat=matrix(cursigma)))
-  testthat::expect_equal(sum(startVR), 16.6934654159305)
+  testthat::expect_equal(sum(startVR), 16.6934654159305, tolerance = 1e-5)
 })
 startVR <- t(startVR)
 
@@ -78,7 +81,8 @@ testthat::test_that("loglikOrig and loglik runs without error and is correct", {
                          components = structure(c(104.147795635414, 
                                                   108.143924612949, 18.4183735575236, 
                                                   140.020977657482, -1.5461761617613, 
-                                                  85.6241573495981), .Dim = 2:3)))
+                                                  85.6241573495981), .Dim = 2:3)),
+               tolerance = 1e-5)
 })
 
 testthat::context("xthetallikC")
@@ -91,8 +95,8 @@ outExpectedvalue <- -94.8205825207303
 testthat::test_that("xthetallikC runs without error and is correct", {
   out <- gpds::xthetallikC(dataInput, curCovV, curCovR, cursigma, xthInit)
   
-  testthat::expect_equal(out$value, -94.8205825207303)
-  testthat::expect_equal(sum(out$grad), 167.746373733369)
+  testthat::expect_equal(out$value, -94.8205825207303, tolerance = 1e-5)
+  testthat::expect_equal(sum(out$grad), 167.746373733369, tolerance = 1e-5)
 })
 
 testthat::test_that("examine low rank approximation", {
@@ -185,6 +189,6 @@ testthat::test_that("band matrix likelihood wrapped runs correctly", {
   foo <- xthetallikBandApproxC(yobs, covVpart, covRpart, datainput[[10]], datainput[[1]])
   
   outsum <- as.numeric(foo$value)+sum(foo$grad)
-  testthat::expect_equal(outsum, -655203.16255410481244)
+  testthat::expect_equal(outsum, -655203.16255410481244, tolerance = 1e-3)
 })
 
