@@ -8,7 +8,7 @@ using namespace arma;
 //' @param phi         the parameter of (sigma_c_sq, alpha)
 //' @param dist        distance matrix
 //' @param complexity  how much derivative information should be calculated
-gpcov maternCov( vec phi, mat dist, int complexity = 0){
+gpcov maternCov( const vec & phi, const mat & dist, int complexity = 0){
   gpcov out;
   mat dist2 = square(dist);
   out.C = phi(0) * (1.0 + ((sqrt(5.0)*dist)/phi(1)) + 
@@ -26,7 +26,7 @@ gpcov maternCov( vec phi, mat dist, int complexity = 0){
   return out;
 }
 
-gpcov rbfCov( vec phi, mat dist, int complexity = 0){
+gpcov rbfCov( const vec & phi, const mat & dist, int complexity = 0){
   gpcov out;
   mat dist2 = square(dist);
   out.C = phi(0) * exp(-dist2/(2.0*pow(phi(1), 2)));
@@ -41,7 +41,7 @@ gpcov rbfCov( vec phi, mat dist, int complexity = 0){
   return out;
 }
 
-gpcov compact1Cov( vec phi, mat dist, int complexity = 0){
+gpcov compact1Cov( const vec & phi, const mat & dist, int complexity = 0){
   int dimension = 3;
   mat zeromat = zeros<mat>(dist.n_rows, dist.n_cols);
   int p = floor((double)dimension / 2.0) + 2;
@@ -65,9 +65,9 @@ gpcov compact1Cov( vec phi, mat dist, int complexity = 0){
 //' 
 //' @param phisig      the parameter phi and sigma
 //' @param yobs        observed data
-lp phisigllik( vec phisig, 
-               mat yobs, 
-               mat dist, 
+lp phisigllik( const vec & phisig, 
+               const mat & yobs, 
+               const mat & dist, 
                string kernel){
   int n = yobs.n_rows;
   double sigma = phisig(4);

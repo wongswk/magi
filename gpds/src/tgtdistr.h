@@ -6,10 +6,10 @@
 
 using namespace std;
 
-gpcov maternCov( arma::vec, arma::mat, int);
-gpcov rbfCov( arma::vec, arma::mat, int);
-gpcov compact1Cov( arma::vec, arma::mat, int);
-lp phisigllik( arma::vec, arma::mat, arma::mat, string kernel = "matern");
+gpcov maternCov( const arma::vec &, const arma::mat &, int);
+gpcov rbfCov( const arma::vec &, const arma::mat &, int);
+gpcov compact1Cov( const arma::vec &, const arma::mat &, int);
+lp phisigllik( const arma::vec &, const arma::mat &, const arma::mat &, string kernel = "matern");
 lp xthetallik( const arma::vec & xtheta,
                const gpcov & CovV,
                const gpcov & CovR,
