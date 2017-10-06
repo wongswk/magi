@@ -153,8 +153,8 @@ testthat::test_that("examine low rank approximation", {
     xthetallikC(dataInput, curCovV, curCovR, cursigma, xthInit),
     times=10
   )
-  x <- tapply(x$time, x$expr, mean)
   # print(x)
+  x <- tapply(x$time, x$expr, median)
   testthat::expect_true(x[1] < x[3] & x[2] < x[3])
 })
 
