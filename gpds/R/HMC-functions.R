@@ -313,20 +313,20 @@ xthetallik <- function(x, theta, CovV, CovR, sigma, y, grad = F, lambda = 1)  {
 #' mathematically, this is the integration of logliknoODE
 #' 
 #' @export
-phisigllik <- function(phisig, y, grad = F, kerneltype="matern"){
+phisigllik <- function(phisig, y, rInput, signrInput, grad = F, kerneltype="matern"){
   n <- nrow(y)
   sigma <- phisig[5]
   res <- c(0,0)
   
   # V 
-  CovV <- calCov(phisig[1:2], kerneltype)
+  CovV <- calCov(phisig[1:2], rInput, signrInput, kerneltype=kerneltype)
   Kv <- CovV$C+diag(sigma^2, nrow = n)
   Kv.l <- t(chol(Kv))
   Kv.l.inv <- solve(Kv.l)
   veta <- Kv.l.inv %*% y[,1]
   res[1] <- -n/2*log(2*pi) - sum(log(diag(Kv.l))) - 0.5*sum(veta^2)
   # R
-  CovR <- calCov(phisig[3:4], kerneltype)
+  CovR <- calCov(phisig[3:4], rInput, signrInput, kerneltype=kerneltype)
   Kr <- CovR$C+diag(sigma^2, nrow = n)
   Kr.l <- t(chol(Kr))
   Kr.l.inv <- solve(Kr.l)

@@ -41,7 +41,51 @@ phisigllikC( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), data.matrix(f
 fn <- function(par) -phisigllikC( par, data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), r.nobs, kerneltype)$value
 gr <- function(par) -as.vector(phisigllikC( par, data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), r.nobs, kerneltype)$grad)
 marlikmap <- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
-marlikmap$par
+cursigma <- marlikmap$par[5]
+
+testthat::test_that("phisigllik in R is the same as phisigllikC in C", {
+  phisigllikOutR <- phisigllik(marlikmap$par, data.matrix(fn.sim.obs[,1:2]), r.nobs, signr.nobs, TRUE, kerneltype)
+  phisigllikOutC <- phisigllikC( marlikmap$par, data.matrix(fn.sim.obs[,1:2]), r.nobs, kerneltype)
+  testthat::expect_equal(as.numeric(phisigllikOutR), phisigllikOutC$value, tolerance = 1e-5)
+  testthat::expect_equal(attr(phisigllikOutR,"grad"), as.numeric(phisigllikOutC$grad),
+                         tolerance = 1e-5)
+})
+
+testthat::test_that("xthetallik in R is the same as in C", {
+  #' FIXME log full likelihood on derivative doesn't seem right,
+  #' also prior smoothing part seems to have poor goodness of fit
+  xthetallikOurR <- xthetallik( data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs), 1:2]),
+                                c(0.2, 0.2, 3),
+                                calCov(marlikmap$par[1:2], r.nobs, signr.nobs, kerneltype=kerneltype),
+                                calCov(marlikmap$par[3:4], r.nobs, signr.nobs, kerneltype=kerneltype),
+                                cursigma,
+                                data.matrix(fn.sim.obs[,1:2]),
+                                T)
+  xthetallikOurC <- xthetallikC( data.matrix(fn.sim.obs[,1:2]),
+                                 calCov(marlikmap$par[1:2], r.nobs, signr.nobs, kerneltype=kerneltype),
+                                 calCov(marlikmap$par[3:4], r.nobs, signr.nobs, kerneltype=kerneltype),
+                                 cursigma,
+                                 c(data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs), 1:2]), 0.2, 0.2, 3))
+  logliknoODEOutR <- logliknoODE( data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs), 1:2]),
+                                  calCov(marlikmap$par[1:2], r.nobs, signr.nobs, kerneltype=kerneltype),
+                                  calCov(marlikmap$par[3:4], r.nobs, signr.nobs, kerneltype=kerneltype),
+                                  cursigma,
+                                  data.matrix(fn.sim.obs[,1:2]))
+  loglikOutR <- loglik( data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs), 1:2]),
+                          c(0.2, 0.2, 3),
+                          calCov(marlikmap$par[1:2], r.nobs, signr.nobs, kerneltype=kerneltype),
+                          calCov(marlikmap$par[3:4], r.nobs, signr.nobs, kerneltype=kerneltype),
+                          cursigma,
+                          data.matrix(fn.sim.obs[,1:2]))
+  
+  testthat::expect_equal(as.numeric(xthetallikOurR), xthetallikOurC$value, tolerance = 1e-5)
+  testthat::expect_equal(attr(xthetallikOurR, "grad"), as.numeric(xthetallikOurC$grad), 
+                         tolerance = 1e-5)
+  testthat::expect_equal(attr(logliknoODEOutR,"components")[,-2], 
+                         attr(loglikOutR,"components")[,-2], 
+                         tolerance = 1e-5)
+  
+})
 
 curCovV <- calCov(marlikmap$par[1:2], r, signr, bandsize=20, kerneltype=kerneltype)
 curCovR <- calCov(marlikmap$par[3:4], r, signr, bandsize=20, kerneltype=kerneltype)
