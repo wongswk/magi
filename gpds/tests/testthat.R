@@ -6,6 +6,5 @@ testthat::test_that("on attach messages", {
 
 test_check("gpds")
 
-#' add test for other kernels
 #' add test for drawing from GP smoothing
 #' check test code coverage

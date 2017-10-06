@@ -36,6 +36,22 @@ testthat::test_that("xthetallikC runs without error and is correct", {
                          c(1.94957912838359, 1.06073179913222, 0.703951749929781, 2.74496621777115, 
                            0.0497280144187114),
                          tolerance = 1e-5)
+  
+  fn <- function(par) -phisigllikC( par, data.matrix(fn.sim[,1:2]), r, "compact1")$value
+  gr <- function(par) -as.vector(phisigllikC( par, data.matrix(fn.sim[,1:2]), r, "compact1")$grad)
+  marlikmapCompact1 <<- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
+  testthat::expect_equal(marlikmapCompact1$par,
+                         c(2.04871398302633, 3.59648132314111, 0.625313733996474, 8.96656240950113, 
+                           0.0431289806093459),
+                         tolerance = 1e-5)
+  
+  fn <- function(par) -phisigllikC( par, data.matrix(fn.sim[,1:2]), r, "rbf")$value
+  gr <- function(par) -as.vector(phisigllikC( par, data.matrix(fn.sim[,1:2]), r, "rbf")$grad)
+  marlikmapRbf <<- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
+  testthat::expect_equal(marlikmapRbf$par,
+                         c(1.58950017432859, 0.594486181493354, 0.452955008218075, 1.57490985649202, 
+                           0.0554703243636422),
+                         tolerance = 1e-5)
 })
 
 testthat::test_that("calCov runs without error and is correct", {
@@ -53,6 +69,40 @@ testthat::test_that("calCov runs without error and is correct", {
   expect_equal(curCovR.checksum, 
                structure(c(335.611085502683, 96.4763661864788, 45.1452675162526, 
                            443546.019796851, 244.910143264427, 0.154503453415642, 168699.947543871
+               ), .Names = c("C", "Cprime", "Cdoubleprime", "Cinv", "mphi", 
+                             "Kphi", "Kinv")),
+               tolerance = 1e-5)
+  
+  curCovVcompact1 <<- calCov(marlikmap$par[1:2], r, signr, kerneltype = "compact1")
+  curCovRcompact1 <<- calCov(marlikmap$par[3:4], r, signr, kerneltype = "compact1")
+  curCovV.checksum <- sapply(curCovVcompact1[varnames], function(x) sum(abs(x)))
+  expect_equal(curCovV.checksum, 
+               structure(c(115.084361649859, 205.278332612955, 2131.40178197008, 
+                           37.6922719587419, 144.786133517796, 2075.23766151204, 2.71838147604252
+               ), .Names = c("C", "Cprime", "Cdoubleprime", "Cinv", "mphi", 
+                             "Kphi", "Kinv")),
+               tolerance = 1e-5)
+  curCovR.checksum <- sapply(curCovRcompact1[varnames], function(x) sum(abs(x)))
+  expect_equal(curCovR.checksum, 
+               structure(c(102.781796009223, 103.966939672376, 187.641691435036, 
+                           1951.74861141087, 179.878679502857, 42.9071355730163, 120.568332217125
+               ), .Names = c("C", "Cprime", "Cdoubleprime", "Cinv", "mphi", 
+                             "Kphi", "Kinv")),
+               tolerance = 1e-5)
+  
+  curCovVrbf <<- calCov(marlikmap$par[1:2], r, signr, kerneltype = "rbf")
+  curCovRrbf <<- calCov(marlikmap$par[3:4], r, signr, kerneltype = "rbf")
+  curCovV.checksum <- sapply(curCovVrbf[varnames], function(x) sum(abs(x)))
+  expect_equal(curCovV.checksum, 
+               structure(c(407.840065042279, 293.008616795784, 338.429857457948, 
+                           272835661.009244, 736.757284051975, 0.00565329191451157, 374288748.912434
+               ), .Names = c("C", "Cprime", "Cdoubleprime", "Cinv", "mphi", 
+                             "Kphi", "Kinv")),
+               tolerance = 1e-5)
+  curCovR.checksum <- sapply(curCovRrbf[varnames], function(x) sum(abs(x)))
+  expect_equal(curCovR.checksum, 
+               structure(c(354.860844103142, 95.7538793879521, 43.1253728981135, 
+                           786566415.192592, 152.053562220004, 5.00881002256369e-05, 708528973.947655
                ), .Names = c("C", "Cprime", "Cdoubleprime", "Cinv", "mphi", 
                              "Kphi", "Kinv")),
                tolerance = 1e-5)
@@ -90,12 +140,73 @@ testthat::context("xthetallikC")
 dataInput <- data.matrix(fn.sim[,1:2])
 xthInit <- c(data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]), pram.true$abc)
 
+#### compact1 kernel ####
+outExpectedvalue <- -55.73911
+
+testthat::test_that("compact1 - xthetallikC runs without error and is correct", {
+  out <- gpds::xthetallikC(dataInput, curCovVcompact1, curCovRcompact1, cursigma, xthInit)
+  
+  testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-5)
+  testthat::expect_equal(sum(out$grad), 143.910609069213, tolerance = 1e-5)
+})
+
+bandsize <- 15
+testthat::test_that("compact1 - examine band matrix approximation", {
+  curCovVband <<- bandCov(curCovVcompact1, bandsize)
+  curCovRband <<- bandCov(curCovRcompact1, bandsize)
+  outBandApprox <<- xthetallikBandApproxC(dataInput, curCovVband, curCovRband, cursigma, xthInit)
+  testthat::expect_lt(abs((outBandApprox$value - outExpectedvalue)/outExpectedvalue), 1e-3)
+  
+  delta <- 1e-8
+  gradNum <- c()
+  for(it in 1:length(xthInit)){
+    xthInit1 <- xthInit
+    xthInit1[it] <- xthInit1[it] + delta
+    gradNum[it] <- 
+      (xthetallikBandApproxC(dataInput, curCovVband, curCovRband, cursigma, xthInit1)$value -
+         xthetallikBandApproxC(dataInput, curCovVband, curCovRband, cursigma, xthInit)$value)/delta
+  }
+  x <- (gradNum - outBandApprox$grad)/abs(outBandApprox$grad)
+  testthat::expect_true(all(abs(x) < 1e-3))
+})
+
+#### rbf kernel #### doesn't fit well
+outExpectedvalue <- -6017094
+
+testthat::test_that("rbf - xthetallikC runs without error and is correct", {
+  out <- gpds::xthetallikC(dataInput, curCovVrbf, curCovRrbf, cursigma, xthInit)
+  
+  testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-5)
+  testthat::expect_equal(sum(out$grad), 2781668, tolerance = 1e-1)
+})
+
+bandsize <- 15
+testthat::test_that("rbf - examine band matrix approximation", {
+  curCovVband <<- bandCov(curCovVrbf, bandsize)
+  curCovRband <<- bandCov(curCovRrbf, bandsize)
+  outBandApprox <<- xthetallikBandApproxC(dataInput, curCovVband, curCovRband, cursigma, xthInit)
+  testthat::expect_gt(abs((outBandApprox$value - outExpectedvalue)/outExpectedvalue), 0.25)
+  
+  delta <- 1e-8
+  gradNum <- c()
+  for(it in 1:length(xthInit)){
+    xthInit1 <- xthInit
+    xthInit1[it] <- xthInit1[it] + delta
+    gradNum[it] <- 
+      (xthetallikBandApproxC(dataInput, curCovVband, curCovRband, cursigma, xthInit1)$value -
+         xthetallikBandApproxC(dataInput, curCovVband, curCovRband, cursigma, xthInit)$value)/delta
+  }
+  x <- (gradNum - outBandApprox$grad)/abs(outBandApprox$grad)
+  testthat::expect_true(all(abs(x) < 1e-3)) # gradient is self-consistent
+})
+
+#### matern kernel ####
 outExpectedvalue <- -94.8205825207303
 
 testthat::test_that("xthetallikC runs without error and is correct", {
   out <- gpds::xthetallikC(dataInput, curCovV, curCovR, cursigma, xthInit)
   
-  testthat::expect_equal(out$value, -94.8205825207303, tolerance = 1e-5)
+  testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-5)
   testthat::expect_equal(sum(out$grad), 167.746373733369, tolerance = 1e-5)
 })
 
@@ -118,6 +229,7 @@ testthat::test_that("examine band matrix approximation", {
   x <- (gradNum - outBandApprox$grad)/abs(outBandApprox$grad)
   testthat::expect_true(all(abs(x) < 1e-3))
 })
+
 
 testthat::test_that("examine low rank approximation", {
   plot(1/curCovV$Keigen1over)

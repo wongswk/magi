@@ -3,7 +3,7 @@ testthat::context("test run HMC-v4")
 library(testthat)
 suppressMessages(library(gpds))
 
-kerneltype <- "matern"
+kerneltype <- sample(c("compact1","rbf","matern"),1)
 
 nobs <- 26
 noise <- 0.05
@@ -56,8 +56,15 @@ nfold.pilot <- ceiling(nobs/40)
 nobs.pilot <- nobs%/%nfold.pilot
 numparam.pilot <- nobs.pilot*2+3  # num HMC parameters
 n.iter.pilot <- 50
+if(kerneltype=="matern"){
+  pilotstepsize <-  0.001  
+}else if(kerneltype=="rbf"){
+  pilotstepsize <-  0.00001  
+}else if(kerneltype=="compact1"){
+  pilotstepsize <- 0.0001
+}
 stepLow.scaler.pilot <- matrix(NA, n.iter.pilot, nfold.pilot)
-stepLow.scaler.pilot[1,] <-  0.001
+stepLow.scaler.pilot[1,] <-  pilotstepsize
 apr.pilot <- accepts.pilot <- matrix(NA, n.iter.pilot, nfold.pilot)
 apr.pilot[1,] <- accepts.pilot[1,] <- 0
 rstep.pilot <- array(NA, dim=c(numparam.pilot, n.iter.pilot, nfold.pilot))
@@ -98,8 +105,8 @@ for(it.pilot in 1:nfold.pilot){
       stepLow <- stepLow * .99
     }
     lliklist.pilot[t,it.pilot] <- foo$lpr
-    if( t %% 100 == 0) show(c(t, mean(tail(accepts.pilot[1:t,it.pilot],100)), 
-                              foo$final[(nobs.pilot*2+1):(nobs.pilot*2+3)]))
+    # if( t %% 100 == 0) show(c(t, mean(tail(accepts.pilot[1:t,it.pilot],100)), 
+    #                           foo$final[(nobs.pilot*2+1):(nobs.pilot*2+3)]))
   }  
 }
 
@@ -160,7 +167,14 @@ for (ii in 2:numparam) {
   }
 }
 
-stepLow <- stepLow.scaler[1]*fullscalefac * nobs/nall*0.4
+stepLow <- stepLow.scaler[1]*fullscalefac * nobs/nall
+if(kerneltype=="matern"){
+  stepLow <- stepLow*0.4
+}else if(kerneltype=="rbf"){
+  stepLow <- stepLow*0.08
+}else if(kerneltype=="compact1"){
+  stepLow <- stepLow*0.3
+}
 burnin <- as.integer(n.iter*0.3)
 n.iter.approx <- n.iter*0.9
 for (t in 2:n.iter) {
