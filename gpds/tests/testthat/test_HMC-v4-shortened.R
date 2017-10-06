@@ -1,5 +1,7 @@
+testthat::context("test run HMC-v4")
+
 library(testthat)
-library(gpds)
+suppressMessages(library(gpds))
 
 kerneltype <- "matern"
 

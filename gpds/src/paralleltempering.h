@@ -10,6 +10,6 @@ arma::cube parallel_termperingC(std::function<lp (arma::vec)> & ,
                           std::function<mcmcstate (function<lp(arma::vec)>, mcmcstate)> &, 
                           const arma::vec &, 
                           const arma::vec &, 
-                          double, int);
+                          double, int, bool verbose=true);
 mcmcstate metropolis (function<lp(arma::vec)>, mcmcstate, double);
   

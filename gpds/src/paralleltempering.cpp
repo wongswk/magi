@@ -34,7 +34,7 @@ cube parallel_termperingC(std::function<lp (arma::vec)> & lpr,
                           std::function<mcmcstate (function<lp(vec)>, mcmcstate)> & mcmc, 
                           const arma::vec & temperature, 
                           const arma::vec & initial, 
-                          double alpha0, int niter){
+                          double alpha0, int niter, bool verbose){
   std::default_random_engine randgen;
   std::uniform_real_distribution<double> unifdistr(0.0,1.0);
   
@@ -66,7 +66,7 @@ cube parallel_termperingC(std::function<lp (arma::vec)> & lpr,
   
   int nmilestone = niter/10;
   for(int it=0; it<niter; it++){
-    if(it % nmilestone == 0){
+    if(verbose && it % nmilestone == 0){
       cout << "\n === mile stone ===> processed " << it / nmilestone * 10 
            << "% of MCMC iterations\n";
     }
@@ -118,7 +118,9 @@ cube parallel_termperingC(std::function<lp (arma::vec)> & lpr,
       mcmcindicator(i, it) = paralxs[i].acc;
     }
   }
-  print_info(swapindicator, mcmcindicator, temperature, niter);
+  if(verbose) {
+    print_info(swapindicator, mcmcindicator, temperature, niter); 
+  }
   return retstate;
 }
 

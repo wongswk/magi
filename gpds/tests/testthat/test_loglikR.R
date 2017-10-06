@@ -169,7 +169,7 @@ testthat::test_that("examine band matrix approximation", {
 
 testthat::test_that("band matrix likelihood wrapped runs correctly", {
   datainput <- scan(system.file("testdata/data_band.txt",package="gpds"), 
-                    sep = "\n", what = character())
+                    sep = "\n", what = character(), quiet=TRUE)
   datainput <- strsplit(datainput, "\t")
   datainput <- lapply(datainput, function(x) as.numeric(na.omit(as.numeric(x))))
   

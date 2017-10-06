@@ -17,12 +17,12 @@ int hmcTest(){
                              nsteps, traj);
   // for(int i; i < post.final.size(); i++)
     //   cout << post.final(i) << endl;
-  cout << post.final << endl;
+  // cout << post.final << endl;
   return 0;
 }
 
 // [[Rcpp::export]]
-int bandTest(std::string filename="data_band.txt"){
+double bandTest(std::string filename="data_band.txt"){
   const int datasize = 201, bandsize = 20;
   
   double xtheta[datasize * 2 + 3];
@@ -66,10 +66,10 @@ int bandTest(std::string filename="data_band.txt"){
   fin >> cursigma;
   for(int i = 0; i < datasize * 2; i++){
     fin >> fnsim[i];
+    if(fnsim[i] < -99998){
+      fnsim[i] = arma::datum::nan;
+    }
   }
-  
-  double mysum=0;
-  cout << std::accumulate(xtheta, xtheta + 405, mysum) << endl;
   
   double ret=0;
   double grad[datasize * 2 + 3];
@@ -77,12 +77,7 @@ int bandTest(std::string filename="data_band.txt"){
   xthetallikBandC(xtheta, Vmphi, VKinv, VCinv,
                   Rmphi, RKinv, RCinv, &bandsizeInput, &datasizeInput,
                   &cursigma, fnsim, &ret, grad);
-  cout << ret << endl;
-  for(int i = 0; i < datasize * 2 + 3; i++){
-    cout << grad[i] << ",";
-  }
-  printf("\ncheck sum = %.20e\n", std::accumulate(grad, grad + datasize * 2 + 3, ret));
-  return 0;
+  return std::accumulate(grad, grad + datasize * 2 + 3, ret);
 };
 
 
@@ -99,7 +94,8 @@ arma::cube paralleltemperingTest1() {
                                       temperature, 
                                       arma::zeros<vec>(4), 
                                       0.05, 
-                                      1e4);
+                                      1e4,
+                                      false);
   // FIXME segfault 'memory not mapped' when use with the package, 
   // but no error if simply sourcecpp
   return samples;
@@ -119,10 +115,9 @@ arma::cube paralleltemperingTest2() {
                                       temperature, 
                                       arma::zeros<vec>(4), 
                                       0.125, 
-                                      1e4);
-  cout << "parallel_termperingC finished, before returning from paralleltemperingTest2\n";
-  // FIXME segfault 'memory not mapped' when use with the package, 
-  // but no error if simply sourcecpp
+                                      1e4,
+                                      false);
+  // cout << "parallel_termperingC finished, before returning from paralleltemperingTest2\n";
   return samples;
 }
 
