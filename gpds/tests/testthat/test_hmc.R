@@ -11,7 +11,8 @@ testthat::test_that("HMC for normal distribution is correct", {
     out.all.c[i,] <- out.normal$final
   }
   for(j in 1:4){
-    testthat::expect_gt(ks.test(out.all.c[,4], "pnorm")$p.value, 1e-5)
+    suppressWarnings(checkoutput <- ks.test(out.all.c[,j], "pnorm"))
+    testthat::expect_gt(checkoutput$p.value, 1e-5)
   }
 })
 
@@ -27,6 +28,7 @@ testthat::test_that("HMC for truncated normal distribution is correct", {
     pmin(pmax(0, out), 1)
   }
   for(j in 1:4){
-    testthat::expect_gt(ks.test(out.all.c[,4], "ptruncnorm")$p.value, 1e-5)
+    suppressWarnings(checkoutput <- ks.test(out.all.c[,j], "ptruncnorm"))
+    testthat::expect_gt(checkoutput$p.value, 1e-5)
   }
 })

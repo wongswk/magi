@@ -58,6 +58,11 @@ Rcpp::List phisigSample( const arma::mat & yobs,
 }
 
 gpcov cov_r2cpp(const Rcpp::List & cov_r){
+  // TODO: gpcov shoule be a class and this should be a constructor
+  // should only copy when needed
+  // set member function and private member elements
+  // initiate member elements only when get function called
+  // store pointer in consructor
   gpcov cov_v;
   cov_v.C = as<mat>(cov_r["C"]);
   cov_v.Cinv = as<mat>(cov_r["Cinv"]);
@@ -84,9 +89,9 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
                          const double & sigma, 
                          const arma::vec & initial, 
                          const arma::vec & step,
-                         int nsteps = 1, 
-                         bool traj = false, 
-                         std::string loglikflag = "usual"){
+                         const int nsteps = 1, 
+                         const bool traj = false, 
+                         const std::string loglikflag = "usual"){
   gpcov covV = cov_r2cpp(covVr);
   gpcov covR = cov_r2cpp(covRr);
   std::function<lp(vec)> tgt;

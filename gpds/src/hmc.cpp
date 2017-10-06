@@ -24,8 +24,8 @@ hmcstate basic_hmcC(const std::function<lp (vec)> & lpr,
                     const vec & step, 
                     vec lb, 
                     vec ub,
-                    int nsteps = 1, 
-                    bool traj = false){
+                    const int nsteps = 1, 
+                    const bool traj = false){
   std::default_random_engine randgen;
   std::uniform_real_distribution<double> unifdistr(0.0,1.0);
   
