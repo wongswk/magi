@@ -164,9 +164,9 @@ arma::cube parallel_temper_hmc_xtheta( const arma::mat & yobs,
     };
     
   
-  cout << "test tgt value = " << tgt(initial).value 
-       << " &tgt = " << &tgt << endl;
-  cout << "test & HMC func = " << &basic_hmcC << endl;
+  // cout << "test tgt value = " << tgt(initial).value 
+  //      << " &tgt = " << &tgt << endl;
+  // cout << "test & HMC func = " << &basic_hmcC << endl;
   
   mcmcstate init_mcmcstate;
   init_mcmcstate.state = initial;

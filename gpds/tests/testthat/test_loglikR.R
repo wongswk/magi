@@ -99,6 +99,26 @@ testthat::test_that("xthetallikC runs without error and is correct", {
   testthat::expect_equal(sum(out$grad), 167.746373733369, tolerance = 1e-5)
 })
 
+bandsize <- 15
+testthat::test_that("examine band matrix approximation", {
+  curCovVband <<- bandCov(curCovV, bandsize)
+  curCovRband <<- bandCov(curCovR, bandsize)
+  outBandApprox <<- xthetallikBandApproxC(dataInput, curCovVband, curCovRband, cursigma, xthInit)
+  testthat::expect_lt(abs((outBandApprox$value - outExpectedvalue)/outExpectedvalue), 1e-3)
+  
+  delta <- 1e-8
+  gradNum <- c()
+  for(it in 1:length(xthInit)){
+    xthInit1 <- xthInit
+    xthInit1[it] <- xthInit1[it] + delta
+    gradNum[it] <- 
+      (xthetallikBandApproxC(dataInput, curCovVband, curCovRband, cursigma, xthInit1)$value -
+         xthetallikBandApproxC(dataInput, curCovVband, curCovRband, cursigma, xthInit)$value)/delta
+  }
+  x <- (gradNum - outBandApprox$grad)/abs(outBandApprox$grad)
+  testthat::expect_true(all(abs(x) < 1e-3))
+})
+
 testthat::test_that("examine low rank approximation", {
   plot(1/curCovV$Keigen1over)
   truncEigen(1/curCovV$Keigen1over)
@@ -149,22 +169,15 @@ testthat::test_that("examine low rank approximation", {
   
   x <- microbenchmark::microbenchmark(
     xthetallikC(dataInput, approxCovV, approxCovR, cursigma, xthInit),
-    xthetallikC(dataInput, approxCovVgood, approxCovRgood, cursigma, xthInit),
+    xthetallikBandApproxC(dataInput, curCovVband, curCovRband, cursigma, xthInit),
     xthetallikC(dataInput, curCovV, curCovR, cursigma, xthInit),
-    times=10
+    times=50
   )
   # print(x)
   x <- tapply(x$time, x$expr, median)
   testthat::expect_true(x[1] < x[3] & x[2] < x[3])
 })
 
-bandsize <- 15
-testthat::test_that("examine band matrix approximation", {
-  curCovVband <<- bandCov(curCovV, bandsize)
-  curCovRband <<- bandCov(curCovR, bandsize)
-  outBandApprox <<- xthetallikBandApproxC(dataInput, curCovVband, curCovRband, cursigma, xthInit)
-  testthat::expect_lt(abs((outBandApprox$value - outExpectedvalue)/outExpectedvalue), 1e-3)
-})
 
 
 testthat::test_that("band matrix likelihood wrapped runs correctly", {
