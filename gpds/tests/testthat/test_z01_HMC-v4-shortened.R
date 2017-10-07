@@ -250,6 +250,16 @@ for (t in 2:n.iter) {
 }
 # FIXME I see NaN if the chain was running long enough. Needs to debug
 
+testthat::test_that("loglik speed increase", {
+  speedRatio <- speedbenchmarkXthetallik( data.matrix(fn.sim[,1:2]),
+                                          curCovV,
+                                          curCovR,
+                                          cursigma,
+                                          c(data.matrix(fn.true[, 1:2]), 0.2, 0.2, 3),
+                                          nrep = 1e3)
+  testthat::expect_lt(speedRatio[2]/speedRatio[1], 0.1)
+  testthat::expect_lt(speedRatio[3]/speedRatio[1], 0.5)
+})
 
 gpode <- list(abc=xth.formal[-(1:burnin), (nall*2+1):(nall*2+3)],
               sigma=rep(marlikmap$par[5], n.iter-burnin),

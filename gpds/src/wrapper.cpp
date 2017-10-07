@@ -1,13 +1,5 @@
-#include <cmath>
-#include <random>
-#include <vector>
 // [[Rcpp::plugins(cpp11)]]
-#include <functional>
-
-#include "classDefinition.h"
-#include "hmc.h"
-#include "tgtdistr.h"
-#include "paralleltempering.h"
+#include "wrapper.h"
 
 using namespace std;
 using namespace arma;
