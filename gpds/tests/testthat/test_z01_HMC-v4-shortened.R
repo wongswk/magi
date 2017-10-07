@@ -52,8 +52,8 @@ testthat::test_that("phisigllik in R is the same as phisigllikC in C", {
 })
 
 testthat::test_that("xthetallik in R is the same as in C", {
-  #' FIXME log full likelihood on derivative doesn't seem right,
-  #' also prior smoothing part seems to have poor goodness of fit
+  #' FIXME rbf log full likelihood on derivative doesn't seem right,
+  #' also rbf prior smoothing part seems to have poor goodness of fit
   xthetallikOurR <- xthetallik( data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs), 1:2]),
                                 c(0.2, 0.2, 3),
                                 calCov(marlikmap$par[1:2], r.nobs, signr.nobs, kerneltype=kerneltype),
