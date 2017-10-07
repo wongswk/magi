@@ -202,6 +202,21 @@ Rcpp::List xthetallikC(const arma::mat & yobs,
                       Named("grad")=ret.gradient);
 }
 
+//' R wrapper for xthetallik
+//' @export
+// [[Rcpp::export]]
+Rcpp::List xthetallik_rescaledC(const arma::mat & yobs, 
+                       const Rcpp::List & covVr, 
+                       const Rcpp::List & covRr, 
+                       const double & sigma, 
+                       const arma::vec & initial){
+  gpcov covV = cov_r2cpp(covVr);
+  gpcov covR = cov_r2cpp(covRr);
+  lp ret = xthetallik_rescaled(initial, covV, covR, sigma, yobs, fnmodelODE);
+  return List::create(Named("value")=ret.value,
+                      Named("grad")=ret.gradient);
+}
+
 //' R wrapper for xthetallikBandApprox
 //' @export
 // [[Rcpp::export]]

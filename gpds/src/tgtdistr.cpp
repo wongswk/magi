@@ -229,6 +229,8 @@ lp xthetallik( const vec & xtheta,
 
 //' log likelihood for latent states and ODE theta conditional on phi sigma
 //' 
+//' the scale is in fact taken out and it is the legacy version of xthetallik
+//' 
 //' @param phisig      the parameter phi and sigma
 //' @param yobs        observed data
 lp xthetallik_rescaled( const vec & xtheta, 

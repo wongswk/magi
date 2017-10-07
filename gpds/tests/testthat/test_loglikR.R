@@ -27,7 +27,7 @@ r <- abs(foo)
 r2 <- r^2
 signr <- -sign(foo)
 
-testthat::test_that("xthetallikC runs without error and is correct", {
+testthat::test_that("phisigllikC runs without error and is correct", {
   phisigllikC( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), data.matrix(fn.sim[,1:2]), r)
   fn <- function(par) -phisigllikC( par, data.matrix(fn.sim[,1:2]), r)$value
   gr <- function(par) -as.vector(phisigllikC( par, data.matrix(fn.sim[,1:2]), r)$grad)
@@ -53,6 +53,7 @@ testthat::test_that("xthetallikC runs without error and is correct", {
                            0.0554703243636422),
                          tolerance = 1e-5)
 })
+
 
 testthat::test_that("calCov runs without error and is correct", {
   curCovV <<- calCov(marlikmap$par[1:2], r, signr)
@@ -209,6 +210,14 @@ testthat::test_that("xthetallikC runs without error and is correct", {
   testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-5)
   testthat::expect_equal(sum(out$grad), 167.746373733369, tolerance = 1e-5)
 })
+
+testthat::test_that("xthetallik_rescaledC runs without error and compare to non-scaled", {
+  out <- gpds::xthetallik_rescaledC(dataInput, curCovV, curCovR, cursigma, xthInit)
+  
+  testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-5)
+  testthat::expect_equal(sum(out$grad), 167.746373733369, tolerance = 1e-5)
+})
+
 
 bandsize <- 15
 testthat::test_that("examine band matrix approximation", {
