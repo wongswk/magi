@@ -209,6 +209,10 @@ summary.post.noODE <- function(filename, fn.true, fn.sim, gpfit, init, plotx=NUL
   if(is.null(plotx)){
     plotx <- fn.sim$time
   }
+  outIndex <- match(fn.sim$time, plotx)
+  if(any(is.na(outIndex))) {
+    stop("wrong plotx input: all values should be in fn.sim$time")
+  }
   noeta <- is.null(gpfit$reta) || is.null(gpfit$veta)
   gpfit.post <- list()
   id.plot <- seq(1,length(gpfit$lp__),length=20)
@@ -218,8 +222,8 @@ summary.post.noODE <- function(filename, fn.true, fn.sim, gpfit, init, plotx=NUL
   init.map <- list(
     reta = if(noeta) NULL else gpfit$reta[id.max,],
     veta = if(noeta) NULL else gpfit$veta[id.max,],
-    rtrue = gpfit$rtrue[id.max,],
-    vtrue = gpfit$vtrue[id.max,],
+    rtrue = gpfit$rtrue[id.max, outIndex],
+    vtrue = gpfit$vtrue[id.max, outIndex],
     rphi = gpfit$rphi[id.max,],
     vphi = gpfit$vphi[id.max,],
     sigma = gpfit$sigma[id.max]
@@ -228,8 +232,8 @@ summary.post.noODE <- function(filename, fn.true, fn.sim, gpfit, init, plotx=NUL
   init.marmode <- list(
     reta = if(noeta) NULL else apply(gpfit$reta,2,mode.density),
     veta = if(noeta) NULL else apply(gpfit$veta,2,mode.density),
-    rtrue = apply(gpfit$rtrue,2,mode.density),
-    vtrue = apply(gpfit$vtrue,2,mode.density),
+    rtrue = apply(gpfit$rtrue[, outIndex],2,mode.density),
+    vtrue = apply(gpfit$vtrue[, outIndex],2,mode.density),
     rphi = apply(gpfit$rphi,2,mode.density),
     vphi = apply(gpfit$vphi,2,mode.density),
     sigma = mode.density(gpfit$sigma)
@@ -238,8 +242,8 @@ summary.post.noODE <- function(filename, fn.true, fn.sim, gpfit, init, plotx=NUL
   init.epost <- list(
     reta = if(noeta) NULL else colMeans(gpfit$reta),
     veta = if(noeta) NULL else colMeans(gpfit$veta),
-    rtrue = colMeans(gpfit$rtrue),
-    vtrue = colMeans(gpfit$vtrue),
+    rtrue = colMeans(gpfit$rtrue[, outIndex]),
+    vtrue = colMeans(gpfit$vtrue[, outIndex]),
     rphi = colMeans(gpfit$rphi),
     vphi = colMeans(gpfit$vphi),
     sigma = mean(gpfit$sigma)

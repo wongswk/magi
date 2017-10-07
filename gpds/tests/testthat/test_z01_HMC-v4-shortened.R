@@ -3,6 +3,7 @@ testthat::context("test run HMC-v4")
 library(testthat)
 suppressMessages(library(gpds))
 
+set.seed(Sys.time())
 kerneltype <- sample(c("compact1","rbf","matern"),1)
 
 nobs <- 26
