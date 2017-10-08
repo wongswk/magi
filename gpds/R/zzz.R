@@ -1,6 +1,5 @@
 #' @useDynLib gpds
 #' @import Rcpp 
-#' @import microbenchmark
 #' @import RcppArmadillo
 NULL
 

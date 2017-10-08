@@ -8,12 +8,14 @@ Maintainer: Shihao Yang <shihaoyang@g.harvard.edu>
 Description: ODE parameter inference using Gaussian Process
 License: MIT + file LICENSE
 VignetteBuilder: knitr
-Imports: Rcpp (>= 0.12.7)
+Imports: 
+    Rcpp (>= 0.12.7),
+    RcppArmadillo (>= 0.7.960.1.2)
 LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 6.0.1
 Suggests: 
     testthat,
     microbenchmark,
     mvtnorm,
-    covr
-    
+    covr,
+    knitr
