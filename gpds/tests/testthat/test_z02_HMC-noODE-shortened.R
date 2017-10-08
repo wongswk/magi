@@ -1,3 +1,4 @@
+testthat::context("test run HMC-noODE")
 ### Required variables
 ### - fn.sim with nobs rows (noisy V and R in cols 1 & 2, using sigma = 0.1)
 ### - VRtrue with 401 rows (V and R true)
