@@ -11,6 +11,9 @@ VignetteBuilder: knitr
 Imports: Rcpp (>= 0.12.7)
 LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 6.0.1
-Suggests: testthat,
-          microbenchmark,
-          mvtnorm
+Suggests: 
+    testthat,
+    microbenchmark,
+    mvtnorm,
+    covr
+    
