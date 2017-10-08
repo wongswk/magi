@@ -60,6 +60,8 @@ getMeanDerivCurve <- function(x, y.mat, dy.mat, x.new, phi.mat, delta = 1e-9, si
 }
 
 #' plot posterior sample from ode inference
+#' 
+#' see test run cases for how to use this function
 #'
 #' @param filename string of pdf filename to save
 #' @param fn.true VRtrue plus time and derivative
@@ -67,16 +69,6 @@ getMeanDerivCurve <- function(x, y.mat, dy.mat, x.new, phi.mat, delta = 1e-9, si
 #' @param gpode list of ode posterior that contains element stated in example
 #' section
 #' @param init list of true parameters abc and sigma
-#'
-#' @examples
-#' gpode <- list(abc=th.all[-(1:burnin),83:85],
-#' sigma=phisig[-(1:burnin),5],
-#' rphi=phisig[-(1:burnin),3:4],
-#' vphi=phisig[-(1:burnin),1:2],
-#' rtrue=th.all[-(1:burnin),42:82],
-#' vtrue=th.all[-(1:burnin),1:41],
-#' lp__=lliklist[-(1:burnin)],
-#' lglik=full_llik[-(1:burnin)])
 #'
 #' @export
 plot.post.samples <- function(filename, fn.true, fn.sim, gpode, init, npostplot = 20){
@@ -188,6 +180,8 @@ plot.post.samples <- function(filename, fn.true, fn.sim, gpode, init, npostplot 
 }
 
 #' summarize and plot posterior sample from simple GP fit without ode inference
+#' 
+#' see test run file for example of usage
 #'
 #' @param filename string of pdf filename to save
 #' @param fn.true VRtrue plus time
@@ -196,14 +190,6 @@ plot.post.samples <- function(filename, fn.true, fn.sim, gpode, init, npostplot 
 #' section
 #' @param init list of true parameters abc and sigma
 #'
-#' @examples
-#' gpfit <- list(sigma=phisig[-(1:burnin),5],
-#'               rphi=phisig[-(1:burnin),3:4],
-#'               vphi=phisig[-(1:burnin),1:2],
-#'               rtrue=th.all[-(1:burnin),42:82],
-#'               vtrue=th.all[-(1:burnin),1:41],
-#'               lp__=lliklist[-(1:burnin)],
-#'               lglik=full_llik[-(1:burnin)])
 #' @export
 summary.post.noODE <- function(filename, fn.true, fn.sim, gpfit, init, plotx=NULL){
   if(is.null(plotx)){
