@@ -12,7 +12,7 @@ before_install:
   - cd gpds
   
 install:
-  - R -e 'install.packages("devtools")'
+  - R -e 'install.packages(c("devtools", "roxygen2"))'
   - R -e 'devtools::install_deps()'
   - R -e 'devtools::document()'
 
