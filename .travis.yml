@@ -12,6 +12,7 @@ before_install:
   - cd gpds
   
 install:
+  - R -e 'install.packages("devtools")'
   - R -e 'devtools::install_deps()'
   - R -e 'devtools::document()'
 
