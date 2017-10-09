@@ -13,8 +13,9 @@ before_install:
   
 install:
   - R -e 'install.packages(c("devtools"))'
-  - R -e 'devtools::install_dev_deps()'
+  - R -e 'devtools::install_dev_deps()' # might be an overkill
   - R -e 'devtools::document()'
+  - R -e 'devtools::test()'
 
 script:
   - R CMD build .
