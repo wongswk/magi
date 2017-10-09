@@ -13,7 +13,7 @@ before_install:
   
 install:
   - R -e 'install.packages(c("devtools"))'
-  - R -e 'devtools::install_dev_deps(dependencies = TRUE)'
+  - R -e 'devtools::install_dev_deps()'
   - R -e 'devtools::document()'
 
 script:
