@@ -60,53 +60,41 @@ testthat::test_that("calCov runs without error and is correct", {
   curCovR <<- calCov(marlikmap$par[3:4], r, signr)
   varnames <- c("C", "Cprime", "Cdoubleprime", "Cinv", "mphi", "Kphi", "Kinv")
   curCovV.checksum <- sapply(curCovV[varnames], function(x) sum(abs(x)))
-  expect_equal(curCovV.checksum, 
-               structure(c(387.258476932602, 289.658301140539, 369.687853445841, 
-                           1859.64654809337, 224.085486080059, 35.0849556047908, 565.445767848267
-               ), .Names = c("C", "Cprime", "Cdoubleprime", "Cinv", "mphi", 
-                             "Kphi", "Kinv")),
-               tolerance = 1e-5)
+  outExpect <- c(387.258476932602, 289.658301140539, 369.687853445841, 
+                           1859.64654809337, 224.085486080059, 35.0849556047908, 565.445767848267)
+  expect_equal(curCovV.checksum/outExpect, rep(1, length(outExpect)),
+               tolerance = 1e-4, check.attributes = FALSE)
   curCovR.checksum <- sapply(curCovR[varnames], function(x) sum(abs(x)))
-  expect_equal(curCovR.checksum, 
-               structure(c(335.611085502683, 96.4763661864788, 45.1452675162526, 
-                           443546.019796851, 244.910143264427, 0.154503453415642, 168699.947543871
-               ), .Names = c("C", "Cprime", "Cdoubleprime", "Cinv", "mphi", 
-                             "Kphi", "Kinv")),
-               tolerance = 1e-5)
+  outExpect <- c(335.611085502683, 96.4763661864788, 45.1452675162526, 
+                 443546.019796851, 244.910143264427, 0.154503453415642, 168699.947543871)
+  expect_equal(curCovR.checksum/outExpect, rep(1, length(outExpect)),
+               tolerance = 1e-4, check.attributes = FALSE)
   
   curCovVcompact1 <<- calCov(marlikmap$par[1:2], r, signr, kerneltype = "compact1")
   curCovRcompact1 <<- calCov(marlikmap$par[3:4], r, signr, kerneltype = "compact1")
   curCovV.checksum <- sapply(curCovVcompact1[varnames], function(x) sum(abs(x)))
-  expect_equal(curCovV.checksum, 
-               structure(c(115.084361649859, 205.278332612955, 2131.40178197008, 
-                           37.6922719587419, 144.786133517796, 2075.23766151204, 2.71838147604252
-               ), .Names = c("C", "Cprime", "Cdoubleprime", "Cinv", "mphi", 
-                             "Kphi", "Kinv")),
-               tolerance = 1e-5)
+  outExpect <- c(115.084361649859, 205.278332612955, 2131.40178197008, 
+                 37.6922719587419, 144.786133517796, 2075.23766151204, 2.71838147604252)
+  expect_equal(curCovV.checksum/outExpect, rep(1, length(outExpect)),
+               tolerance = 1e-4, check.attributes = FALSE)
   curCovR.checksum <- sapply(curCovRcompact1[varnames], function(x) sum(abs(x)))
-  expect_equal(curCovR.checksum, 
-               structure(c(102.781796009223, 103.966939672376, 187.641691435036, 
-                           1951.74861141087, 179.878679502857, 42.9071355730163, 120.568332217125
-               ), .Names = c("C", "Cprime", "Cdoubleprime", "Cinv", "mphi", 
-                             "Kphi", "Kinv")),
-               tolerance = 1e-5)
+  outExpect <- c(102.781796009223, 103.966939672376, 187.641691435036, 
+                 1951.74861141087, 179.878679502857, 42.9071355730163, 120.568332217125)
+  expect_equal(curCovR.checksum/outExpect, rep(1, length(outExpect)),
+               tolerance = 1e-4, check.attributes = FALSE)
   
   curCovVrbf <<- calCov(marlikmap$par[1:2], r, signr, kerneltype = "rbf")
   curCovRrbf <<- calCov(marlikmap$par[3:4], r, signr, kerneltype = "rbf")
   curCovV.checksum <- sapply(curCovVrbf[varnames], function(x) sum(abs(x)))
-  expect_equal(curCovV.checksum, 
-               structure(c(407.840065042279, 293.008616795784, 338.429857457948, 
-                           272835661.009244, 736.757284051975, 0.00565329191451157, 374288748.912434
-               ), .Names = c("C", "Cprime", "Cdoubleprime", "Cinv", "mphi", 
-                             "Kphi", "Kinv")),
-               tolerance = 1e-5)
+  outExpect <- c(407.840065042279, 293.008616795784, 338.429857457948, 
+                 272835661.009244, 736.757284051975, 0.00565329191451157, 374288748.912434)
+  expect_equal(curCovV.checksum/outExpect, rep(1, length(outExpect)),
+               tolerance = 1e-4, check.attributes = FALSE)
   curCovR.checksum <- sapply(curCovRrbf[varnames], function(x) sum(abs(x)))
-  expect_equal(curCovR.checksum, 
-               structure(c(354.860844103142, 95.7538793879521, 43.1253728981135, 
-                           786566415.192592, 152.053562220004, 5.00881002256369e-05, 708528973.947655
-               ), .Names = c("C", "Cprime", "Cdoubleprime", "Cinv", "mphi", 
-                             "Kphi", "Kinv")),
-               tolerance = 1e-5)
+  outExpect <- c(354.860844103142, 95.7538793879521, 43.1253728981135, 
+                 786566415.192592, 152.053562220004, 5.00881002256369e-05, 708528973.947655)
+  expect_equal(curCovR.checksum/outExpect, rep(1, length(outExpect)),
+               tolerance = 1e-4, check.attributes = FALSE)
 })
 cursigma <- marlikmap$par[5]
 
@@ -147,8 +135,9 @@ outExpectedvalue <- -55.73911
 testthat::test_that("compact1 - xthetallikC runs without error and is correct", {
   out <- gpds::xthetallikC(dataInput, curCovVcompact1, curCovRcompact1, cursigma, xthInit)
   
-  testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-5)
-  testthat::expect_equal(sum(out$grad), 143.910609069213, tolerance = 1e-5)
+  testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-5, scale = outExpectedvalue)
+  gradExpect <- 143.910609069213
+  testthat::expect_equal(sum(out$grad), gradExpect, tolerance = 1e-5, scale = gradExpect)
 })
 
 bandsize <- 15
@@ -177,7 +166,7 @@ outExpectedvalue <- -6017094
 testthat::test_that("rbf - xthetallikC runs without error and is correct", {
   out <- gpds::xthetallikC(dataInput, curCovVrbf, curCovRrbf, cursigma, xthInit)
   
-  testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-5)
+  testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-5, scale = outExpectedvalue)
   testthat::expect_equal(sum(out$grad), 2781668, tolerance = 1e-1)
 })
 
@@ -207,15 +196,17 @@ outExpectedvalue <- -94.8205825207303
 testthat::test_that("xthetallikC runs without error and is correct", {
   out <- gpds::xthetallikC(dataInput, curCovV, curCovR, cursigma, xthInit)
   
-  testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-5)
-  testthat::expect_equal(sum(out$grad), 167.746373733369, tolerance = 1e-5)
+  testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-5, scale = outExpectedvalue)
+  gradExpect <- 167.746373733369
+  testthat::expect_equal(sum(out$grad), gradExpect, tolerance = 1e-5, scale = gradExpect)
 })
 
 testthat::test_that("xthetallik_rescaledC runs without error and compare to non-scaled", {
   out <- gpds::xthetallik_rescaledC(dataInput, curCovV, curCovR, cursigma, xthInit)
   
-  testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-5)
-  testthat::expect_equal(sum(out$grad), 167.746373733369, tolerance = 1e-5)
+  testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-5, scale = outExpectedvalue)
+  gradExpect <- 167.746373733369
+  testthat::expect_equal(sum(out$grad), gradExpect, tolerance = 1e-5, scale = gradExpect)
 })
 
 

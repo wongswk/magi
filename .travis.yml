@@ -12,10 +12,9 @@ before_install:
   - cd gpds
   
 install:
-  - R -e 'install.packages(c("devtools"))'
-  - R -e 'devtools::install_dev_deps()' # might be an overkill
-  - R -e 'devtools::document()'
-  - R -e 'devtools::test()'
+  - Rscript -e 'install.packages(c("devtools"))'
+  - Rscript -e 'devtools::install_deps(dependencies = TRUE)'
+  - Rscript -e 'devtools::document(); devtools::test()'
 
 script:
   - R CMD build .
