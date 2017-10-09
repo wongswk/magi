@@ -137,7 +137,7 @@ testthat::test_that("compact1 - xthetallikC runs without error and is correct", 
   
   testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-5, scale = outExpectedvalue)
   gradExpect <- 143.910609069213
-  testthat::expect_equal(sum(out$grad), gradExpect, tolerance = 1e-5, scale = gradExpect)
+  testthat::expect_equal(sum(out$grad), gradExpect, tolerance = 1e-4, scale = gradExpect)
 })
 
 bandsize <- 15
@@ -198,7 +198,7 @@ testthat::test_that("xthetallikC runs without error and is correct", {
   
   testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-5, scale = outExpectedvalue)
   gradExpect <- 167.746373733369
-  testthat::expect_equal(sum(out$grad), gradExpect, tolerance = 1e-5, scale = gradExpect)
+  testthat::expect_equal(sum(out$grad), gradExpect, tolerance = 1e-4, scale = gradExpect)
 })
 
 testthat::test_that("xthetallik_rescaledC runs without error and compare to non-scaled", {
@@ -206,7 +206,7 @@ testthat::test_that("xthetallik_rescaledC runs without error and compare to non-
   
   testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-5, scale = outExpectedvalue)
   gradExpect <- 167.746373733369
-  testthat::expect_equal(sum(out$grad), gradExpect, tolerance = 1e-5, scale = gradExpect)
+  testthat::expect_equal(sum(out$grad), gradExpect, tolerance = 1e-4, scale = gradExpect)
 })
 
 
