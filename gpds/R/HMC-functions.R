@@ -28,6 +28,7 @@ calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerne
   }
   
   retmore <- with(ret, {
+    dCdphiCube <- sapply(dCdphi, identity, simplify = "array")
     Cdecomp <- eigen(C)
     Ceigen1over <- 1/Cdecomp$value
     CeigenVec <- Cdecomp$vectors
@@ -48,10 +49,13 @@ calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerne
          Keigen1over = Keigen1over,
          KeigenVec = KeigenVec,
          Kinv = Kinv,
-         mphiLeftHalf = mphiLeftHalf)
+         mphiLeftHalf = mphiLeftHalf,
+         dCdphiCube = dCdphiCube)
   })
   retmore <- bandCov(retmore, bandsize)
-  c(ret, retmore)
+  out <- c(ret, retmore)
+  out$dCdphi <- NULL
+  out
 }
 
 #' calculate Matern Gaussian process kernel
@@ -393,7 +397,7 @@ phisigllik <- function(phisig, y, rInput, signrInput, grad = F, kerneltype="mate
     alphaV <- t(Kv.l.inv)%*%veta
     facVtemp <- alphaV%*%t(alphaV) - Kv.inv
     dVdsig <- sigma*sum(diag(facVtemp))
-    dVdphiAll <- sapply(CovV$dCdphi, function(dCdphiEach)
+    dVdphiAll <- apply(CovV$dCdphiCube, 3, function(dCdphiEach)
       sum(facVtemp*dCdphiEach)/2)
     
     # R contrib
@@ -401,7 +405,7 @@ phisigllik <- function(phisig, y, rInput, signrInput, grad = F, kerneltype="mate
     alphaR <- t(Kr.l.inv)%*%reta
     facRtemp <- alphaR%*%t(alphaR) - Kr.inv
     dRdsig <- sigma*sum(diag(facRtemp))
-    dRdphiAll <- sapply(CovR$dCdphi, function(dCdphiEach)
+    dRdphiAll <- apply(CovR$dCdphiCube, 3, function(dCdphiEach)
       sum(facRtemp*dCdphiEach)/2)
     
     attr(ret,"grad") <- c(dVdphiAll, dRdphiAll, dVdsig+dRdsig)

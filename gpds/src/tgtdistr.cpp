@@ -17,8 +17,9 @@ gpcov maternCov( const vec & phi, const mat & dist, int complexity = 0){
   // cout << out.C << endl;
   if (complexity == 0) return out;
   
-  out.dCdphi1 = out.C/phi(0);
-  out.dCdphi2 = phi(0) * ( - ((sqrt(5.0)*dist)/pow(phi(1),2)) - 
+  out.dCdphiCube.resize(out.C.n_rows, out.C.n_cols, 2);
+  out.dCdphiCube.slice(0) = out.C/phi(0);
+  out.dCdphiCube.slice(1) = phi(0) * ( - ((sqrt(5.0)*dist)/pow(phi(1),2)) - 
     ((10.0*dist2)/(3.0*pow(phi(1),3)))) % exp((-sqrt(5.0)*dist)/phi(1)) + 
     out.C % ((sqrt(5.0)*dist)/pow(phi(1),2));
   if (complexity == 1) return out;
@@ -34,8 +35,9 @@ gpcov rbfCov( const vec & phi, const mat & dist, int complexity = 0){
   // cout << out.C << endl;
   if (complexity == 0) return out;
   
-  out.dCdphi1 = out.C/phi(0);
-  out.dCdphi2 = out.C % dist2 / pow(phi(1), 3);
+  out.dCdphiCube.resize(out.C.n_rows, out.C.n_cols, 2);
+  out.dCdphiCube.slice(0) = out.C/phi(0);
+  out.dCdphiCube.slice(1) = out.C % dist2 / pow(phi(1), 3);
   if (complexity == 1) return out;
   // work from here continue for gp derivative
   return out;
@@ -52,8 +54,9 @@ gpcov compact1Cov( const vec & phi, const mat & dist, int complexity = 0){
   // cout << out.C << endl;
   if (complexity == 0) return out;
   
-  out.dCdphi1 = out.C/phi(0);
-  out.dCdphi2 = phi(0) * pow( arma::max(1 - dist / phi(1), zeromat), p) 
+  out.dCdphiCube.resize(out.C.n_rows, out.C.n_cols, 2);
+  out.dCdphiCube.slice(0) = out.C/phi(0);
+  out.dCdphiCube.slice(1) = phi(0) * pow( arma::max(1 - dist / phi(1), zeromat), p) 
     % pow(dist,2)/pow(phi(1),3) * (p+1) * (p+2);
   if (complexity == 1) return out;
   // work from here continue for gp derivative
@@ -70,7 +73,8 @@ lp phisigllik( const vec & phisig,
                const mat & dist, 
                string kernel){
   int n = yobs.n_rows;
-  double sigma = phisig(4);
+  int p = phisig.size();
+  double sigma = phisig(p-1);
   vec res(2);
   
   // likelihood value part
@@ -86,7 +90,7 @@ lp phisigllik( const vec & phisig,
   }
   
   // V 
-  gpcov CovV = kernelCov(phisig.subvec(0,1), dist, 1);
+  gpcov CovV = kernelCov(phisig.subvec(0,(p-1)/2-1), dist, 1);
   mat Kv = CovV.C+ eye<mat>(n,n)*pow(sigma, 2);
   mat Kvl = chol(Kv, "lower");
   mat Kvlinv = inv(Kvl);
@@ -94,7 +98,7 @@ lp phisigllik( const vec & phisig,
   res(0) = -n/2.0*log(2.0*datum::pi) - sum(log(Kvl.diag())) - 0.5*sum(square(veta));
   
   // R
-  gpcov CovR = kernelCov(phisig.subvec(2,3), dist, 1);
+  gpcov CovR = kernelCov(phisig.subvec((p-1)/2,p-2), dist, 1);
   mat Kr = CovR.C+ eye<mat>(n,n)*pow(sigma, 2);
   mat Krl = chol(Kr, "lower");
   mat Krlinv = inv(Krl);
@@ -110,23 +114,27 @@ lp phisigllik( const vec & phisig,
   mat alphaV = Kvlinv.t() * veta;
   mat facVtemp = alphaV * alphaV.t() - Kvinv;
   double dVdsig = sigma * sum(facVtemp.diag());
-  double dVdphi1 = accu(facVtemp % CovV.dCdphi1)/2.0;
-  double dVdphi2 = accu(facVtemp % CovV.dCdphi2)/2.0;
+  
+  vec dVdphi(CovV.dCdphiCube.n_slices);
+  for(unsigned int i=0; i<dVdphi.size(); i++){
+    dVdphi(i) = accu(facVtemp % CovV.dCdphiCube.slice(i))/2.0;
+  }
   
   // R contrib
   mat Krinv = Krlinv.t() * Krlinv;
   mat alphaR = Krlinv.t() * reta;
   mat facRtemp = alphaR * alphaR.t() - Krinv;
   double dRdsig = sigma * sum(facRtemp.diag());
-  double dRdphi1 = accu(facRtemp % CovR.dCdphi1)/2.0;
-  double dRdphi2 = accu(facRtemp % CovR.dCdphi2)/2.0;
   
-  ret.gradient = zeros<vec>(5);
-  ret.gradient(0) = dVdphi1;
-  ret.gradient(1) = dVdphi2;
-  ret.gradient(2) = dRdphi1;
-  ret.gradient(3) = dRdphi2;
-  ret.gradient(4) = dVdsig+dRdsig;
+  vec dRdphi(CovR.dCdphiCube.n_slices);
+  for(unsigned int i=0; i<dRdphi.size(); i++){
+    dRdphi(i) = accu(facRtemp % CovR.dCdphiCube.slice(i))/2.0;
+  }
+  
+  ret.gradient.resize(p);
+  ret.gradient.subvec(0, dVdphi.size()-1) = dVdphi;
+  ret.gradient.subvec(dVdphi.size(), p-2) = dRdphi;
+  ret.gradient(p-1) = dVdsig+dRdsig;
   
   // cout << ret.value << endl << ret.gradient;
   
