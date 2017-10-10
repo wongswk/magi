@@ -30,6 +30,27 @@ for(kerneltype in c("compact1","rbf","matern","periodicMatern")){
                            tolerance = 0.01, scale=max(egcov2$Cdoubleprime[-1,1]))
   })
   
+  testthat::test_that("check dCdphi", {
+    xtime <- seq(0,2,0.1)
+    testpintPhi <- head(phitrue[[kerneltype]], length(phitrue[[kerneltype]])/2)
+    delta <- 1e-4
+    egcov0 <- calCov(testpintPhi, 
+                     as.matrix(dist(xtime)),
+                     -sign(outer(xtime,xtime,'-')),
+                     kerneltype = kerneltype)
+    
+    for(it in 1:length(testpintPhi)){
+      testpintPhi1 <- testpintPhi
+      testpintPhi1[it] <- testpintPhi1[it] + delta
+      egcov1 <- calCov(testpintPhi1, 
+                       as.matrix(dist(xtime)),
+                       -sign(outer(xtime,xtime,'-')),
+                       kerneltype = kerneltype)
+      expect_equal((egcov1$C - egcov0$C)/delta, egcov0$dCdphiCube[,,it],
+                   tolerance = 1e-3, scale = max(egcov0$dCdphiCube[,,it]))
+    }
+  })
+  
   curCovV <- calCov(head(phitrue[[kerneltype]], length(phitrue[[kerneltype]])/2), 
                     as.matrix(dist(xtime)),
                     -sign(outer(xtime,xtime,'-')),
