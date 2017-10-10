@@ -159,6 +159,17 @@ calCovNeuralNetwork <- function(phi, x, complexity=3) {
   }
 }
 
+#' calculate Neural Network Gaussian process kernel
+#' 
+#' @export
+calCovPeriodicWarpMatern <- function(phi, r, signr, complexity=0) {
+  newr <- abs(sin(r*pi/phi[3])*2) # equivalent to cbind(sin(x*2*pi/phi[3]), cos(x*2*pi/phi[3]))
+  maternCov <- calCovMatern(phi, newr, signr, complexity)
+  maternCov$Cprime <- maternCov$Cprime * sign(sin(r*pi/phi[3])*2) * cos(r*pi/phi[3])*2 * pi/phi[3]
+  maternCov$Cdoubleprime
+  maternCov
+}
+
 #' calculate fn model ODE derivatives
 #' 
 #' @export

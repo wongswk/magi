@@ -126,7 +126,7 @@ for(kerneltype in c("compact1","rbf","matern")){
   
   test_that(paste("check if derivative variance Kmat too small: realdata R of FN - ", kerneltype),{
     if(kerneltype == "rbf") skip("rbf derivative variance Kmat too small")
-    expect_lt(mean(abs((dxNum-dxMean)/sqrt(diag(curCovR$Kphi)))), 3)
+    testthat::expect_lt(mean(abs((dxNum-dxMean)/sqrt(diag(curCovR$Kphi)))), 3)
   })
 }
 
@@ -138,6 +138,7 @@ testthat::test_that("linear kernel gives linear curve", {
   mtext("linear kernel")
   diffdraws <- t(diff(t(draws)))
   testthat::expect_true(all(abs(diffdraws - rowMeans(diffdraws)) < 1e-5))
+  # can be reparametrized to be translation invariant if SigmaMat is not diagonal  
 })
 
 testthat::test_that("Neural Network kernel gives rapid changes around 0", {
@@ -147,4 +148,22 @@ testthat::test_that("Neural Network kernel gives rapid changes around 0", {
   matplot(xtime, t(draws), type="l", lty = 2:8, col= 2:8)
   title("Neural Network kernel")
   mtext("not suitable for us: don't know fast moving part a priori")
+})
+
+testthat::test_that("Warping Matern kernel with sin/cos", {
+  xtime <- seq(-2,10,0.01)
+  periodicity <- 5
+  
+  r <- as.matrix(dist(xtime))
+  signr <- -sign(outer(xtime, xtime, "-"))
+  egcov2 <- calCovPeriodicWarpMatern(c(1,1, periodicity), r, signr, complexity = 3)
+  plot(r[,1],egcov2$C[,1], type="l", col=3)
+  
+  plot(r[,1],egcov2$Cprime[,1], type="l")
+  lines(r[-1,1], diff(egcov2$C[,1])/0.01, col=2)
+  testthat::expect_equal(egcov2$Cprime[-1,1], diff(egcov2$C[,1])/0.01, tolerance = 1e-2)
+  
+  draws <- MASS::mvrnorm(2, rep(0, length(xtime)), egcov2$C)
+  matplot(xtime, t(draws), type="l", lty = 2:8, col= 2:8)
+  title("Warping Matern kernel with sin/cos")
 })
