@@ -165,8 +165,10 @@ calCovNeuralNetwork <- function(phi, x, complexity=3) {
 calCovPeriodicWarpMatern <- function(phi, r, signr, complexity=0) {
   newr <- abs(sin(r*pi/phi[3])*2) # equivalent to cbind(sin(x*2*pi/phi[3]), cos(x*2*pi/phi[3]))
   maternCov <- calCovMatern(phi, newr, signr, complexity)
+  maternCov$Cdoubleprime <- maternCov$Cdoubleprime * (cos(r*pi/phi[3])*2 * pi/phi[3])^2 -
+    maternCov$Cprime * sign(sin(r*pi/phi[3])*2) * -sin(r*pi/phi[3])*2 * (pi/phi[3])^2 * -signr
   maternCov$Cprime <- maternCov$Cprime * sign(sin(r*pi/phi[3])*2) * cos(r*pi/phi[3])*2 * pi/phi[3]
-  maternCov$Cdoubleprime
+  maternCov$dCdphi[[3]] <- maternCov$C * sign(sin(r*pi/phi[3])*2) * cos(r*pi/phi[3])*2 * r*pi * -1/phi[3]^2
   maternCov
 }
 
