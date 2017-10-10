@@ -123,6 +123,42 @@ calCovCompact1 <- function(phi, r, signr, complexity=3, D=3) {
   return(list(C = C, Cprime = Cprime, Cdoubleprime = Cdoubleprime, dCdphi = dCdphi))
 }
 
+#' calculate linear Gaussian process kernel
+#' 
+#' @export
+calCovLinear <- function(phi, x, complexity=3) {
+  C <- phi[1] * (1 + outer(x, x)/phi[2]^2)
+  
+  if(complexity==0){
+    return(list(C = C))
+  }
+}
+
+#' calculate linear Gaussian process kernel
+#' 
+#' @export
+calCovLinear <- function(phi, x, complexity=3) {
+  C <- phi[1] * (1 + outer(x, x)/phi[2]^2)
+  
+  if(complexity==0){
+    return(list(C = C))
+  }
+}
+
+#' calculate Neural Network Gaussian process kernel
+#' 
+#' @export
+calCovNeuralNetwork <- function(phi, x, complexity=3) {
+  xtilde <- cbind(1, x)
+  sigmaMat <- diag(c(phi[1], phi[2]^2))
+  innerproduct <- xtilde%*%sigmaMat%*%t(xtilde)
+  innerproductnormed <- diag(1/sqrt(1+2*diag(innerproduct)))%*%(2*innerproduct)%*%diag(1/sqrt(1+2*diag(innerproduct)))
+  C <- 2/pi*asin(innerproductnormed)
+  if(complexity==0){
+    return(list(C = C))
+  }
+}
+
 #' calculate fn model ODE derivatives
 #' 
 #' @export

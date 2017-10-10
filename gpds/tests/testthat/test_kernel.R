@@ -130,4 +130,21 @@ for(kerneltype in c("compact1","rbf","matern")){
   })
 }
 
+testthat::test_that("linear kernel gives linear curve", {
+  xtime <- seq(0,5,0.1)
+  egcov <- calCovLinear(c(1,1), xtime, complexity = 0)
+  draws <- MASS::mvrnorm(7, rep(0, length(xtime)), egcov$C)
+  matplot(xtime, t(draws), type="l", lty = 2:8, col= 2:8)
+  mtext("linear kernel")
+  diffdraws <- t(diff(t(draws)))
+  testthat::expect_true(all(abs(diffdraws - rowMeans(diffdraws)) < 1e-5))
+})
 
+testthat::test_that("Neural Network kernel gives rapid changes around 0", {
+  xtime <- seq(-4,4,0.1)
+  egcov <- calCovNeuralNetwork(c(1,1), xtime, complexity = 0)
+  draws <- MASS::mvrnorm(7, rep(0, length(xtime)), egcov$C)
+  matplot(xtime, t(draws), type="l", lty = 2:8, col= 2:8)
+  title("Neural Network kernel")
+  mtext("not suitable for us: don't know fast moving part a priori")
+})
