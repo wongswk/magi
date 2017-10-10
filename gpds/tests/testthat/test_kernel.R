@@ -7,22 +7,40 @@ xtime <- seq(0,20,0.1)
 phitrue <- list(
   compact1 = c(2.618, 6.381, 0.152, 9.636),
   rbf = c(0.838, 0.307, 0.202, 0.653),
-  matern = c(2.04, 1.313, 0.793, 3.101)
+  matern = c(2.04, 1.313, 0.793, 3.101),
+  periodicMatern = c(2.04, 1.313, 9, 0.793, 3.101, 9)
 )
 
 uprange <- 3
 downrange <- 0.4
 set.seed(123)
-for(kerneltype in c("compact1","rbf","matern")){
-  curCovV <- calCov(phitrue[[kerneltype]][1:2], 
+for(kerneltype in c("compact1","rbf","matern","periodicMatern")){
+  
+  testthat::test_that("check Cprime and Cdoubleprime", {
+    xtime <- seq(0,2,0.01)
+    delta <- mean(diff(xtime))
+    egcov2 <- calCov(head(phitrue[[kerneltype]], length(phitrue[[kerneltype]])/2), 
+                     as.matrix(dist(xtime)),
+                     -sign(outer(xtime,xtime,'-')),
+                     kerneltype = kerneltype)
+    
+    testthat::expect_equal(egcov2$Cprime[-1,1], diff(egcov2$C[,1])/delta, 
+                           tolerance = 0.01, scale=max(egcov2$Cprime[-1,1]))
+    testthat::expect_equal(egcov2$Cdoubleprime[-1,1], -diff(egcov2$Cprime[,1])/0.01, 
+                           tolerance = 0.01, scale=max(egcov2$Cdoubleprime[-1,1]))
+  })
+  
+  curCovV <- calCov(head(phitrue[[kerneltype]], length(phitrue[[kerneltype]])/2), 
                     as.matrix(dist(xtime)),
                     -sign(outer(xtime,xtime,'-')),
                     kerneltype = kerneltype)
   
-  curCovR <- calCov(phitrue[[kerneltype]][3:4], 
+  curCovR <- calCov(tail(phitrue[[kerneltype]], length(phitrue[[kerneltype]])/2), 
                     as.matrix(dist(xtime)),
                     -sign(outer(xtime,xtime,'-')),
                     kerneltype = kerneltype)
+  
+  
   
   fn.true <- read.csv(system.file("testdata/FN.csv", package="gpds"))
   fn.true$time <- fn.true$time <- seq(0,20,0.05)
@@ -128,6 +146,8 @@ for(kerneltype in c("compact1","rbf","matern")){
     if(kerneltype == "rbf") skip("rbf derivative variance Kmat too small")
     testthat::expect_lt(mean(abs((dxNum-dxMean)/sqrt(diag(curCovR$Kphi)))), 3)
   })
+  
+  
 }
 
 testthat::test_that("linear kernel gives linear curve", {
@@ -151,19 +171,15 @@ testthat::test_that("Neural Network kernel gives rapid changes around 0", {
 })
 
 testthat::test_that("Warping Matern kernel with sin/cos", {
-  xtime <- seq(-2,10,0.01)
-  periodicity <- 5
+  xtime <- seq(-2,5,0.1)
+  periodicity <- 2
   
   r <- as.matrix(dist(xtime))
   signr <- -sign(outer(xtime, xtime, "-"))
   egcov2 <- calCovPeriodicWarpMatern(c(1,1, periodicity), r, signr, complexity = 3)
-  plot(r[,1],egcov2$C[,1], type="l", col=3)
-  
-  plot(r[,1],egcov2$Cprime[,1], type="l")
-  lines(r[-1,1], diff(egcov2$C[,1])/0.01, col=2)
-  testthat::expect_equal(egcov2$Cprime[-1,1], diff(egcov2$C[,1])/0.01, tolerance = 1e-2)
   
   draws <- MASS::mvrnorm(2, rep(0, length(xtime)), egcov2$C)
   matplot(xtime, t(draws), type="l", lty = 2:8, col= 2:8)
   title("Warping Matern kernel with sin/cos")
 })
+

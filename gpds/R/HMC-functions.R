@@ -11,6 +11,8 @@ calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerne
     ret <- calCovRBF(phi, rInput, signrInput, complexity)
   }else if(kerneltype=="compact1"){
     ret <- calCovCompact1(phi, rInput, signrInput, complexity)
+  }else if(kerneltype=="periodicMatern"){
+    ret <- calCovPeriodicWarpMatern(phi, rInput, signrInput, complexity)
   }else{
     stop("kerneltype not specified correctly")
   }
@@ -166,7 +168,7 @@ calCovPeriodicWarpMatern <- function(phi, r, signr, complexity=0) {
   newr <- abs(sin(r*pi/phi[3])*2) # equivalent to cbind(sin(x*2*pi/phi[3]), cos(x*2*pi/phi[3]))
   maternCov <- calCovMatern(phi, newr, signr, complexity)
   maternCov$Cdoubleprime <- maternCov$Cdoubleprime * (cos(r*pi/phi[3])*2 * pi/phi[3])^2 -
-    maternCov$Cprime * sign(sin(r*pi/phi[3])*2) * -sin(r*pi/phi[3])*2 * (pi/phi[3])^2 * -signr
+    maternCov$Cprime * abs(sin(r*pi/phi[3])*2) * (pi/phi[3])^2 * signr
   maternCov$Cprime <- maternCov$Cprime * sign(sin(r*pi/phi[3])*2) * cos(r*pi/phi[3])*2 * pi/phi[3]
   maternCov$dCdphi[[3]] <- maternCov$C * sign(sin(r*pi/phi[3])*2) * cos(r*pi/phi[3])*2 * r*pi * -1/phi[3]^2
   maternCov
