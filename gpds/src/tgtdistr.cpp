@@ -17,7 +17,7 @@ gpcov maternCov( const vec & phi, const mat & dist, int complexity = 0){
   // cout << out.C << endl;
   if (complexity == 0) return out;
   
-  out.dCdphiCube.resize(out.C.n_rows, out.C.n_cols, 2);
+  out.dCdphiCube.set_size(out.C.n_rows, out.C.n_cols, 2);
   out.dCdphiCube.slice(0) = out.C/phi(0);
   out.dCdphiCube.slice(1) = phi(0) * ( - ((sqrt(5.0)*dist)/pow(phi(1),2)) - 
     ((10.0*dist2)/(3.0*pow(phi(1),3)))) % exp((-sqrt(5.0)*dist)/phi(1)) + 
@@ -27,6 +27,19 @@ gpcov maternCov( const vec & phi, const mat & dist, int complexity = 0){
   return out;
 }
 
+//' periodic matern variance covariance matrix with derivatives
+//' 
+//' @param phi         the parameter of (sigma_c_sq, alpha)
+//' @param dist        distance matrix
+//' @param complexity  how much derivative information should be calculated
+gpcov periodicMaternCov( const vec & phi, const mat & dist, int complexity = 0){
+  mat newdist = abs(sin(dist * datum::pi / phi(2))) * 2.0;
+  gpcov out = maternCov( phi.subvec(0,1), newdist, complexity);
+  out.dCdphiCube.resize(out.dCdphiCube.n_rows, out.dCdphiCube.n_cols, 3);
+  out.dCdphiCube.slice(2) = out.C % sign(sin(dist*datum::pi/phi(2))) 
+    % (cos(dist*datum::pi/phi(2))*2) % (dist*datum::pi * -1/pow(phi(2),2));
+  return out;
+}
 gpcov rbfCov( const vec & phi, const mat & dist, int complexity = 0){
   gpcov out;
   mat dist2 = square(dist);
@@ -35,7 +48,7 @@ gpcov rbfCov( const vec & phi, const mat & dist, int complexity = 0){
   // cout << out.C << endl;
   if (complexity == 0) return out;
   
-  out.dCdphiCube.resize(out.C.n_rows, out.C.n_cols, 2);
+  out.dCdphiCube.set_size(out.C.n_rows, out.C.n_cols, 2);
   out.dCdphiCube.slice(0) = out.C/phi(0);
   out.dCdphiCube.slice(1) = out.C % dist2 / pow(phi(1), 3);
   if (complexity == 1) return out;
@@ -54,7 +67,7 @@ gpcov compact1Cov( const vec & phi, const mat & dist, int complexity = 0){
   // cout << out.C << endl;
   if (complexity == 0) return out;
   
-  out.dCdphiCube.resize(out.C.n_rows, out.C.n_cols, 2);
+  out.dCdphiCube.set_size(out.C.n_rows, out.C.n_cols, 2);
   out.dCdphiCube.slice(0) = out.C/phi(0);
   out.dCdphiCube.slice(1) = phi(0) * pow( arma::max(1 - dist / phi(1), zeromat), p) 
     % pow(dist,2)/pow(phi(1),3) * (p+1) * (p+2);
@@ -85,6 +98,8 @@ lp phisigllik( const vec & phisig,
     kernelCov = rbfCov;
   }else if(kernel == "compact1"){
     kernelCov = compact1Cov;
+  }else if(kernel == "periodicMatern"){
+    kernelCov = periodicMaternCov;
   }else{
     throw "kernel is not specified correctly";
   }
@@ -131,7 +146,7 @@ lp phisigllik( const vec & phisig,
     dRdphi(i) = accu(facRtemp % CovR.dCdphiCube.slice(i))/2.0;
   }
   
-  ret.gradient.resize(p);
+  ret.gradient.set_size(p);
   ret.gradient.subvec(0, dVdphi.size()-1) = dVdphi;
   ret.gradient.subvec(dVdphi.size(), p-2) = dRdphi;
   ret.gradient(p-1) = dVdsig+dRdsig;
@@ -356,7 +371,7 @@ lp xthetallikBandApprox( const vec & xtheta,
                          const mat & yobs) {
   int n = (xtheta.size() - 3)/2;
   lp ret;
-  ret.gradient.resize(xtheta.size());
+  ret.gradient.set_size(xtheta.size());
   
   const double *xthetaPtr = xtheta.memptr();
   const double *VmphiPtr = CovV.mphiBand.memptr();
