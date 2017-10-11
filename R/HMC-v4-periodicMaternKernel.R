@@ -1,19 +1,15 @@
-testthat::context("test run HMC-v4")
-
 library(testthat)
 suppressMessages(library(gpds))
 
 set.seed(Sys.time())
-kerneltype <- sample(c("compact1","rbf","matern"),1)
+kerneltype <- "periodicMatern"
 
-nobs <- 26
-noise <- 0.05
+nobs <- 41
+noise <- 0.1
 
 VRtrue <- read.csv(system.file("testdata/FN.csv", package="gpds"))
 pram.true <- list(
   abc=c(0.2,0.2,3),
-  rphi=c(0.9486433, 3.2682434),
-  vphi=c(1.9840824, 1.1185157),
   sigma=noise
 )
 fn.true <- VRtrue[seq(1,401,by=2),]   #### reference is 201 points
@@ -38,59 +34,38 @@ r.nobs <- abs(foo)
 r2.nobs <- r.nobs^2
 signr.nobs <- -sign(foo)
 
-phisigllikC( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), r.nobs, kerneltype)
+# gradient for eta is wrong, optimize without gradient
 fn <- function(par) -phisigllikC( par, data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), r.nobs, kerneltype)$value
-gr <- function(par) -as.vector(phisigllikC( par, data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), r.nobs, kerneltype)$grad)
-marlikmap <- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
-cursigma <- marlikmap$par[5]
+marlikmap <- optim(rep(1,7), fn, method="L-BFGS-B", lower = 0.0001)
+marlikmap$value
+marlikmap$par
 
-testthat::test_that("phisigllik in R is the same as phisigllikC in C", {
-  phisigllikOutR <- phisigllik(marlikmap$par, data.matrix(fn.sim.obs[,1:2]), r.nobs, signr.nobs, TRUE, kerneltype)
-  phisigllikOutC <- phisigllikC( marlikmap$par, data.matrix(fn.sim.obs[,1:2]), r.nobs, kerneltype)
-  testthat::expect_equal(as.numeric(phisigllikOutR), phisigllikOutC$value, tolerance = 1e-5)
-  testthat::expect_equal(attr(phisigllikOutR,"grad"), as.numeric(phisigllikOutC$grad),
-                         tolerance = 1e-5)
-})
+marlikmap2 <- optim(c(2.62, 0.693, 9, 1, 0.987, 9, 0.01), fn, method="L-BFGS-B", lower = 0.0001)
+marlikmap2$value
+marlikmap2$par
 
-testthat::test_that("xthetallik in R is the same as in C", {
-  #' FIXME rbf log full likelihood on derivative doesn't seem right,
-  #' also rbf prior smoothing part seems to have poor goodness of fit
-  xthetallikOurR <- xthetallik( data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs), 1:2]),
-                                c(0.2, 0.2, 3),
-                                calCov(marlikmap$par[1:2], r.nobs, signr.nobs, kerneltype=kerneltype),
-                                calCov(marlikmap$par[3:4], r.nobs, signr.nobs, kerneltype=kerneltype),
-                                cursigma,
-                                data.matrix(fn.sim.obs[,1:2]),
-                                T)
-  xthetallikOurC <- xthetallikC( data.matrix(fn.sim.obs[,1:2]),
-                                 calCov(marlikmap$par[1:2], r.nobs, signr.nobs, kerneltype=kerneltype),
-                                 calCov(marlikmap$par[3:4], r.nobs, signr.nobs, kerneltype=kerneltype),
-                                 cursigma,
-                                 c(data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs), 1:2]), 0.2, 0.2, 3))
-  logliknoODEOutR <- logliknoODE( data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs), 1:2]),
-                                  calCov(marlikmap$par[1:2], r.nobs, signr.nobs, kerneltype=kerneltype),
-                                  calCov(marlikmap$par[3:4], r.nobs, signr.nobs, kerneltype=kerneltype),
-                                  cursigma,
-                                  data.matrix(fn.sim.obs[,1:2]))
-  loglikOutR <- loglik( data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs), 1:2]),
-                          c(0.2, 0.2, 3),
-                          calCov(marlikmap$par[1:2], r.nobs, signr.nobs, kerneltype=kerneltype),
-                          calCov(marlikmap$par[3:4], r.nobs, signr.nobs, kerneltype=kerneltype),
-                          cursigma,
-                          data.matrix(fn.sim.obs[,1:2]))
-  
-  testthat::expect_equal(as.numeric(xthetallikOurR), xthetallikOurC$value, tolerance = 1e-5)
-  testthat::expect_equal(attr(xthetallikOurR, "grad"), as.numeric(xthetallikOurC$grad), 
-                         tolerance = 1e-5)
-  testthat::expect_equal(attr(logliknoODEOutR,"components")[,-2], 
-                         attr(loglikOutR,"components")[,-2], 
-                         tolerance = 1e-5)
-  
-})
+# gradient for eta is wrong, fix eta at true value then optimize
+fn <- function(par) {
+  par <- c(par[1:2], 9, par[3:4], 9, par[5])
+  -phisigllikC( par, data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), r.nobs, kerneltype)$value 
+}
+gr <- function(par) {
+  par <- c(par[1:2], 9, par[3:4], 9, par[5])
+  out <- phisigllikC( par, data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), r.nobs, kerneltype)$grad
+  -out[c(1,2,4,5,7),]
+}
+marlikmap3 <- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
+marlikmap3$value
+marlikmap3$par
 
-curCovV <- calCov(marlikmap$par[1:2], r, signr, bandsize=20, kerneltype=kerneltype)
-curCovR <- calCov(marlikmap$par[3:4], r, signr, bandsize=20, kerneltype=kerneltype)
-cursigma <- marlikmap$par[5]
+marlikmap <- marlikmap2
+
+vphi <- marlikmap$par[1:3]
+rphi <- marlikmap$par[4:6]
+
+curCovV <- calCov(vphi, r, signr, bandsize=20, kerneltype=kerneltype)
+curCovR <- calCov(rphi, r, signr, bandsize=20, kerneltype=kerneltype)
+cursigma <- tail(marlikmap$par,1)
 
 startVR <- rbind(getMeanCurve(fn.sim.obs$time, fn.sim.obs$Vtrue, fn.sim.obs$time, 
                               t(marlikmap$par[1:2]), sigma.mat=rep(cursigma,nrow(fn.sim.obs)), kerneltype),
@@ -100,14 +75,9 @@ startVR <- t(startVR)
 nfold.pilot <- ceiling(nobs/40)
 nobs.pilot <- nobs%/%nfold.pilot
 numparam.pilot <- nobs.pilot*2+3  # num HMC parameters
-n.iter.pilot <- 50
-if(kerneltype=="matern"){
-  pilotstepsize <-  0.001  
-}else if(kerneltype=="rbf"){
-  pilotstepsize <-  0.00001  
-}else if(kerneltype=="compact1"){
-  pilotstepsize <- 0.0001
-}
+n.iter.pilot <- 1000
+pilotstepsize <-  0.0004  
+
 stepLow.scaler.pilot <- matrix(NA, n.iter.pilot, nfold.pilot)
 stepLow.scaler.pilot[1,] <-  pilotstepsize
 apr.pilot <- accepts.pilot <- matrix(NA, n.iter.pilot, nfold.pilot)
@@ -131,8 +101,8 @@ for(it.pilot in 1:nfold.pilot){
   
   xth.pilot[,1,it.pilot] <- c(startVR[id.pilot[,it.pilot],],rep(1,3))
   
-  pilotCovV <- calCov(marlikmap$par[1:2], abs(pilotSignedDist), -sign(pilotSignedDist), kerneltype=kerneltype)
-  pilotCovR <- calCov(marlikmap$par[3:4], abs(pilotSignedDist), -sign(pilotSignedDist), kerneltype=kerneltype)
+  pilotCovV <- calCov(vphi, abs(pilotSignedDist), -sign(pilotSignedDist), kerneltype=kerneltype)
+  pilotCovR <- calCov(rphi, abs(pilotSignedDist), -sign(pilotSignedDist), kerneltype=kerneltype)
   
   t <- 2
   for (t in 2:n.iter.pilot) {
@@ -175,7 +145,7 @@ scalefac <- scalefac/mean(scalefac)
 #### formal running ####
 nall <- nrow(fn.sim)
 numparam <- nall*2+3
-n.iter <- 50
+n.iter <- 5000
 xth.formal <- matrix(NA, n.iter, numparam)
 
 # upsample with GP to get initial latent X's at non-observation points
@@ -213,25 +183,15 @@ for (ii in 2:numparam) {
 }
 
 stepLow <- stepLow.scaler[1]*fullscalefac * nobs/nall
-if(kerneltype=="matern"){
-  stepLow <- stepLow*0.4
-}else if(kerneltype=="rbf"){
-  stepLow <- stepLow*0.08
-}else if(kerneltype=="compact1"){
-  stepLow <- stepLow*0.3
-}
+stepLow <- stepLow*0.4
+
 burnin <- as.integer(n.iter*0.3)
 n.iter.approx <- n.iter*0.9
 for (t in 2:n.iter) {
   rstep <- runif(length(stepLow), stepLow, 2*stepLow)
   #rstep <- rstep / 10
-  if(t < n.iter.approx){
-    foo <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
-                        xth.formal[t-1,], rstep, 1000, T, loglikflag = "band")    
-  }else{
-    foo <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
-                        xth.formal[t-1,], rstep, 1000, T, loglikflag = "usual")
-  }
+  foo <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
+                      xth.formal[t-1,], rstep, 1000, T, loglikflag = "usual")
   
   xth.formal[t,] <- foo$final
   accepts[t] <- foo$acc
@@ -246,19 +206,8 @@ for (t in 2:n.iter) {
   }
   lliklist[t] <- foo$lpr
   
-   # show(c(t, mean(tail(accepts[1:t],100)), foo$final[(nall*2+1):(nall*2+3)]))
+  if(t%%100==0) show(c(t, mean(tail(accepts[1:t],100)), foo$final[(nall*2+1):(nall*2+3)]))
 }
-
-testthat::test_that("loglik speed increase", {
-  speedRatio <- speedbenchmarkXthetallik( data.matrix(fn.sim[,1:2]),
-                                          curCovV,
-                                          curCovR,
-                                          cursigma,
-                                          c(data.matrix(fn.true[, 1:2]), 0.2, 0.2, 3),
-                                          nrep = 1e3)
-  testthat::expect_lt(speedRatio[2]/speedRatio[1], 0.1)
-  testthat::expect_lt(speedRatio[3]/speedRatio[1], 0.5)
-})
 
 gpode <- list(abc=xth.formal[-(1:burnin), (nall*2+1):(nall*2+3)],
               sigma=rep(marlikmap$par[5], n.iter-burnin),
