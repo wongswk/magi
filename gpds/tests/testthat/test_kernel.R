@@ -9,14 +9,17 @@ phitrue <- list(
   rbf = c(0.838, 0.307, 0.202, 0.653),
   matern = c(2.04, 1.313, 0.793, 3.101),
   periodicMatern = c(2.04, 1.313, 9, 0.793, 3.101, 9),
-  generalMatern = c(2.04, 1.313, 0.793, 3.101)
+  generalMatern = c(2.04, 1.313, 0.793, 3.101),
+  rationalQuadratic = c(85.278, 5.997, 35.098, 14.908)
 )
 
 uprange <- 3
 downrange <- 0.4
+
 set.seed(123)
-for(kerneltype in c("compact1","rbf","matern","periodicMatern","generalMatern")){
-  
+for(kerneltype in c("compact1","rbf","matern","periodicMatern","generalMatern",
+                    "rationalQuadratic")){
+  if(kerneltype=="rationalQuadratic") downrange <- 0.07
   testthat::test_that("check Cprime and Cdoubleprime", {
     xtime <- seq(0,2,0.01)
     delta <- mean(diff(xtime))
@@ -30,7 +33,7 @@ for(kerneltype in c("compact1","rbf","matern","periodicMatern","generalMatern"))
                            tolerance = 0.0001, scale=max(egcov2$Cprime[-1,1]))
     testthat::expect_equal( (egcov2$Cdoubleprime[-1,1] + egcov2$Cdoubleprime[-nrow(egcov2$Cdoubleprime),1])/2, 
                            -diff(egcov2$Cprime[,1])/0.01, 
-                           tolerance = 0.0001, scale=max(egcov2$Cdoubleprime[-1,1]))
+                           tolerance = 0.001, scale=max(egcov2$Cdoubleprime[-1,1]))
   })
   
   testthat::test_that("check dCdphi", {
@@ -97,6 +100,7 @@ for(kerneltype in c("compact1","rbf","matern","periodicMatern","generalMatern"))
   
   test_that(paste("check if derivative variance Kmat too small: V of FN - ", kerneltype),{
     if(kerneltype == "rbf") skip("rbf derivative variance Kmat too small")
+    if(kerneltype == "rationalQuadratic") skip("rationalQuadratic derivative variance Kmat too small")
     expect_lt(mean(abs((dxNum-dxMean)/sqrt(diag(curCovR$Kphi)))), 10)
   })
   
@@ -166,6 +170,7 @@ for(kerneltype in c("compact1","rbf","matern","periodicMatern","generalMatern"))
   })
   
   test_that(paste("check if derivative variance Kmat too small: realdata R of FN - ", kerneltype),{
+    if(kerneltype == "rationalQuadratic") skip("rationalQuadratic derivative variance Kmat too small")
     testthat::expect_lt(mean(abs((dxNum-dxMean)/sqrt(diag(curCovR$Kphi)))), 5)
   })
   
@@ -205,3 +210,24 @@ testthat::test_that("Warping Matern kernel with sin/cos", {
   title("Warping Matern kernel with sin/cos")
 })
 
+testthat::test_that("modulated squared exponential kernel", {
+  xtime <- seq(-6,6,0.1)
+  egcov <- calCovModulatedRBF(c(1,1,1), xtime, complexity = 0)
+  draws <- MASS::mvrnorm(7, rep(0, length(xtime)), egcov$C)
+  matplot(xtime, t(draws), type="l", lty = 2:8, col= 2:8)
+  title("modulated squared exponential kernel")
+  mtext("not suitable for us: don't have tightening at both ends")
+})
+
+testthat::test_that("Rational Quadratic kernel", {
+  xtime <- seq(-2,5,0.1)
+  
+  r <- as.matrix(dist(xtime))
+  signr <- -sign(outer(xtime, xtime, "-"))
+  egcov2 <- calCovRationalQuadratic(c(1,1), r, signr, complexity = 3)
+  
+  draws <- MASS::mvrnorm(7, rep(0, length(xtime)), egcov2$C)
+  matplot(xtime, t(draws), type="l", lty = 2:8, col= 2:8)
+  title("Rational Quadratic kernel")
+  mtext("could be promising")
+})

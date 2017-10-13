@@ -15,6 +15,8 @@ calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerne
     ret <- calCovPeriodicWarpMatern(phi, rInput, signrInput, complexity)
   }else if(kerneltype=="generalMatern"){
     ret <- calCovGeneralMatern(phi, rInput, signrInput, complexity)
+  }else if(kerneltype=="rationalQuadratic"){
+    ret <- calCovRationalQuadratic(phi, rInput, signrInput, complexity)
   }else{
     stop("kerneltype not specified correctly")
   }
@@ -183,11 +185,13 @@ calCovRationalQuadratic <- function(phi, r, signr, complexity=3) {
   if(complexity==0){
     return(list(C = C))
   }
-  Cprime  <- signr * C * r / (phi[2]^2)
-  Cdoubleprime <- C * (1/phi[2]^2 - r2 / phi[2]^4)
+  Cprime  <- -phi[1] * (-df) * (1 + r2/(2*phi[2]^2) / df)^(-df-1) * (r/ phi[2]^2 / df) * signr
+  Cdoubleprime <- phi[1] * (-df) * (-df-1) * (1 + r2/(2*phi[2]^2) / df)^(-df-2) * (r/ phi[2]^2 / df)^2 +
+    phi[1] * (-df) * (1 + r2/(2*phi[2]^2) / df)^(-df-1) * (1/ phi[2]^2 / df)
+  Cdoubleprime <- -Cdoubleprime
   dCdphi <- list(
     C/phi[1],
-    C*r2/phi[2]^3
+    phi[1] * (-df) * (1 + r2/(2*phi[2]^2) / df)^(-df-1) * (-2 * r2/(2*phi[2]^3) / df)
   )
   return(list(C = C, Cprime = Cprime, Cdoubleprime = Cdoubleprime, dCdphi = dCdphi))
 }
