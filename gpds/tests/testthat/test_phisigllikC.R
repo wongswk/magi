@@ -5,7 +5,8 @@ phitrue <- list(
   compact1 = c(2.618, 6.381, 0.152, 9.636),
   rbf = c(0.838, 0.307, 0.202, 0.653),
   matern = c(2.04, 1.313, 0.793, 3.101),
-  periodicMatern = c(2.04, 1.313, 9, 0.793, 3.101, 9)
+  periodicMatern = c(2.04, 1.313, 9, 0.793, 3.101, 9),
+  generalMatern = c(2.04, 1.313, 0.793, 3.101)
 )
 
 nobs <- 41
@@ -22,7 +23,7 @@ foo <- outer(tvec.nobs, t(tvec.nobs),'-')[,1,]
 r <- abs(foo)
 signr <- -sign(foo)
 
-for(kerneltype in c("compact1","rbf","matern","periodicMatern")){
+for(kerneltype in c("compact1","rbf","matern","periodicMatern","generalMatern")){
   testpoint <- abs(rnorm(length(phitrue[[kerneltype]])+1))
   xc <- phisigllikC( testpoint, data.matrix(fn.sim[,1:2]), r, kerneltype)
   xr <- phisigllik( testpoint, fn.sim[,1:2], r, signr, TRUE, kerneltype)
@@ -56,7 +57,3 @@ for(kerneltype in c("compact1","rbf","matern","periodicMatern")){
                  rep(0.03,5), 20, F, kerneltype)
   })
 }
-
-testpoint <- abs(rnorm(5))
-phisigllikC( testpoint, data.matrix(fn.sim[,1:2]), r, "matern")
-phisigllikC( testpoint, data.matrix(fn.sim[,1:2]), r, "generalMatern")

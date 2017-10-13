@@ -13,6 +13,8 @@ calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerne
     ret <- calCovCompact1(phi, rInput, signrInput, complexity)
   }else if(kerneltype=="periodicMatern"){
     ret <- calCovPeriodicWarpMatern(phi, rInput, signrInput, complexity)
+  }else if(kerneltype=="generalMatern"){
+    ret <- calCovGeneralMatern(phi, rInput, signrInput, complexity)
   }else{
     stop("kerneltype not specified correctly")
   }
@@ -75,6 +77,38 @@ calCovMatern <- function(phi, r, signr, complexity=3) {
   dCdphi <- list(
     C/phi[1],
     phi[1] * ( - ((sqrt(5)*r)/phi[2]^2) - ((10*r2)/(3*phi[2]^3))) * exp((-sqrt(5)*r)/phi[2]) + C * (sqrt(5)*r)/phi[2]^2
+  )
+  return(list(C = C, Cprime = Cprime, Cdoubleprime = Cdoubleprime, dCdphi = dCdphi))
+}
+
+#' calculate general Matern Gaussian process kernel
+#' 
+#' only calculate core part of C, Cprime, Cprimeprime, dCdphi etc.
+#' 
+#' @export
+calCovGeneralMatern <- function(phi, r, signr, complexity=3) {
+  df = 2.5
+  r2 <- r^2
+  
+  x4bessel <- sqrt(2.0 * df) * r / phi[2];
+  
+  C <- phi[1] * 2^(1-df) * exp(-lgamma(df)) * x4bessel^df * besselK(x4bessel, df)
+  diag(C) <- phi[1]
+  
+  dCdphi2 <- C * (df / x4bessel - (besselK(x4bessel, df-1) + besselK(x4bessel, df+1))/(2*besselK(x4bessel, df)))
+  dCdphi2 <- dCdphi2 * (-sqrt(2.0 * df) * r / phi[2]^2)
+  dCdphi2[is.na(dCdphi2)] <- 0
+  
+  if(complexity==0){
+    return(list(C = C))
+  }
+  # FIXME: correct here using general Bessel as well
+  Cprime  <- (signr)* (phi[1] * exp((-sqrt(5)*r)/phi[2])) * (((5*r)/(3*phi[2]^2)) + ((5*sqrt(5)*r2)/(3*phi[2]^3)))
+  Cdoubleprime <- (-phi[1] * (sqrt(5)/phi[2]) * exp((-sqrt(5)*r)/phi[2])) * (((5*r)/(3*phi[2]^2)) + ((5*sqrt(5)*r2)/(3*phi[2]^3))) + (phi[1]*exp((-sqrt(5)*r)/phi[2])) * ((5/(3*phi[2]^2)) + ((10*sqrt(5)*r)/(3*phi[2]^3)))
+  
+  dCdphi <- list(
+    C/phi[1],
+    dCdphi2
   )
   return(list(C = C, Cprime = Cprime, Cdoubleprime = Cdoubleprime, dCdphi = dCdphi))
 }

@@ -8,13 +8,14 @@ phitrue <- list(
   compact1 = c(2.618, 6.381, 0.152, 9.636),
   rbf = c(0.838, 0.307, 0.202, 0.653),
   matern = c(2.04, 1.313, 0.793, 3.101),
-  periodicMatern = c(2.04, 1.313, 9, 0.793, 3.101, 9)
+  periodicMatern = c(2.04, 1.313, 9, 0.793, 3.101, 9),
+  generalMatern = c(2.04, 1.313, 0.793, 3.101)
 )
 
 uprange <- 3
 downrange <- 0.4
 set.seed(123)
-for(kerneltype in c("compact1","rbf","matern","periodicMatern")){
+for(kerneltype in c("compact1","rbf","matern","periodicMatern","generalMatern")){
   
   testthat::test_that("check Cprime and Cdoubleprime", {
     xtime <- seq(0,2,0.01)
