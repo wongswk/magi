@@ -20,13 +20,24 @@ fn.true <- VRtrue[seq(1,401,by=2),]   #### reference is 201 points
 fn.true$time <- seq(0,20,0.1)
 fn.sim <- fn.true
 
-set.seed(123)
+myseed <- sample(1e10, 1) # or use nano second system time
+myseed <- 123
+set.seed(myseed)
 fn.sim[,1:2] <- fn.sim[,1:2]+rnorm(length(unlist(fn.sim[,1:2])), sd=noise)
 tvec.full <- fn.sim$time
 fn.sim.all <- fn.sim
 fn.sim[-seq(1,nrow(fn.sim), length=nobs),] <- NaN
 fn.sim.obs <- fn.sim[seq(1,nrow(fn.sim), length=nobs),]
 tvec.nobs <- fn.sim$time[seq(1,nrow(fn.sim), length=nobs)]
+
+config <- list(
+  nobs = nobs,
+  noise = noise,
+  kernel = kerneltype,
+  seed = myseed,
+  npostplot = 5
+)
+
 
 foo <- outer(tvec.full, t(tvec.full),'-')[,1,]
 r <- abs(foo)
@@ -275,5 +286,5 @@ fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtru
 fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
 
 fn.sim$time <- fn.sim.all$time
-gpds:::plot.post.samples(paste0("test-run-HMCv4-",kerneltype,".pdf"), 
-                         fn.true, fn.sim, gpode, pram.true, 5)
+gpds:::plotPostSamples(paste0("test-run-HMCv4-",kerneltype,".pdf"), 
+                         fn.true, fn.sim, gpode, pram.true, config)

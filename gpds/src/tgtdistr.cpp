@@ -1,5 +1,6 @@
 #include "tgtdistr.h"
 #include "band.h"
+#include "itpp/base/bessel.h"
 
 using namespace arma;
 
@@ -26,6 +27,42 @@ gpcov maternCov( const vec & phi, const mat & dist, int complexity = 0){
   // work from here continue for gp derivative
   return out;
 }
+
+double modifiedBessel2ndKind (const double & nu, const double & x){
+  return PI/2.0 * (itpp::besseli(-nu, x) - itpp::besseli(nu, x)) / sin(nu*PI);
+}
+
+//' matern variance covariance matrix with derivatives
+//' 
+//' @param phi         the parameter of (sigma_c_sq, alpha)
+//' @param dist        distance matrix
+//' @param complexity  how much derivative information should be calculated
+gpcov generalMaternCov( const vec & phi, const mat & dist, int complexity = 0){
+  double df = 2.5;
+  gpcov out;
+  mat dist2 = square(dist);
+  out.C.set_size(dist.n_rows, dist.n_cols);
+  mat x4bessel = sqrt(2.0 * df) * dist / phi(1);
+  for(unsigned int i = 0; i < dist.size(); i++){
+    out.C(i) = phi(0) * pow(2.0, 1-df) * exp(-lgamma(df)) * pow( x4bessel(i), df) * 
+      modifiedBessel2ndKind(df, x4bessel(i));
+  }
+  out.C.diag() += 1e-7;
+  // cout << out.C << endl;
+  if (complexity == 0) return out;
+  out.dCdphiCube.set_size(out.C.n_rows, out.C.n_cols, 2);
+  out.dCdphiCube.slice(0) = out.C/phi(0);
+  out.dCdphiCube.slice(1) = out.C * df / x4bessel;
+  for(unsigned int i = 0; i < dist.size(); i++){
+    out.dCdphiCube.slice(1)(i) += phi(0) * pow(2.0, 1-df) * exp(-lgamma(df)) * pow( x4bessel(i), df) * 
+      (modifiedBessel2ndKind(df-1, x4bessel(i)) - modifiedBessel2ndKind(df+1, x4bessel(i)))/2.0 *
+      (-sqrt(2.0 * df) * dist(i) / pow(phi(1), 2));
+  }
+  if (complexity == 1) return out;
+  // work from here continue for gp derivative
+  return out;
+}
+
 
 //' periodic matern variance covariance matrix with derivatives
 //' 
@@ -100,6 +137,8 @@ lp phisigllik( const vec & phisig,
     kernelCov = compact1Cov;
   }else if(kernel == "periodicMatern"){
     kernelCov = periodicMaternCov;
+  }else if(kernel == "generalMatern"){
+    kernelCov = generalMaternCov;
   }else{
     throw "kernel is not specified correctly";
   }

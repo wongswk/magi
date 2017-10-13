@@ -71,7 +71,11 @@ getMeanDerivCurve <- function(x, y.mat, dy.mat, x.new, phi.mat, delta = 1e-9, si
 #' @param init list of true parameters abc and sigma
 #'
 #' @export
-plot.post.samples <- function(filename, fn.true, fn.sim, gpode, init, npostplot = 20){
+plotPostSamples <- function(filename, fn.true, fn.sim, gpode, init, config){
+  npostplot <- config$npostplot
+  if(is.null(npostplot)) {
+    npostplot <- 20
+  }
   id.max <- c(which.max(gpode$lp__), which.max(gpode$lglik))
   if(is.null(gpode$drobs)) gpode$drobs <- t(gpode$fode[,2,])
   if(is.null(gpode$dvobs)) gpode$dvobs <- t(gpode$fode[,1,])
@@ -318,3 +322,20 @@ plot.add.dlnorm <- function(samples, col=6){
   c(mean=mean(log(samples)), sd=sd(log(samples)))
 }
 
+#' plot posterior sample from ode inference
+#' 
+#' see test run cases for how to use this function
+#'
+#' @param filename string of pdf filename to save
+#' @param fn.true VRtrue plus time and derivative
+#' @param fn.sim noisy observations
+#' @param gpode list of ode posterior that contains element stated in example
+#' section
+#' @param init list of true parameters abc and sigma
+#'
+#' @export
+plot.post.samples <- function(filename, fn.true, fn.sim, gpode, init, npostplot = 20){
+  gpconfig <- list(npostplot = 20)
+  plotPostSamples(filename, fn.true, fn.sim, gpode, init, gpconfig)
+  warning("plot.post.samples will be deprecated, please use plotPostSamples instead.\nTrying to avoid '.' in function names")
+}

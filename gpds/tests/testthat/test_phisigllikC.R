@@ -57,3 +57,6 @@ for(kerneltype in c("compact1","rbf","matern","periodicMatern")){
   })
 }
 
+testpoint <- abs(rnorm(5))
+phisigllikC( testpoint, data.matrix(fn.sim[,1:2]), r, "matern")
+phisigllikC( testpoint, data.matrix(fn.sim[,1:2]), r, "generalMatern")
