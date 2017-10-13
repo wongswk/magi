@@ -69,6 +69,8 @@ getMeanDerivCurve <- function(x, y.mat, dy.mat, x.new, phi.mat, delta = 1e-9, si
 #' @param gpode list of ode posterior that contains element stated in example
 #' section
 #' @param init list of true parameters abc and sigma
+#' 
+#' @importFrom gridExtra grid.table
 #'
 #' @export
 plotPostSamples <- function(filename, fn.true, fn.sim, gpode, init, config){
@@ -80,7 +82,16 @@ plotPostSamples <- function(filename, fn.true, fn.sim, gpode, init, config){
   if(is.null(gpode$drobs)) gpode$drobs <- t(gpode$fode[,2,])
   if(is.null(gpode$dvobs)) gpode$dvobs <- t(gpode$fode[,1,])
 
+  infoTab <- as.data.frame(config)
+  
   pdf(filename, width = 8, height = 8)
+  
+  if("gridExtra" %in% rownames(installed.packages())){
+    plot.new()
+    # grid::pushViewport(gridBase::baseViewports()$figure)
+    gridExtra::grid.table(infoTab)
+  }
+  
   id.plot <- seq(1,nrow(gpode$abc),length=npostplot)
   id.plot <- unique(as.integer(id.plot))
   id.plot <- unique(c(id.max, id.plot))

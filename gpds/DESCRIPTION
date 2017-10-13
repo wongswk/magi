@@ -18,4 +18,5 @@ Suggests:
     microbenchmark,
     mvtnorm,
     covr,
-    knitr
+    knitr,
+    gridExtra
