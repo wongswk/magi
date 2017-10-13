@@ -38,7 +38,7 @@ double modifiedBessel2ndKind (const double & nu, const double & x){
 //' @param dist        distance matrix
 //' @param complexity  how much derivative information should be calculated
 gpcov generalMaternCov( const vec & phi, const mat & dist, int complexity = 0){
-  double df = 2.5;
+  double df = 2.1;
   gpcov out;
   mat dist2 = square(dist);
   out.C.set_size(dist.n_rows, dist.n_cols);

@@ -87,7 +87,7 @@ calCovMatern <- function(phi, r, signr, complexity=3) {
 #' 
 #' @export
 calCovGeneralMatern <- function(phi, r, signr, complexity=3) {
-  df = 2.5
+  df = 2.1
   r2 <- r^2
   
   x4bessel <- sqrt(2.0 * df) * r / phi[2];
@@ -102,9 +102,16 @@ calCovGeneralMatern <- function(phi, r, signr, complexity=3) {
   if(complexity==0){
     return(list(C = C))
   }
-  # FIXME: correct here using general Bessel as well
-  Cprime  <- (signr)* (phi[1] * exp((-sqrt(5)*r)/phi[2])) * (((5*r)/(3*phi[2]^2)) + ((5*sqrt(5)*r2)/(3*phi[2]^3)))
-  Cdoubleprime <- (-phi[1] * (sqrt(5)/phi[2]) * exp((-sqrt(5)*r)/phi[2])) * (((5*r)/(3*phi[2]^2)) + ((5*sqrt(5)*r2)/(3*phi[2]^3))) + (phi[1]*exp((-sqrt(5)*r)/phi[2])) * ((5/(3*phi[2]^2)) + ((10*sqrt(5)*r)/(3*phi[2]^3)))
+  Cprime  <- C * (df / x4bessel - (besselK(x4bessel, df-1) + besselK(x4bessel, df+1))/(2*besselK(x4bessel, df)))
+  Cprime <- Cprime * sqrt(2.0 * df) * signr / phi[2]
+  Cprime[is.na(Cprime)] <- 0
+  Cprime <- -Cprime
+  
+  Cdoubleprime <- -phi[1] * 2^(1-df) * exp(-lgamma(df)) * 2.0 * df / phi[2]^2 * (
+    df*(df-1)*x4bessel^(df-2)*besselK(x4bessel, df) - df*x4bessel^(df-1)*(besselK(x4bessel, df-1)+besselK(x4bessel, df+1))
+    + x4bessel^df*(besselK(x4bessel, df-2)+2*besselK(x4bessel, df)+besselK(x4bessel, df+2))/4)
+  diag(Cdoubleprime) <- phi[1] * 2^(1-df) * exp(-lgamma(df)) * 2.0 * df / phi[2]^2 * gamma(df-1) * 2^(df-2)
+  # Cdoubleprime <- -Cdoubleprime
   
   dCdphi <- list(
     C/phi[1],
