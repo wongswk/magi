@@ -9,8 +9,9 @@ r:
 
 before_install:
   - export CODECOV_TOKEN="7b481576-694c-4591-8370-64f61df55bdc"
+  - ./build.sh
   - cd gpds
-  
+
 install:
   - Rscript -e 'install.packages(c("devtools"))'
   - Rscript -e 'devtools::install_deps(dependencies = TRUE)'
@@ -19,7 +20,7 @@ install:
 script:
   - R CMD build .
   - R CMD check *tar.gz
-  
+
 after_success:
   - cd ..
   - Rscript -e 'covr::codecov(path = "gpds")'
