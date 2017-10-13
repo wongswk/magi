@@ -87,7 +87,7 @@ calCovMatern <- function(phi, r, signr, complexity=3) {
 #' 
 #' @export
 calCovGeneralMatern <- function(phi, r, signr, complexity=3) {
-  df = 2.1
+  df = 2.01
   r2 <- r^2
   
   x4bessel <- sqrt(2.0 * df) * r / phi[2];
@@ -170,6 +170,28 @@ calCovCompact1 <- function(phi, r, signr, complexity=3, D=3) {
   return(list(C = C, Cprime = Cprime, Cdoubleprime = Cdoubleprime, dCdphi = dCdphi))
 }
 
+#' calculate rational quadratic Gaussian process kernel
+#' 
+#' only calculate core part of C, Cprime, Cprimeprime, dCdphi etc.
+#' 
+#' @export
+calCovRationalQuadratic <- function(phi, r, signr, complexity=3) {
+  df = 0.01
+  r2 <- r^2
+  
+  C <- phi[1] * (1 + r2/(2*phi[2]^2) / df)^(-df)
+  if(complexity==0){
+    return(list(C = C))
+  }
+  Cprime  <- signr * C * r / (phi[2]^2)
+  Cdoubleprime <- C * (1/phi[2]^2 - r2 / phi[2]^4)
+  dCdphi <- list(
+    C/phi[1],
+    C*r2/phi[2]^3
+  )
+  return(list(C = C, Cprime = Cprime, Cdoubleprime = Cdoubleprime, dCdphi = dCdphi))
+}
+
 #' calculate linear Gaussian process kernel
 #' 
 #' @export
@@ -206,7 +228,27 @@ calCovNeuralNetwork <- function(phi, x, complexity=3) {
   }
 }
 
-#' calculate Neural Network Gaussian process kernel
+#' calculate modulated squared exponential Gaussian process kernel
+#' 
+#' @export
+calCovModulatedRBF <- function(phi, x, complexity=3) {
+  sigmaG <- phi[2]
+  sigmaU <- phi[3]
+  
+  sigmaSqS <- 2*sigmaG^2 + sigmaG^4/sigmaU^2
+  sigmaSqE <- 1/(2/sigmaG^2 + 1/sigmaU^2)
+  sigmaSqM <- 2*sigmaU^2 + sigmaG^2
+  
+  C <- exp(-as.matrix(dist(x))^2/(2*sigmaSqS))
+  C <- t(C * exp(-x^2/(2*sigmaSqM))) * exp(-x^2/(2*sigmaSqM))
+  C <- phi[1] * C * (sqrt(sigmaSqE)/sigmaU)
+  
+  if(complexity==0){
+    return(list(C = C))
+  }
+}
+
+#' calculate Periodic Warpped Matern Gaussian process kernel
 #' 
 #' @export
 calCovPeriodicWarpMatern <- function(phi, r, signr, complexity=0) {
