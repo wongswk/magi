@@ -13,8 +13,8 @@ before_install:
   - cd gpds
 
 install:
-  - Rscript -e 'install.packages(c("devtools"))'
-  - Rscript -e 'devtools::install_deps(dependencies = TRUE)'
+  - Rscript -e 'install.packages(c("devtools", "roxygen2"), repos="http://cran.us.r-project.org")'
+  - Rscript -e 'devtools::install_deps(dependencies = TRUE, repos="http://cran.us.r-project.org")'
   - Rscript -e 'devtools::document(); devtools::test()'
 
 script:
@@ -24,3 +24,5 @@ script:
 after_success:
   - cd ..
   - Rscript -e 'covr::codecov(path = "gpds")'
+
+# need a shell to install Rtools if not already exist on Windows
