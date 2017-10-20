@@ -1,0 +1,15 @@
+#!/bin/sh
+
+#SBATCH --job-name=gpds
+#SBATCH --array=1-1000
+#SBATCH -t 1440
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem-per-cpu=3000mb
+#SBATCH --qos=swong
+#SBATCH --partition=phase4
+
+cd /ufrc/swong/swkwong/gpds/
+
+R --vanilla --no-save < HMC-v4-generalMatern-HPC.R
+
