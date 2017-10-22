@@ -68,6 +68,7 @@ gpcov cov_r2cpp(const Rcpp::List & cov_r){
   cov_v.CinvBand = as<vec>(cov_r["CinvBand"]);
   cov_v.mphiBand = as<vec>(cov_r["mphiBand"]);
   cov_v.KinvBand = as<vec>(cov_r["KinvBand"]);
+  cov_v.mu = as<vec>(cov_r["mu"]);
   cov_v.bandsize = as<int>(cov_r["bandsize"]);
   return cov_v;
 }
@@ -93,11 +94,14 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
   }else if(loglikflag == "usual"){
     tgt = std::bind(xthetallik, std::placeholders::_1, 
                     covV, covR, sigma, yobs, fnmodelODE);
+  }else if(loglikflag == "withmean"){
+    tgt = std::bind(xthetallik_withmu, std::placeholders::_1, 
+                    covV, covR, sigma, yobs, fnmodelODE);
   }else if(loglikflag == "band"){
     tgt = std::bind(xthetallikBandApprox, std::placeholders::_1, 
                     covV, covR, sigma, yobs);
   }else{
-    throw "loglikflag must be 'usual', 'rescaled', or 'band'";
+    throw "loglikflag must be 'usual', 'withmean', 'rescaled', or 'band'";
   }
   vec lb = ones<vec>(initial.size()) * (-datum::inf);
   lb.subvec(lb.size() - 3, lb.size() - 1).fill(0.0);
