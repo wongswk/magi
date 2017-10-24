@@ -43,7 +43,7 @@ struct gpcov {
   arma::mat C, Cinv, mphi, Kphi, Kinv, CeigenVec, KeigenVec, mphiLeftHalf;
   arma::cube dCdphiCube;
   arma::mat CinvBand, mphiBand, KinvBand;
-  arma::vec Ceigen1over, Keigen1over;
+  arma::vec Ceigen1over, Keigen1over, mu;
   int bandsize;
 };
 
