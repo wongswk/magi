@@ -84,6 +84,10 @@ double bandTest(std::string filename="data_band.txt"){
 
 // [[Rcpp::export]]
 arma::cube paralleltemperingTest1() {
+  std::ofstream out("testout.txt");
+  std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
+  std::cout.rdbuf(out.rdbuf()); //redirect std::cout to out.txt!
+  
   function<lp(vec)> lpnormal = [](vec x) {return lp(-arma::sum(arma::square(x))/2.0);};
   vec temperature = arma::linspace<vec>(8, 1, 8);
   std::function<mcmcstate(function<lp(vec)>, mcmcstate)> metropolis_tuned =
@@ -95,9 +99,8 @@ arma::cube paralleltemperingTest1() {
                                       arma::zeros<vec>(4), 
                                       0.05, 
                                       1e4,
-                                      false);
-  // FIXME segfault 'memory not mapped' when use with the package, 
-  // but no error if simply sourcecpp
+                                      true);
+  std::cout.rdbuf(coutbuf); //reset to standard output again
   return samples;
 }
 
