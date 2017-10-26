@@ -21,7 +21,7 @@ calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerne
     stop("kerneltype not specified correctly")
   }
   
-  ret$mu <- rep(0, nrow(ret$C))
+  ret$dotmu <- ret$mu <- rep(0, nrow(ret$C))
   ret$C <- ret$C + 1e-7 * diag( nrow(rInput))
   
   if(complexity==0){

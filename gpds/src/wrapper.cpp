@@ -69,6 +69,7 @@ gpcov cov_r2cpp(const Rcpp::List & cov_r){
   cov_v.mphiBand = as<vec>(cov_r["mphiBand"]);
   cov_v.KinvBand = as<vec>(cov_r["KinvBand"]);
   cov_v.mu = as<vec>(cov_r["mu"]);
+  cov_v.dotmu = as<vec>(cov_r["dotmu"]);
   cov_v.bandsize = as<int>(cov_r["bandsize"]);
   return cov_v;
 }
@@ -224,6 +225,21 @@ Rcpp::List xthetallikBandApproxC( arma::mat & yobs,
   gpcov covV = cov_r2cpp(covVr);
   gpcov covR = cov_r2cpp(covRr);
   lp ret = xthetallikBandApprox(initial, covV, covR, sigma, yobs);
+  return List::create(Named("value")=ret.value,
+                      Named("grad")=ret.gradient);
+}
+
+//' R wrapper for xthetallik
+//' @export
+// [[Rcpp::export]]
+Rcpp::List xthetallik_withmuC(const arma::mat & yobs, 
+                              const Rcpp::List & covVr, 
+                              const Rcpp::List & covRr, 
+                              const double & sigma, 
+                              const arma::vec & initial){
+  gpcov covV = cov_r2cpp(covVr);
+  gpcov covR = cov_r2cpp(covRr);
+  lp ret = xthetallik_withmu(initial, covV, covR, sigma, yobs, fnmodelODE);
   return List::create(Named("value")=ret.value,
                       Named("grad")=ret.gradient);
 }

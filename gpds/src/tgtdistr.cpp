@@ -305,7 +305,7 @@ lp xthetallik_withmu( const vec & xtheta,
                const gpcov & CovV, 
                const gpcov & CovR, 
                const double & sigma, 
-               const mat & yobs, 
+               mat yobs, 
                const std::function<mat (vec, mat)> & fODE) {
   int n = (xtheta.size() - 3)/2;
   const vec & theta = xtheta.subvec(xtheta.size() - 3, xtheta.size() - 1);
@@ -318,13 +318,18 @@ lp xthetallik_withmu( const vec & xtheta,
     return ret;
   }
   
-  const vec & Vsm = xtheta.subvec(0, n - 1);
-  const vec & Rsm = xtheta.subvec(n, 2*n - 1);
-  const vec & Vsmminusmu = Vsm - CovV.mu;
-  const vec & Rsmminusmu = Rsm - CovR.mu;
+  vec Vsm = xtheta.subvec(0, n - 1);
+  vec Rsm = xtheta.subvec(n, 2*n - 1);
+  mat fderiv = fODE(theta, join_horiz(Vsm, Rsm));
   
+  Vsm -= CovV.mu;
+  yobs.col(0) -= CovV.mu;
+  Rsm -= CovR.mu;
+  yobs.col(1) -= CovR.mu;
   
-  const mat & fderiv = fODE(theta, join_horiz(Vsm, Rsm));
+  fderiv.col(0) -= CovV.dotmu;
+  fderiv.col(1) -= CovR.dotmu;
+  
   mat res(2,3);
   
   // V 
@@ -336,21 +341,18 @@ lp xthetallik_withmu( const vec & xtheta,
   fitLevelErrorV(find_nonfinite(fitLevelErrorV)).fill(0.0);
   res(0,0) = -0.5 * sum(square( fitLevelErrorV )) / pow(sigma,2);
   res(0,1) = -0.5 * sum( square(frVKTrans) % CovV.Keigen1over);
-  //res(0,2) = -0.5 * sum( square(VsmCTrans) % CovV.Ceigen1over);
-  res(0,2) = -0.5 * as_scalar( Vsmminusmu.t() * CovV.Cinv * Vsmminusmu);
+  res(0,2) = -0.5 * sum( square(VsmCTrans) % CovV.Ceigen1over);
   
   // R
   vec frR = (fderiv.col(1) - CovR.mphi * Rsm); // n^2 operation
   vec RsmCTrans = CovR.CeigenVec.t() * Rsm;
-  // vec frR = fderiv.col(1) - CovR.mphiLeftHalf * (RsmCTrans % CovR.Ceigen1over);
   vec frRKTrans = CovR.KeigenVec.t() * frR;
   vec fitLevelErrorR = Rsm - yobs.col(1);
   fitLevelErrorR(find_nonfinite(fitLevelErrorR)).fill(0.0);
   
   res(1,0) = -0.5 * sum(square( fitLevelErrorR )) / pow(sigma,2);
   res(1,1) = -0.5 * sum( square(frRKTrans) % CovR.Keigen1over);
-  //res(1,2) = -0.5 * sum( square(RsmCTrans) % CovR.Ceigen1over);
-  res(1,2) = -0.5 * as_scalar( Rsmminusmu.t() * CovR.Cinv * Rsmminusmu);
+  res(1,2) = -0.5 * sum( square(RsmCTrans) % CovR.Ceigen1over);
   
   //cout << "lglik component = \n" << res << endl;
   
@@ -387,8 +389,8 @@ lp xthetallik_withmu( const vec & xtheta,
   // vec C3 = join_vert(join_vert( 2.0 * CovV.CeigenVec * (VsmCTrans % CovV.Ceigen1over),  
   //                               2.0 * CovR.CeigenVec * (RsmCTrans % CovR.Ceigen1over) ), 
   //                               zeros<vec>(theta.size()));
-  vec C3 = join_vert(join_vert( 2.0 * CovV.Cinv * Vsmminusmu,  
-                                2.0 * CovR.Cinv * Rsmminusmu ), 
+  vec C3 = join_vert(join_vert( 2.0 * CovV.Cinv * Vsm,  
+                                2.0 * CovR.Cinv * Rsm ), 
                                 zeros<vec>(theta.size()));  
   vec C1 = join_vert(join_vert( 2.0 * fitLevelErrorV / pow(sigma,2) ,  
                                 2.0 * fitLevelErrorR / pow(sigma,2) ),

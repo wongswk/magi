@@ -209,6 +209,30 @@ testthat::test_that("xthetallik_rescaledC runs without error and compare to non-
   testthat::expect_equal(sum(out$grad), gradExpect, tolerance = 1e-4, scale = gradExpect)
 })
 
+testthat::test_that("xthetallik_withmuC runs without error and compare to zero-mean", {
+  out <- gpds::xthetallik_withmuC(dataInput, curCovV, curCovR, cursigma, xthInit)
+  
+  testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-5, scale = outExpectedvalue)
+  gradExpect <- 167.746373733369
+  testthat::expect_equal(sum(out$grad), gradExpect, tolerance = 1e-4, scale = gradExpect)
+  
+  dotmu <- fODE(pram.true$abc, data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]))
+  
+  curCovV_withmu <- curCovV
+  curCovR_withmu <- curCovR
+  curCovV_withmu$mu <- fn.true[seq(1,nrow(fn.true), length=nobs),1]
+  curCovR_withmu$mu <- fn.true[seq(1,nrow(fn.true), length=nobs),2]
+  curCovV_withmu$dotmu <- dotmu[,1]
+  curCovR_withmu$dotmu <- dotmu[,2]
+  
+  out <- gpds::xthetallik_withmuC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit)
+  
+  dataWN <- dataInput - data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2])
+  xthWN <- c(rep(0,length(xthInit)-3), 0,0,1)
+  outWN <- gpds::xthetallikC(dataWN, curCovV, curCovR, cursigma, xthWN)
+  
+  testthat::expect_equal(out, outWN, tolerance = 1e-5)
+})
 
 bandsize <- 15
 testthat::test_that("examine band matrix approximation", {

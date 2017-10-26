@@ -32,7 +32,8 @@ config <- list(
   noise = noise,
   kernel = kerneltype,
   seed = myseed,
-  npostplot = 5
+  npostplot = 5,
+  loglikflag = "withmean"
 )
 
 
@@ -58,6 +59,9 @@ cursigma <- marlikmap$par[5]
 curCovV$mu <- as.vector(fn.true[,1])  # pretend these are the means
 curCovR$mu <- as.vector(fn.true[,2])
 
+dotmu <- fODE(pram.true$abc, fn.true[,1:2]) # pretend these are the means for derivatives
+curCovV$dotmu <- as.vector(dotmu[,1])  
+curCovR$dotmu <- as.vector(dotmu[,2])
 
 startVR <- rbind(getMeanCurve(fn.sim.obs$time, fn.sim.obs$Vtrue, fn.sim.obs$time, 
                               t(marlikmap$par[1:2]), sigma.mat=rep(cursigma,nrow(fn.sim.obs)), kerneltype),
@@ -139,7 +143,7 @@ scalefac <- scalefac/mean(scalefac)
 #### formal running ####
 nall <- nrow(fn.sim)
 numparam <- nall*2+3
-n.iter <- 500
+n.iter <- 100*60*8
 xth.formal <- matrix(NA, n.iter, numparam)
 
 # upsample with GP to get initial latent X's at non-observation points
@@ -177,7 +181,7 @@ for (ii in 2:numparam) {
 }
 
 stepLow <- stepLow.scaler[1]*fullscalefac * nobs/nall
-stepLow <- stepLow*0.4
+stepLow <- stepLow*0.005
 
 burnin <- as.integer(n.iter*0.3)
 n.iter.approx <- 0
@@ -189,7 +193,7 @@ for (t in 2:n.iter) {
   #                       xth.formal[t-1,], rstep, 1000, T, loglikflag = "band")    
   # }else{
     foo <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
-                        xth.formal[t-1,], rstep, 1000, T, loglikflag = "withmean")
+                        xth.formal[t-1,], rstep, 100, T, loglikflag = config$loglikflag)
   # }
   
   xth.formal[t,] <- foo$final
