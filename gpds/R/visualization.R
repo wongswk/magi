@@ -87,9 +87,14 @@ plotPostSamples <- function(filename, fn.true, fn.sim, gpode, init, config){
   pdf(filename, width = 8, height = 8)
   
   if("gridExtra" %in% rownames(installed.packages())){
-    plot.new()
-    # grid::pushViewport(gridBase::baseViewports()$figure)
-    gridExtra::grid.table(infoTab)
+    npanel <- ceiling(ncol(infoTab)/8)
+    layout(1:npanel)
+    for(i in 1:npanel){
+      plot.new()
+      grid::pushViewport(gridBase::baseViewports()$figure)
+      gridExtra::grid.table(infoTab[,((i-1)*8+1):min(ncol(infoTab), i*8)]) 
+    }
+    layout(1)
   }
   
   id.plot <- seq(1,nrow(gpode$abc),length=npostplot)
@@ -134,12 +139,16 @@ plotPostSamples <- function(filename, fn.true, fn.sim, gpode, init, config){
   layout(matrix(1:4,2,byrow = TRUE))
   hist(gpode$abc[,1], main="a")
   abline(v=init$abc[1], col=2)
+  abline(v=quantile(gpode$abc[,1], c(0.025, 0.975)), col=3)
   hist(gpode$abc[,2], main="b")
   abline(v=init$abc[2], col=2)
+  abline(v=quantile(gpode$abc[,2], c(0.025, 0.975)), col=3)
   hist(gpode$abc[,3], main="c")
   abline(v=init$abc[3], col=2)
+  abline(v=quantile(gpode$abc[,3], c(0.025, 0.975)), col=3)
   hist(gpode$sigma, main="sigma")
   abline(v=init$sigma, col=2)
+  abline(v=quantile(gpode$sigma, c(0.025, 0.975)), col=3)
 
   plot.ts(gpode$abc[,1], main="a")
   abline(h=init$abc[1], col=2)
