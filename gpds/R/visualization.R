@@ -71,6 +71,8 @@ getMeanDerivCurve <- function(x, y.mat, dy.mat, x.new, phi.mat, delta = 1e-9, si
 #' @param init list of true parameters abc and sigma
 #' 
 #' @importFrom gridExtra grid.table
+#' @importFrom gridBase baseViewports
+#' @importFrom grid pushViewport
 #'
 #' @export
 plotPostSamples <- function(filename, fn.true, fn.sim, gpode, init, config){
@@ -86,7 +88,7 @@ plotPostSamples <- function(filename, fn.true, fn.sim, gpode, init, config){
   
   pdf(filename, width = 8, height = 8)
   
-  if("gridExtra" %in% rownames(installed.packages())){
+  if(all(c("gridExtra","gridBase") %in% rownames(installed.packages()))){
     npanel <- ceiling(ncol(infoTab)/8)
     layout(1:npanel)
     for(i in 1:npanel){

@@ -11,7 +11,9 @@ VignetteBuilder: knitr
 Imports: 
     Rcpp (>= 0.12.7),
     RcppArmadillo (>= 0.7.960.1.2),
-    gridExtra
+    gridExtra,
+    gridBase,
+    grid
 LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 6.0.1
 Suggests: 
