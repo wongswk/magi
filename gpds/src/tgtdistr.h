@@ -20,7 +20,7 @@ lp xthetallik_withmu( const arma::vec & xtheta,
                       const gpcov & CovV,
                       const gpcov & CovR,
                       const double & sigma,
-                      arma::mat yobs,
+                      const arma::mat & yobs,
                       const std::function<arma::mat (arma::vec, arma::mat)> & fODE);
 lp xthetallik_rescaled( const arma::vec & xtheta,
                         const gpcov & CovV,
