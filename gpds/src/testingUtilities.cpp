@@ -1,6 +1,7 @@
 #include "hmc.h"
 #include "band.h"
 #include "paralleltempering.h"
+#include "tgtdistr.h"
 
 using namespace arma;
 
@@ -76,7 +77,7 @@ double bandTest(std::string filename="data_band.txt"){
   
   xthetallikBandC(xtheta, Vmphi, VKinv, VCinv,
                   Rmphi, RKinv, RCinv, &bandsizeInput, &datasizeInput,
-                  &cursigma, fnsim, &ret, grad);
+                  &cursigma, fnsim, &ret, grad, fnmodelODE);
   return std::accumulate(grad, grad + datasize * 2 + 3, ret);
 };
 

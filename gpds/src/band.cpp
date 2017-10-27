@@ -40,7 +40,8 @@ extern "C" {
 
   void xthetallikBandC( const double *xtheta, const double *Vmphi, const double *VKinv, const double *VCinv,
                         const double *Rmphi, const double *RKinv, const double *RCinv, const int *bandsize, const int *nn,
-                        const double *sigma, const double *yobs, double *ret, double *retgrad) {
+                        const double *sigma, const double *yobs, double *ret, double *retgrad,
+                        const std::function<arma::mat (arma::vec, arma::mat)> & fODE) {
 
     int n = *nn;
     int i,j;
@@ -52,12 +53,10 @@ extern "C" {
       return;
     }
 
-    double *Vsm, *Rsm, *Vdt, *Rdt, *frV, *frR, *fitLevelErrorV, *fitLevelErrorR;
+    double *Vdt, *Rdt, *frV, *frR, *fitLevelErrorV, *fitLevelErrorR;
     double *tempV, *tempR, *tempV2, *tempR2, *tempV3, *tempR3;
-    Vsm = new double[n];
-    Rsm = new double[n];
-    Vdt = new double[n];
-    Rdt = new double[n];
+    const double  *Vsm, *Rsm;
+    
     frV = new double[n];
     frR = new double[n];
     fitLevelErrorV = new double[n];
@@ -81,15 +80,16 @@ extern "C" {
     theta[0] = xtheta[2*n];
     theta[1] = xtheta[2*n+1];
     theta[2] = xtheta[2*n+2];
+    
+    const arma::vec thetaArma = arma::mat(theta, 3, 1, false, true);
+    const arma::mat vrlevel = arma::mat(xtheta, n, 2);
+    Vsm = xtheta;
+    Rsm = xtheta+n;
 
-    for (i = 0; i < n; i++) {
-      Vsm[i] = xtheta[i];
-      Rsm[i] = xtheta[i+n];
-
-      Vdt[i] = theta[2] * (Vsm[i] - pow(Vsm[i],3) / 3.0 + Rsm[i]);
-      Rdt[i] = -1.0/theta[2] * ( Vsm[i] - theta[0] + theta[1] * Rsm[i]);
-    }
-
+    arma::mat dVR = fODE(thetaArma, vrlevel);
+    Vdt = dVR.colptr(0);
+    Rdt = dVR.colptr(1);
+    
     // V
     bmatvecmult(Vmphi,Vsm,bandsize,nn,frV);
 
@@ -227,10 +227,6 @@ extern "C" {
 
     *ret = res00 + res01 + res02 + res10 + res11 + res12;
 
-    delete[] Vsm;
-    delete[] Rsm;
-    delete[] Vdt;
-    delete[] Rdt;
     delete[] frV;
     delete[] frR;
     delete[] fitLevelErrorV;

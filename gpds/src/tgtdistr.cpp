@@ -441,7 +441,8 @@ lp xthetallikBandApprox( const vec & xtheta,
                          const gpcov & CovV, 
                          const gpcov & CovR, 
                          const double & sigma, 
-                         const mat & yobs) {
+                         const mat & yobs,
+                         const std::function<mat (vec, mat)> & fODE) {
   int n = (xtheta.size() - 3)/2;
   lp ret;
   ret.gradient.set_size(xtheta.size());
@@ -460,7 +461,7 @@ lp xthetallikBandApprox( const vec & xtheta,
   
   xthetallikBandC( xthetaPtr, VmphiPtr, VKinvPtr, VCinvPtr,
                    RmphiPtr, RKinvPtr, RCinvPtr, &CovV.bandsize, &n,
-                   sigmaPtr, yobsPtr, retPtr, retgradPtr);
+                   sigmaPtr, yobsPtr, retPtr, retgradPtr, fODE);
     
   return ret;
 }

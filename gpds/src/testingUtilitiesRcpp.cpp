@@ -52,7 +52,7 @@ arma::vec speedbenchmarkXthetallik(const arma::mat & yobs,
   }
   chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
   for(int i=0; i < nrep; i++){
-    lp ret2 = xthetallikBandApprox(initial, covV, covR, sigma, yobs);
+    lp ret2 = xthetallikBandApprox(initial, covV, covR, sigma, yobs, fnmodelODE);
   }
   chrono::high_resolution_clock::time_point t2 = chrono::high_resolution_clock::now();
   for(int i=0; i < nrep; i++){

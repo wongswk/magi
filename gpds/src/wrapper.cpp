@@ -100,7 +100,7 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
                     covV, covR, sigma, yobs, fnmodelODE);
   }else if(loglikflag == "band"){
     tgt = std::bind(xthetallikBandApprox, std::placeholders::_1, 
-                    covV, covR, sigma, yobs);
+                    covV, covR, sigma, yobs, fnmodelODE);
   }else{
     throw "loglikflag must be 'usual', 'withmean', 'rescaled', or 'band'";
   }
@@ -224,7 +224,7 @@ Rcpp::List xthetallikBandApproxC( arma::mat & yobs,
                                   arma::vec & initial){
   gpcov covV = cov_r2cpp(covVr);
   gpcov covR = cov_r2cpp(covRr);
-  lp ret = xthetallikBandApprox(initial, covV, covR, sigma, yobs);
+  lp ret = xthetallikBandApprox(initial, covV, covR, sigma, yobs, fnmodelODE);
   return List::create(Named("value")=ret.value,
                       Named("grad")=ret.gradient);
 }

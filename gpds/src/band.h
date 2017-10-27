@@ -6,6 +6,7 @@
 #include <fstream>
 #include <math.h>
 #include <numeric>
+#include <RcppArmadillo.h>
 
 using namespace std;
 
@@ -15,7 +16,8 @@ extern "C" {
 
   void xthetallikBandC( const double *xtheta, const double *Vmphi, const double *VKinv, const double *VCinv,
                         const double *Rmphi, const double *RKinv, const double *RCinv, const int *bandsize, const int *nn,
-                        const double *sigma, const double *yobs, double *ret, double *retgrad);
+                        const double *sigma, const double *yobs, double *ret, double *retgrad,
+                        const std::function<arma::mat (arma::vec, arma::mat)> & fODE);
   // previous .C wrapper doesn't work with Rcpp auto-generated wrapper
 }
 
