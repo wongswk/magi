@@ -33,7 +33,11 @@ config <- list(
   kernel = kerneltype,
   seed = myseed,
   npostplot = 5,
-  loglikflag = "withmean"
+  loglikflag = "withmean",
+  bandsize = 15,
+  hmcSteps = 1000,
+  n.iter = 100*60*8*2,
+  burninRatio = 0.3
 )
 
 
@@ -53,8 +57,8 @@ gr <- function(par) -as.vector(phisigllikC( par, data.matrix(fn.sim[!is.nan(fn.s
 marlikmap <- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
 cursigma <- marlikmap$par[5]
 
-curCovV <- calCov(marlikmap$par[1:2], r, signr, bandsize=20, kerneltype=kerneltype)
-curCovR <- calCov(marlikmap$par[3:4], r, signr, bandsize=20, kerneltype=kerneltype)
+curCovV <- calCov(marlikmap$par[1:2], r, signr, bandsize=config$bandsize, kerneltype=kerneltype)
+curCovR <- calCov(marlikmap$par[3:4], r, signr, bandsize=config$bandsize, kerneltype=kerneltype)
 cursigma <- marlikmap$par[5]
 curCovV$mu <- as.vector(fn.true[,1])  # pretend these are the means
 curCovR$mu <- as.vector(fn.true[,2])
@@ -143,7 +147,7 @@ scalefac <- scalefac/mean(scalefac)
 #### formal running ####
 nall <- nrow(fn.sim)
 numparam <- nall*2+3
-n.iter <- 100*60*8
+n.iter <- config$n.iter
 xth.formal <- matrix(NA, n.iter, numparam)
 
 # upsample with GP to get initial latent X's at non-observation points
@@ -181,9 +185,9 @@ for (ii in 2:numparam) {
 }
 
 stepLow <- stepLow.scaler[1]*fullscalefac * nobs/nall
-stepLow <- stepLow*0.005
+stepLow <- stepLow*0.001
 
-burnin <- as.integer(n.iter*0.3)
+burnin <- as.integer(n.iter*config$burninRatio)
 n.iter.approx <- 0
 for (t in 2:n.iter) {
   rstep <- runif(length(stepLow), stepLow, 2*stepLow)
@@ -193,7 +197,7 @@ for (t in 2:n.iter) {
   #                       xth.formal[t-1,], rstep, 1000, T, loglikflag = "band")    
   # }else{
     foo <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
-                        xth.formal[t-1,], rstep, 100, T, loglikflag = config$loglikflag)
+                        xth.formal[t-1,], rstep, config$hmcSteps, F, loglikflag = config$loglikflag)
   # }
   
   xth.formal[t,] <- foo$final

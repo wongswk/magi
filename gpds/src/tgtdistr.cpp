@@ -320,7 +320,7 @@ lp xthetallik_withmu( const vec & xtheta,
     [&CovV, &CovR, &fODE](const vec & theta, const mat & x) -> mat{
     return fODE(theta, x+join_horiz(CovV.mu, CovR.mu)) - join_horiz(CovV.dotmu, CovR.dotmu);
   };
-  return xthetallik(xthetaShifted, CovV, CovR, sigma, yobsShifted, fODEShifted);
+  return xthetallikBandApprox(xthetaShifted, CovV, CovR, sigma, yobsShifted, fODEShifted);
 }
 
 //' log likelihood for latent states and ODE theta conditional on phi sigma
