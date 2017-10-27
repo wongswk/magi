@@ -97,7 +97,7 @@ extern "C" {
       //cout << frV[i] << " ";
       frV[i] = Vdt[i] - frV[i];
 
-      if (!isnan(yobs[i]))
+      if (!std::isnan(yobs[i]))
         fitLevelErrorV[i] = Vsm[i] - yobs[i];
       else
         fitLevelErrorV[i] = 0.0;
@@ -128,7 +128,7 @@ extern "C" {
       //cout << frV[i] << " ";
       frR[i] = Rdt[i] - frR[i];
 
-      if (!isnan(yobs[i+n]))
+      if (!std::isnan(yobs[i+n]))
         fitLevelErrorR[i] = Rsm[i] - yobs[i+n];
       else
         fitLevelErrorR[i] = 0.0;
