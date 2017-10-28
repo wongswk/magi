@@ -3,7 +3,7 @@ library(testthat)
 
 #when step size is too large, withmean gives NaN
 
-context("NA should not appear after x-theta sampler")
+context("x-theta sampler")
 config <- list(
   nobs = 41,
   noise = 0.1,
@@ -65,10 +65,28 @@ curCovV$dotmu <- as.vector(dotmu[,1])
 curCovR$dotmu <- as.vector(dotmu[,2])
 
 xth <- c(fn.true$Vtrue, fn.true$Rtrue, pram.true$abc)
-rstep <- rep(0.01, length(xth))
+rstep <- rep(1e10, length(xth))
 foo <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
                     xth, rstep, config$hmcSteps, F, loglikflag = "usual")
 test_that("NA should not appear after xthetaSample", {
   expect_true(all(!is.na(foo$final)))
+})
+
+rstep <- rep(1e30, length(xth))
+foo <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
+                    xth, rstep, config$hmcSteps, T, loglikflag = "usual")
+test_that("NA should not appear after xthetaSample", {
+  expect_true(all(!is.na(foo$final)))
+})
+
+rstep <- rep(0.0001, length(xth))
+set.seed(234)
+foo1 <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
+                    xth, rstep, config$hmcSteps, F, loglikflag = "usual")
+set.seed(234)
+foo2 <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
+                     xth, rstep, config$hmcSteps, T, loglikflag = "usual")
+test_that("return trajectory or not does not affect result", {
+  expect_equal(foo1$final, foo2$final)
 })
 

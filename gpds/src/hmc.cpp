@@ -64,6 +64,9 @@ hmcstate basic_hmcC(const std::function<lp (vec)> & lpr,
   
   // Evaluate the log probability and gradient at the initial position
   lp lpx = lpr(initial);
+  if(std::isnan(lpx.value)){
+    throw "hmc evaluates the log target density to be NaN at initial value";
+  }
   // cout << "Finish Evaluate the log probability and gradient at the initial position" << endl;
   
   // Compute the kinetic energy at the start of the trajectory
@@ -96,6 +99,9 @@ hmcstate basic_hmcC(const std::function<lp (vec)> & lpr,
     p = p % bounces.col(1);
     
     lprq = lpr(q);
+    if(std::isnan(lprq.value)){
+      break;
+    }
     gr = lprq.gradient;
     
     // Record trajectory if asked to, with half-step for momentum.
@@ -125,6 +131,10 @@ hmcstate basic_hmcC(const std::function<lp (vec)> & lpr,
   
   // Accept or reject the state at the end of the trajectory.
   double Hprop = -lprprop + kineticprop;
+  if(std::isnan(Hprop)){
+    Hprop = arma::datum::inf;
+  }
+  
   double delta = Hprop - Hinitial;
   double apr = std::min(1.0,  std::exp(-delta));
   
