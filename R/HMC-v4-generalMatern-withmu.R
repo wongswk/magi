@@ -33,11 +33,11 @@ config <- list(
   kernel = kerneltype,
   seed = myseed,
   npostplot = 5,
-  loglikflag = "withmean",
-  bandsize = 15,
-  hmcSteps = 1000,
-  n.iter = 100*60*8*2,
-  burninRatio = 0.3
+  loglikflag = "usual",
+  bandsize = 20,
+  hmcSteps = 500,
+  n.iter = 5e3,
+  burninRatio = 0.1
 )
 
 
@@ -185,7 +185,7 @@ for (ii in 2:numparam) {
 }
 
 stepLow <- stepLow.scaler[1]*fullscalefac * nobs/nall
-stepLow <- stepLow*0.001
+stepLow <- stepLow*0.04
 
 burnin <- as.integer(n.iter*config$burninRatio)
 n.iter.approx <- 0
@@ -231,5 +231,68 @@ fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtru
 fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
 
 fn.sim$time <- fn.sim.all$time
-gpds:::plotPostSamples(paste0("test-run-HMCv4-",kerneltype,".pdf"), 
+gpds:::plotPostSamples(paste0("noMean-run-HMCv4-",kerneltype,".pdf"), 
                        fn.true, fn.sim, gpode, pram.true, config)
+
+
+#### plug-in mu ####
+
+config$loglikflag <- "withmean"
+config$n.iter <- 5000
+curCovV$mu <- colMeans(gpode$vtrue)
+curCovR$mu <- colMeans(gpode$rtrue)
+curCovV$dotmu <- rowMeans(gpode$fode[,1,])
+curCovR$dotmu <- rowMeans(gpode$fode[,2,])
+
+curCovV$mu <- as.vector(fn.true[,1])  # pretend these are the means
+curCovR$mu <- as.vector(fn.true[,2])
+dotmu <- fODE(pram.true$abc, fn.true[,1:2]) # pretend these are the means for derivatives
+curCovV$dotmu <- as.vector(dotmu[,1])  
+curCovR$dotmu <- as.vector(dotmu[,2])
+
+xth.withmean <- matrix(NA, n.iter, numparam)
+xth.withmean[1, ] <- colMeans(xth.formal[-(1:burnin), ])
+xth.withmean[1, ] <- c(colMeans(xth.formal[-(1:burnin), 1:(2*nall)]), pram.true$abc)
+
+stepLow <- apply(xth.formal[-(1:burnin), ], 2, sd)
+stepLow <- stepLow/mean(stepLow)
+stepLow <- stepLow*tail(stepLow.scaler,1)
+
+for (t in 2:n.iter) {
+  rstep <- runif(length(stepLow), stepLow, 2*stepLow)
+  foo <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
+                      xth.withmean[t-1,], rstep, config$hmcSteps, F, loglikflag = config$loglikflag)
+  xth.withmean[t,] <- foo$final
+  accepts[t] <- foo$acc
+  stepLow.scaler[t] <- mean(stepLow)
+  
+  if (t < burnin & t > 10) {
+    if (mean(tail(accepts[1:t],100)) > 0.9) {
+      stepLow <- stepLow * 1.005
+    } else if (mean(tail(accepts[1:t],100)) < 0.6) {
+      stepLow <- stepLow * .995
+    }
+  }
+  lliklist[t] <- foo$lpr
+  
+  if(t %% 100 ==0) show(c(t, mean(tail(accepts[1:t],100)), foo$final[(nall*2+1):(nall*2+3)]))
+}
+
+gpodeWithmean <- list(abc=xth.withmean[-(1:burnin), (nall*2+1):(nall*2+3)],
+                      sigma=rep(marlikmap$par[5], n.iter-burnin),
+                      rphi=matrix(marlikmap$par[3:4], ncol=2,nrow=n.iter-burnin,byrow=T),
+                      vphi=matrix(marlikmap$par[1:2], ncol=2,nrow=n.iter-burnin,byrow=T),
+                      rtrue=xth.withmean[-(1:burnin), (nall+1):(nall*2)],
+                      vtrue=xth.withmean[-(1:burnin), 1:nall],
+                      lp__=lliklist[-(1:burnin)],
+                      lglik=lliklist[-(1:burnin)])
+gpodeWithmean$fode <- sapply(1:length(gpodeWithmean$lp__), function(t) 
+  with(gpodeWithmean, fODE(abc[t,], cbind(vtrue[t,],rtrue[t,]))), simplify = "array")
+
+fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtrue))
+fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
+
+fn.sim$time <- fn.sim.all$time
+gpds:::plotPostSamples(paste0("withMean-run-HMCv4-",kerneltype,".pdf"), 
+                       fn.true, fn.sim, gpodeWithmean, pram.true, config)
+
