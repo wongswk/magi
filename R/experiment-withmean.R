@@ -6,12 +6,12 @@ config <- list(
   kernel = "generalMatern",
   seed = 123,
   npostplot = 5,
-  loglikflag = "band",
+  loglikflag = "withmean",
   bandsize = 20,
-  hmcSteps = 1000,
-  n.iter = 1e3,
+  hmcSteps = 100,
+  n.iter = 1e5,
   burninRatio = 0.1,
-  stepSizeFactor = 1
+  stepSizeFactor = 1e-2
 )
 
 VRtrue <- read.csv(system.file("testdata/FN.csv", package="gpds"))
@@ -82,7 +82,7 @@ for (t in 2:n.iter) {
   rstep <- runif(length(stepLow), stepLow, 2*stepLow)
   foo <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
                       xth.formal[t-1,], rstep, config$hmcSteps, F, loglikflag = config$loglikflag)
-  
+  if(any(is.na(foo$final))) stop()
   xth.formal[t,] <- foo$final
   accepts[t] <- foo$acc
   stepLow.traj[t,] <- stepLow
@@ -93,7 +93,8 @@ for (t in 2:n.iter) {
     } else if (mean(tail(accepts[1:t],100)) < 0.6) {
       stepLow <- stepLow * .995
     }
-    # stepLow <- 0.01*apply(tail(xth.formal[1:t,],100), 2, sd) + 0.99*stepLow
+    xthsd <- apply(tail(xth.formal[1:t,],100), 2, sd)
+    stepLow <- 0.01*xthsd/mean(xthsd)*mean(stepLow) + 0.99*stepLow
   }
   lliklist[t] <- foo$lpr
   
