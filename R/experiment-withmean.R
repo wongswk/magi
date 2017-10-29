@@ -138,11 +138,13 @@ config <- list(
   npostplot = 5,
   loglikflag = "withmean",
   bandsize = 20,
-  hmcSteps = 100,
-  n.iter = 1e5,
+  hmcSteps = 200,
+  n.iter = 1e4,
   burninRatio = 0.1,
-  stepSizeFactor = 0.01,
-  refitPhiSigma_withmu = FALSE
+  stepSizeFactor = 0.005,
+  refitPhiSigma_withmu = FALSE,
+  startAtTruth = FALSE,
+  useTrueMu = FALSE
 )
 
 VRtrue <- read.csv(system.file("testdata/FN.csv", package="gpds"))
@@ -194,11 +196,20 @@ curCovV <- calCov(marlikmap$par[1:2], r, signr, bandsize=config$bandsize,
 curCovR <- calCov(marlikmap$par[3:4], r, signr, bandsize=config$bandsize, 
                   kerneltype=config$kernel)
 cursigma <- marlikmap$par[5]
-curCovV$mu <- muV
-curCovR$mu <- muR
-
-curCovV$dotmu <- dotmuV
-curCovR$dotmu <- dotmuR
+if(config$useTrueMu){
+  curCovV$mu <- as.vector(fn.true[,1])  # pretend these are the means
+  curCovR$mu <- as.vector(fn.true[,2])
+  
+  dotmu <- fODE(pram.true$abc, fn.true[,1:2]) # pretend these are the means for derivatives
+  curCovV$dotmu <- as.vector(dotmu[,1])  
+  curCovR$dotmu <- as.vector(dotmu[,2])
+}else{
+  curCovV$mu <- muV
+  curCovR$mu <- muR
+  
+  curCovV$dotmu <- dotmuV
+  curCovR$dotmu <- dotmuR
+}
 
 
 
@@ -206,12 +217,18 @@ nall <- nrow(fn.sim)
 numparam <- nall*2+3
 n.iter <- config$n.iter
 stepLow.traj <- xth.formal <- matrix(NA, n.iter, numparam)
-xth.formal[1,] <- c(fn.true$Vtrue, fn.true$Rtrue, pram.true$abc)
+if(config$startAtTruth){
+  xth.formal[1,] <- c(fn.true$Vtrue, fn.true$Rtrue, pram.true$abc)  
+}else{
+  xth.formal[1,] <- c(muV, muR, startTheta)
+}
+
 lliklist <- accepts <- c()
 accepts[1] <- 1
 
 burnin <- as.integer(n.iter*config$burninRatio)
 stepLow <- rep(0.00035, 2*nall+3)*config$stepSizeFactor
+timenow <- Sys.time()
 for (t in 2:n.iter) {
   rstep <- runif(length(stepLow), stepLow, 2*stepLow)
   foo <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
