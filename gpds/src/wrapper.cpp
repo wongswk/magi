@@ -168,18 +168,19 @@ arma::cube parallel_temper_hmc_xtheta( const arma::mat & yobs,
   mcmcstate init_mcmcstate;
   init_mcmcstate.state = initial;
   mcmcstate initpost_mcmcstate = hmc_simple(tgt, init_mcmcstate);
-  cout << "test hmc_simple = " << initpost_mcmcstate.lpv << endl
-       << initpost_mcmcstate.acc << endl;
+  // cout << "test hmc_simple = " << initpost_mcmcstate.lpv << endl
+  //      << initpost_mcmcstate.acc << endl;
        // << initpost_mcmcstate.state << endl;
   
-  cout << "prepare to call parallel_termperingC" << endl;
+  // cout << "prepare to call parallel_termperingC" << endl;
   
   cube samples = parallel_termperingC(tgt,
                                       hmc_simple,
                                       temperature,
                                       initial,
                                       alpha0,
-                                      niter);
+                                      niter,
+                                      true);
   return samples;
   // return arma::zeros<cube>(1,1,1);
 }

@@ -7,23 +7,23 @@ using arma::cube;
 
 void print_info(const arma::umat & swapindicator, const arma::umat & mcmcindicator,
                 const vec & temperature, const int & niter) {
-  cout << "Parallel tempering finished:\n" 
+  Rcpp::Rcout << "Parallel tempering finished:\n" 
        << "\tOut of " << niter << " iterations, " 
        << arma::accu(swapindicator.col(0) > 0) << " swap is performed, \n"
        << "swap rate is " << double(arma::accu(swapindicator.col(0) > 0)) / niter
        << endl;
   
   for(unsigned int i=0; i<temperature.size(); i++){
-    cout << "Chain " << i+1 << " acceptance rate = " 
+    Rcpp::Rcout << "Chain " << i+1 << " acceptance rate = " 
          << arma::accu(mcmcindicator.row(i))/double(niter) << endl;
   }
   
-  cout << "\n========================\n";
+  Rcpp::Rcout << "\n========================\n";
   
   for(unsigned int i=1; i<temperature.size(); i++){
     int nswap = arma::accu(swapindicator.col(0)==i);
     int nacceptswap = arma::accu(swapindicator.col(0)==i && swapindicator.col(2)==1);
-    cout << "Swap between chain " << i << " and chain " << i+1 << ":\n" 
+    Rcpp::Rcout << "Swap between chain " << i << " and chain " << i+1 << ":\n" 
          << "\ttotal swap is " << nswap
          << ", acceptance number = " << nacceptswap
          << ", acceptance rate = " << double(nacceptswap) / double(nswap) << endl;
@@ -67,7 +67,7 @@ cube parallel_termperingC(std::function<lp (arma::vec)> & lpr,
   int nmilestone = niter/10;
   for(int it=0; it<niter; it++){
     if(verbose && it % nmilestone == 0){
-      cout << "\n === mile stone ===> processed " << it / nmilestone * 10 
+      Rcpp::Rcout << "\n === mile stone ===> processed " << it / nmilestone * 10 
            << "% of MCMC iterations\n";
     }
     // MCMC update
