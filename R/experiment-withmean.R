@@ -10,7 +10,7 @@ config <- list(
   loglikflag = "band",
   bandsize = 20,
   hmcSteps = 100,
-  n.iter = 1e5,
+  n.iter = 1e3,
   burninRatio = 0.1,
   stepSizeFactor = 1
 )
@@ -67,39 +67,21 @@ dotmu <- fODE(pram.true$abc, fn.true[,1:2]) # pretend these are the means for de
 curCovV$dotmu <- as.vector(dotmu[,1])  
 curCovR$dotmu <- as.vector(dotmu[,2])
 
-
 nall <- nrow(fn.sim)
-numparam <- nall*2+3
-n.iter <- config$n.iter
-stepLow.traj <- xth.formal <- matrix(NA, n.iter, numparam)
-xth.formal[1,] <- c(fn.true$Vtrue, fn.true$Rtrue, pram.true$abc)
-lliklist <- accepts <- c()
-accepts[1] <- 1
+burnin <- as.integer(config$n.iter*config$burninRatio)
 
-burnin <- as.integer(n.iter*config$burninRatio)
-stepLow <- rep(0.00035, 2*nall+3)*config$stepSizeFactor
-for (t in 2:n.iter) {
-  rstep <- runif(length(stepLow), stepLow, 2*stepLow)
-  foo <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
-                      xth.formal[t-1,], rstep, config$hmcSteps, F, loglikflag = config$loglikflag)
-  if(any(is.na(foo$final))) stop()
-  xth.formal[t,] <- foo$final
-  accepts[t] <- foo$acc
-  stepLow.traj[t,] <- stepLow
-  
-  if (t < burnin & t > 10) {
-    if (mean(tail(accepts[1:t],100)) > 0.9) {
-      stepLow <- stepLow * 1.005
-    } else if (mean(tail(accepts[1:t],100)) < 0.6) {
-      stepLow <- stepLow * .995
-    }
-    xthsd <- apply(tail(xth.formal[1:t,],n.iter*config$burninRatio*0.1), 2, sd)
-    if(mean(xthsd)>0) stepLow <- 0.01*xthsd/mean(xthsd)*mean(stepLow) + 0.99*stepLow
-  }
-  lliklist[t] <- foo$lpr
-  
-  if(t %% 100 ==0) show(c(t, mean(tail(accepts[1:t],100)), foo$final[(nall*2+1):(nall*2+3)]))
-}
+xInit <- c(fn.true$Vtrue, fn.true$Rtrue, pram.true$abc)
+stepLowInit <- rep(0.00035, 2*nall+3)*config$stepSizeFactor
+
+singleSampler <- function(xthetaValues, stepSize) 
+  xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
+               xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag)
+chainSamplesOut <- chainSampler(config, xInit, singleSampler, stepLowInit, verbose=TRUE)
+
+xth.formal <- chainSamplesOut[[1]]
+lliklist <- chainSamplesOut[[2]]
+
+n.iter <- config$n.iter
 
 gpode <- list(abc=xth.formal[-(1:burnin), (nall*2+1):(nall*2+3)],
               sigma=rep(marlikmap$par[5], n.iter-burnin),
