@@ -212,6 +212,8 @@ if(config$useTrueMu){
 }
 
 
+cursigma <- mean((data.matrix(fn.sim[,1:2])-cbind(curCovV$mu, curCovR$mu))[!is.nan(fn.sim[,1]),]^2)
+cursigma <- sqrt(cursigma)
 
 nall <- nrow(fn.sim)
 numparam <- nall*2+3
