@@ -144,7 +144,7 @@ arma::cube parallel_temper_hmc_xtheta( const arma::mat & yobs,
                                        int niter=1e4){
   gpcov covV = cov_r2cpp(covVr);
   gpcov covR = cov_r2cpp(covRr);
-  std::function<lp(vec)> tgt = std::bind(xthetallik, std::placeholders::_1, 
+  std::function<lp(vec)> tgt = std::bind(xthetallikBandApprox, std::placeholders::_1, 
                    covV, covR, sigma, yobs, fnmodelODE);
   
   vec lb = ones<vec>(initial.size()) * (-datum::inf);
