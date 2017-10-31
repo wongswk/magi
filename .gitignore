@@ -14,5 +14,4 @@ gpds/src/RcppExports.cpp
 gpds/R/RcppExports.R
 *.so
 gpds/man/*
-gpds/tests/testthat/testout.txt
-
+gpds/tests/testthat/testout*.txt
