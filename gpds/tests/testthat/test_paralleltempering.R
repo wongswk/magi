@@ -72,8 +72,8 @@ testthat::test_that("parallel_temper_hmc_xtheta runs without error", {
     npostplot = 5,
     loglikflag = "band",
     bandsize = 20,
-    hmcSteps = 100,
-    n.iter = 1e5,
+    hmcSteps = 20,
+    n.iter = 3e2,
     burninRatio = 0.1,
     stepSizeFactor = 1
   )
@@ -135,12 +135,12 @@ testthat::test_that("parallel_temper_hmc_xtheta runs without error", {
   accepts[1] <- 1
   
   burnin <- as.integer(n.iter*config$burninRatio)
-  stepLow <- rep(0.0003, 2*nall+3)*config$stepSizeFactor
+  stepLow <- rep(0.001, 2*nall+3)*config$stepSizeFactor
   
   t <- 2
   
   rstep <- stepLow
-  
+  set.seed(config$seed)
   foo <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
                       xth.formal[t-1,], rstep, config$hmcSteps, F, loglikflag = config$loglikflag)
   sink("testout_parallel_temper_hmc_xtheta.txt")
@@ -153,7 +153,26 @@ testthat::test_that("parallel_temper_hmc_xtheta runs without error", {
     0.5,
     xth.formal[t-1,],
     rstep,
-    10,
-    100)
+    config$hmcSteps,
+    config$n.iter)
   sink()
+  
+  xInit <- c(fn.true$Vtrue, fn.true$Rtrue, pram.true$abc)
+  stepLowInit <- rep(0.001, 2*nall+3)*config$stepSizeFactor
+  
+  singleSampler <- function(xthetaValues, stepSize) 
+    xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
+                 xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag, 
+                 temperature = 7)
+  
+  set.seed(config$seed)
+  chainSamplesOut <- chainSampler(config, xInit, singleSampler, stepLowInit, verbose=TRUE)
+  
+  plot(out[405,8,], type="l")
+  lines(chainSamplesOut[[1]][,404], col=2)
+  hist(out[405,8,], col=rgb(1,0,0,0.5), probability=T)
+  hist(chainSamplesOut[[1]][,404], col=rgb(0,1,0,0.5), add=T, probability=T)
+  x <- suppressWarnings(ks.test(out[405,8,], chainSamplesOut[[1]][,404]))
+  # testthat::expect_gt(x$p.value, 0.01)
 })
+

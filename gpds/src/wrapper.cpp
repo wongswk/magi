@@ -85,7 +85,8 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
                          const arma::vec & step,
                          const int nsteps = 1, 
                          const bool traj = false, 
-                         const std::string loglikflag = "usual"){
+                         const std::string loglikflag = "usual",
+                         const double & temperature = 1){
   gpcov covV = cov_r2cpp(covVr);
   gpcov covR = cov_r2cpp(covRr);
   std::function<lp(vec)> tgt;
@@ -111,8 +112,14 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
   
   // lp tmp = tgt(initial);
   // cout << tmp.value << "\n" << tmp.gradient << endl;
+  std::function<lp(vec)> tgtTempered = [&tgt, &temperature](vec xInput) -> lp {
+    lp ret = tgt(xInput);
+    ret.value /= temperature;
+    ret.gradient /= temperature;
+    return ret;
+  };
   
-  hmcstate post = basic_hmcC(tgt, initial, step, lb, {datum::inf}, nsteps, traj);
+  hmcstate post = basic_hmcC(tgtTempered, initial, step, lb, {datum::inf}, nsteps, traj);
   
   Rcpp::List ret = List::create(Named("final")=post.final,
                                 Named("final.p")=post.finalp,
