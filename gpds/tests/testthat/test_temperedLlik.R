@@ -122,16 +122,31 @@ llikOut$grad
 load("/Users/shihaoyang/Workspace/DynamicSys/results/2017-10-29/withmean start mu/first_phase_inference.rda")
 xInit1 <- c(muV, muR, startTheta)
 
+llikOut <- xthetallikBandApproxC(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma,
+                              xInit)
+llikOut$value
+llikOut <- xthetallikBandApproxC(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma,
+                              xInit1)
+llikOut$value
+
+#' optimization fixing x at posterior mean does not work
 llikOut <- xthetallik_withmuC(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma,
                               xInit)
 llikOut$value
 llikOut <- xthetallik_withmuC(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma,
                               xInit1)
 llikOut$value
+llikOut$grad
 
+fn <- function(par) -xthetallikBandApproxC(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma,
+                                           c(xInit1[1:402], par))$value
+gr <- function(par) -tail(xthetallikBandApproxC(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma,
+                                           c(xInit1[1:402], par))$grad,3)
+marlikmap <- optim(tail(xInit1, 3), fn, gr, method="L-BFGS-B", lower = 0.0001)
+tail(xInit1, 3)
 
 outsample <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
-                          xInit1, rep(0.0001, 2*nall+3), 
+                          xInit1, rep(1e-3, 2*nall+3), 
                           config$hmcSteps, T, loglikflag = "withmean", 
                           temperature = 1)
 plot.ts(outsample$traj.H)
