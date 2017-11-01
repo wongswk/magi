@@ -4,7 +4,8 @@
 #' also returns m_phi and other matrix which will be needed for ODE inference
 #' 
 #' @export
-calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerneltype="matern") {
+calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerneltype="matern",
+                   noiseInjection = 1e-7) {
   if(kerneltype=="matern"){
     ret <- calCovMatern(phi, rInput, signrInput, complexity)
   }else if(kerneltype=="rbf"){
@@ -22,7 +23,7 @@ calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerne
   }
   
   ret$dotmu <- ret$mu <- rep(0, nrow(ret$C))
-  ret$C <- ret$C + 1e-7 * diag( nrow(rInput))
+  ret$C <- ret$C + noiseInjection * diag( nrow(rInput))
   
   if(complexity==0){
     return(ret)
@@ -40,7 +41,7 @@ calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerne
     Cinv <- CeigenVec%*%(Ceigen1over*t(CeigenVec))
     mphi <-  Cprime %*% Cinv
     Kright <- sqrt(Ceigen1over) * t(CeigenVec) %*% t(Cprime)
-    Kphi <- Cdoubleprime - t(Kright)%*%Kright  + 1e-7 * diag( nrow(rInput))
+    Kphi <- Cdoubleprime - t(Kright)%*%Kright  + noiseInjection * diag( nrow(rInput))
     Kdecomp <- eigen(Kphi)
     Keigen1over <- 1/Kdecomp$values
     KeigenVec <- Kdecomp$vectors
