@@ -118,8 +118,20 @@ llikOut$value
 llikOut$grad
 
 #' some breaks early because delta is too large so the proposal must be rejected
+#' xthetallik_withmuC, with true mu, likelihood is smaller at biased theta than at true theta
+load("/Users/shihaoyang/Workspace/DynamicSys/results/2017-10-29/withmean start mu/first_phase_inference.rda")
+xInit1 <- c(muV, muR, startTheta)
+
+llikOut <- xthetallik_withmuC(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma,
+                              xInit)
+llikOut$value
+llikOut <- xthetallik_withmuC(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma,
+                              xInit1)
+llikOut$value
+
+
 outsample <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
-                          xInit, rep(0.00001, 2*nall+3), 
+                          xInit1, rep(0.0001, 2*nall+3), 
                           config$hmcSteps, T, loglikflag = "withmean", 
                           temperature = 1)
 plot.ts(outsample$traj.H)
@@ -135,5 +147,3 @@ llikOut$value
 
 plot.ts(outsample$traj.q[,402])
 
-load("/Users/shihaoyang/Workspace/DynamicSys/results/2017-10-29/withmean start mu/first_phase_inference.rda")
-xInit1 <- c(muV, muR, startTheta)
