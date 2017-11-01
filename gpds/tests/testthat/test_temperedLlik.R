@@ -122,6 +122,7 @@ llikOut$grad
 load("/Users/shihaoyang/Workspace/DynamicSys/results/2017-10-29/withmean start mu/first_phase_inference.rda")
 xInit1 <- c(muV, muR, startTheta)
 
+#' optimization for whole x does not work, apparently because log posterior is indeed higher at biased point
 llikOut <- xthetallikBandApproxC(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma,
                               xInit)
 llikOut$value
@@ -136,13 +137,16 @@ llikOut$value
 llikOut <- xthetallik_withmuC(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma,
                               xInit1)
 llikOut$value
+
 llikOut$grad
 
-fn <- function(par) -xthetallikBandApproxC(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma,
-                                           c(xInit1[1:402], par))$value
-gr <- function(par) -tail(xthetallikBandApproxC(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma,
-                                           c(xInit1[1:402], par))$grad,3)
-marlikmap <- optim(tail(xInit1, 3), fn, gr, method="L-BFGS-B", lower = 0.0001)
+fn <- function(par) -xthetallik_withmuC(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma,
+                                           par)$value
+gr <- function(par) -xthetallik_withmuC(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma,
+                                           par)$grad
+marlikmap <- optim(xInit1, fn, gr, method="L-BFGS-B")
+marlikmap$par - xInit1
+tail(marlikmap$par, 3)
 tail(xInit1, 3)
 
 outsample <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
