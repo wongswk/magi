@@ -6,8 +6,8 @@
 chainSampler <- function(config, xInit, singleSampler, stepLowInit, verbose=TRUE){
   numparam <- length(xInit)
   n.iter <- config$n.iter
-  stepLow <- stepLowInit
-  xth.formal <- matrix(NA, n.iter, numparam)
+  stepLow.traj <- xth.formal <- matrix(NA, n.iter, numparam)
+  stepLow.traj[1, ] <- stepLow <- stepLowInit
   accepts <- c(1)
   lliklist <- c()
   xth.formal[1, ] <- xInit
@@ -19,6 +19,7 @@ chainSampler <- function(config, xInit, singleSampler, stepLowInit, verbose=TRUE
     
     xth.formal[t,] <- foo$final
     accepts[t] <- foo$acc
+    stepLow.traj[t, ] <- stepLow
     
     if (t < burnin & t > 10) {
       if (mean(tail(accepts[1:t],100)) > 0.9) {
@@ -33,5 +34,5 @@ chainSampler <- function(config, xInit, singleSampler, stepLowInit, verbose=TRUE
     
     if(verbose && t %% 100 ==0) show(c(t, mean(tail(accepts[1:t],100)), tail(foo$final, 3)))
   }
-  list(xth.formal, lliklist)
+  list(xth=xth.formal, lliklist=lliklist, stepLow=stepLow.traj)
 }

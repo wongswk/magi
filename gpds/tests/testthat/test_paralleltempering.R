@@ -172,5 +172,10 @@ testthat::test_that("parallel_temper_hmc_xtheta runs without error", {
   hist(chainSamplesOut[[1]][,404], col=rgb(0,1,0,0.5), add=T, probability=T)
   x <- suppressWarnings(ks.test(out[405,8,], chainSamplesOut[[1]][,404]))
   # testthat::expect_gt(x$p.value, 0.01)
+  
+  x <- xthetallikBandApproxC(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma,
+                             chainSamplesOut[[1]][2,])
+  
+  testthat::expect_equal(chainSamplesOut$lliklist[2], x$value/7)
 })
 
