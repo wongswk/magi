@@ -114,10 +114,10 @@ plot.ts(outsample$traj.q[,404])
 
 llikOut <- xthetallik_withmuC(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma,
                               xInit)
+llikOut$value
 llikOut$grad
-load("/Users/shihaoyang/Workspace/DynamicSys/results/2017-10-29/withmean start mu/first_phase_inference.rda")
-xInit1 <- c(muV, muR, startTheta)
 
+#' some breaks early because delta is too large so the proposal must be rejected
 outsample <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
                           xInit, rep(0.00001, 2*nall+3), 
                           config$hmcSteps, T, loglikflag = "withmean", 
@@ -126,3 +126,14 @@ plot.ts(outsample$traj.H)
 outsample$acc
 outsample$delta
 plot.ts(outsample$traj.q[,404])
+stepId <- max(which(rowSums(outsample$traj.q) != 0))
+plot.ts(outsample$traj.q[stepId,])
+
+llikOut <- xthetallik_withmuC(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma,
+                              outsample$traj.q[stepId,])
+llikOut$value
+
+plot.ts(outsample$traj.q[,402])
+
+load("/Users/shihaoyang/Workspace/DynamicSys/results/2017-10-29/withmean start mu/first_phase_inference.rda")
+xInit1 <- c(muV, muR, startTheta)
