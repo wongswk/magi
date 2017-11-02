@@ -100,6 +100,9 @@ fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[
 fn.sim$time <- fn.sim.all$time
 gpds:::plotPostSamples(paste0(config$loglikflag,"-experiment-",config$kernel,".pdf"), 
                        fn.true, fn.sim, gpode, pram.true, config)
+
+colMeans(gpode$abc)
+
 save.image(paste0(config$loglikflag,"-experiment-",config$kernel,".rda"))
 
 plot(stepLow)
@@ -110,6 +113,7 @@ dotmuV <- rowMeans(gpode$fode[,1,])
 dotmuR <- rowMeans(gpode$fode[,2,])
 
 #### second run with mean ------------------------------------------------------
+load("~/Workspace/DynamicSys/results/2017-11-02/withmean start point mean curve/first_phase_inference.rda")
 library(gpds)
 
 config <- list(
@@ -121,12 +125,12 @@ config <- list(
   loglikflag = "withmean",
   bandsize = 20,
   hmcSteps = 200,
-  n.iter = 1e4,
+  n.iter = 3e4,
   burninRatio = 0.1,
-  stepSizeFactor = 0.005,
+  stepSizeFactor = 1,
   refitPhiSigma_withmu = FALSE,
   startAtTruth = FALSE,
-  useTrueMu = FALSE
+  useTrueMu = TRUE
 )
 
 VRtrue <- read.csv(system.file("testdata/FN.csv", package="gpds"))
@@ -251,6 +255,10 @@ fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtru
 fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
 
 fn.sim$time <- fn.sim.all$time
-gpds:::plotPostSamples(paste0(config$loglikflag,"-experiment-",config$kernel,".pdf"), 
-                       fn.true, fn.sim, gpode, pram.true, config)
-save.image(paste0(config$loglikflag,"-experiment-",config$kernel,".rda"))
+
+gpds:::plotPostSamples(paste0(
+  "~/Workspace/DynamicSys/results/2017-11-02/withmean start point mean curve/",
+  config$loglikflag,"-experiment-",config$kernel,"-",config$startAtTruth, "-", config$useTrueMu,".pdf"), 
+  fn.true, fn.sim, gpode, pram.true, config)
+save.image(paste0("~/Workspace/DynamicSys/results/2017-11-02/withmean start point mean curve/",
+                  config$loglikflag,"-experiment-",config$kernel,"-",config$startAtTruth, "-", config$useTrueMu,".rda"))
