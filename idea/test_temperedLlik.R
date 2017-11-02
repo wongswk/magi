@@ -8,12 +8,12 @@ config <- list(
   npostplot = 5,
   loglikflag = "withmean",
   bandsize = 20,
-  hmcSteps = 500,
-  n.iter = 10000,
+  hmcSteps = 200,
+  n.iter = 300,
   burninRatio = 0.1,
-  stepSizeFactor = 0.005,
+  stepSizeFactor = 1,
   refitPhiSigma_withmu = FALSE,
-  temperatureT = 2000
+  temperatureT = 1
 )
 
 VRtrue <- read.csv(system.file("testdata/FN.csv", package="gpds"))
@@ -150,7 +150,7 @@ tail(marlikmap$par, 3)
 tail(xInit1, 3)
 
 outsample <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
-                          xInit1, rep(1e-3, 2*nall+3), 
+                          xInit1, rep(0.00035, 2*nall+3), 
                           config$hmcSteps, T, loglikflag = "withmean", 
                           temperature = 1)
 plot.ts(outsample$traj.H)
@@ -159,10 +159,6 @@ outsample$delta
 plot.ts(outsample$traj.q[,404])
 stepId <- max(which(rowSums(outsample$traj.q) != 0))
 plot.ts(outsample$traj.q[stepId,])
-
-llikOut <- xthetallik_withmuC(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma,
-                              outsample$traj.q[stepId,])
-llikOut$value
-
 plot.ts(outsample$traj.q[,402])
 
+# annealing idea ---------------------------------------------------------------
