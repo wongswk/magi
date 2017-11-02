@@ -34,8 +34,6 @@ fn.sim[-seq(1,nrow(fn.sim), length=config$nobs),] <- NaN
 fn.sim.obs <- fn.sim[seq(1,nrow(fn.sim), length=config$nobs),]
 tvec.nobs <- fn.sim$time[seq(1,nrow(fn.sim), length=config$nobs)]
 
-
-
 foo <- outer(tvec.full, t(tvec.full),'-')[,1,]
 r <- abs(foo)
 r2 <- r^2
@@ -45,6 +43,15 @@ foo <- outer(tvec.nobs, t(tvec.nobs),'-')[,1,]
 r.nobs <- abs(foo)
 r2.nobs <- r.nobs^2
 signr.nobs <- -sign(foo)
+
+yobsGPsmooth <- data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2])
+
+fn <- function(par) -phisigllikC( par, yobsGPsmooth, 
+                                  r.nobs, config$kernel)$value
+gr <- function(par) -as.vector(phisigllikC( par, yobsGPsmooth, 
+                                            r.nobs, config$kernel)$grad)
+marlikmap <- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
+cursigma <- marlikmap$par[5]
 
 curCovV <- calCov(marlikmap$par[1:2], r, signr, bandsize=config$bandsize, 
                   kerneltype=config$kernel)
@@ -64,6 +71,19 @@ burnin <- as.integer(config$n.iter*config$burninRatio)
 
 xInit <- c(fn.true$Vtrue, fn.true$Rtrue, pram.true$abc)
 stepLowInit <- rep(0.00035, 2*nall+3)*config$stepSizeFactor
+
+outsample <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
+                          xInit, stepLowInit, 
+                          config$hmcSteps, T, loglikflag = "withmean", 
+                          temperature = 1)
+
+plot.ts(outsample$traj.H)
+outsample$acc
+outsample$delta
+plot.ts(outsample$traj.q[,404])
+stepId <- max(which(rowSums(outsample$traj.q) != 0))
+plot.ts(outsample$traj.q[stepId,])
+plot.ts(outsample$traj.q[,402])
 
 singleSampler <- function(xthetaValues, stepSize) 
   xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
