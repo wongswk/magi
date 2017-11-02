@@ -231,7 +231,76 @@ testthat::test_that("xthetallik_withmuC runs without error and compare to zero-m
   xthWN <- c(rep(0,length(xthInit)-3), 0,0,1)
   outWN <- gpds::xthetallikC(dataWN, curCovV, curCovR, cursigma, xthWN)
   
-  testthat::expect_equal(out, outWN, tolerance = 1e-5)
+  testthat::expect_equal(out$value, outWN$value, tolerance = 1e-5)
+  testthat::expect_equal(out$grad, outWN$grad, tolerance = 1e-5)
+})
+
+testthat::test_that("xthetallik_withmuC derivatives", {
+  curCovV_withmu <- curCovV
+  curCovR_withmu <- curCovR
+  curCovV_withmu$mu[] <- mean(dataInput[,"Vtrue"])
+  curCovR_withmu$mu[] <- mean(dataInput[,"Rtrue"])
+  
+  out <- xthetallik_withmuC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit)
+  
+  delta <- 1e-7
+  gradNum <- c()
+  for(it in 1:length(xthInit)){
+    xthInit1 <- xthInit
+    xthInit1[it] <- xthInit1[it] + delta
+    gradNum[it] <- 
+      (xthetallik_withmuC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit1)$value -
+         xthetallik_withmuC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit)$value)/delta
+  }
+  x <- (gradNum - out$grad)/abs(out$grad)
+  testthat::expect_true(all(abs(x) < 1e-3)) # gradient is self-consistent
+  
+  dotmu <- fODE(pram.true$abc, data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]))
+  
+  curCovV_withmu <- curCovV
+  curCovR_withmu <- curCovR
+  curCovV_withmu$mu <- fn.true[seq(1,nrow(fn.true), length=nobs),1]
+  curCovV_withmu$mu <- (curCovV_withmu$mu - mean(curCovV_withmu$mu))*0.5
+  curCovR_withmu$mu <- fn.true[seq(1,nrow(fn.true), length=nobs),2]
+  curCovR_withmu$mu <- curCovR_withmu$mu - mean(curCovR_withmu$mu)
+  curCovV_withmu$dotmu <- dotmu[,1]*0.5
+  curCovR_withmu$dotmu <- dotmu[,2]
+  
+  out <- xthetallik_withmuC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit)
+  
+  delta <- 1e-7
+  gradNum <- c()
+  for(it in 1:length(xthInit)){
+    xthInit1 <- xthInit
+    xthInit1[it] <- xthInit1[it] + delta
+    gradNum[it] <- 
+      (xthetallik_withmuC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit1)$value -
+         xthetallik_withmuC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit)$value)/delta
+  }
+  x <- (gradNum - out$grad)
+  testthat::expect_true(all(abs(x) < 1e-3)) # gradient is self-consistent
+  
+  curCovV_withmu <- curCovV
+  curCovR_withmu <- curCovR
+  curCovV_withmu$mu <- sin(fn.sim$time)
+  curCovV_withmu$mu <- cos(fn.sim$time)
+  curCovV_withmu$dotmu <- cos(fn.sim$time)
+  curCovR_withmu$dotmu <- -sin(fn.sim$time)
+  
+  out <- xthetallik_withmuC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit)
+  
+  delta <- 1e-7
+  gradNum <- c()
+  for(it in 1:length(xthInit)){
+    xthInit1 <- xthInit
+    xthInit1[it] <- xthInit1[it] + delta
+    gradNum[it] <- 
+      (xthetallik_withmuC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit1)$value -
+         xthetallik_withmuC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit)$value)/delta
+  }
+  x <- (gradNum - out$grad)/out$grad
+  testthat::expect_true(all(abs(x) < 1e-3)) # gradient is self-consistent
+  
 })
 
 bandsize <- 15

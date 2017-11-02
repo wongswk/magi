@@ -308,19 +308,87 @@ lp xthetallik_withmu( const vec & xtheta,
                       const mat & yobs, 
                       const std::function<mat (vec, mat)> & fODE) {
   int n = (xtheta.size() - 3)/2;
-  vec xthetaShifted = xtheta;
-  xthetaShifted.subvec(0, n - 1) -= CovV.mu;
-  xthetaShifted.subvec(n, 2*n - 1) -= CovR.mu;
+  const vec & theta = xtheta.subvec(xtheta.size() - 3, xtheta.size() - 1);
+  lp ret;
   
-  mat yobsShifted = yobs;
-  yobsShifted.col(0) -= CovV.mu;
-  yobsShifted.col(1) -= CovR.mu;
+  if (min(theta) < 0) {
+    ret.value = -1e+9;
+    ret.gradient = zeros<vec>(2*n);
+    ret.gradient.subvec(xtheta.size() - 3, xtheta.size() - 1).fill(1e9);
+    return ret;
+  }
   
-  std::function<mat (vec, mat)> fODEShifted = 
-    [&CovV, &CovR, &fODE](const vec & theta, const mat & x) -> mat{
-    return fODE(theta, x+join_horiz(CovV.mu, CovR.mu)) - join_horiz(CovV.dotmu, CovR.dotmu);
-  };
-  return xthetallikBandApprox(xthetaShifted, CovV, CovR, sigma, yobsShifted, fODEShifted);
+  const vec & Vsm = xtheta.subvec(0, n - 1);
+  const vec & Rsm = xtheta.subvec(n, 2*n - 1);
+  const vec & Vsmminusmu = Vsm - CovV.mu;
+  const vec & Rsmminusmu = Rsm - CovR.mu;
+  
+  
+  const mat & fderiv = fODE(theta, join_horiz(Vsm, Rsm));
+  mat res(2,3);
+  
+  // V 
+  vec frVminusdotmu = (fderiv.col(0) - CovV.dotmu - CovV.mphi * Vsmminusmu);
+  vec fitLevelErrorV = Vsm - yobs.col(0);
+  fitLevelErrorV(find_nonfinite(fitLevelErrorV)).fill(0.0);
+  res(0,0) = -0.5 * sum(square( fitLevelErrorV )) / pow(sigma,2);
+  res(0,1) = -0.5 * as_scalar( frVminusdotmu.t() * CovV.Kinv * frVminusdotmu);
+  res(0,2) = -0.5 * as_scalar( Vsmminusmu.t() * CovV.Cinv * Vsmminusmu);
+  
+  // R
+  vec frRminusdotmu = (fderiv.col(1) - CovR.dotmu - CovR.mphi * Rsmminusmu);
+  vec fitLevelErrorR = Rsm - yobs.col(1);
+  fitLevelErrorR(find_nonfinite(fitLevelErrorR)).fill(0.0);
+  
+  res(1,0) = -0.5 * sum(square( fitLevelErrorR )) / pow(sigma,2);
+  res(1,1) = -0.5 * as_scalar( frRminusdotmu.t() * CovR.Kinv * frRminusdotmu);
+  res(1,2) = -0.5 * as_scalar( Rsmminusmu.t() * CovR.Cinv * Rsmminusmu);
+  
+  //cout << "lglik component = \n" << res << endl;
+  
+  ret.value = accu(res);
+  
+  // cout << "lglik = " << ret.value << endl;
+  
+  // gradient 
+  // V contrib
+  mat Vtemp = -CovV.mphi;
+  Vtemp.diag() += theta(2)*(1 - square(Vsm));
+  
+  vec KinvFrVminusdotmu = (CovV.Kinv * frVminusdotmu);
+  vec abcTemp = zeros<vec>(3);
+  abcTemp(2) = sum(KinvFrVminusdotmu % fderiv.col(0)) / theta(2);
+  vec VC2 =  2.0 * join_vert(join_vert( Vtemp.t()*KinvFrVminusdotmu, // n^2 operation
+                                        theta(2) * KinvFrVminusdotmu ),
+                                        abcTemp );
+  
+  
+  // R contrib
+  mat Rtemp = -CovR.mphi;
+  Rtemp.diag() -= theta(1)/theta(2);
+  
+  vec KinvFrRminusdotmu = (CovR.Kinv * frRminusdotmu);
+  abcTemp.fill(0);
+  abcTemp(0) = sum(KinvFrRminusdotmu) / theta(2);
+  abcTemp(1) = -sum(Rsm % KinvFrRminusdotmu) / theta(2);
+  abcTemp(2) = -sum(fderiv.col(1) % KinvFrRminusdotmu) / theta(2);
+  vec RC2 = 2.0 * join_vert(join_vert( -KinvFrRminusdotmu / theta(2),
+                                       Rtemp.t() * KinvFrRminusdotmu), // n^2 operation
+                                       abcTemp );
+  // 
+  // vec C3 = join_vert(join_vert( 2.0 * CovV.CeigenVec * (VsmCTrans % CovV.Ceigen1over),  
+  //                               2.0 * CovR.CeigenVec * (RsmCTrans % CovR.Ceigen1over) ), 
+  //                               zeros<vec>(theta.size()));
+  vec C3 = join_vert(join_vert( 2.0 * CovV.Cinv * Vsmminusmu,  
+                                2.0 * CovR.Cinv * Rsmminusmu ), 
+                                zeros<vec>(theta.size()));  
+  vec C1 = join_vert(join_vert( 2.0 * fitLevelErrorV / pow(sigma,2) ,  
+                                2.0 * fitLevelErrorR / pow(sigma,2) ),
+                                zeros<vec>(theta.size()));
+  
+  ret.gradient = ((VC2 + RC2)  + C3 + C1 ) * -0.5;
+  
+  return ret;
 }
 
 //' log likelihood for latent states and ODE theta conditional on phi sigma
