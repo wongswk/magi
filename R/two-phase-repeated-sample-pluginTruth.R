@@ -111,7 +111,7 @@ for (t in 2:n.iter) {
   }
   lliklist[t] <- foo$lpr
   
-  if(t %% 100 ==0) show(c(t, mean(tail(accepts[1:t],100)), foo$final[(nall*2+1):(nall*2+3)]))
+  if(t %% 100 ==0) methods::show(c(t, mean(tail(accepts[1:t],100)), foo$final[(nall*2+1):(nall*2+3)]))
 }
 
 gpode <- list(abc=xth.formal[-(1:burnin), (nall*2+1):(nall*2+3)],
