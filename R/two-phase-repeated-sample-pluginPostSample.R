@@ -1,13 +1,13 @@
-#### first run without mean ----------------------------------------------------
+#### first run with flat mean --------------------------------------------------
 library(gpds)
 
 config <- list(
   nobs = 41,
   noise = 0.1,
-  kernel = "generalMatern",
+  kernel = "matern",
   seed = (as.integer(Sys.time())*104729+sample(1e6,1))%%1e9,
   npostplot = 5,
-  loglikflag = "band",
+  loglikflag = "withmean",
   bandsize = 20,
   hmcSteps = 200,
   n.iter = 1e4,
@@ -47,10 +47,10 @@ r2.nobs <- r.nobs^2
 signr.nobs <- -sign(foo)
 
 phisigllikC( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, config$noise), 
-             data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), r.nobs, config$kernel)
-fn <- function(par) -phisigllikC( par, data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), 
+             data.matrix(fn.sim.obs[,1:2]), r.nobs, config$kernel)
+fn <- function(par) -phisigllikC( par, data.matrix(fn.sim.obs[,1:2]), 
                                   r.nobs, config$kernel)$value
-gr <- function(par) -as.vector(phisigllikC( par, data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), 
+gr <- function(par) -as.vector(phisigllikC( par, data.matrix(fn.sim.obs[,1:2]), 
                                             r.nobs, config$kernel)$grad)
 marlikmap <- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
 cursigma <- marlikmap$par[5]
@@ -60,18 +60,22 @@ curCovV <- calCov(marlikmap$par[1:2], r, signr, bandsize=config$bandsize,
 curCovR <- calCov(marlikmap$par[3:4], r, signr, bandsize=config$bandsize, 
                   kerneltype=config$kernel)
 cursigma <- marlikmap$par[5]
-curCovV$mu <- as.vector(fn.true[,1])  # pretend these are the means
-curCovR$mu <- as.vector(fn.true[,2])
 
-dotmu <- fODE(pram.true$abc, fn.true[,1:2]) # pretend these are the means for derivatives
-curCovV$dotmu <- as.vector(dotmu[,1])  
-curCovR$dotmu <- as.vector(dotmu[,2])
+curCovV$mu[] <- mean(fn.sim.obs$Vtrue)
+curCovR$mu[] <- mean(fn.sim.obs$Rtrue)
 
 nall <- nrow(fn.sim)
 burnin <- as.integer(config$n.iter*config$burninRatio)
 
 xInit <- c(fn.true$Vtrue, fn.true$Rtrue, pram.true$abc)
 stepLowInit <- rep(0.00035, 2*nall+3)*config$stepSizeFactor
+
+vInit <- getMeanCurve(fn.sim.obs$time, fn.sim.obs$Vtrue, fn.true$time, 
+                      t(marlikmap$par[1:2]), cursigma, config$kernel)
+rInit <- getMeanCurve(fn.sim.obs$time, fn.sim.obs$Rtrue, fn.true$time, 
+                      t(marlikmap$par[3:4]), cursigma, config$kernel)
+# TODO: add back the pilot idea to solve initial moving to target area problem
+# xInit <- c(vInit, rInit, rep(1,3))
 
 singleSampler <- function(xthetaValues, stepSize) 
   xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
@@ -99,7 +103,7 @@ fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[
 
 fn.sim$time <- fn.sim.all$time
 gpds:::plotPostSamples(paste0(
-  "~/Workspace/DynamicSys/results/2017-11-02/withmean_repSample_pluginPostMean/",
+  "~/Workspace/DynamicSys/results/2017-11-03/withmean_repSample_pluginPostMean/",
   config$loglikflag,"-experiment-",config$kernel,"-",config$seed,".pdf"), 
   fn.true, fn.sim, gpode, pram.true, config)
 
@@ -180,7 +184,7 @@ fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[
 fn.sim$time <- fn.sim.all$time
 
 gpds:::plotPostSamples(paste0(
-  "~/Workspace/DynamicSys/results/2017-11-02/withmean_repSample_pluginPostMean/",
+  "~/Workspace/DynamicSys/results/2017-11-03/withmean_repSample_pluginPostMean/",
   config$loglikflag,"-experiment-",config$kernel,"-",config$seed,".pdf"), 
   fn.true, fn.sim, gpode, pram.true, config)
 
@@ -189,5 +193,5 @@ absCI <- rbind(absCI, mean=colMeans(gpode$abc))
 absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$abc &  pram.true$abc < absCI["97.5%",]))
 
 saveRDS(absCI, paste0(
-  "~/Workspace/DynamicSys/results/2017-11-02/withmean_repSample_pluginPostMean/",
+  "~/Workspace/DynamicSys/results/2017-11-03/withmean_repSample_pluginPostMean/",
   config$loglikflag,"-experiment-",config$kernel,"-",config$seed,".rds"))
