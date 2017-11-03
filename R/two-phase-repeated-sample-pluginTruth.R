@@ -4,7 +4,7 @@ library(gpds)
 config <- list(
   nobs = 41,
   noise = 0.1,
-  kernel = "generalMatern",
+  kernel = "matern",
   seed = (as.integer(Sys.time())*104729+sample(1e6,1))%%1e9,
   npostplot = 5,
   loglikflag = "withmean",
@@ -131,7 +131,7 @@ fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[
 fn.sim$time <- fn.sim.all$time
 
 gpds:::plotPostSamples(paste0(
-  "~/Workspace/DynamicSys/results/2017-11-02/withmean_repSample_pluginTruth/",
+  "~/Workspace/DynamicSys/results/2017-11-03/withmean_repSample_pluginTruth/",
   config$loglikflag,"-experiment-",config$kernel,"-",config$seed,".pdf"), 
   fn.true, fn.sim, gpode, pram.true, config)
 
@@ -140,5 +140,5 @@ absCI <- rbind(absCI, mean=colMeans(gpode$abc))
 absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$abc &  pram.true$abc < absCI["97.5%",]))
 
 saveRDS(absCI, paste0(
-  "~/Workspace/DynamicSys/results/2017-11-02/withmean_repSample_pluginTruth/",
+  "~/Workspace/DynamicSys/results/2017-11-03/withmean_repSample_pluginTruth/",
   config$loglikflag,"-experiment-",config$kernel,"-",config$seed,".rda"))
