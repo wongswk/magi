@@ -185,16 +185,4 @@ log_average_exp <- function (log.values, weights)
   m + log (sum (weights*exp(log.values-m)) / sum(weights))
 }
 
-insert_nan <- function(mydata, level){
-  if(level==0){
-    return(mydata)
-  }
-  newdata <- mydata
-  newdata <- newdata[order(newdata$time),]
-  dummydata <- newdata[-1,]
-  dummydata[] <- NaN
-  dummydata$time <- (newdata$time[-1] + newdata$time[-nrow(newdata)])/2
-  newdata <- rbind(newdata, dummydata)
-  newdata <- newdata[order(newdata$time),]
-  return(insert_nan(newdata, level-1))
-}
+

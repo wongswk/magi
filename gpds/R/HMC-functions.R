@@ -591,3 +591,22 @@ getMeanCurve <- function(x, y, x.new, phi.mat, sigma.mat, kerneltype="matern"){
     C[1:length(x.new),-(1:length(x.new))]%*%solve(C[-(1:length(x.new)),-(1:length(x.new))], y)
   }))
 }
+
+#' insert nan in simulated data for explicit control of discretization
+#' 
+#' @param mydata a data frame that contains at least one column `time`
+#' 
+#' @export
+insertNaN <- function(mydata, level){
+  if(level==0){
+    return(mydata)
+  }
+  newdata <- mydata
+  newdata <- newdata[order(newdata$time),]
+  dummydata <- newdata[-1,]
+  dummydata[] <- NaN
+  dummydata$time <- (newdata$time[-1] + newdata$time[-nrow(newdata)])/2
+  newdata <- rbind(newdata, dummydata)
+  newdata <- newdata[order(newdata$time),]
+  return(insertNaN(newdata, level-1))
+}
