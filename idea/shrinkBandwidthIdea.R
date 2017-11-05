@@ -1,19 +1,19 @@
 #### first run without mean ----------------------------------------------------
 library(gpds)
-repeat{
+
 config <- list(
   nobs = 41,
   noise = 0.1,
   kernel = "generalMatern",
-  seed = (as.integer(Sys.time())*132455+sample(1e6,1))%%1e7,
+  seed = 123, #(as.integer(Sys.time())*132455+sample(1e6,1))%%1e7,
   npostplot = 5,
-  loglikflag = "band",
+  loglikflag = "withmean",
   bandsize = 20,
   hmcSteps = 100,
   n.iter = 1e4,
   burninRatio = 0.1,
-  stepSizeFactor = 1,
-  bandwidthFactor = 0.2
+  stepSizeFactor = 0.1,
+  bandwidthFactor = 0.5
 )
 
 VRtrue <- read.csv(system.file("testdata/FN.csv", package="gpds"))
@@ -55,8 +55,22 @@ gr <- function(par) -as.vector(phisigllikC( par, data.matrix(fn.sim[!is.nan(fn.s
                                             r.nobs, config$kernel)$grad)
 marlikmap <- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
 
+factorList <- seq(0, 2, 0.01)[-1]
+fn.sim.obs <- data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2])
+fn.sim.obs.minusMu <- t(t(fn.sim.obs) - colMeans(fn.sim.obs))
+
+lliksurface <- sapply(factorList, function(f){
+  mypar <- marlikmap$par
+  mypar[2] <- mypar[2]*f
+  mypar[4] <- mypar[4]*f
+  phisigllikC(mypar , fn.sim.obs.minusMu, 
+               r.nobs, config$kernel)$value  
+})
+plot(factorList, lliksurface, type="l")
+abline(v=0.5, col=2)
+
 # marlikmap$par[c(1,3)] <- marlikmap$par[c(1,3)]*3^2
-marlikmap$par[c(2,4)] <- marlikmap$par[c(2,4)]*config$bandwidthFactor
+# marlikmap$par[c(2,4)] <- marlikmap$par[c(2,4)]*config$bandwidthFactor
 cursigma <- marlikmap$par[5]
 
 curCovV <- calCov(marlikmap$par[1:2], r, signr, bandsize=config$bandsize, 
@@ -64,12 +78,12 @@ curCovV <- calCov(marlikmap$par[1:2], r, signr, bandsize=config$bandsize,
 curCovR <- calCov(marlikmap$par[3:4], r, signr, bandsize=config$bandsize, 
                   kerneltype=config$kernel)
 cursigma <- marlikmap$par[5]
-curCovV$mu <- as.vector(fn.true[,1])  # pretend these are the means
-curCovR$mu <- as.vector(fn.true[,2])
+curCovV$mu <- rep(colMeans(fn.sim.obs)[1], length(curCovV$mu))
+curCovR$mu <- rep(colMeans(fn.sim.obs)[2], length(curCovR$mu))
 
 dotmu <- fODE(pram.true$abc, fn.true[,1:2]) # pretend these are the means for derivatives
-curCovV$dotmu <- as.vector(dotmu[,1])  
-curCovR$dotmu <- as.vector(dotmu[,2])
+curCovV$dotmu <- rep(0, length(curCovV$mu))
+curCovR$dotmu <- rep(0, length(curCovR$mu))
 
 nall <- nrow(fn.sim)
 burnin <- as.integer(config$n.iter*config$burninRatio)
@@ -103,13 +117,10 @@ fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtru
 fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
 
 fn.sim$time <- fn.sim.all$time
-gpds:::plotPostSamples(paste0("~/Workspace/DynamicSys/results/2017-11-01/repeatedSimulationCoverage/",
+gpds:::plotPostSamples(paste0("~/Desktop/",
                        config$loglikflag,"-experiment-",config$kernel,"-",config$seed,".pdf"), 
                        fn.true, fn.sim, gpode, pram.true, config)
 
 absCI <- apply(gpode$abc, 2, quantile, probs = c(0.025, 0.5, 0.975))
 absCI <- rbind(absCI, mean=colMeans(gpode$abc))
 absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$abc &  pram.true$abc < absCI["97.5%",]))
-saveRDS(absCI, paste0("~/Workspace/DynamicSys/results/2017-11-01/repeatedSimulationCoverage/",
-                      config$loglikflag,"-experiment-",config$kernel,"-",config$seed,".rds"))
-}
