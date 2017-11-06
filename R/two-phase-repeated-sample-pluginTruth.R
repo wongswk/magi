@@ -13,11 +13,11 @@ config <- list(
   n.iter = 1e4,
   burninRatio = 0.1,
   stepSizeFactor = 1,
-  refitPhiSigma_withmu = FALSE,
   startAtTruth = TRUE,
-  useTrueMu = TRUE
+  useTrueMu = TRUE,
+  filllevel = 3
 )
-outDir <- "~/Workspace/DynamicSys/results/2017-11-05/withmean_repSample_pluginTruth/"
+outDir <- "~/Workspace/DynamicSys/results/2017-11-06/withmean_repSample_pluginTruth/"
 system(paste("mkdir -p", outDir))
 
 VRtrue <- read.csv(system.file("testdata/FN.csv", package="gpds"))
@@ -27,19 +27,21 @@ pram.true <- list(
   vphi=c(1.9840824, 1.1185157),
   sigma=config$noise
 )
-fn.true <- VRtrue[seq(1,401,by=2),]   #### reference is 201 points
-fn.true$time <- seq(0,20,0.1)
+fn.true <- VRtrue   # number of reference points is now flexible
+fn.true$time <- seq(0,20,0.05)
+fn.true.Vfunc <- approxfun(fn.true$time, fn.true$Vtrue)
+fn.true.Rfunc <- approxfun(fn.true$time, fn.true$Rtrue)
+
 fn.sim <- fn.true
 
 set.seed(config$seed)
 fn.sim[,1:2] <- fn.sim[,1:2]+rnorm(length(unlist(fn.sim[,1:2])), sd=config$noise)
-tvec.full <- fn.sim$time
-fn.sim.all <- fn.sim
-fn.sim[-seq(1,nrow(fn.sim), length=config$nobs),] <- NaN
 fn.sim.obs <- fn.sim[seq(1,nrow(fn.sim), length=config$nobs),]
-tvec.nobs <- fn.sim$time[seq(1,nrow(fn.sim), length=config$nobs)]
 
+fn.sim <- insertNaN(fn.sim.obs,config$filllevel)
 
+tvec.full <- fn.sim$time
+tvec.nobs <- fn.sim.obs$time
 
 foo <- outer(tvec.full, t(tvec.full),'-')[,1,]
 r <- abs(foo)
@@ -51,14 +53,10 @@ r.nobs <- abs(foo)
 r2.nobs <- r.nobs^2
 signr.nobs <- -sign(foo)
 
-if(config$refitPhiSigma_withmu){
-  yobsGPsmooth <- (data.matrix(fn.sim[,1:2])-cbind(muV, muR))[!is.nan(fn.sim[,1]),]
-}else{
-  yobsGPsmooth <- data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2])
-}
-
-fn <- function(par) -phisigllikC( par, yobsGPsmooth, r.nobs, config$kernel)$value
-gr <- function(par) -as.vector(phisigllikC( par, yobsGPsmooth, r.nobs, config$kernel)$grad)
+fn <- function(par) -phisigllikC( par, data.matrix(fn.sim.obs[,1:2]), 
+                                  r.nobs, config$kernel)$value
+gr <- function(par) -as.vector(phisigllikC( par, data.matrix(fn.sim.obs[,1:2]), 
+                                            r.nobs, config$kernel)$grad)
 marlikmap <- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
 cursigma <- marlikmap$par[5]
 
@@ -68,10 +66,10 @@ curCovR <- calCov(marlikmap$par[3:4], r, signr, bandsize=config$bandsize,
                   kerneltype=config$kernel)
 cursigma <- marlikmap$par[5]
 
-curCovV$mu <- as.vector(fn.true[,1])  # pretend these are the means
-curCovR$mu <- as.vector(fn.true[,2])
+curCovV$mu <- fn.true.Vfunc(fn.sim$time)  # pretend these are the means
+curCovR$mu <- fn.true.Rfunc(fn.sim$time)
 
-dotmu <- fODE(pram.true$abc, fn.true[,1:2]) # pretend these are the means for derivatives
+dotmu <- fODE(pram.true$abc, cbind(curCovV$mu, curCovR$mu)) # pretend these are the means for derivatives
 curCovV$dotmu <- as.vector(dotmu[,1])  
 curCovR$dotmu <- as.vector(dotmu[,2])
 
@@ -83,7 +81,7 @@ nall <- nrow(fn.sim)
 numparam <- nall*2+3
 n.iter <- config$n.iter
 
-xInit <- c(fn.true$Vtrue, fn.true$Rtrue, pram.true$abc)  
+xInit <- c(curCovV$mu, curCovR$mu, pram.true$abc)  
 burnin <- as.integer(n.iter*config$burninRatio)
 stepLowInit <- rep(0.00035, 2*nall+3)*config$stepSizeFactor
 
@@ -108,8 +106,6 @@ gpode$fode <- sapply(1:length(gpode$lp__), function(t)
 fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtrue))
 fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
 
-fn.sim$time <- fn.sim.all$time
-
 gpds:::plotPostSamples(paste0(
   outDir,
   config$loglikflag,"-trueMu-",config$kernel,"-",config$seed,".pdf"), 
@@ -121,4 +117,4 @@ absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$abc &  pram.true$ab
 
 saveRDS(absCI, paste0(
   outDir,
-  config$loglikflag,"-trueMu-",config$kernel,"-",config$seed,".rda"))
+  config$loglikflag,"-trueMu-",config$kernel,"-",config$seed,".rds"))
