@@ -12,9 +12,10 @@ config <- list(
   hmcSteps = 200,
   n.iter = 1e4,
   burninRatio = 0.1,
-  stepSizeFactor = 1
+  stepSizeFactor = 1,
+  filllevel = 3
 )
-outDir <- "~/Workspace/DynamicSys/results/2017-11-05/withmean_repSample_pluginPostMean/"
+outDir <- "~/Workspace/DynamicSys/results/2017-11-06/withmean_repSample_pluginPostMean/"
 system(paste("mkdir -p", outDir))
 
 VRtrue <- read.csv(system.file("testdata/FN.csv", package="gpds"))
@@ -24,19 +25,21 @@ pram.true <- list(
   vphi=c(1.9840824, 1.1185157),
   sigma=config$noise
 )
-fn.true <- VRtrue[seq(1,401,by=2),]   #### reference is 201 points
-fn.true$time <- seq(0,20,0.1)
+fn.true <- VRtrue   # number of reference points is now flexible
+fn.true$time <- seq(0,20,0.05)
+fn.true.Vfunc <- approxfun(fn.true$time, fn.true$Vtrue)
+fn.true.Rfunc <- approxfun(fn.true$time, fn.true$Rtrue)
+
 fn.sim <- fn.true
 
 set.seed(config$seed)
 fn.sim[,1:2] <- fn.sim[,1:2]+rnorm(length(unlist(fn.sim[,1:2])), sd=config$noise)
-tvec.full <- fn.sim$time
-fn.sim.all <- fn.sim
-fn.sim[-seq(1,nrow(fn.sim), length=config$nobs),] <- NaN
 fn.sim.obs <- fn.sim[seq(1,nrow(fn.sim), length=config$nobs),]
-tvec.nobs <- fn.sim$time[seq(1,nrow(fn.sim), length=config$nobs)]
 
+fn.sim <- insertNaN(fn.sim.obs,config$filllevel)
 
+tvec.full <- fn.sim$time
+tvec.nobs <- fn.sim.obs$time
 
 foo <- outer(tvec.full, t(tvec.full),'-')[,1,]
 r <- abs(foo)
@@ -69,14 +72,15 @@ curCovR$mu[] <- mean(fn.sim.obs$Rtrue)
 nall <- nrow(fn.sim)
 burnin <- as.integer(config$n.iter*config$burninRatio)
 
-xInit <- c(fn.true$Vtrue, fn.true$Rtrue, pram.true$abc)
+xInit <- c(fn.true.Vfunc(fn.sim$time), fn.true.Rfunc(fn.sim$time), pram.true$abc)
 stepLowInit <- rep(0.00035, 2*nall+3)*config$stepSizeFactor
 
-vInit <- getMeanCurve(fn.sim.obs$time, fn.sim.obs$Vtrue, fn.true$time, 
+vInit <- getMeanCurve(fn.sim.obs$time, fn.sim.obs$Vtrue, fn.sim$time, 
                       t(marlikmap$par[1:2]), cursigma, config$kernel)
-rInit <- getMeanCurve(fn.sim.obs$time, fn.sim.obs$Rtrue, fn.true$time, 
+rInit <- getMeanCurve(fn.sim.obs$time, fn.sim.obs$Rtrue, fn.sim$time, 
                       t(marlikmap$par[3:4]), cursigma, config$kernel)
 # TODO: add back the pilot idea to solve initial moving to target area problem
+# or use tempered likelihood instead
 # xInit <- c(vInit, rInit, rep(1,3))
 
 singleSampler <- function(xthetaValues, stepSize) 
@@ -103,7 +107,6 @@ gpode$fode <- sapply(1:length(gpode$lp__), function(t)
 fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtrue))
 fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
 
-fn.sim$time <- fn.sim.all$time
 gpds:::plotPostSamples(paste0(
   outDir,
   config$loglikflag,"-phase1-",config$kernel,"-",config$seed,".pdf"), 
@@ -136,7 +139,6 @@ cursigma <- sqrt(cursigma)
 nall <- nrow(fn.sim)
 numparam <- nall*2+3
 n.iter <- config$n.iter
-stepLow.traj <- xth.formal <- matrix(NA, n.iter, numparam)
 
 xInit <- c(muV, muR, startTheta)
 
@@ -161,8 +163,6 @@ gpode$fode <- sapply(1:length(gpode$lp__), function(t)
 
 fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtrue))
 fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
-
-fn.sim$time <- fn.sim.all$time
 
 gpds:::plotPostSamples(paste0(
   outDir,
