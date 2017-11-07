@@ -47,4 +47,18 @@ struct gpcov {
   int bandsize;
 };
 
+class OdeSystem {
+public:
+  std::function<arma::mat (arma::vec, arma::mat)> fOde;
+  std::function<arma::cube (arma::vec, arma::mat)> fOdeDx;
+  std::function<arma::cube (arma::vec, arma::mat)> fOdeDtheta;
+  std::string name;
+  
+  OdeSystem(
+    const std::function<arma::mat (arma::vec, arma::mat)> & fOdeInput,
+    const std::function<arma::cube (arma::vec, arma::mat)> & fOdeDxInput,
+    const std::function<arma::cube (arma::vec, arma::mat)> & fOdeDthetaInput
+  ) : fOde(fOdeInput), fOdeDx(fOdeDxInput), fOdeDtheta(fOdeDthetaInput) {};
+};
+
 #endif

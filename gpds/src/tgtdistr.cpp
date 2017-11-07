@@ -306,17 +306,10 @@ lp xthetallik_withmu( const vec & xtheta,
                       const gpcov & CovR, 
                       const double & sigma, 
                       const mat & yobs, 
-                      const std::function<mat (vec, mat)> & fODE) {
+                      const OdeSystem & fOdeModel) {
   int n = (xtheta.size() - 3)/2;
   const vec & theta = xtheta.subvec(xtheta.size() - 3, xtheta.size() - 1);
   lp ret;
-  
-  if (min(theta) < 0) {
-    ret.value = -1e+9;
-    ret.gradient = zeros<vec>(2*n);
-    ret.gradient.subvec(xtheta.size() - 3, xtheta.size() - 1).fill(1e9);
-    return ret;
-  }
   
   const vec & Vsm = xtheta.subvec(0, n - 1);
   const vec & Rsm = xtheta.subvec(n, 2*n - 1);
@@ -324,7 +317,10 @@ lp xthetallik_withmu( const vec & xtheta,
   const vec & Rsmminusmu = Rsm - CovR.mu;
   
   
-  const mat & fderiv = fODE(theta, join_horiz(Vsm, Rsm));
+  const mat & fderiv = fOdeModel.fOde(theta, join_horiz(Vsm, Rsm));
+  const cube & fderivDx = fOdeModel.fOdeDx(theta, join_horiz(Vsm, Rsm));
+  const cube & fderivDtheta = fOdeModel.fOdeDtheta(theta, join_horiz(Vsm, Rsm));
+  
   mat res(2,3);
   
   // V 
@@ -353,26 +349,25 @@ lp xthetallik_withmu( const vec & xtheta,
   // gradient 
   // V contrib
   mat Vtemp = -CovV.mphi;
-  Vtemp.diag() += theta(2)*(1 - square(Vsm));
+  Vtemp.diag() += vec(fderivDx.tube(0,0));
   
   vec KinvFrVminusdotmu = (CovV.Kinv * frVminusdotmu);
-  vec abcTemp = zeros<vec>(3);
-  abcTemp(2) = sum(KinvFrVminusdotmu % fderiv.col(0)) / theta(2);
+  mat thetaTemp = fderivDtheta( span(0), span::all, span::all ); // consider shuffle dimension for fast computation
+  
+  vec abcTemp = thetaTemp*KinvFrVminusdotmu;
   vec VC2 =  2.0 * join_vert(join_vert( Vtemp.t()*KinvFrVminusdotmu, // n^2 operation
-                                        theta(2) * KinvFrVminusdotmu ),
+                                        vec(fderivDx.tube(0,1)) % KinvFrVminusdotmu ),
                                         abcTemp );
   
   
   // R contrib
   mat Rtemp = -CovR.mphi;
-  Rtemp.diag() -= theta(1)/theta(2);
+  Rtemp.diag() -= vec(fderivDx.tube(1,1));
   
   vec KinvFrRminusdotmu = (CovR.Kinv * frRminusdotmu);
-  abcTemp.fill(0);
-  abcTemp(0) = sum(KinvFrRminusdotmu) / theta(2);
-  abcTemp(1) = -sum(Rsm % KinvFrRminusdotmu) / theta(2);
-  abcTemp(2) = -sum(fderiv.col(1) % KinvFrRminusdotmu) / theta(2);
-  vec RC2 = 2.0 * join_vert(join_vert( -KinvFrRminusdotmu / theta(2),
+  thetaTemp = fderivDtheta( span(1), span::all, span::all );
+  abcTemp = thetaTemp*KinvFrRminusdotmu;
+  vec RC2 = 2.0 * join_vert(join_vert( vec(fderivDx.tube(1,0)) % KinvFrRminusdotmu,
                                        Rtemp.t() * KinvFrRminusdotmu), // n^2 operation
                                        abcTemp );
   // 
