@@ -18,7 +18,6 @@ LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 6.0.1
 Suggests: 
     testthat,
-    microbenchmark,
     mvtnorm,
     covr,
     knitr,

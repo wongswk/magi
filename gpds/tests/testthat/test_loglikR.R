@@ -409,16 +409,6 @@ testthat::test_that("examine low rank approximation", {
   }
   x <- (gradNum - outApprox$grad)/abs(outApprox$grad)
   testthat::expect_true(all(abs(x) < 1e-3))
-  
-  x <- microbenchmark::microbenchmark(
-    xthetallikC(dataInput, approxCovV, approxCovR, cursigma, xthInit),
-    xthetallikBandApproxC(dataInput, curCovVband, curCovRband, cursigma, xthInit),
-    xthetallikC(dataInput, curCovV, curCovR, cursigma, xthInit),
-    times=50
-  )
-  # print(x)
-  x <- tapply(x$time, x$expr, median)
-  testthat::expect_true(x[1] < x[3] & x[2] < x[3])
 })
 
 
