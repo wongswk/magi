@@ -5,6 +5,7 @@
 #include "classDefinition.h"
 #include "wrapper.h"
 #include "dynamicalSystemModels.h"
+#include "band.h"
 
 using namespace arma;
 // using namespace Rcpp;
@@ -179,6 +180,37 @@ Rcpp::List xthetallik_withmu2C(const arma::mat & yobs,
                             Rcpp::Named("grad")=ret.gradient);
 }
 
+
+lp xthetallikBandApproxHardCode( const vec & xtheta, 
+                                 const gpcov & CovV, 
+                                 const gpcov & CovR, 
+                                 const double & sigma, 
+                                 const mat & yobs,
+                                 const std::function<mat (vec, mat)> & fODE) {
+  int n = (xtheta.size() - 3)/2;
+  lp ret;
+  ret.gradient.set_size(xtheta.size());
+  
+  const double *xthetaPtr = xtheta.memptr();
+  const double *VmphiPtr = CovV.mphiBand.memptr();
+  const double *VKinvPtr = CovV.KinvBand.memptr();
+  const double *VCinvPtr = CovV.CinvBand.memptr();
+  const double *RmphiPtr = CovR.mphiBand.memptr(); 
+  const double *RKinvPtr = CovR.KinvBand.memptr(); 
+  const double *RCinvPtr = CovR.CinvBand.memptr();
+  const double *sigmaPtr = &sigma; 
+  const double *yobsPtr = yobs.memptr();
+  double *retPtr = &ret.value;
+  double *retgradPtr = ret.gradient.memptr();
+  
+  xthetallikBandC( xthetaPtr, VmphiPtr, VKinvPtr, VCinvPtr,
+                   RmphiPtr, RKinvPtr, RCinvPtr, &CovV.bandsize, &n,
+                   sigmaPtr, yobsPtr, retPtr, retgradPtr, fODE);
+  
+  return ret;
+}
+
+
 //' R wrapper for xthetallik
 //' @export
 // [[Rcpp::export]]
@@ -202,7 +234,7 @@ arma::vec speedbenchmarkXthetallik(const arma::mat & yobs,
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
-    lp ret2 = xthetallikBandApprox(initial, covV, covR, sigma, yobs, fnmodelODE);
+    lp ret2 = xthetallikBandApprox(initial, covV, covR, sigma, yobs, fnmodel);
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
@@ -219,6 +251,10 @@ arma::vec speedbenchmarkXthetallik(const arma::mat & yobs,
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
     lp ret6 = xthetallik_withmu2(initial, covV, covR, sigma, yobs, fnmodel);  
+  }
+  timestamps.push_back(chrono::high_resolution_clock::now());
+  for(int i=0; i < nrep; i++){
+    lp ret7 = xthetallikBandApproxHardCode(initial, covV, covR, sigma, yobs, fnmodelODE);
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   arma::vec returnValues(timestamps.size()-1);

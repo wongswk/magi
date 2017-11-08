@@ -33,4 +33,4 @@ lp xthetallikBandApprox( const arma::vec & xtheta,
                          const gpcov & CovR, 
                          const double & sigma, 
                          const arma::mat & yobs,
-                         const std::function<arma::mat (arma::vec, arma::mat)> & fODE);
+                         const OdeSystem & fOdeModel);

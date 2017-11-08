@@ -19,6 +19,8 @@ extern "C" {
                         const double *sigma, const double *yobs, double *ret, double *retgrad,
                         const std::function<arma::mat (arma::vec, arma::mat)> & fODE);
   // previous .C wrapper doesn't work with Rcpp auto-generated wrapper
+  void bmatvecmult(const double *a, const double *b, const int *bandsize, const int *matdim, double *result);
+  void bmatvecmultT(const double *a, const double *b, const int *bandsize, const int *matdim, double *result);
 }
 
 // g++ band.cpp -o band.o -lopenblas -llapack -lm -Wall -L/opt/OpenBLAS/lib -I/opt/OpenBLAS/include

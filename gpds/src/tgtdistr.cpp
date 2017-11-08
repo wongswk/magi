@@ -494,26 +494,96 @@ lp xthetallikBandApprox( const vec & xtheta,
                          const gpcov & CovR, 
                          const double & sigma, 
                          const mat & yobs,
-                         const std::function<mat (vec, mat)> & fODE) {
+                         const OdeSystem & fOdeModel) {
   int n = (xtheta.size() - 3)/2;
   lp ret;
-  ret.gradient.set_size(xtheta.size());
+  const vec & theta = xtheta.subvec(xtheta.size() - 3, xtheta.size() - 1);
   
-  const double *xthetaPtr = xtheta.memptr();
-  const double *VmphiPtr = CovV.mphiBand.memptr();
-  const double *VKinvPtr = CovV.KinvBand.memptr();
-  const double *VCinvPtr = CovV.CinvBand.memptr();
-  const double *RmphiPtr = CovR.mphiBand.memptr(); 
-  const double *RKinvPtr = CovR.KinvBand.memptr(); 
-  const double *RCinvPtr = CovR.CinvBand.memptr();
-  const double *sigmaPtr = &sigma; 
-  const double *yobsPtr = yobs.memptr();
-  double *retPtr = &ret.value;
-  double *retgradPtr = ret.gradient.memptr();
+  if (min(theta) < 0) {
+    ret.value = -1e+9;
+    ret.gradient = zeros<vec>(2*n);
+    ret.gradient.subvec(xtheta.size() - 3, xtheta.size() - 1).fill(1e9);
+    return ret;
+  }
   
-  xthetallikBandC( xthetaPtr, VmphiPtr, VKinvPtr, VCinvPtr,
-                   RmphiPtr, RKinvPtr, RCinvPtr, &CovV.bandsize, &n,
-                   sigmaPtr, yobsPtr, retPtr, retgradPtr, fODE);
-    
+  const vec & Vsm = xtheta.subvec(0, n - 1);
+  const vec & Rsm = xtheta.subvec(n, 2*n - 1);
+  
+  const mat & fderiv = fOdeModel.fOde(theta, join_horiz(Vsm, Rsm));
+  const cube & fderivDx = fOdeModel.fOdeDx(theta, join_horiz(Vsm, Rsm));
+  const cube & fderivDtheta = fOdeModel.fOdeDtheta(theta, join_horiz(Vsm, Rsm));
+  
+  mat res(2,3);
+  
+  // V 
+  vec frV(n);
+  bmatvecmult(CovV.mphiBand.memptr(), Vsm.memptr(), &(CovV.bandsize), &n, frV.memptr());
+  frV = fderiv.col(0) - frV;
+  
+  vec KinvFrV(n);
+  bmatvecmult(CovV.KinvBand.memptr(), frV.memptr(), &(CovV.bandsize), &n, KinvFrV.memptr());
+  
+  vec CinvVsm(n);
+  bmatvecmult(CovV.CinvBand.memptr(), Vsm.memptr(), &(CovV.bandsize), &n, CinvVsm.memptr());
+  
+  vec fitLevelErrorV = Vsm - yobs.col(0);
+  fitLevelErrorV(find_nonfinite(fitLevelErrorV)).fill(0.0);
+  res(0,0) = -0.5 * sum(square( fitLevelErrorV )) / pow(sigma,2);
+  res(0,1) = -0.5 * sum( frV % KinvFrV);
+  res(0,2) = -0.5 * sum( Vsm % CinvVsm);
+  
+  // R
+  vec frR(n);
+  bmatvecmult(CovR.mphiBand.memptr(), Rsm.memptr(), &(CovR.bandsize), &n, frR.memptr());
+  frR = fderiv.col(1) - frR;
+  
+  vec KinvFrR(n);
+  bmatvecmult(CovR.KinvBand.memptr(), frR.memptr(), &(CovR.bandsize), &n, KinvFrR.memptr());
+  
+  vec CinvRsm(n);
+  bmatvecmult(CovR.CinvBand.memptr(), Rsm.memptr(), &(CovR.bandsize), &n, CinvRsm.memptr());
+  
+  vec fitLevelErrorR = Rsm - yobs.col(1);
+  fitLevelErrorR(find_nonfinite(fitLevelErrorR)).fill(0.0);
+  
+  res(1,0) = -0.5 * sum(square( fitLevelErrorR )) / pow(sigma,2);
+  res(1,1) = -0.5 * sum( frR % KinvFrR);
+  res(1,2) = -0.5 * sum( Rsm % CinvRsm);
+  
+  ret.value = accu(res);
+  
+  // gradient 
+  // V contrib
+  mat Vtemp = -CovV.mphiBand;
+  Vtemp.row(Vtemp.n_rows/2) += fderivDx.slice(0).col(0);
+  
+  vec VC2part1(n);
+  bmatvecmultT(Vtemp.memptr(), KinvFrV.memptr(), &(CovV.bandsize), &n, VC2part1.memptr());
+  
+  vec VC2 =  2.0 * join_vert(join_vert( VC2part1, 
+                                        fderivDx.slice(0).col(1) % KinvFrV ),
+                                        fderivDtheta.slice(0).t() * KinvFrV );
+  
+  
+  // R contrib
+  mat Rtemp = -CovR.mphiBand;
+  Rtemp.row(Rtemp.n_rows/2) += fderivDx.slice(1).col(1);
+  
+  vec RC2part1(n);
+  bmatvecmultT(Rtemp.memptr(), KinvFrR.memptr(), &(CovR.bandsize), &n, RC2part1.memptr());
+  
+  vec RC2 = 2.0 * join_vert(join_vert( fderivDx.slice(1).col(0) % KinvFrR,
+                                       RC2part1 ),
+                                       fderivDtheta.slice(1).t() * KinvFrR );
+  
+  vec C3 = join_vert(join_vert( 2.0 * CinvVsm,  
+                                2.0 * CinvRsm ), 
+                                zeros<vec>(theta.size()));  
+  vec C1 = join_vert(join_vert( 2.0 * fitLevelErrorV / pow(sigma,2) ,  
+                                2.0 * fitLevelErrorR / pow(sigma,2) ),
+                                zeros<vec>(theta.size()));
+  
+  ret.gradient = ((VC2 + RC2)  + C3 + C1 ) * -0.5;
+  
   return ret;
 }

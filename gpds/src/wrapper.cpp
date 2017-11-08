@@ -102,7 +102,7 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
                     covV, covR, sigma, yobs, fnmodel);
   }else if(loglikflag == "band"){
     tgt = std::bind(xthetallikBandApprox, std::placeholders::_1, 
-                    covV, covR, sigma, yobs, fnmodelODE);
+                    covV, covR, sigma, yobs, fnmodel);
   }else{
     throw "loglikflag must be 'usual', 'withmean', 'rescaled', or 'band'";
   }
@@ -152,8 +152,10 @@ arma::cube parallel_temper_hmc_xtheta( const arma::mat & yobs,
                                        int niter=1e4){
   gpcov covV = cov_r2cpp(covVr);
   gpcov covR = cov_r2cpp(covRr);
+  OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta);
+  
   std::function<lp(vec)> tgt = std::bind(xthetallikBandApprox, std::placeholders::_1, 
-                   covV, covR, sigma, yobs, fnmodelODE);
+                   covV, covR, sigma, yobs, fnmodel);
   
   vec lb = ones<vec>(initial.size()) * (-datum::inf);
   lb.subvec(lb.size() - 3, lb.size() - 1).fill(0.0);
@@ -234,7 +236,8 @@ Rcpp::List xthetallikBandApproxC( arma::mat & yobs,
                                   arma::vec & initial){
   gpcov covV = cov_r2cpp(covVr);
   gpcov covR = cov_r2cpp(covRr);
-  lp ret = xthetallikBandApprox(initial, covV, covR, sigma, yobs, fnmodelODE);
+  OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta);
+  lp ret = xthetallikBandApprox(initial, covV, covR, sigma, yobs, fnmodel);
   return List::create(Named("value")=ret.value,
                       Named("grad")=ret.gradient);
 }
