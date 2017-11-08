@@ -23,7 +23,7 @@ cube fnmodelDx(const vec & theta, const mat & x) {
   resultDx.slice(0).col(1).fill( theta(2) );
   
   resultDx.slice(1).col(0).fill(-1.0 / theta(2));
-  resultDx.slice(1).col(0).fill( -1.0*theta(1)/theta(2) );
+  resultDx.slice(1).col(1).fill( -1.0*theta(1)/theta(2) );
   
   return resultDx;
 }

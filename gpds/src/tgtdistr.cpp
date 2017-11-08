@@ -361,7 +361,7 @@ lp xthetallik_withmu( const vec & xtheta,
   
   // R contrib
   mat Rtemp = -CovR.mphi;
-  Rtemp.diag() -= fderivDx.slice(1).col(1);
+  Rtemp.diag() += fderivDx.slice(1).col(1);
   
   vec KinvFrRminusdotmu = (CovR.Kinv * frRminusdotmu);
   vec RC2 = 2.0 * join_vert(join_vert( fderivDx.slice(1).col(0) % KinvFrRminusdotmu,
