@@ -58,9 +58,31 @@ testthat::test_that("loglik speed increase", {
                                           cursigma,
                                           c(data.matrix(fn.true[, 1:2]), 0.2, 0.2, 3),
                                           nrep = 1e3)
+  rownames(speedRatio) <- c("xthetallik_rescaled", "xthetallikBandApprox",
+                            "xthetallikHardCode", "xthetallik", 
+                            "xthetallik_withmu", "xthetallik_withmu2")
   testthat::expect_lt(speedRatio[2]/speedRatio[1], 0.1)
   testthat::expect_lt(speedRatio[3]/speedRatio[1], 0.5)
-  testthat::expect_lt(abs(speedRatio[3]/speedRatio[4]-1), 0.1)
-  testthat::expect_lt(abs(speedRatio[3]/speedRatio[5]-1), 0.1)
+  testthat::expect_lt(abs(speedRatio[3]/speedRatio[4]-1), 0.2)
+  testthat::expect_lt(abs(speedRatio[3]/speedRatio[5]-1), 0.2)
 })
 
+# lapseTime <- parallel::mclapply(1:100, function(dummy){
+#   speedRatio <- speedbenchmarkXthetallik( data.matrix(fn.sim[,1:2]),
+#                                           curCovV,
+#                                           curCovR,
+#                                           cursigma,
+#                                           c(data.matrix(fn.true[, 1:2]), 0.2, 0.2, 3),
+#                                           nrep = 1e3)
+#   rownames(speedRatio) <- c("xthetallik_rescaled", "xthetallikBandApprox",
+#                             "xthetallikHardCode", "xthetallik", 
+#                             "xthetallik_withmu", "xthetallik_withmu2")
+#   speedRatio
+# }, mc.cores=8)
+# 
+# lapseTime <- do.call(cbind, lapseTime)
+# 
+# rowMeans(lapseTime)/mean(lapseTime)
+# t.test(lapseTime["xthetallik_withmu",] - lapseTime["xthetallik_withmu2",])
+# t.test(lapseTime["xthetallik",] - lapseTime["xthetallik_withmu2",])
+# t.test(lapseTime["xthetallikHardCode",] - lapseTime["xthetallik_withmu2",])
