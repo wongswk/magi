@@ -1,5 +1,6 @@
 #include "tgtdistr.h"
 #include "band.h"
+#include "dynamicalSystemModels.h"
 #include <boost/math/special_functions/bessel.hpp>
 
 using namespace arma;
@@ -523,15 +524,4 @@ lp xthetallikBandApprox( const vec & xtheta,
                    sigmaPtr, yobsPtr, retPtr, retgradPtr, fODE);
     
   return ret;
-}
-
-
-mat fnmodelODE(const vec & theta, const mat & x) {
-  vec V = x.col(0);
-  vec R = x.col(1);
-  
-  vec Vdt = theta(2) * (V - pow(V,3) / 3.0 + R);
-  vec Rdt = -1.0/theta(2) * ( V - theta(0) + theta(1) * R);
-  
-  return join_horiz(Vdt, Rdt);
 }
