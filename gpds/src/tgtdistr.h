@@ -15,7 +15,7 @@ lp xthetallik( const arma::vec & xtheta,
                const gpcov & CovR,
                const double & sigma,
                const arma::mat & yobs,
-               const std::function<arma::mat (arma::vec, arma::mat)> & fODE);
+               const OdeSystem & fOdeModel);
 lp xthetallik_withmu( const arma::vec & xtheta, 
                       const gpcov & CovV, 
                       const gpcov & CovR, 
