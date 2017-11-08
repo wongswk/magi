@@ -105,7 +105,7 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
                     covV, covR, sigma, yobs, fnmodel);
   }else if(loglikflag == "withmeanBand"){
     tgt = std::bind(xthetallikWithmuBand, std::placeholders::_1, 
-                    covV, covR, sigma, yobs, fnmodel);
+                    covV, covR, sigma, yobs, fnmodel, true);
   }else{
     throw "loglikflag must be 'usual', 'withmean', 'rescaled', 'band', or 'withmeanBand'";
   }
@@ -268,11 +268,12 @@ Rcpp::List xthetallikWithmuBandC(const arma::mat & yobs,
                                  const Rcpp::List & covVr, 
                                  const Rcpp::List & covRr, 
                                  const double & sigma, 
-                                 const arma::vec & initial){
+                                 const arma::vec & initial,
+                                 const bool useBand = true){
   gpcov covV = cov_r2cpp(covVr);
   gpcov covR = cov_r2cpp(covRr);
   OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta);
-  lp ret = xthetallikWithmuBand(initial, covV, covR, sigma, yobs, fnmodel);
+  lp ret = xthetallikWithmuBand(initial, covV, covR, sigma, yobs, fnmodel, useBand);
   return Rcpp::List::create(Rcpp::Named("value")=ret.value,
                             Rcpp::Named("grad")=ret.gradient);
 }

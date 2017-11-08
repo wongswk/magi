@@ -595,7 +595,8 @@ lp xthetallikWithmuBand( const vec & xtheta,
                          const gpcov & CovR, 
                          const double & sigma, 
                          const mat & yobs, 
-                         const OdeSystem & fOdeModel) {
+                         const OdeSystem & fOdeModel,
+                         const bool useBand) {
   int n = (xtheta.size() - 3)/2;
   vec xthetaShifted = xtheta;
   xthetaShifted.subvec(0, n - 1) -= CovV.mu;
@@ -619,6 +620,12 @@ lp xthetallikWithmuBand( const vec & xtheta,
     return fOdeModel.fOdeDtheta(theta, x+join_horiz(CovV.mu, CovR.mu));
   };
   
-  return xthetallikBandApprox(xthetaShifted, CovV, CovR, sigma, yobsShifted, fOdeModelShifted);
+  lp ret;
+  if(useBand){
+    ret = xthetallikBandApprox(xthetaShifted, CovV, CovR, sigma, yobsShifted, fOdeModelShifted); 
+  }else{
+    ret = xthetallik(xthetaShifted, CovV, CovR, sigma, yobsShifted, fOdeModelShifted); 
+  }
+  return ret;
 }
 

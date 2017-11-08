@@ -129,58 +129,6 @@ lp xthetallikHardCode( const vec & xtheta,
   return ret;
 }
 
-// log likelihood for latent states and ODE theta conditional on phi sigma
-// 
-// use for testing that zero mean can be used with a shifted ODE
-lp xthetallik_withmu2( const vec & xtheta, 
-                       const gpcov & CovV, 
-                       const gpcov & CovR, 
-                       const double & sigma, 
-                       const mat & yobs, 
-                       const OdeSystem & fOdeModel) {
-  int n = (xtheta.size() - 3)/2;
-  vec xthetaShifted = xtheta;
-  xthetaShifted.subvec(0, n - 1) -= CovV.mu;
-  xthetaShifted.subvec(n, 2*n - 1) -= CovR.mu;
-  
-  mat yobsShifted = yobs;
-  yobsShifted.col(0) -= CovV.mu;
-  yobsShifted.col(1) -= CovR.mu;
-  
-  OdeSystem fOdeModelShifted;
-  
-  fOdeModelShifted.fOde = [&CovV, &CovR, &fOdeModel](const vec & theta, const mat & x) -> mat{
-      return fOdeModel.fOde(theta, x+join_horiz(CovV.mu, CovR.mu)) - join_horiz(CovV.dotmu, CovR.dotmu);
-  };
-  
-  fOdeModelShifted.fOdeDx = [&CovV, &CovR, &fOdeModel](const vec & theta, const mat & x) -> cube{ 
-    return fOdeModel.fOdeDx(theta, x+join_horiz(CovV.mu, CovR.mu));
-  };
-  
-  fOdeModelShifted.fOdeDtheta = [&CovV, &CovR, &fOdeModel](const vec & theta, const mat & x) -> cube{ 
-    return fOdeModel.fOdeDtheta(theta, x+join_horiz(CovV.mu, CovR.mu));
-  };
-  
-  return xthetallik(xthetaShifted, CovV, CovR, sigma, yobsShifted, fOdeModelShifted);
-}
-
-//' R wrapper for xthetallik
-//' @export
-// [[Rcpp::export]]
-Rcpp::List xthetallik_withmu2C(const arma::mat & yobs, 
-                              const Rcpp::List & covVr, 
-                              const Rcpp::List & covRr, 
-                              const double & sigma, 
-                              const arma::vec & initial){
-  gpcov covV = cov_r2cpp(covVr);
-  gpcov covR = cov_r2cpp(covRr);
-  OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta);
-  lp ret = xthetallik_withmu2(initial, covV, covR, sigma, yobs, fnmodel);
-  return Rcpp::List::create(Rcpp::Named("value")=ret.value,
-                            Rcpp::Named("grad")=ret.gradient);
-}
-
-
 lp xthetallikBandApproxHardCode( const vec & xtheta, 
                                  const gpcov & CovV, 
                                  const gpcov & CovR, 
@@ -251,7 +199,7 @@ arma::vec speedbenchmarkXthetallik(const arma::mat & yobs,
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
-    llikResults.push_back(xthetallik_withmu2(initial, covV, covR, sigma, yobs, fnmodel));
+    llikResults.push_back(xthetallikWithmuBand(initial, covV, covR, sigma, yobs, fnmodel, false));
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
@@ -259,7 +207,7 @@ arma::vec speedbenchmarkXthetallik(const arma::mat & yobs,
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
-    llikResults.push_back(xthetallikWithmuBand(initial, covV, covR, sigma, yobs, fnmodel));
+    llikResults.push_back(xthetallikWithmuBand(initial, covV, covR, sigma, yobs, fnmodel, true));
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   

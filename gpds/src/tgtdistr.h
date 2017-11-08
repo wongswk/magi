@@ -39,5 +39,5 @@ lp xthetallikWithmuBand( const arma::vec & xtheta,
                          const gpcov & CovR, 
                          const double & sigma, 
                          const arma::mat & yobs,
-                         const OdeSystem & fOdeModel);
-  
+                         const OdeSystem & fOdeModel,
+                         const bool useBand = true);
