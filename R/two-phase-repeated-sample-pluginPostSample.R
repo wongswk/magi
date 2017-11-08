@@ -7,15 +7,15 @@ config <- list(
   kernel = "generalMatern",
   seed = (as.integer(Sys.time())*104729+sample(1e6,1))%%1e9,
   npostplot = 5,
-  loglikflag = "withmean",
+  loglikflag = "withmeanBand",
   bandsize = 20,
-  hmcSteps = 200,
+  hmcSteps = 1000,
   n.iter = 1e4,
   burninRatio = 0.1,
-  stepSizeFactor = 1,
-  filllevel = 3
+  stepSizeFactor = 0.1,
+  filllevel = 4
 )
-outDir <- "~/Workspace/DynamicSys/results/2017-11-06/withmean_repSample_pluginPostMean/"
+outDir <- "~/Workspace/DynamicSys/results/2017-11-08/withmean_repSample_pluginPostMean/"
 system(paste("mkdir -p", outDir))
 
 VRtrue <- read.csv(system.file("testdata/FN.csv", package="gpds"))
