@@ -349,27 +349,23 @@ lp xthetallik_withmu( const vec & xtheta,
   // gradient 
   // V contrib
   mat Vtemp = -CovV.mphi;
-  Vtemp.diag() += vec(fderivDx.tube(0,0));
+  Vtemp.diag() += fderivDx.slice(0).col(0);
   
   vec KinvFrVminusdotmu = (CovV.Kinv * frVminusdotmu);
-  mat thetaTemp = fderivDtheta( span(0), span::all, span::all ); // consider shuffle dimension for fast computation
   
-  vec abcTemp = thetaTemp*KinvFrVminusdotmu;
-  vec VC2 =  2.0 * join_vert(join_vert( Vtemp.t()*KinvFrVminusdotmu, // n^2 operation
-                                        vec(fderivDx.tube(0,1)) % KinvFrVminusdotmu ),
-                                        abcTemp );
+  vec VC2 =  2.0 * join_vert(join_vert( Vtemp.t() * KinvFrVminusdotmu, // n^2 operation
+                                        fderivDx.slice(0).col(1) % KinvFrVminusdotmu ),
+                                        fderivDtheta.slice(0).t() * KinvFrVminusdotmu );
   
   
   // R contrib
   mat Rtemp = -CovR.mphi;
-  Rtemp.diag() -= vec(fderivDx.tube(1,1));
+  Rtemp.diag() -= fderivDx.slice(1).col(1);
   
   vec KinvFrRminusdotmu = (CovR.Kinv * frRminusdotmu);
-  thetaTemp = fderivDtheta( span(1), span::all, span::all );
-  abcTemp = thetaTemp*KinvFrRminusdotmu;
-  vec RC2 = 2.0 * join_vert(join_vert( vec(fderivDx.tube(1,0)) % KinvFrRminusdotmu,
+  vec RC2 = 2.0 * join_vert(join_vert( fderivDx.slice(1).col(0) % KinvFrRminusdotmu,
                                        Rtemp.t() * KinvFrRminusdotmu), // n^2 operation
-                                       abcTemp );
+                                       fderivDtheta.slice(1).t() * KinvFrRminusdotmu );
   // 
   // vec C3 = join_vert(join_vert( 2.0 * CovV.CeigenVec * (VsmCTrans % CovV.Ceigen1over),  
   //                               2.0 * CovR.CeigenVec * (RsmCTrans % CovR.Ceigen1over) ), 

@@ -49,8 +49,11 @@ struct gpcov {
 
 class OdeSystem {
 public:
+  // row is observations, col is each X variable
   std::function<arma::mat (arma::vec, arma::mat)> fOde;
+  // row is observations, col is each partial X denominator, slice is each X variable numerator
   std::function<arma::cube (arma::vec, arma::mat)> fOdeDx;
+  // row is observations, col is each partial theta denominator, slice is each X variable numerator
   std::function<arma::cube (arma::vec, arma::mat)> fOdeDtheta;
   std::string name;
   
