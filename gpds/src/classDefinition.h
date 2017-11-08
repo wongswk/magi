@@ -62,6 +62,7 @@ public:
     const std::function<arma::cube (arma::vec, arma::mat)> & fOdeDxInput,
     const std::function<arma::cube (arma::vec, arma::mat)> & fOdeDthetaInput
   ) : fOde(fOdeInput), fOdeDx(fOdeDxInput), fOdeDtheta(fOdeDthetaInput) {};
+  OdeSystem() {};
 };
 
 #endif

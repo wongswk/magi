@@ -211,6 +211,8 @@ testthat::test_that("xthetallik_rescaledC runs without error and compare to non-
 
 testthat::test_that("xthetallik_withmuC runs without error and compare to zero-mean", {
   out <- gpds::xthetallik_withmuC(dataInput, curCovV, curCovR, cursigma, xthInit)
+  out2 <- gpds::xthetallik_withmu2C(dataInput, curCovV, curCovR, cursigma, xthInit)
+  testthat::expect_equal(out, out2)
   
   testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-5, scale = outExpectedvalue)
   gradExpect <- 167.746373733369
@@ -226,6 +228,8 @@ testthat::test_that("xthetallik_withmuC runs without error and compare to zero-m
   curCovR_withmu$dotmu <- dotmu[,2]
   
   out <- gpds::xthetallik_withmuC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit)
+  out2 <- gpds::xthetallik_withmu2C(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit)
+  testthat::expect_equal(out, out2)
   
   dataWN <- dataInput - data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2])
   xthWN <- c(rep(0,length(xthInit)-3), 0,0,1)
@@ -242,6 +246,8 @@ testthat::test_that("xthetallik_withmuC derivatives", {
   curCovR_withmu$mu[] <- mean(dataInput[,"Rtrue"])
   
   out <- xthetallik_withmuC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit)
+  out2 <- gpds::xthetallik_withmu2C(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit)
+  testthat::expect_equal(out, out2)
   
   delta <- 1e-7
   gradNum <- c()
@@ -267,6 +273,8 @@ testthat::test_that("xthetallik_withmuC derivatives", {
   curCovR_withmu$dotmu <- dotmu[,2]
   
   out <- xthetallik_withmuC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit)
+  out2 <- gpds::xthetallik_withmu2C(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit)
+  testthat::expect_equal(out, out2)
   
   delta <- 1e-7
   gradNum <- c()
@@ -288,6 +296,8 @@ testthat::test_that("xthetallik_withmuC derivatives", {
   curCovR_withmu$dotmu <- -sin(fn.sim$time)
   
   out <- xthetallik_withmuC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit)
+  out2 <- xthetallik_withmu2C(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit)
+  testthat::expect_equal(out, out2)
   
   delta <- 1e-7
   gradNum <- c()
