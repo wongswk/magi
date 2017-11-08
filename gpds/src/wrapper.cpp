@@ -56,15 +56,9 @@ gpcov cov_r2cpp(const Rcpp::List & cov_r){
   // initiate member elements only when get function called
   // store pointer in consructor
   gpcov cov_v;
-  cov_v.C = as<mat>(cov_r["C"]);
   cov_v.Cinv = as<mat>(cov_r["Cinv"]);
   cov_v.mphi = as<mat>(cov_r["mphi"]);
-  cov_v.Kphi = as<mat>(cov_r["Kphi"]);
   cov_v.Kinv = as<mat>(cov_r["Kinv"]);
-  cov_v.Ceigen1over = as<vec>(cov_r["Ceigen1over"]);
-  cov_v.Keigen1over = as<vec>(cov_r["Keigen1over"]);
-  cov_v.CeigenVec = as<mat>(cov_r["CeigenVec"]);
-  cov_v.KeigenVec = as<mat>(cov_r["KeigenVec"]);
   cov_v.CinvBand = as<mat>(cov_r["CinvBand"]);
   cov_v.mphiBand = as<mat>(cov_r["mphiBand"]);
   cov_v.KinvBand = as<mat>(cov_r["KinvBand"]);

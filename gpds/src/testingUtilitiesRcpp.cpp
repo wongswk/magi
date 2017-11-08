@@ -8,6 +8,7 @@
 #include "band.h"
 
 using namespace arma;
+using Rcpp::as;
 // using namespace Rcpp;
 
 //' R wrapper for basic_hmcC for normal distribution
@@ -35,6 +36,27 @@ Rcpp::List hmcNormal(arma::vec initial, arma::vec step, arma::vec lb, arma::vec 
   }
   return ret;
 }
+
+gpcov cov_r2cpp_legacy(const Rcpp::List & cov_r){
+  gpcov cov_v;
+  cov_v.C = as<mat>(cov_r["C"]);
+  cov_v.Cinv = as<mat>(cov_r["Cinv"]);
+  cov_v.mphi = as<mat>(cov_r["mphi"]);
+  cov_v.Kphi = as<mat>(cov_r["Kphi"]);
+  cov_v.Kinv = as<mat>(cov_r["Kinv"]);
+  cov_v.Ceigen1over = as<vec>(cov_r["Ceigen1over"]);
+  cov_v.Keigen1over = as<vec>(cov_r["Keigen1over"]);
+  cov_v.CeigenVec = as<mat>(cov_r["CeigenVec"]);
+  cov_v.KeigenVec = as<mat>(cov_r["KeigenVec"]);
+  cov_v.CinvBand = as<mat>(cov_r["CinvBand"]);
+  cov_v.mphiBand = as<mat>(cov_r["mphiBand"]);
+  cov_v.KinvBand = as<mat>(cov_r["KinvBand"]);
+  cov_v.mu = as<vec>(cov_r["mu"]);
+  cov_v.dotmu = as<vec>(cov_r["dotmu"]);
+  cov_v.bandsize = as<int>(cov_r["bandsize"]);
+  return cov_v;
+}
+
 
 // old log likelihood for latent states and ODE theta conditional on phi sigma
 // 
@@ -168,8 +190,8 @@ arma::vec speedbenchmarkXthetallik(const arma::mat & yobs,
                                    const double & sigma, 
                                    const arma::vec & initial,
                                    const int & nrep = 10000){
-  gpcov covV = cov_r2cpp(covVr);
-  gpcov covR = cov_r2cpp(covRr);
+  gpcov covV = cov_r2cpp_legacy(covVr);
+  gpcov covR = cov_r2cpp_legacy(covRr);
   
   OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta);
   
