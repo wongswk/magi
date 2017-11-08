@@ -562,7 +562,7 @@ mat2band <- function(a, bandsize) {
     }
   }
   
-  as.double(A)
+  A
 }
 
 

@@ -555,7 +555,7 @@ lp xthetallikBandApprox( const vec & xtheta,
   // gradient 
   // V contrib
   mat Vtemp = -CovV.mphiBand;
-  Vtemp.row(Vtemp.n_rows/2) += fderivDx.slice(0).col(0);
+  Vtemp.row(Vtemp.n_rows/2) += fderivDx.slice(0).col(0).t();
   
   vec VC2part1(n);
   bmatvecmultT(Vtemp.memptr(), KinvFrV.memptr(), &(CovV.bandsize), &n, VC2part1.memptr());
@@ -567,7 +567,7 @@ lp xthetallikBandApprox( const vec & xtheta,
   
   // R contrib
   mat Rtemp = -CovR.mphiBand;
-  Rtemp.row(Rtemp.n_rows/2) += fderivDx.slice(1).col(1);
+  Rtemp.row(Rtemp.n_rows/2) += fderivDx.slice(1).col(1).t();
   
   vec RC2part1(n);
   bmatvecmultT(Rtemp.memptr(), KinvFrR.memptr(), &(CovR.bandsize), &n, RC2part1.memptr());
@@ -587,3 +587,38 @@ lp xthetallikBandApprox( const vec & xtheta,
   
   return ret;
 }
+
+// log likelihood for latent states and ODE theta conditional on phi sigma
+// with mean 
+lp xthetallikWithmuBand( const vec & xtheta, 
+                         const gpcov & CovV, 
+                         const gpcov & CovR, 
+                         const double & sigma, 
+                         const mat & yobs, 
+                         const OdeSystem & fOdeModel) {
+  int n = (xtheta.size() - 3)/2;
+  vec xthetaShifted = xtheta;
+  xthetaShifted.subvec(0, n - 1) -= CovV.mu;
+  xthetaShifted.subvec(n, 2*n - 1) -= CovR.mu;
+  
+  mat yobsShifted = yobs;
+  yobsShifted.col(0) -= CovV.mu;
+  yobsShifted.col(1) -= CovR.mu;
+  
+  OdeSystem fOdeModelShifted;
+  
+  fOdeModelShifted.fOde = [&CovV, &CovR, &fOdeModel](const vec & theta, const mat & x) -> mat{
+    return fOdeModel.fOde(theta, x+join_horiz(CovV.mu, CovR.mu)) - join_horiz(CovV.dotmu, CovR.dotmu);
+  };
+  
+  fOdeModelShifted.fOdeDx = [&CovV, &CovR, &fOdeModel](const vec & theta, const mat & x) -> cube{ 
+    return fOdeModel.fOdeDx(theta, x+join_horiz(CovV.mu, CovR.mu));
+  };
+  
+  fOdeModelShifted.fOdeDtheta = [&CovV, &CovR, &fOdeModel](const vec & theta, const mat & x) -> cube{ 
+    return fOdeModel.fOdeDtheta(theta, x+join_horiz(CovV.mu, CovR.mu));
+  };
+  
+  return xthetallikBandApprox(xthetaShifted, CovV, CovR, sigma, yobsShifted, fOdeModelShifted);
+}
+

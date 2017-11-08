@@ -226,37 +226,49 @@ arma::vec speedbenchmarkXthetallik(const arma::mat & yobs,
   OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta);
   
   std::vector<chrono::high_resolution_clock::time_point> timestamps;
+  std::vector<lp> llikResults;
   
   // capture run time here
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
-    lp ret1 = xthetallik_rescaled(initial, covV, covR, sigma, yobs, fnmodelODE);  
+    llikResults.push_back(xthetallik_rescaled(initial, covV, covR, sigma, yobs, fnmodelODE));  
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
-    lp ret2 = xthetallikBandApprox(initial, covV, covR, sigma, yobs, fnmodel);
+    llikResults.push_back(xthetallikBandApproxHardCode(initial, covV, covR, sigma, yobs, fnmodelODE));
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
-    lp ret3 = xthetallikHardCode(initial, covV, covR, sigma, yobs, fnmodelODE);  
+    llikResults.push_back(xthetallikHardCode(initial, covV, covR, sigma, yobs, fnmodelODE));  
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
-    lp ret4 = xthetallik(initial, covV, covR, sigma, yobs, fnmodel);  
+    llikResults.push_back(xthetallik(initial, covV, covR, sigma, yobs, fnmodel));
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
-    lp ret5 = xthetallik_withmu(initial, covV, covR, sigma, yobs, fnmodel);  
+    llikResults.push_back(xthetallik_withmu(initial, covV, covR, sigma, yobs, fnmodel));
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
-    lp ret6 = xthetallik_withmu2(initial, covV, covR, sigma, yobs, fnmodel);  
+    llikResults.push_back(xthetallik_withmu2(initial, covV, covR, sigma, yobs, fnmodel));
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
-    lp ret7 = xthetallikBandApproxHardCode(initial, covV, covR, sigma, yobs, fnmodelODE);
+    llikResults.push_back(xthetallikBandApprox(initial, covV, covR, sigma, yobs, fnmodel));
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
+  for(int i=0; i < nrep; i++){
+    llikResults.push_back(xthetallikWithmuBand(initial, covV, covR, sigma, yobs, fnmodel));
+  }
+  timestamps.push_back(chrono::high_resolution_clock::now());
+  
+  
+  if(abs(llikResults[6].value - llikResults[1].value) > 1e-10
+       || sum(abs(llikResults[6].gradient - llikResults[1].gradient)) > 1e-8){
+    throw "xthetallikBandApprox and xthetallikBandApproxHardCode not agree";
+  }
+  
   arma::vec returnValues(timestamps.size()-1);
   for(int i = 0; i < timestamps.size()-1; i++){
     returnValues(i) = chrono::duration_cast<chrono::nanoseconds>(timestamps[i+1]-timestamps[i]).count();

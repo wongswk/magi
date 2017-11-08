@@ -402,15 +402,15 @@ testthat::test_that("band matrix likelihood wrapped runs correctly", {
   datainput <- lapply(datainput, function(x) as.numeric(na.omit(as.numeric(x))))
   
   covVpart <- curCovVband
-  covVpart$mphiBand <- datainput[[2]]
-  covVpart$KinvBand <- datainput[[3]]
-  covVpart$CinvBand <- datainput[[4]]
+  covVpart$mphiBand <- matrix(datainput[[2]], nrow=2*datainput[[8]]+1)
+  covVpart$KinvBand <- matrix(datainput[[3]], nrow=2*datainput[[8]]+1)
+  covVpart$CinvBand <- matrix(datainput[[4]], nrow=2*datainput[[8]]+1)
   covVpart$bandsize <- datainput[[8]]
   
   covRpart <- curCovRband
-  covRpart$mphiBand <- datainput[[5]]
-  covRpart$KinvBand <- datainput[[6]]
-  covRpart$CinvBand <- datainput[[7]]
+  covRpart$mphiBand <- matrix(datainput[[5]], nrow=2*datainput[[8]]+1)
+  covRpart$KinvBand <- matrix(datainput[[6]], nrow=2*datainput[[8]]+1)
+  covRpart$CinvBand <- matrix(datainput[[7]], nrow=2*datainput[[8]]+1)
   covRpart$bandsize <- datainput[[8]]
   yobs <- matrix(datainput[[11]], ncol=2)
   yobs[yobs==-99999] <- NaN

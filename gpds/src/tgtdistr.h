@@ -34,3 +34,10 @@ lp xthetallikBandApprox( const arma::vec & xtheta,
                          const double & sigma, 
                          const arma::mat & yobs,
                          const OdeSystem & fOdeModel);
+lp xthetallikWithmuBand( const arma::vec & xtheta, 
+                         const gpcov & CovV, 
+                         const gpcov & CovR, 
+                         const double & sigma, 
+                         const arma::mat & yobs,
+                         const OdeSystem & fOdeModel);
+  

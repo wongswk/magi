@@ -65,9 +65,9 @@ gpcov cov_r2cpp(const Rcpp::List & cov_r){
   cov_v.Keigen1over = as<vec>(cov_r["Keigen1over"]);
   cov_v.CeigenVec = as<mat>(cov_r["CeigenVec"]);
   cov_v.KeigenVec = as<mat>(cov_r["KeigenVec"]);
-  cov_v.CinvBand = as<vec>(cov_r["CinvBand"]);
-  cov_v.mphiBand = as<vec>(cov_r["mphiBand"]);
-  cov_v.KinvBand = as<vec>(cov_r["KinvBand"]);
+  cov_v.CinvBand = as<mat>(cov_r["CinvBand"]);
+  cov_v.mphiBand = as<mat>(cov_r["mphiBand"]);
+  cov_v.KinvBand = as<mat>(cov_r["KinvBand"]);
   cov_v.mu = as<vec>(cov_r["mu"]);
   cov_v.dotmu = as<vec>(cov_r["dotmu"]);
   cov_v.bandsize = as<int>(cov_r["bandsize"]);
@@ -103,8 +103,11 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
   }else if(loglikflag == "band"){
     tgt = std::bind(xthetallikBandApprox, std::placeholders::_1, 
                     covV, covR, sigma, yobs, fnmodel);
+  }else if(loglikflag == "withmeanBand"){
+    tgt = std::bind(xthetallikWithmuBand, std::placeholders::_1, 
+                    covV, covR, sigma, yobs, fnmodel);
   }else{
-    throw "loglikflag must be 'usual', 'withmean', 'rescaled', or 'band'";
+    throw "loglikflag must be 'usual', 'withmean', 'rescaled', 'band', or 'withmeanBand'";
   }
   vec lb = ones<vec>(initial.size()) * (-datum::inf);
   lb.subvec(lb.size() - 3, lb.size() - 1).fill(0.0);
@@ -256,4 +259,20 @@ Rcpp::List xthetallik_withmuC(const arma::mat & yobs,
   lp ret = xthetallik_withmu(initial, covV, covR, sigma, yobs, fnmodel);
   return List::create(Named("value")=ret.value,
                       Named("grad")=ret.gradient);
+}
+
+//' R wrapper for xthetallik
+//' @export
+// [[Rcpp::export]]
+Rcpp::List xthetallikWithmuBandC(const arma::mat & yobs, 
+                                 const Rcpp::List & covVr, 
+                                 const Rcpp::List & covRr, 
+                                 const double & sigma, 
+                                 const arma::vec & initial){
+  gpcov covV = cov_r2cpp(covVr);
+  gpcov covR = cov_r2cpp(covRr);
+  OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta);
+  lp ret = xthetallikWithmuBand(initial, covV, covR, sigma, yobs, fnmodel);
+  return Rcpp::List::create(Rcpp::Named("value")=ret.value,
+                            Rcpp::Named("grad")=ret.gradient);
 }
