@@ -17,7 +17,7 @@ cube fnmodelDx(const vec & theta, const mat & x) {
   cube resultDx(x.n_rows, x.n_cols, x.n_cols);
   
   const vec & V = x.col(0);
-  const vec & R = x.col(1);
+  // const vec & R = x.col(1);
   
   resultDx.slice(0).col(0) = theta(2) * (1 - square(V));
   resultDx.slice(0).col(1).fill( theta(2) );

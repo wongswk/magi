@@ -4,6 +4,7 @@
 #include "hmc.h"
 #include "classDefinition.h"
 #include "wrapper.h"
+#include "dynamicalSystemModels.h"
 
 using namespace arma;
 // using namespace Rcpp;
