@@ -240,7 +240,7 @@ arma::vec speedbenchmarkXthetallik(const arma::mat & yobs,
   }
   
   arma::vec returnValues(timestamps.size()-1);
-  for(int i = 0; i < timestamps.size()-1; i++){
+  for(unsigned int i = 0; i < timestamps.size()-1; i++){
     returnValues(i) = chrono::duration_cast<chrono::nanoseconds>(timestamps[i+1]-timestamps[i]).count();
   }
   return returnValues;
