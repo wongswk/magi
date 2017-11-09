@@ -36,6 +36,8 @@ plot.function(Xfunc, 0, 20, col=2, add=TRUE)
 # simulate observations --------------------------------------------------
 nobs <- 21
 tI <- seq(0, 10, length=nobs)
+
+set.seed(123)
 y <- rnorm(length(tI))*0.1 + Xfunc(tI)
 
 points(tI, y)
@@ -83,24 +85,27 @@ gpcov <- calCov(phi, abs(signedDist), -sign(signedDist))
 sigmaMatPsudoInv <- matrix(0, ndis, ndis)
 diag(sigmaMatPsudoInv)[match(tI, tAll)] <- 1/cursigma^2
 
+AxInvPartConst <- gpcov$Cinv + sigmaMatPsudoInv + t(gpcov$mphi) %*% gpcov$Kinv %*% gpcov$mphi
+AxInvPartConstKinvMphiSum <- gpcov$Kinv %*% gpcov$mphi
+AxInvPartConstKinvMphiSum <- AxInvPartConstKinvMphiSum + t(AxInvPartConstKinvMphiSum)
+KinvRowSum <- rowSums(gpcov$Kinv)
+muxRawPartConst <- t(gpcov$mphi) %*% KinvRowSum
+
 logPosterior <- function(ab){
   a <- ab[1]
   b <- ab[2]
   
-  AxInv <- gpcov$Cinv + sigmaMatPsudoInv + 
-    t(b*diag(ndis) - gpcov$mphi) %*% gpcov$Kinv %*% (b*diag(ndis) - gpcov$mphi) 
+  AxInv <-  AxInvPartConst + b^2 * gpcov$Kinv - b * AxInvPartConstKinvMphiSum
   
-  Ax <- solve( AxInv )
-  
-  mux <- -a * t(b*diag(ndis) - gpcov$mphi) %*% gpcov$Kinv %*% rep(1, ndis)
-  mux[match(tI, tAll)] <- mux[match(tI, tAll)] + y/cursigma^2
-  mux <- Ax %*% mux
+  muxRaw <- a * muxRawPartConst - a * b * KinvRowSum
+  muxRaw[match(tI, tAll)] <- muxRaw[match(tI, tAll)] + y/cursigma^2
+  mux <- solve( AxInv, muxRaw)
   # lines(tAll, mux, col = 3)
   
-  llik <- -0.5 * as.numeric(determinant(Ax, logarithm = TRUE)$modulus)
-  llik <- llik + -0.5*(a^2*sum(gpcov$Kinv) - t(mux) %*% AxInv %*% mux)
-  return(llik)
+  llik <- 0.5 * as.numeric(determinant(AxInv, logarithm = TRUE)$modulus)
+  llik <- llik + -0.5*(a^2*sum(gpcov$Kinv) - sum(muxRaw*mux))
+  return(as.numeric(llik))
 }
 
 ab <- c(1, -0.2)
-logPosterior(ab)
+testthat::expect_equal(logPosterior(ab), 12723.6919701936, tolerance = 1e-6)
