@@ -112,30 +112,41 @@ logPosterior <- function(ab){
   return(as.numeric(llik))
 }
 
+logPosteriorGradient <- function(ab){
+  a <- ab[1]
+  b <- ab[2]
+  
+  AxInv <-  AxInvPartConst + b^2 * gpcov$Kinv - b * AxInvPartConstKinvMphiSum
+  Ax <- solve(AxInv)
+  
+  bIminusM <- b*diag(ndis) - gpcov$mphi
+  muTilde <- yContribution - a * t(bIminusM) %*% KinvRowSum
+  
+  g1 <- (sum(gpcov$Kinv %*% bIminusM %*% Ax %*%
+               t(b*diag(ndis) - gpcov$mphi) %*% gpcov$Kinv) - KinvSum) * a -
+    sum(t(yContribution) %*% Ax %*% t(bIminusM) %*% gpcov$Kinv)
+  
+  g2 <- 0.5*sum(Ax * (gpcov$Kinv%*%bIminusM + t(bIminusM)%*%gpcov$Kinv))
+  g2 <- g2 - a * t(muTilde) %*% Ax %*% KinvRowSum
+  g2 <- g2 - 0.5 * t(muTilde) %*% Ax %*% (gpcov$Kinv%*%bIminusM + t(bIminusM)%*%gpcov$Kinv) %*% Ax %*% muTilde
+  
+  return(c(g1, g2))
+}
+
 ab <- c(1, -0.2)
 testthat::expect_equal(logPosterior(ab), 12723.6919701936, tolerance = 1e-6)
 
-Rcpp::sourceCpp('idea/linearODE-cfun.cpp')
-llik <- logPosteriorC( ab,
-                       AxInvPartConst,
-                       gpcov$Kinv,
-                       AxInvPartConstKinvMphiSum,
-                       muxRawPartConst,
-                       KinvRowSum,
-                       yContribution,
-                       KinvSum) 
+map <- optim(ab, logPosterior, logPosteriorGradient, method = "BFGS",
+             hessian = TRUE, control = list(fnscale = -1))
+logPosteriorGradient(map$par)
 
-testthat::expect_equal(llik, 12723.6919701936, tolerance = 1e-6)
-microbenchmark::microbenchmark(logPosterior(ab), 
-                               llik <- logPosteriorC( ab,
-                                                      AxInvPartConst,
-                                                      gpcov$Kinv,
-                                                      AxInvPartConstKinvMphiSum,
-                                                      muxRawPartConst,
-                                                      KinvRowSum,
-                                                      yContribution,
-                                                      KinvSum) )
-
+ab <- rnorm(2)
+testthat::expect_equal(logPosteriorGradient(ab)[1],
+                       (logPosterior(ab + c(1e-6,0)) - logPosterior(ab))/1e-6,
+                       tolerance = 1e-3)
+testthat::expect_equal(logPosteriorGradient(ab)[2],
+                       (logPosterior(ab + c(0,1e-6)) - logPosterior(ab))/1e-6,
+                       tolerance = 1e-3)
 
 aCandidates <- seq(0.9,1.15, length=50)
 bCandidates <- seq(-0.25, -0.15, length=50)
