@@ -39,25 +39,38 @@ plot.function(Xfunc, 0, 20, col=2, add=TRUE)
 nobs <- 401
 tI <- seq(0, 10, length=nobs)
 
-set.seed(123)
+# set.seed(123)
 y <- rnorm(length(tI))*0.1 + Xfunc(tI)
 
 points(tI, y)
 
 # frequentist inference ------------------------------------------------------
 
-mse <- function(par){
-  mean((y - XfunAnalytic(tI, par))^2)
+# correct inference
+llik <- function(par){
+  sum(dnorm(y, XfunAnalytic(tI, par[1:3]), par[4], log = TRUE))
 }
+par.true.freq <- c(par.true, 0.1)
 
-frequentist <- optim(par.true, mse, method = "BFGS")
-sigmaEst <- sqrt(frequentist$value)
+frequentist <- optim(par.true.freq, llik, method = "L-BFGS-B", hessian = TRUE, 
+                     control = list(fnscale = -1), lower = c(-Inf, -Inf, -Inf, 0))
+
+parEst <- frequentist$par
+varMat <- solve(-frequentist$hessian)
+
+parEst
+sqrt(diag(varMat))
+
+(parEst - par.true.freq)/sqrt(diag(varMat))
+
+# assume sigma is fixed (plug-in) to be consistent with Bayesian
+sigmaEst <- parEst[4]
 
 llik <- function(par){
   sum(dnorm(y, XfunAnalytic(tI, par), sigmaEst, log = TRUE))
 }
 
-frequentist <- optim(frequentist$par, llik, method = "BFGS", hessian = TRUE, 
+frequentist <- optim(frequentist$par[1:3], llik, method = "BFGS", hessian = TRUE, 
                      control = list(fnscale = -1))
 
 parEst <- frequentist$par
@@ -67,6 +80,21 @@ parEst
 sqrt(diag(varMat))
 
 (parEst - par.true)/sqrt(diag(varMat))
+
+# profile likelihood to get rid of x0
+llik <- function(par){
+  par[3] <- (sum(y) + nobs * par[1]/par[2])/sum( exp(par[2] * tI)) - par[1]/par[2] 
+  sum(dnorm(y, XfunAnalytic(tI, par), sigmaEst, log = TRUE))
+}
+
+frequentist <- optim(frequentist$par[1:2], llik, method = "BFGS", hessian = TRUE, 
+                     control = list(fnscale = -1))
+
+parEst <- frequentist$par
+varMat <- solve(-frequentist$hessian)
+
+parEst
+sqrt(diag(varMat))
 
 # gaussian process approach -------------------------------------------------
 ndis <- 401
@@ -158,6 +186,20 @@ sqrt(diag(varMat))
 
 map$par
 sqrt(diag(mapVar))
+
+# compare log posterior with log profile likelihood
+testpoints <- MASS::mvrnorm(100, (parEst+map$par)/2, (varMat+mapVar)/2)
+colnames(testpoints) <- c("a", "b")
+tgtFreq <- apply(testpoints, 1, llik)
+tgtFreq <- tgtFreq - mean(tgtFreq)
+tgtBaye <- apply(testpoints, 1, logPosterior)
+tgtBaye <- tgtBaye - mean(tgtBaye)
+tgtDiff <- tgtFreq - tgtBaye
+summary(tgtDiff)
+summary(tgtFreq)
+summary(tgtBaye)
+
+lattice::levelplot(tgtDiff ~ a * b, data.frame(testpoints))
 
 # using full likelihood / posterior
 
