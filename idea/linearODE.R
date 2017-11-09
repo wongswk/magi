@@ -61,3 +61,46 @@ varMat <- solve(-frequentist$hessian)
 sqrt(diag(varMat))
 
 (parEst - par.true)/sqrt(diag(varMat))
+
+# gaussian process approach -------------------------------------------------
+ndis <- 201
+tdis <- seq(0, 10, length=ndis)
+tAll <- sort(union(tdis, tI))
+
+fn <- function(par) -phisigllikC( par, data.matrix(cbind(y,y)), 
+                                  as.matrix(dist(tI)), "matern")$value
+gr <- function(par) -as.vector(phisigllikC( par, data.matrix(cbind(y,y)), 
+                                            as.matrix(dist(tI)), "matern")$grad)
+marlikmap <- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
+
+phi <- marlikmap$par[1:2]
+cursigma <- marlikmap$par[5]
+
+signedDist <- outer(tAll, tAll, '-')
+
+gpcov <- calCov(phi, abs(signedDist), -sign(signedDist))
+
+sigmaMatPsudoInv <- matrix(0, ndis, ndis)
+diag(sigmaMatPsudoInv)[match(tI, tAll)] <- 1/cursigma^2
+
+logPosterior <- function(ab){
+  a <- ab[1]
+  b <- ab[2]
+  
+  AxInv <- gpcov$Cinv + sigmaMatPsudoInv + 
+    t(b*diag(ndis) - gpcov$mphi) %*% gpcov$Kinv %*% (b*diag(ndis) - gpcov$mphi) 
+  
+  Ax <- solve( AxInv )
+  
+  mux <- -a * t(b*diag(ndis) - gpcov$mphi) %*% gpcov$Kinv %*% rep(1, ndis)
+  mux[match(tI, tAll)] <- mux[match(tI, tAll)] + y/cursigma^2
+  mux <- Ax %*% mux
+  # lines(tAll, mux, col = 3)
+  
+  llik <- -0.5 * as.numeric(determinant(Ax, logarithm = TRUE)$modulus)
+  llik <- llik + -0.5*(a^2*sum(gpcov$Kinv) - t(mux) %*% AxInv %*% mux)
+  return(llik)
+}
+
+ab <- c(1, -0.2)
+logPosterior(ab)
