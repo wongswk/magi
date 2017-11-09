@@ -93,7 +93,10 @@ AxInvPartConst <- gpcov$Cinv + sigmaMatPsudoInv + t(gpcov$mphi) %*% gpcov$Kinv %
 AxInvPartConstKinvMphiSum <- gpcov$Kinv %*% gpcov$mphi
 AxInvPartConstKinvMphiSum <- AxInvPartConstKinvMphiSum + t(AxInvPartConstKinvMphiSum)
 KinvRowSum <- rowSums(gpcov$Kinv)
+KinvSum <- sum(KinvRowSum)
 muxRawPartConst <- t(gpcov$mphi) %*% KinvRowSum
+yContribution <- rep(0, ndis)
+yContribution[match(tI, tAll)] <- y/cursigma^2
 
 logPosterior <- function(ab){
   a <- ab[1]
@@ -101,13 +104,11 @@ logPosterior <- function(ab){
   
   AxInv <-  AxInvPartConst + b^2 * gpcov$Kinv - b * AxInvPartConstKinvMphiSum
   
-  muxRaw <- a * muxRawPartConst - a * b * KinvRowSum
-  muxRaw[match(tI, tAll)] <- muxRaw[match(tI, tAll)] + y/cursigma^2
+  muxRaw <- a * muxRawPartConst - a * b * KinvRowSum + yContribution
   mux <- solve( AxInv, muxRaw)
-  # lines(tAll, mux, col = 3)
   
   llik <- 0.5 * as.numeric(determinant(AxInv, logarithm = TRUE)$modulus)
-  llik <- llik + -0.5*(a^2*sum(gpcov$Kinv) - sum(muxRaw*mux))
+  llik <- llik + -0.5 * (a^2 * KinvSum - sum( muxRaw * mux))
   return(as.numeric(llik))
 }
 
