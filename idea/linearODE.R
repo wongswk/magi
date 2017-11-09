@@ -115,6 +115,28 @@ logPosterior <- function(ab){
 ab <- c(1, -0.2)
 testthat::expect_equal(logPosterior(ab), 12723.6919701936, tolerance = 1e-6)
 
+Rcpp::sourceCpp('idea/linearODE-cfun.cpp')
+llik <- logPosteriorC( ab,
+                       AxInvPartConst,
+                       gpcov$Kinv,
+                       AxInvPartConstKinvMphiSum,
+                       muxRawPartConst,
+                       KinvRowSum,
+                       yContribution,
+                       KinvSum) 
+
+testthat::expect_equal(llik, 12723.6919701936, tolerance = 1e-6)
+microbenchmark::microbenchmark(logPosterior(ab), 
+                               llik <- logPosteriorC( ab,
+                                                      AxInvPartConst,
+                                                      gpcov$Kinv,
+                                                      AxInvPartConstKinvMphiSum,
+                                                      muxRawPartConst,
+                                                      KinvRowSum,
+                                                      yContribution,
+                                                      KinvSum) )
+
+
 aCandidates <- seq(0.9,1.15, length=50)
 bCandidates <- seq(-0.25, -0.15, length=50)
 
