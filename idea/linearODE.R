@@ -1,4 +1,5 @@
 library(deSolve)
+library(mvtnorm)
 
 # set up linear ODE --------------------------------------------------------
 
@@ -19,13 +20,14 @@ plot(out[,"time"], out[, "X"], type="l")
 
 # analytical solution for ODE ---------------------------------------------
 
-
+# uniform parameterization: a, b, x0
 XfunAnalytic <- function(t, par){
+  par <- c(-par[1]/par[2], par[3]+par[1]/par[2], par[2])
   par[1] + par[2] * exp(par[3] * t)
 }
 
 par.true <- with(as.list(c(state, parameters)), {
-  c(-a/b, X+a/b, b)
+  c(a, b, X)
 })
 
 
@@ -60,6 +62,8 @@ frequentist <- optim(frequentist$par, llik, method = "BFGS", hessian = TRUE,
 
 parEst <- frequentist$par
 varMat <- solve(-frequentist$hessian)
+
+parEst
 sqrt(diag(varMat))
 
 (parEst - par.true)/sqrt(diag(varMat))
@@ -109,3 +113,28 @@ logPosterior <- function(ab){
 
 ab <- c(1, -0.2)
 testthat::expect_equal(logPosterior(ab), 12723.6919701936, tolerance = 1e-6)
+
+aCandidates <- seq(0.9,1.15, length=50)
+bCandidates <- seq(-0.25, -0.15, length=50)
+
+abGrid <- expand.grid(a=aCandidates, b=bCandidates)
+llikGrid <- apply(abGrid, 1, logPosterior)
+llikGrid <- llikGrid - max(llikGrid)
+abGrid[,"wgts"] <- exp(llikGrid)/sum(exp(llikGrid))
+
+histogram <- tapply(abGrid[,"wgts"], list(abGrid[,"a"], abGrid[,"b"]), identity)
+filled.contour(x=aCandidates, y=bCandidates, histogram)
+lattice::levelplot(wgts ~ a * b, data.frame(abGrid))
+
+# compare frequentist and Gaussian process ------------------------------------
+parEst
+sqrt(diag(varMat))
+
+abGrid[,"freqlik"] <- dmvnorm(abGrid[,c("a","b")], parEst[1:2], varMat[1:2,1:2])
+histogramFreq <- tapply(abGrid[,"freqlik"], list(abGrid[,"a"], abGrid[,"b"]), identity)
+
+contour(x=aCandidates, y=bCandidates, histogram)
+contour(x=aCandidates, y=bCandidates, histogramFreq, add = TRUE, col = "red") 
+
+
+
