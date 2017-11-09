@@ -36,7 +36,7 @@ plot.function(Xfunc, 0, 20, col=2, add=TRUE)
 
 
 # simulate observations --------------------------------------------------
-nobs <- 21
+nobs <- 401
 tI <- seq(0, 10, length=nobs)
 
 set.seed(123)
@@ -69,7 +69,7 @@ sqrt(diag(varMat))
 (parEst - par.true)/sqrt(diag(varMat))
 
 # gaussian process approach -------------------------------------------------
-ndis <- 201
+ndis <- 401
 tdis <- seq(0, 10, length=ndis)
 tAll <- sort(union(tdis, tI))
 
@@ -134,11 +134,13 @@ logPosteriorGradient <- function(ab){
 }
 
 ab <- c(1, -0.2)
-testthat::expect_equal(logPosterior(ab), 12723.6919701936, tolerance = 1e-6)
+# testthat::expect_equal(logPosterior(ab), 12723.6919701936, tolerance = 1e-6)
 
 map <- optim(ab, logPosterior, logPosteriorGradient, method = "BFGS",
              hessian = TRUE, control = list(fnscale = -1))
 logPosteriorGradient(map$par)
+mapVar <- solve(-map$hessian)
+sqrt(diag(mapVar))
 
 ab <- rnorm(2)
 testthat::expect_equal(logPosteriorGradient(ab)[1],
@@ -147,6 +149,17 @@ testthat::expect_equal(logPosteriorGradient(ab)[1],
 testthat::expect_equal(logPosteriorGradient(ab)[2],
                        (logPosterior(ab + c(0,1e-6)) - logPosterior(ab))/1e-6,
                        tolerance = 1e-3)
+
+# compare frequentist and Gaussian process ------------------------------------
+
+# using 2nd order approximation
+parEst
+sqrt(diag(varMat))
+
+map$par
+sqrt(diag(mapVar))
+
+# using full likelihood / posterior
 
 aCandidates <- seq(0.9,1.15, length=50)
 bCandidates <- seq(-0.25, -0.15, length=50)
@@ -160,15 +173,9 @@ histogram <- tapply(abGrid[,"wgts"], list(abGrid[,"a"], abGrid[,"b"]), identity)
 filled.contour(x=aCandidates, y=bCandidates, histogram)
 lattice::levelplot(wgts ~ a * b, data.frame(abGrid))
 
-# compare frequentist and Gaussian process ------------------------------------
-parEst
-sqrt(diag(varMat))
-
 abGrid[,"freqlik"] <- dmvnorm(abGrid[,c("a","b")], parEst[1:2], varMat[1:2,1:2])
 histogramFreq <- tapply(abGrid[,"freqlik"], list(abGrid[,"a"], abGrid[,"b"]), identity)
 
 contour(x=aCandidates, y=bCandidates, histogram)
 contour(x=aCandidates, y=bCandidates, histogramFreq, add = TRUE, col = "red") 
-
-
 
