@@ -22,6 +22,7 @@ matplot(eigenFun[,2,], type="l", lty=1, col=mycolor)
 matplot(eigenFun[,3,], type="l", lty=1, col=mycolor)
 
 # fourier series for super-imposed sin curves ----------------------------------
+rm(list=ls())
 acq.freq <- 100                    # data acquisition (sample) frequency (Hz)
 time     <- 6                      # measuring time interval (seconds)
 ts       <- seq(0,time-1/acq.freq,1/acq.freq) # vector of sampling time-points (s) 
@@ -132,8 +133,10 @@ plot.function(Kreconstruct2, from = -maxT, to = maxT, n=1e4, col=3, add=TRUE)
 # use discrete fft is not going to get back true fourier coefficients
 
 # fourier transform for matern kernel ------------------------------------------
-maternDf <- 2.01
+rm(list=ls())
+maternDf <- 2.5
 Kfunc <- function(r) calCovGeneralMatern(c(1,1), abs(r), NULL, complexity = 0, df=maternDf)$C
+
 
 fourierTransMatern <- function(t, omega) {
   Kfunc(t) * exp(-1i*omega*t)
@@ -158,3 +161,27 @@ fourierTransK <- function(omega) constParms[1]/(1+(omega/constParms[2])^2)^(mate
 fourierTransKanalytical <- fourierTransK(omegaCandidates)
 
 lines(omegaCandidates, fourierTransKanalytical, col=2)
+
+# fourier series for matern kernel ------------------------------------------
+maxT <- 5
+plot.function(Kfunc, from = -maxT, to = maxT, n=1e4)
+P <- maxT*2
+CnFunc <- function(n) fourierTransK(2*pi*n/P)/P
+Napprox <- 9
+
+fourierCoef <- list(
+  c0 = CnFunc(0),
+  cPos = CnFunc(1:Napprox),
+  cNeg = CnFunc(-(1:Napprox))
+)
+
+Kreconstruct <- function(ti) {
+  Re(fourierCoef$c0 + sum(fourierCoef$cPos * exp(1i * 2*pi * (1:length(fourierCoef$cPos)) * ti / P)) +
+       sum(fourierCoef$cNeg * exp(-1i * 2*pi * (1:length(fourierCoef$cNeg)) * ti / P)))
+}
+
+Kreconstruct <- Vectorize(Kreconstruct)
+
+plot.function(Kfunc, from = -maxT, to = maxT, n=1e4)
+plot.function(Kreconstruct, from = -maxT, to = maxT, n=1e4, col=2, add=TRUE)
+
