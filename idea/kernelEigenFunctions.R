@@ -131,22 +131,29 @@ plot.function(Kreconstruct, from = -maxT, to = maxT, n=1e4, col=2, add=TRUE)
 plot.function(Kreconstruct2, from = -maxT, to = maxT, n=1e4, col=3, add=TRUE)
 # use discrete fft is not going to get back true fourier coefficients
 
-# fourier series for matern kernel ------------------------------------------
+# fourier transform for matern kernel ------------------------------------------
 
 Kfunc <- function(r) calCovMatern(c(1,1), abs(r), NULL, complexity = 0)$C
-plot.function(Kfunc, from = 0, to = maxT, n=1e4)
 
-ndis <- 400
-tdis <- seq(0, maxT, length=ndis+1)[-(ndis+1)]
+fourierTransMatern <- function(t, omega) {
+  Kfunc(t) * exp(-1i*omega*t)
+}
 
-xvals <- Kfunc(tdis)
+omegaCandidates <- seq(-6, 6, 0.001)
 
-fourierCoefs <- fft(xvals)/ndis
+fourierTransKnumerical <- 
+  sapply(omegaCandidates, function(omg)
+    integrate( function(s) Re(fourierTransMatern(s, omg)), -10, 10 )$value)
 
-Kreconstruct <- function(ti) sum(fourierCoefs * exp(1i * (0:(ndis-1)) * 2*pi * ti / maxT))
-Kreconstruct <- Vectorize(Kreconstruct)
 
-points(tdis, xvals, col=3)
-plot.function(Kreconstruct, from = 0, to = maxT, n=1e4, col=2, add=TRUE)
+plot(omegaCandidates, fourierTransKnumerical, type="l")
 
-summary(Re(Kreconstruct(tdis)) - xvals)
+loss <- function(par) 
+  sum((par[1]/(1+(omegaCandidates/par[2])^2)^3 - fourierTransKnumerical)^2)
+parms <- optim(c(1,1), loss, method = "L-BFGS-B", lower = c(0,0))
+constParms <- parms$par 
+fourierTransK <- function(omega) constParms[1]/(1+(omega/constParms[2])^2)^3
+
+fourierTransKanalytical <- fourierTransK(omegaCandidates)
+
+lines(omegaCandidates, fourierTransKanalytical, col=2)
