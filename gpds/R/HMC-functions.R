@@ -90,22 +90,22 @@ calCovMatern <- function(phi, r, signr, complexity=3) {
 #' only calculate core part of C, Cprime, Cprimeprime, dCdphi etc.
 #' 
 #' @export
-calCovGeneralMatern <- function(phi, r, signr, complexity=3) {
-  df = 2.01
+calCovGeneralMatern <- function(phi, r, signr, complexity=3, df = 2.01) {
   r2 <- r^2
   
   x4bessel <- sqrt(2.0 * df) * r / phi[2];
   
   C <- phi[1] * 2^(1-df) * exp(-lgamma(df)) * x4bessel^df * besselK(x4bessel, df)
-  diag(C) <- phi[1]
+  C[r==0] <- phi[1]
+  if(complexity==0){
+    return(list(C = C))
+  }
   
   dCdphi2 <- C * (df / x4bessel - (besselK(x4bessel, df-1) + besselK(x4bessel, df+1))/(2*besselK(x4bessel, df)))
   dCdphi2 <- dCdphi2 * (-sqrt(2.0 * df) * r / phi[2]^2)
   dCdphi2[is.na(dCdphi2)] <- 0
   
-  if(complexity==0){
-    return(list(C = C))
-  }
+  
   Cprime  <- C * (df / x4bessel - (besselK(x4bessel, df-1) + besselK(x4bessel, df+1))/(2*besselK(x4bessel, df)))
   Cprime <- Cprime * sqrt(2.0 * df) * signr / phi[2]
   Cprime[is.na(Cprime)] <- 0
