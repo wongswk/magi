@@ -36,10 +36,10 @@ plot.function(Xfunc, 0, 20, col=2, add=TRUE)
 
 
 # simulate observations --------------------------------------------------
-nobs <- 401
+nobs <- 21
 tI <- seq(0, 10, length=nobs)
 
-# set.seed(123)
+set.seed(123)
 y <- rnorm(length(tI))*0.1 + Xfunc(tI)
 
 points(tI, y)
@@ -97,7 +97,7 @@ parEst
 sqrt(diag(varMat))
 
 # gaussian process approach -------------------------------------------------
-ndis <- 401
+ndis <- 201
 tdis <- seq(0, 10, length=ndis)
 tAll <- sort(union(tdis, tI))
 
@@ -162,7 +162,7 @@ logPosteriorGradient <- function(ab){
 }
 
 ab <- c(1, -0.2)
-# testthat::expect_equal(logPosterior(ab), 12723.6919701936, tolerance = 1e-6)
+testthat::expect_equal(logPosterior(ab), 12723.6919701936, tolerance = 1e-6)
 
 map <- optim(ab, logPosterior, logPosteriorGradient, method = "BFGS",
              hessian = TRUE, control = list(fnscale = -1))
