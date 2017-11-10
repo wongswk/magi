@@ -132,8 +132,8 @@ plot.function(Kreconstruct2, from = -maxT, to = maxT, n=1e4, col=3, add=TRUE)
 # use discrete fft is not going to get back true fourier coefficients
 
 # fourier transform for matern kernel ------------------------------------------
-
-Kfunc <- function(r) calCovMatern(c(1,1), abs(r), NULL, complexity = 0)$C
+maternDf <- 2.01
+Kfunc <- function(r) calCovGeneralMatern(c(1,1), abs(r), NULL, complexity = 0, df=maternDf)$C
 
 fourierTransMatern <- function(t, omega) {
   Kfunc(t) * exp(-1i*omega*t)
@@ -149,10 +149,11 @@ fourierTransKnumerical <-
 plot(omegaCandidates, fourierTransKnumerical, type="l")
 
 loss <- function(par) 
-  sum((par[1]/(1+(omegaCandidates/par[2])^2)^3 - fourierTransKnumerical)^2)
+  sum((par[1]/(1+(omegaCandidates/par[2])^2)^(maternDf+0.5) - fourierTransKnumerical)^2)
 parms <- optim(c(1,1), loss, method = "L-BFGS-B", lower = c(0,0))
 constParms <- parms$par 
-fourierTransK <- function(omega) constParms[1]/(1+(omega/constParms[2])^2)^3
+constParms
+fourierTransK <- function(omega) constParms[1]/(1+(omega/constParms[2])^2)^(maternDf+0.5)
 
 fourierTransKanalytical <- fourierTransK(omegaCandidates)
 
