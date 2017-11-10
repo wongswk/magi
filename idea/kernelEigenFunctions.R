@@ -166,22 +166,27 @@ lines(omegaCandidates, fourierTransKanalytical, col=2)
 maxT <- 5
 plot.function(Kfunc, from = -maxT, to = maxT, n=1e4)
 P <- maxT*2
-CnFunc <- function(n) fourierTransK(2*pi*n/P)/P
-Napprox <- 9
 
-fourierCoef <- list(
-  c0 = CnFunc(0),
-  cPos = CnFunc(1:Napprox),
-  cNeg = CnFunc(-(1:Napprox))
-)
+Napprox <- 9
+Cn <- fourierTransK(2*pi*(0:Napprox)/P)/P
 
 Kreconstruct <- function(ti) {
-  Re(fourierCoef$c0 + sum(fourierCoef$cPos * exp(1i * 2*pi * (1:length(fourierCoef$cPos)) * ti / P)) +
-       sum(fourierCoef$cNeg * exp(-1i * 2*pi * (1:length(fourierCoef$cNeg)) * ti / P)))
+  Cn[1] + 2*sum(Cn[-1]*cos(2*pi*(1:Napprox)*ti/P))
 }
-
 Kreconstruct <- Vectorize(Kreconstruct)
 
-plot.function(Kfunc, from = -maxT, to = maxT, n=1e4)
-plot.function(Kreconstruct, from = -maxT, to = maxT, n=1e4, col=2, add=TRUE)
+plot.function(Kreconstruct, from = -maxT, to = maxT, n=1e4)
+plot.function(Kfunc, from = -maxT, to = maxT, n=1e4, col=2, add=TRUE)
 
+plot.function(Kfunc, from = -maxT, to = maxT, n=1e4, col=2)
+mycolor <- rev(grDevices::gray.colors(9, end = 0.7))
+for(Napprox in 1:9){
+  Cn <- fourierTransK(2*pi*(0:Napprox)/P)/P
+  plot.function(Kreconstruct, from = -maxT, to = maxT, n=1e4, 
+                col=mycolor[Napprox], add=TRUE)
+}
+plot.function(Kfunc, from = -maxT, to = maxT, n=1e4, col=2, add=TRUE)
+
+maxT <- maxT*3
+plot.function(Kreconstruct, from = -maxT, to = maxT, n=1e4)
+plot.function(Kfunc, from = -maxT, to = maxT, n=1e4, col=2, add=TRUE)
