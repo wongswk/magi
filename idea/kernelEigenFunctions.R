@@ -16,7 +16,7 @@ eigenList <- lapply(10:length(tAll), function(ndis){
 matplot(t(sapply(eigenList, function(x) x[[1]])), type="l")
 eigenFun <- sapply(eigenList, function(x) x[[2]], simplify = "array")
 
-mycolor <- rev(gray.colors(dim(eigenFun)[3]))
+mycolor <- rev(gray.colors(NeigenApprox))
 matplot(eigenFun[,1,], type="l", lty=1, col=mycolor)
 matplot(eigenFun[,2,], type="l", lty=1, col=mycolor)
 matplot(eigenFun[,3,], type="l", lty=1, col=mycolor)
@@ -132,11 +132,68 @@ for(n in 0:Napprox){
     from = -maxT, to = maxT, n=1e4, col=3, add=T)
 }
 
-# eigen value/function from fourier series for matern kernel ------------------
-# readings from "Hilbert Space Methods for Reduced-Rank Gaussian Process Regression"
-L <- 1
-phi <- function(x, j){
-  sin(pi*j*(x+L)/(2*L))/sqrt(L)
+eigenFunctionsComplex <- function(ti, n){
+  exp(1i*2*pi*n*ti/P)
 }
-plot.function(function(x) phi(x, 1), from = -L, to = L, n=1e3)  
-plot.function(function(x) phi(x, 3), from = -L, to = L, n=1e3)  
+
+eigenFunctionsReal <- function(ti, n, ReIm){
+  sqrt(2) * do.call(ReIm, list(exp(1i*2*pi*n*ti/P)))
+}
+
+# eigen value/function from fourier series for matern kernel ------------------
+# need to artificially add periodicity for eigen function to be fourier series
+# when period is large enough, it will not affect actual inference result, only
+# to make theoretical study easier.
+
+periodify <- function(r){
+  rnew <- r %% P
+  rnew[rnew>P/2] <- rnew[rnew>P/2] - P
+  rnew
+}
+
+tAll <- seq(-maxT, maxT, length=201)
+NeigenApprox <- 40
+
+Kfunc <- function(r) calCovGeneralMatern(maternParm, abs(periodify(r)), NULL, 
+                                         complexity = 0, df=maternDf)$C
+plot.function(Kfunc, from = -maxT, to = maxT, n=1e4, col=1)
+
+plot.function(Kreconstruct, from = -maxTexpand, to = maxTexpand, n=1e4)
+plot.function(Kfunc, from = -maxTexpand, to = maxTexpand, n=1e4, col=2, add=TRUE)
+
+eigenList <- lapply(as.integer(seq(10, length(tAll), length=NeigenApprox)), function(ndis){
+  tDis <- seq(-maxT, maxT, length=ndis)
+  signedDist <- outer(tDis, tDis, '-')
+  gpcov <- list(C=Kfunc(abs(periodify(signedDist))))
+  decomp <- eigen(gpcov$C)
+  gpcov$Ceigen <- decomp$values
+  gpcov$CeigenVec <- decomp$vectors
+  # use Nystrom method 
+  outX <-  sqrt(ndis) * Kfunc(periodify(outer(tAll, tDis, '-'))) %*% 
+    gpcov$CeigenVec[,1:10] %*% diag(1/gpcov$Ceigen[1:10] * sign(gpcov$CeigenVec[2,1:10]))
+  list(head(gpcov$Ceigen / ndis, 10), outX)
+})
+
+matplot(t(sapply(eigenList, function(x) x[[1]])), type="l")
+
+eigenValuesNumerical <- sapply(eigenList, function(x) x[[1]])[,NeigenApprox]
+eigenValuesAnalytical <- fourierTransK(c(0,1,-1,2,-2,3,-3,4,-4)/P)/P
+plot(eigenValuesNumerical)
+points(eigenValuesAnalytical, col=2)
+
+eigenFunNumerical <- sapply(eigenList, function(x) x[[2]], simplify = "array")
+eigenFunAnalytical <- 
+
+mycolor <- rev(gray.colors(dim(eigenFunNumerical)[3]))
+matplot(tAll, eigenFunNumerical[,1,], type="l", lty=1, col=mycolor)
+lines(tAll, eigenFunctionsReal(tAll, 0, Re), col=2)
+matplot(tAll, eigenFunNumerical[,2,], type="l", lty=1, col=mycolor)
+lines(tAll, -eigenFunctionsReal(tAll, 1, Re), col=2)
+matplot(tAll, eigenFunNumerical[,3,], type="l", lty=1, col=mycolor)
+lines(tAll, -eigenFunctionsReal(tAll, 1, Im), col=2)
+matplot(tAll, eigenFunNumerical[,4,], type="l", lty=1, col=mycolor)
+lines(tAll, eigenFunctionsReal(tAll, 2, Re), col=2)
+matplot(tAll, eigenFunNumerical[,5,], type="l", lty=1, col=mycolor)
+lines(tAll, eigenFunctionsReal(tAll, 2, Im), col=2)
+
+sum(eigenFunNumerical[,5,NeigenApprox]^2)*P/200/10
