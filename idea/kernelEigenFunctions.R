@@ -4,7 +4,7 @@ tAll <- seq(0, maxT, length=41)
 eigenList <- lapply(10:length(tAll), function(ndis){
   tDis <- seq(0, maxT, length=ndis)
   signedDist <- outer(tDis, tDis, '-')
-  gpcov <- calCov(c(1,1), abs(signedDist), -sign(signedDist))
+  gpcov <- calCov(c(1,1), abs(signedDist), -sign(signedDist), kerneltype = "matern")
   outX <- apply(gpcov$CeigenVec[,1:10], 2, function(y) {
     y <- y * sqrt(ndis / maxT)
     outy <- approx(tDis, y, tAll)$y
@@ -140,7 +140,7 @@ Kfunc <- function(r) calCovGeneralMatern(maternParm, abs(r), NULL, complexity = 
 
 
 fourierTransMatern <- function(t, omega) {
-  Kfunc(t) * exp(-1i*omega*t)
+  Kfunc(t) * exp(-1i*2*pi*omega*t)
 }
 
 omegaCandidates <- seq(-6, 6, 0.01)
@@ -149,22 +149,19 @@ fourierTransKnumerical <-
   sapply(omegaCandidates, function(omg)
     integrate( function(s) Re(fourierTransMatern(s, omg)), -10, 10 )$value)
 
-
 plot(omegaCandidates, fourierTransKnumerical, type="l")
 
-loss <- function(par) 
-  sum((par/(2*maternDf/maternParm[2]^2+omegaCandidates^2)^(maternDf+0.5) - 
-         fourierTransKnumerical)^2)
-
-parms <- optim(c(1), loss, method = "L-BFGS-B", lower = c(0))
-constParms <- parms$par 
-constParms
+constParms <- maternParm[1]*(2*maternDf/maternParm[2]^2)^(maternDf+0.5)*2*pi*maternParm[2]/
+  (beta(0.5, maternDf)*sqrt(2*maternDf))
 fourierTransK <- function(omega) 
-  constParms/(2*maternDf/maternParm[2]^2+omega^2)^(maternDf+0.5)
+  constParms/(2*maternDf/maternParm[2]^2+4*pi^2*omega^2)^(maternDf+0.5)
 
 fourierTransKanalytical <- fourierTransK(omegaCandidates)
 
 lines(omegaCandidates, fourierTransKanalytical, col=2)
+
+testthat::expect_equal(integrate( Kfunc, -10, 10 )$value, fourierTransK(0), tol=1e-6)
+testthat::expect_equal(integrate( fourierTransK, -10, 10 )$value, Kfunc(0), tol=1e-6)
 
 # fourier series for matern kernel ------------------------------------------
 maxT <- 5
@@ -172,7 +169,7 @@ plot.function(Kfunc, from = -maxT, to = maxT, n=1e4)
 P <- maxT*2
 
 Napprox <- 9
-Cn <- fourierTransK(2*pi*(0:Napprox)/P)/P
+Cn <- fourierTransK((0:Napprox)/P)/P
 
 Kreconstruct <- function(ti) {
   Cn[1] + 2*sum(Cn[-1]*cos(2*pi*(1:Napprox)*ti/P))
@@ -185,12 +182,27 @@ plot.function(Kfunc, from = -maxT, to = maxT, n=1e4, col=2, add=TRUE)
 plot.function(Kfunc, from = -maxT, to = maxT, n=1e4, col=2)
 mycolor <- rev(grDevices::gray.colors(9, end = 0.7))
 for(Napprox in 1:9){
-  Cn <- fourierTransK(2*pi*(0:Napprox)/P)/P
+  Cn <- fourierTransK((0:Napprox)/P)/P
   plot.function(Kreconstruct, from = -maxT, to = maxT, n=1e4, 
                 col=mycolor[Napprox], add=TRUE)
 }
 plot.function(Kfunc, from = -maxT, to = maxT, n=1e4, col=2, add=TRUE)
 
-maxT <- maxT*3
-plot.function(Kreconstruct, from = -maxT, to = maxT, n=1e4)
-plot.function(Kfunc, from = -maxT, to = maxT, n=1e4, col=2, add=TRUE)
+maxTexpand <- maxT*3
+plot.function(Kreconstruct, from = -maxTexpand, to = maxTexpand, n=1e4)
+plot.function(Kfunc, from = -maxTexpand, to = maxTexpand, n=1e4, col=2, add=TRUE)
+
+plot.function(Kreconstruct, from = -maxT, to = maxT, n=1e4, ylim=c(-0.5,1))
+for(n in 0:Napprox){
+  plot.function(function(ti) (1+(n>0))*Cn[1+n]*cos(2*pi*n*ti/P),
+    from = -maxT, to = maxT, n=1e4, col=3, add=T)
+}
+
+# eigen value/function from fourier series for matern kernel ------------------
+# readings from "Hilbert Space Methods for Reduced-Rank Gaussian Process Regression"
+L <- 1
+phi <- function(x, j){
+  sin(pi*j*(x+L)/(2*L))/sqrt(L)
+}
+plot.function(function(x) phi(x, 1), from = -L, to = L, n=1e3)  
+plot.function(function(x) phi(x, 3), from = -L, to = L, n=1e3)  
