@@ -135,14 +135,15 @@ plot.function(Kreconstruct2, from = -maxT, to = maxT, n=1e4, col=3, add=TRUE)
 # fourier transform for matern kernel ------------------------------------------
 rm(list=ls())
 maternDf <- 2.5
-Kfunc <- function(r) calCovGeneralMatern(c(1,1), abs(r), NULL, complexity = 0, df=maternDf)$C
+maternParm <- c(1,1)
+Kfunc <- function(r) calCovGeneralMatern(maternParm, abs(r), NULL, complexity = 0, df=maternDf)$C
 
 
 fourierTransMatern <- function(t, omega) {
   Kfunc(t) * exp(-1i*omega*t)
 }
 
-omegaCandidates <- seq(-6, 6, 0.001)
+omegaCandidates <- seq(-6, 6, 0.01)
 
 fourierTransKnumerical <- 
   sapply(omegaCandidates, function(omg)
@@ -152,11 +153,14 @@ fourierTransKnumerical <-
 plot(omegaCandidates, fourierTransKnumerical, type="l")
 
 loss <- function(par) 
-  sum((par[1]/(1+(omegaCandidates/par[2])^2)^(maternDf+0.5) - fourierTransKnumerical)^2)
-parms <- optim(c(1,1), loss, method = "L-BFGS-B", lower = c(0,0))
+  sum((par/(2*maternDf/maternParm[2]^2+omegaCandidates^2)^(maternDf+0.5) - 
+         fourierTransKnumerical)^2)
+
+parms <- optim(c(1), loss, method = "L-BFGS-B", lower = c(0))
 constParms <- parms$par 
 constParms
-fourierTransK <- function(omega) constParms[1]/(1+(omega/constParms[2])^2)^(maternDf+0.5)
+fourierTransK <- function(omega) 
+  constParms/(2*maternDf/maternParm[2]^2+omega^2)^(maternDf+0.5)
 
 fourierTransKanalytical <- fourierTransK(omegaCandidates)
 
