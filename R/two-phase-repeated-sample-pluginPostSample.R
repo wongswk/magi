@@ -112,7 +112,14 @@ gpds:::plotPostSamples(paste0(
   config$loglikflag,"-phase1-",config$kernel,"-",config$seed,".pdf"), 
   fn.true, fn.sim, gpode, pram.true, config)
 
-colMeans(gpode$abc)
+absCI <- apply(gpode$abc, 2, quantile, probs = c(0.025, 0.5, 0.975))
+absCI <- rbind(absCI, mean=colMeans(gpode$abc))
+absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$abc &  pram.true$abc < absCI["97.5%",]))
+
+saveRDS(absCI, paste0(
+  outDir,
+  config$loglikflag,"-phase1-",config$kernel,"-",config$seed,".rds"))
+
 
 muV <- colMeans(gpode$vtrue)
 muR <- colMeans(gpode$rtrue)
