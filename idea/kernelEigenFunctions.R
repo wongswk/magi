@@ -174,6 +174,14 @@ eigenList <- lapply(as.integer(seq(10, length(tAll), length=NeigenApprox)), func
   list(head(gpcov$Ceigen / ndis, 10), outX)
 })
 
+gpcovC <- Kfunc(abs(periodify(outer(tAll[-1], tAll[-1], '-'))))
+all(abs(gpcovC[1:100,1:100]-gpcovC[-(1:100),-(1:100)]) < 1e-12)
+plot(eigen(gpcovC)$vectors[,1])
+plot(eigen(gpcovC)$vectors[,2]) # exists in close form using fourier transform
+plot(Re(eigenFunctionsComplex(tAll[-1], 1)))
+
+all(abs(gpcovC[1:100, -(1:100)] - t(gpcovC[-(1:100), 1:100])) < 1e-12)
+
 matplot(t(sapply(eigenList, function(x) x[[1]])), type="l")
 
 eigenValuesNumerical <- sapply(eigenList, function(x) x[[1]])[,NeigenApprox]
