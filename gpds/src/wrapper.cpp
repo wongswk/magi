@@ -51,19 +51,27 @@ Rcpp::List phisigSample( const arma::mat & yobs,
 
 gpcov cov_r2cpp(const Rcpp::List & cov_r){
   // TODO: gpcov shoule be a class and this should be a constructor
-  // should only copy when needed
-  // set member function and private member elements
-  // initiate member elements only when get function called
-  // store pointer in consructor
   gpcov cov_v;
-  cov_v.Cinv = as<mat>(cov_r["Cinv"]);
-  cov_v.mphi = as<mat>(cov_r["mphi"]);
-  cov_v.Kinv = as<mat>(cov_r["Kinv"]);
-  cov_v.CinvBand = as<mat>(cov_r["CinvBand"]);
-  cov_v.mphiBand = as<mat>(cov_r["mphiBand"]);
-  cov_v.KinvBand = as<mat>(cov_r["KinvBand"]);
-  cov_v.mu = as<vec>(cov_r["mu"]);
-  cov_v.dotmu = as<vec>(cov_r["dotmu"]);
+  
+  // std::cout << "extract list as constant reference\n";
+  const Rcpp::NumericMatrix & Cinv = as<const NumericMatrix>(cov_r["Cinv"]);
+  const Rcpp::NumericMatrix & mphi = as<const NumericMatrix>(cov_r["mphi"]);
+  const Rcpp::NumericMatrix & Kinv = as<const NumericMatrix>(cov_r["Kinv"]);
+  const Rcpp::NumericMatrix & CinvBand = as<const NumericMatrix>(cov_r["CinvBand"]);
+  const Rcpp::NumericMatrix & mphiBand = as<const NumericMatrix>(cov_r["mphiBand"]);
+  const Rcpp::NumericMatrix & KinvBand = as<const NumericMatrix>(cov_r["KinvBand"]);
+  const Rcpp::NumericVector & mu = as<const NumericVector>(cov_r["mu"]);
+  const Rcpp::NumericVector & dotmu = as<const NumericVector>(cov_r["dotmu"]);
+  
+  // std::cout << "use R memory without copy\n";
+  cov_v.Cinv = mat(const_cast<double*>( Cinv.begin()), Cinv.nrow(), Cinv.ncol(), false, true);
+  cov_v.mphi = mat(const_cast<double*>( mphi.begin()), mphi.nrow(), mphi.ncol(), false, true);
+  cov_v.Kinv = mat(const_cast<double*>( Kinv.begin()), Kinv.nrow(), Kinv.ncol(), false, true);
+  cov_v.CinvBand = mat(const_cast<double*>( CinvBand.begin()), CinvBand.nrow(), CinvBand.ncol(), false, true);
+  cov_v.mphiBand = mat(const_cast<double*>( mphiBand.begin()), mphiBand.nrow(), mphiBand.ncol(), false, true);
+  cov_v.KinvBand = mat(const_cast<double*>( KinvBand.begin()), KinvBand.nrow(), KinvBand.ncol(), false, true);
+  cov_v.mu = vec(const_cast<double*>( &(mu[0])), mu.size(), false, true);
+  cov_v.dotmu = vec(const_cast<double*>( &(dotmu[0])), dotmu.size(), false, true);
   cov_v.bandsize = as<int>(cov_r["bandsize"]);
   return cov_v;
 }
