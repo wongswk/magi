@@ -182,11 +182,11 @@ plot(eigenValuesNumerical)
 points(eigenValuesAnalytical, col=2)
 
 eigenFunNumerical <- sapply(eigenList, function(x) x[[2]], simplify = "array")
-eigenFunAnalytical <- 
+
 
 mycolor <- rev(gray.colors(dim(eigenFunNumerical)[3]))
 matplot(tAll, eigenFunNumerical[,1,], type="l", lty=1, col=mycolor)
-lines(tAll, eigenFunctionsReal(tAll, 0, Re), col=2)
+lines(tAll, Re(eigenFunctionsComplex(tAll, 0)), col=2)
 matplot(tAll, eigenFunNumerical[,2,], type="l", lty=1, col=mycolor)
 lines(tAll, -eigenFunctionsReal(tAll, 1, Re), col=2)
 matplot(tAll, eigenFunNumerical[,3,], type="l", lty=1, col=mycolor)
