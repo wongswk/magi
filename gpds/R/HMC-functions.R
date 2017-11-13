@@ -22,7 +22,8 @@ calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerne
     stop("kerneltype not specified correctly")
   }
   
-  ret$dotmu <- ret$mu <- rep(0, nrow(ret$C))
+  ret$mu <- rep(0, nrow(ret$C))
+  ret$dotmu <- rep(0, nrow(ret$C))
   ret$C <- ret$C + noiseInjection * diag( nrow(rInput))
   
   if(complexity==0){
