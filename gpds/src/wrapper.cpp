@@ -63,16 +63,21 @@ gpcov cov_r2cpp(const Rcpp::List & cov_r){
   const Rcpp::NumericVector & mu = as<const NumericVector>(cov_r["mu"]);
   const Rcpp::NumericVector & dotmu = as<const NumericVector>(cov_r["dotmu"]);
   
+  // *(const_cast<double*>( &(mu[0]))) = -1; // this part is working -- R value changed
+  
   // std::cout << "use R memory without copy\n";
-  cov_v.Cinv = mat(const_cast<double*>( Cinv.begin()), Cinv.nrow(), Cinv.ncol(), false, true);
-  cov_v.mphi = mat(const_cast<double*>( mphi.begin()), mphi.nrow(), mphi.ncol(), false, true);
-  cov_v.Kinv = mat(const_cast<double*>( Kinv.begin()), Kinv.nrow(), Kinv.ncol(), false, true);
-  cov_v.CinvBand = mat(const_cast<double*>( CinvBand.begin()), CinvBand.nrow(), CinvBand.ncol(), false, true);
-  cov_v.mphiBand = mat(const_cast<double*>( mphiBand.begin()), mphiBand.nrow(), mphiBand.ncol(), false, true);
-  cov_v.KinvBand = mat(const_cast<double*>( KinvBand.begin()), KinvBand.nrow(), KinvBand.ncol(), false, true);
-  cov_v.mu = vec(const_cast<double*>( &(mu[0])), mu.size(), false, true);
-  cov_v.dotmu = vec(const_cast<double*>( &(dotmu[0])), dotmu.size(), false, true);
+  cov_v.Cinv = mat(const_cast<double*>( Cinv.begin()), Cinv.nrow(), Cinv.ncol(), false, false);
+  cov_v.mphi = mat(const_cast<double*>( mphi.begin()), mphi.nrow(), mphi.ncol(), false, false);
+  cov_v.Kinv = mat(const_cast<double*>( Kinv.begin()), Kinv.nrow(), Kinv.ncol(), false, false);
+  cov_v.CinvBand = mat(const_cast<double*>( CinvBand.begin()), CinvBand.nrow(), CinvBand.ncol(), false, false);
+  cov_v.mphiBand = mat(const_cast<double*>( mphiBand.begin()), mphiBand.nrow(), mphiBand.ncol(), false, false);
+  cov_v.KinvBand = mat(const_cast<double*>( KinvBand.begin()), KinvBand.nrow(), KinvBand.ncol(), false, false);
+  cov_v.mu = vec(const_cast<double*>( &(mu[0])), mu.size(), false, false);
+  cov_v.dotmu = vec(const_cast<double*>( &(dotmu[0])), dotmu.size(), false, false);
   cov_v.bandsize = as<int>(cov_r["bandsize"]);
+  
+  // cov_v.mu(1) = 2; // this part is also working -- R value changed
+  // cov_v.CinvBand(0) = 999;
   return cov_v;
 }
 

@@ -8,7 +8,7 @@
 #include "band.h"
 
 using namespace arma;
-using Rcpp::as;
+using namespace Rcpp;
 // using namespace Rcpp;
 
 //' R wrapper for basic_hmcC for normal distribution
@@ -245,3 +245,42 @@ arma::vec speedbenchmarkXthetallik(const arma::mat & yobs,
   }
   return returnValues;
 }
+
+//' test for pass by reference for gpcov
+//' @export
+// [[Rcpp::export]]
+int changeGPcovFromC(Rcpp::List & covVr){
+  gpcov covV = cov_r2cpp(covVr);
+  covV.Cinv.fill(1);
+  covV.mphi.fill(2);
+  covV.Kinv.fill(3);
+  covV.CinvBand.fill(4);
+  covV.mphiBand.fill(5);
+  covV.KinvBand.fill(6);
+  covV.mu.fill(77);
+  covV.dotmu.fill(666);
+  return 0;
+}
+
+// [[Rcpp::export]]
+void cov_r2cpp_t1(const Rcpp::List & cov_r){
+  const double* CinvPtr = as<const NumericMatrix>(cov_r["Cinv"]).begin();
+  *(const_cast<double*> (CinvPtr) )= 0;
+  std::cout << CinvPtr << endl;
+  std::cout << as<mat>(cov_r["Cinv"]).memptr() << endl;
+}
+
+// [[Rcpp::export]]
+void cov_r2cpp_t2(Rcpp::NumericMatrix & cov_r){
+  std::cout << cov_r.begin() << endl;
+  std::cout << as<const NumericMatrix>(cov_r).begin() << endl;
+  std::cout << as<mat>(cov_r).memptr();
+  cov_r[0] = 0;
+}
+
+// [[Rcpp::export]]
+void cov_r2cpp_t3(arma::mat & cov_r){
+  std::cout << cov_r.memptr() << endl;
+  cov_r(0) = 0;
+}
+
