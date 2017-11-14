@@ -5,7 +5,7 @@ config <- list(
   nobs = 41,
   noise = 0.1,
   kernel = "generalMatern",
-  seed = (as.integer(Sys.time())*104729+sample(1e6,1))%%1e9,
+  seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
   npostplot = 5,
   loglikflag = "withmeanBand",
   bandsize = 20,
@@ -15,7 +15,7 @@ config <- list(
   stepSizeFactor = 0.1,
   filllevel = 4
 )
-outDir <- "~/Workspace/DynamicSys/results/2017-11-08/withmean_repSample_pluginPostMean/"
+outDir <- "~/Workspace/DynamicSys/results/2017-11-14/withmean_repSample_pluginPostMean/"
 system(paste("mkdir -p", outDir))
 
 VRtrue <- read.csv(system.file("testdata/FN.csv", package="gpds"))
@@ -143,6 +143,7 @@ numparam <- nall*2+3
 n.iter <- config$n.iter
 
 xInit <- c(muV, muR, startTheta)
+stepLowInit <- chainSamplesOut$stepLow
 
 singleSampler <- function(xthetaValues, stepSize) 
   xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
@@ -196,8 +197,7 @@ numparam <- nall*2+3
 n.iter <- config$n.iter
 
 xInit <- c(curCovV$mu, curCovR$mu, pram.true$abc)  
-burnin <- as.integer(n.iter*config$burninRatio)
-stepLowInit <- rep(0.00035, 2*nall+3)*config$stepSizeFactor
+stepLowInit <- chainSamplesOut$stepLow
 
 singleSampler <- function(xthetaValues, stepSize) 
   xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 

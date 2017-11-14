@@ -38,5 +38,5 @@ chainSampler <- function(config, xInit, singleSampler, stepLowInit, verbose=TRUE
       methods::show(c(t, mean(tail(accepts[1:t],100)), tail(foo$final, 3)))
     
   }
-  list(xth=xth.formal, lliklist=lliklist)
+  list(xth=xth.formal, lliklist=lliklist, stepLow=stepLow)
 }
