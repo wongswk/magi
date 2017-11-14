@@ -18,7 +18,9 @@ if(!exists("config")){
 }
 
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
-outDir <- with(config, paste0("~/Workspace/DynamicSys/results/", loglikflag,"-", kernel,
+# baseDir <- "~/Workspace/DynamicSys/results/"
+baseDir <- "/n/regal/kou_lab/shihaoyang/DynamicSys/results/" # tmp folder on cluster
+outDir <- with(config, paste0(baseDir, loglikflag,"-", kernel,
                               "-nobs",nobs,"-noise",noise,"-ndis",ndis,"/"))
 system(paste("mkdir -p", outDir))
 
