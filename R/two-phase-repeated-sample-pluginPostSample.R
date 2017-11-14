@@ -1,21 +1,25 @@
 #### first run with flat mean --------------------------------------------------
 library(gpds)
+if(!exists("config")){
+  config <- list(
+    nobs = 41,
+    noise = 0.1,
+    kernel = "generalMatern",
+    seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+    npostplot = 5,
+    loglikflag = "withmeanBand",
+    bandsize = 20,
+    hmcSteps = 1000,
+    n.iter = 300,
+    burninRatio = 0.1,
+    stepSizeFactor = 0.1,
+    filllevel = 4
+  )
+}
 
-config <- list(
-  nobs = 41,
-  noise = 0.1,
-  kernel = "generalMatern",
-  seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
-  npostplot = 5,
-  loglikflag = "withmeanBand",
-  bandsize = 20,
-  hmcSteps = 1000,
-  n.iter = 1e4,
-  burninRatio = 0.1,
-  stepSizeFactor = 0.1,
-  filllevel = 4
-)
-outDir <- "~/Workspace/DynamicSys/results/2017-11-14/withmean_repSample_pluginPostMean/"
+config$ndis <- (config$nobs-1)*2^config$filllevel+1
+outDir <- with(config, paste0("~/Workspace/DynamicSys/results/", loglikflag,"-", kernel,
+                              "-nobs",nobs,"-noise",noise,"-ndis",ndis,"/"))
 system(paste("mkdir -p", outDir))
 
 VRtrue <- read.csv(system.file("testdata/FN.csv", package="gpds"))
@@ -109,7 +113,7 @@ fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[
 
 gpds:::plotPostSamples(paste0(
   outDir,
-  config$loglikflag,"-phase1-",config$kernel,"-",config$seed,".pdf"), 
+  config$kernel,"-",config$seed,"-phase1.pdf"), 
   fn.true, fn.sim, gpode, pram.true, config)
 
 absCI <- apply(gpode$abc, 2, quantile, probs = c(0.025, 0.5, 0.975))
@@ -169,7 +173,7 @@ fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[
 
 gpds:::plotPostSamples(paste0(
   outDir,
-  config$loglikflag,"-phase2-",config$kernel,"-",config$seed,".pdf"), 
+  config$kernel,"-",config$seed,"-phase2.pdf"), 
   fn.true, fn.sim, gpode, pram.true, config)
 
 absCI <- apply(gpode$abc, 2, quantile, probs = c(0.025, 0.5, 0.975))
@@ -222,7 +226,7 @@ fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[
 
 gpds:::plotPostSamples(paste0(
   outDir,
-  config$loglikflag,"-trueMu-",config$kernel,"-",config$seed,".pdf"), 
+  config$kernel,"-",config$seed,"-trueMu.pdf"), 
   fn.true, fn.sim, gpode, pram.true, config)
 
 absCI <- apply(gpode$abc, 2, quantile, probs = c(0.025, 0.5, 0.975))
