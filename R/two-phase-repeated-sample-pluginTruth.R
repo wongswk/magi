@@ -1,3 +1,4 @@
+#' deprecated on 2017-11-14, DO NOT RUN
 #### second run with true mean -------------------------------------------------
 library(gpds)
 
