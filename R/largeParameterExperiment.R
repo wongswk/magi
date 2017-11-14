@@ -4,14 +4,13 @@ nobs.candidates <- c(5, 11, 26, 51, 101, 201, 401)
 noise.candidates <- c(0.01, 0.1, 0.2, 0.5, 1.0, 2)
 filllevel.candidates <- 0:4
 kernel.candidates <- c("generalMatern", "matern") # basically df in matern
-nrep <- 100
 
 indicatorArray <- array(FALSE, dim=c(length(kernel.candidates), 
                                      length(noise.candidates), 
                                      length(nobs.candidates),
                                      length(filllevel.candidates) ))
 arg <- commandArgs(trailingOnly = TRUE)
-arg <- as.numeric(arg) %/% nrep + 1
+arg <- as.numeric(arg) %% length(indicatorArray) + 1
 
 indicatorArray[arg] <- TRUE
 
