@@ -27,12 +27,14 @@ chainSampler <- function(config, xInit, singleSampler, stepLowInit, verbose=TRUE
       } else if (mean(tail(accepts[1:t],100)) < 0.6) {
         stepLow <- stepLow * .995
       }
-      xthsd <- apply(tail(xth.formal[1:t,],n.iter*config$burninRatio*0.1), 2, sd)
-      if(mean(xthsd)>0) stepLow <- 0.01*xthsd/mean(xthsd)*mean(stepLow) + 0.99*stepLow
     }
     lliklist[t] <- foo$lpr
     
-    if(verbose && t %% 100 ==0) show(c(t, mean(tail(accepts[1:t],100)), tail(foo$final, 3)))
+    if( t %% 100 ==0) {
+      xthsd <- apply(tail(xth.formal[1:t,],100), 2, sd)
+      if(mean(xthsd)>0) stepLow <- 0.05*xthsd/mean(xthsd)*mean(stepLow) + 0.95*stepLow
+      if(verbose) methods::show(c(t, mean(tail(accepts[1:t],100)), tail(foo$final, 3)))
+    }
   }
   list(xth=xth.formal, lliklist=lliklist, stepLow=stepLow.traj)
 }
