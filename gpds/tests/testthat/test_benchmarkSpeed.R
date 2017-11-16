@@ -57,12 +57,12 @@ testthat::test_that("loglik speed increase", {
                                           curCovR,
                                           cursigma,
                                           c(data.matrix(fn.true[, 1:2]), 0.2, 0.2, 3),
-                                          nrep = 1e3)
+                                          nrep = 1e2)
   rownames(speedRatio) <- c("xthetallik_rescaled", "xthetallikBandApproxHardCode",
                             "xthetallikHardCode", "xthetallik", 
                             "xthetallik_withmu", "xthetallik_withmu2",
                             "xthetallikBandApprox", "xthetallikWithmuBand",
-                            "xthetallikTwoDimension")
+                            "xthetallikTwoDimension", "xthetallik in-line Band")
   testthat::expect_lt(speedRatio[2]/speedRatio[1], 0.1)
   testthat::expect_lt(speedRatio[3]/speedRatio[1], 0.5)
   # testthat::expect_lt(abs(speedRatio[3]/speedRatio[4]-1), 0.2)
@@ -77,10 +77,10 @@ testthat::test_that("loglik speed increase", {
 #                                           c(data.matrix(fn.true[, 1:2]), 0.2, 0.2, 3),
 #                                           nrep = 1e3)
 #   rownames(speedRatio) <- c("xthetallik_rescaled", "xthetallikBandApproxHardCode",
-#                             "xthetallikHardCode", "xthetallik", 
+#                             "xthetallikHardCode", "xthetallik",
 #                             "xthetallik_withmu", "xthetallik_withmu2",
 #                             "xthetallikBandApprox", "xthetallikWithmuBand",
-#                             "xthetallikTwoDimension")
+#                             "xthetallikTwoDimension", "xthetallik in-line Band")
 #   speedRatio
 # }, mc.cores=8)
 # 

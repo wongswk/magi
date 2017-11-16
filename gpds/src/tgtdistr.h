@@ -14,23 +14,9 @@ lp xthetallik( const arma::vec & xtheta,
                const std::vector<gpcov> & CovAllDimensions,
                const double & sigma,
                const arma::mat & yobs,
-               const OdeSystem & fOdeModel);
-lp xthetallik_withmu( const arma::vec & xtheta, 
-                      const std::vector<gpcov> & CovAllDimensions,
-                      const double & sigma, 
-                      const arma::mat & yobs, 
-                      const OdeSystem & fOdeModel);
-lp xthetallik_rescaled( const arma::vec & xtheta,
-                        const gpcov & CovV,
-                        const gpcov & CovR,
-                        const double & sigma,
-                        const arma::mat & yobs,
-                        const std::function<arma::mat (arma::vec, arma::mat)> & fODE);
-lp xthetallikBandApprox( const arma::vec & xtheta, 
-                         const std::vector<gpcov> & CovAllDimensions,
-                         const double & sigma, 
-                         const arma::mat & yobs,
-                         const OdeSystem & fOdeModel);
+               const OdeSystem & fOdeModel,
+               const bool useBand = false);
+
 lp xthetallikWithmuBand( const arma::vec & xtheta, 
                          const std::vector<gpcov> & CovAllDimensions,
                          const double & sigma, 
