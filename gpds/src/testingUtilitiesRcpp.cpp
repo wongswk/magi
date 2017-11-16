@@ -180,6 +180,87 @@ lp xthetallikBandApproxHardCode( const vec & xtheta,
   return ret;
 }
 
+lp xthetallikTwoDimension( const vec & xtheta, 
+                           const gpcov & CovV, 
+                           const gpcov & CovR, 
+                           const double & sigma, 
+                           const mat & yobs, 
+                           const OdeSystem & fOdeModel) {
+  int n = (xtheta.size() - 3)/2;
+  const vec & theta = xtheta.subvec(xtheta.size() - 3, xtheta.size() - 1);
+  lp ret;
+  
+  if (min(theta) < 0) {
+    ret.value = -1e+9;
+    ret.gradient = zeros<vec>(2*n);
+    ret.gradient.subvec(xtheta.size() - 3, xtheta.size() - 1).fill(1e9);
+    return ret;
+  }
+  
+  const vec & Vsm = xtheta.subvec(0, n - 1);
+  const vec & Rsm = xtheta.subvec(n, 2*n - 1);
+  
+  const mat & fderiv = fOdeModel.fOde(theta, join_horiz(Vsm, Rsm));
+  const cube & fderivDx = fOdeModel.fOdeDx(theta, join_horiz(Vsm, Rsm));
+  const cube & fderivDtheta = fOdeModel.fOdeDtheta(theta, join_horiz(Vsm, Rsm));
+  
+  mat res(2,3);
+  
+  // V 
+  vec frV = (fderiv.col(0) - CovV.mphi * Vsm); // n^2 operation
+  vec fitLevelErrorV = Vsm - yobs.col(0);
+  fitLevelErrorV(find_nonfinite(fitLevelErrorV)).fill(0.0);
+  res(0,0) = -0.5 * sum(square( fitLevelErrorV )) / pow(sigma,2);
+  res(0,1) = -0.5 * as_scalar( frV.t() * CovV.Kinv * frV);
+  res(0,2) = -0.5 * as_scalar( Vsm.t() * CovV.Cinv * Vsm);
+  
+  // R
+  vec frR = (fderiv.col(1) - CovR.mphi * Rsm); // n^2 operation
+  vec fitLevelErrorR = Rsm - yobs.col(1);
+  fitLevelErrorR(find_nonfinite(fitLevelErrorR)).fill(0.0);
+  
+  res(1,0) = -0.5 * sum(square( fitLevelErrorR )) / pow(sigma,2);
+  res(1,1) = -0.5 * as_scalar( frR.t() * CovR.Kinv * frR);
+  res(1,2) = -0.5 * as_scalar( Rsm.t() * CovR.Cinv * Rsm);
+  
+  //cout << "lglik component = \n" << res << endl;
+  
+  ret.value = accu(res);
+  
+  // cout << "lglik = " << ret.value << endl;
+  
+  // gradient 
+  // V contrib
+  mat Vtemp = -CovV.mphi;
+  Vtemp.diag() += fderivDx.slice(0).col(0);
+  
+  vec KinvFrV = (CovV.Kinv * frV);
+  
+  vec VC2 =  2.0 * join_vert(join_vert( Vtemp.t() * KinvFrV, // n^2 operation
+                                        fderivDx.slice(0).col(1) % KinvFrV ),
+                                        fderivDtheta.slice(0).t() * KinvFrV );
+  
+  
+  // R contrib
+  mat Rtemp = -CovR.mphi;
+  Rtemp.diag() += fderivDx.slice(1).col(1);
+  
+  vec KinvFrR = (CovR.Kinv * frR);
+  vec RC2 = 2.0 * join_vert(join_vert( fderivDx.slice(1).col(0) % KinvFrR,
+                                       Rtemp.t() * KinvFrR), // n^2 operation
+                                       fderivDtheta.slice(1).t() * KinvFrR );
+  
+  vec C3 = join_vert(join_vert( 2.0 * CovV.Cinv * Vsm,  
+                                2.0 * CovR.Cinv * Rsm ), 
+                                zeros<vec>(theta.size()));  
+  vec C1 = join_vert(join_vert( 2.0 * fitLevelErrorV / pow(sigma,2) ,  
+                                2.0 * fitLevelErrorR / pow(sigma,2) ),
+                                zeros<vec>(theta.size()));
+  
+  ret.gradient = ((VC2 + RC2)  + C3 + C1 ) * -0.5;
+  
+  return ret;
+}
 
 //' R wrapper for xthetallik
 //' @export
@@ -190,59 +271,61 @@ arma::vec speedbenchmarkXthetallik(const arma::mat & yobs,
                                    const double & sigma, 
                                    const arma::vec & initial,
                                    const int & nrep = 10000){
-  gpcov covV = cov_r2cpp_legacy(covVr);
-  gpcov covR = cov_r2cpp_legacy(covRr);
+  vector<gpcov> covAllDimensions(2);
+  covAllDimensions[0] = cov_r2cpp_legacy(covVr);
+  covAllDimensions[1] = cov_r2cpp_legacy(covRr);
   
-  OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta);
+  OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta, zeros(3), ones(3)*datum::inf);
   
   std::vector<chrono::high_resolution_clock::time_point> timestamps;
-  std::vector<lp> llikResults;
+  
+  int nrepShort = nrep/100;
   
   // capture run time here
   timestamps.push_back(chrono::high_resolution_clock::now());
-  for(int i=0; i < nrep; i++){
-    llikResults.push_back(xthetallik_rescaled(initial, covV, covR, sigma, yobs, fnmodelODE));  
+  for(int i=0; i < nrepShort; i++){
+    lp tmp1 = xthetallik_rescaled(initial, covAllDimensions[0], covAllDimensions[1], sigma, yobs, fnmodelODE);  
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
-    llikResults.push_back(xthetallikBandApproxHardCode(initial, covV, covR, sigma, yobs, fnmodelODE));
+    lp tmp2 = xthetallikBandApproxHardCode(initial, covAllDimensions[0], covAllDimensions[1], sigma, yobs, fnmodelODE);
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
-    llikResults.push_back(xthetallikHardCode(initial, covV, covR, sigma, yobs, fnmodelODE));  
+    lp tmp3 = xthetallikHardCode(initial, covAllDimensions[0], covAllDimensions[1], sigma, yobs, fnmodelODE);  
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
-    llikResults.push_back(xthetallik(initial, covV, covR, sigma, yobs, fnmodel));
+    lp tmp4 = xthetallik(initial, covAllDimensions, sigma, yobs, fnmodel);
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
-    llikResults.push_back(xthetallik_withmu(initial, covV, covR, sigma, yobs, fnmodel));
+    lp tmp5 = xthetallik_withmu(initial, covAllDimensions, sigma, yobs, fnmodel);
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
-    llikResults.push_back(xthetallikWithmuBand(initial, covV, covR, sigma, yobs, fnmodel, false));
+    lp tmp6 = xthetallikWithmuBand(initial, covAllDimensions, sigma, yobs, fnmodel, false);
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
-    llikResults.push_back(xthetallikBandApprox(initial, covV, covR, sigma, yobs, fnmodel));
+    lp tmp7 = xthetallikBandApprox(initial, covAllDimensions, sigma, yobs, fnmodel);
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
-    llikResults.push_back(xthetallikWithmuBand(initial, covV, covR, sigma, yobs, fnmodel, true));
+    lp tmp8 = xthetallikWithmuBand(initial, covAllDimensions, sigma, yobs, fnmodel, true);
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
-  
-  
-  if(abs(llikResults[6].value - llikResults[1].value) > 1e-10
-       || sum(abs(llikResults[6].gradient - llikResults[1].gradient)) > 1e-8){
-    throw "xthetallikBandApprox and xthetallikBandApproxHardCode not agree";
+  for(int i=0; i < nrep; i++){
+    lp tmp9 = xthetallikTwoDimension(initial, covAllDimensions[0], covAllDimensions[1], sigma, yobs, fnmodel);
   }
+  timestamps.push_back(chrono::high_resolution_clock::now());
   
   arma::vec returnValues(timestamps.size()-1);
   for(unsigned int i = 0; i < timestamps.size()-1; i++){
     returnValues(i) = chrono::duration_cast<chrono::nanoseconds>(timestamps[i+1]-timestamps[i]).count();
   }
+  returnValues /= nrep;
+  returnValues(0) *= nrep/nrepShort;
   return returnValues;
 }
 
@@ -266,21 +349,21 @@ int changeGPcovFromC(Rcpp::List & covVr){
 void cov_r2cpp_t1(const Rcpp::List & cov_r){
   const double* CinvPtr = as<const NumericMatrix>(cov_r["Cinv"]).begin();
   *(const_cast<double*> (CinvPtr) )= 0;
-  std::cout << CinvPtr << endl;
-  std::cout << as<mat>(cov_r["Cinv"]).memptr() << endl;
+  // std::cout << CinvPtr << endl;
+  // std::cout << as<mat>(cov_r["Cinv"]).memptr() << endl;
 }
 
 // [[Rcpp::export]]
 void cov_r2cpp_t2(Rcpp::NumericMatrix & cov_r){
-  std::cout << cov_r.begin() << endl;
-  std::cout << as<const NumericMatrix>(cov_r).begin() << endl;
-  std::cout << as<mat>(cov_r).memptr();
+  // std::cout << cov_r.begin() << endl;
+  // std::cout << as<const NumericMatrix>(cov_r).begin() << endl;
+  // std::cout << as<mat>(cov_r).memptr();
   cov_r[0] = 0;
 }
 
 // [[Rcpp::export]]
 void cov_r2cpp_t3(arma::mat & cov_r){
-  std::cout << cov_r.memptr() << endl;
+  // std::cout << cov_r.memptr() << endl;
   cov_r(0) = 0;
 }
 

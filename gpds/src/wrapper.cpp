@@ -94,25 +94,26 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
                          const bool traj = false, 
                          const std::string loglikflag = "usual",
                          const double & temperature = 1){
-  gpcov covV = cov_r2cpp(covVr);
-  gpcov covR = cov_r2cpp(covRr);
+  vector<gpcov> covAllDimensions(2);
+  covAllDimensions[0] = cov_r2cpp(covVr);
+  covAllDimensions[1] = cov_r2cpp(covRr);
   std::function<lp(vec)> tgt;
-  OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta);
+  OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta, zeros(3), ones(3)*datum::inf);
   if(loglikflag == "rescaled"){
     tgt = std::bind(xthetallik_rescaled, std::placeholders::_1, 
-                    covV, covR, sigma, yobs, fnmodelODE);
+                    covAllDimensions[0], covAllDimensions[1], sigma, yobs, fnmodelODE);
   }else if(loglikflag == "usual"){
     tgt = std::bind(xthetallik, std::placeholders::_1, 
-                    covV, covR, sigma, yobs, fnmodel);
+                    covAllDimensions, sigma, yobs, fnmodel);
   }else if(loglikflag == "withmean"){
     tgt = std::bind(xthetallik_withmu, std::placeholders::_1, 
-                    covV, covR, sigma, yobs, fnmodel);
+                    covAllDimensions, sigma, yobs, fnmodel);
   }else if(loglikflag == "band"){
     tgt = std::bind(xthetallikBandApprox, std::placeholders::_1, 
-                    covV, covR, sigma, yobs, fnmodel);
+                    covAllDimensions, sigma, yobs, fnmodel);
   }else if(loglikflag == "withmeanBand"){
     tgt = std::bind(xthetallikWithmuBand, std::placeholders::_1, 
-                    covV, covR, sigma, yobs, fnmodel, true);
+                    covAllDimensions, sigma, yobs, fnmodel, true);
   }else{
     throw "loglikflag must be 'usual', 'withmean', 'rescaled', 'band', or 'withmeanBand'";
   }
@@ -160,12 +161,15 @@ arma::cube parallel_temper_hmc_xtheta( const arma::mat & yobs,
                                        const arma::vec & step, 
                                        int nsteps = 1, 
                                        int niter=1e4){
-  gpcov covV = cov_r2cpp(covVr);
-  gpcov covR = cov_r2cpp(covRr);
-  OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta);
+  vector<gpcov> covAllDimensions(2);
+  covAllDimensions[0] = cov_r2cpp(covVr);
+  covAllDimensions[1] = cov_r2cpp(covRr);
+  
+  OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta, zeros(3), ones(3)*datum::inf);
+  
   
   std::function<lp(vec)> tgt = std::bind(xthetallikBandApprox, std::placeholders::_1, 
-                   covV, covR, sigma, yobs, fnmodel);
+                   covAllDimensions, sigma, yobs, fnmodel);
   
   vec lb = ones<vec>(initial.size()) * (-datum::inf);
   lb.subvec(lb.size() - 3, lb.size() - 1).fill(0.0);
@@ -213,10 +217,11 @@ Rcpp::List xthetallikC(const arma::mat & yobs,
                        const Rcpp::List & covRr, 
                        const double & sigma, 
                        const arma::vec & initial){
-  gpcov covV = cov_r2cpp(covVr);
-  gpcov covR = cov_r2cpp(covRr);
-  OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta);
-  lp ret = xthetallik(initial, covV, covR, sigma, yobs, fnmodel);
+  vector<gpcov> covAllDimensions(2);
+  covAllDimensions[0] = cov_r2cpp(covVr);
+  covAllDimensions[1] = cov_r2cpp(covRr);
+  OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta, zeros(3), ones(3)*datum::inf);
+  lp ret = xthetallik(initial, covAllDimensions, sigma, yobs, fnmodel);
   return List::create(Named("value")=ret.value,
                       Named("grad")=ret.gradient);
 }
@@ -244,10 +249,11 @@ Rcpp::List xthetallikBandApproxC( arma::mat & yobs,
                                   const Rcpp::List & covRr, 
                                   double & sigma, 
                                   arma::vec & initial){
-  gpcov covV = cov_r2cpp(covVr);
-  gpcov covR = cov_r2cpp(covRr);
-  OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta);
-  lp ret = xthetallikBandApprox(initial, covV, covR, sigma, yobs, fnmodel);
+  vector<gpcov> covAllDimensions(2);
+  covAllDimensions[0] = cov_r2cpp(covVr);
+  covAllDimensions[1] = cov_r2cpp(covRr);
+  OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta, zeros(3), ones(3)*datum::inf);
+  lp ret = xthetallikBandApprox(initial, covAllDimensions, sigma, yobs, fnmodel);
   return List::create(Named("value")=ret.value,
                       Named("grad")=ret.gradient);
 }
@@ -260,10 +266,11 @@ Rcpp::List xthetallik_withmuC(const arma::mat & yobs,
                               const Rcpp::List & covRr, 
                               const double & sigma, 
                               const arma::vec & initial){
-  gpcov covV = cov_r2cpp(covVr);
-  gpcov covR = cov_r2cpp(covRr);
-  OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta);
-  lp ret = xthetallik_withmu(initial, covV, covR, sigma, yobs, fnmodel);
+  vector<gpcov> covAllDimensions(2);
+  covAllDimensions[0] = cov_r2cpp(covVr);
+  covAllDimensions[1] = cov_r2cpp(covRr);
+  OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta, zeros(3), ones(3)*datum::inf);
+  lp ret = xthetallik_withmu(initial, covAllDimensions, sigma, yobs, fnmodel);
   return List::create(Named("value")=ret.value,
                       Named("grad")=ret.gradient);
 }
@@ -277,10 +284,11 @@ Rcpp::List xthetallikWithmuBandC(const arma::mat & yobs,
                                  const double & sigma, 
                                  const arma::vec & initial,
                                  const bool useBand = true){
-  gpcov covV = cov_r2cpp(covVr);
-  gpcov covR = cov_r2cpp(covRr);
-  OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta);
-  lp ret = xthetallikWithmuBand(initial, covV, covR, sigma, yobs, fnmodel, useBand);
+  vector<gpcov> covAllDimensions(2);
+  covAllDimensions[0] = cov_r2cpp(covVr);
+  covAllDimensions[1] = cov_r2cpp(covRr);
+  OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta, zeros(3), ones(3)*datum::inf);
+  lp ret = xthetallikWithmuBand(initial, covAllDimensions, sigma, yobs, fnmodel, useBand);
   return Rcpp::List::create(Rcpp::Named("value")=ret.value,
                             Rcpp::Named("grad")=ret.gradient);
 }

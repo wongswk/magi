@@ -209,49 +209,45 @@ lp phisigllik( const vec & phisig,
 //' @param phisig      the parameter phi and sigma
 //' @param yobs        observed data
 lp xthetallik( const vec & xtheta, 
-               const gpcov & CovV, 
-               const gpcov & CovR, 
+               const std::vector<gpcov> & CovAllDimensions, 
                const double & sigma, 
                const mat & yobs, 
                const OdeSystem & fOdeModel) {
-  int n = (xtheta.size() - 3)/2;
-  const vec & theta = xtheta.subvec(xtheta.size() - 3, xtheta.size() - 1);
+  int n = yobs.n_rows;
+  int pdimension = yobs.n_cols;
+  const mat & xlatent = mat(const_cast<double*>( xtheta.memptr()), n, pdimension, false, false);
+  const vec & theta = xtheta.subvec(n*pdimension, xtheta.size() - 1);
   lp ret;
-  
-  if (min(theta) < 0) {
-    ret.value = -1e+9;
-    ret.gradient = zeros<vec>(2*n);
-    ret.gradient.subvec(xtheta.size() - 3, xtheta.size() - 1).fill(1e9);
+  if (fOdeModel.checkBound(xlatent, theta, &ret)) {
     return ret;
   }
   
-  const vec & Vsm = xtheta.subvec(0, n - 1);
-  const vec & Rsm = xtheta.subvec(n, 2*n - 1);
+  const mat & fderiv = fOdeModel.fOde(theta, xlatent);
+  const cube & fderivDx = fOdeModel.fOdeDx(theta, xlatent);
+  const cube & fderivDtheta = fOdeModel.fOdeDtheta(theta, xlatent);
   
-  const mat & fderiv = fOdeModel.fOde(theta, join_horiz(Vsm, Rsm));
-  const cube & fderivDx = fOdeModel.fOdeDx(theta, join_horiz(Vsm, Rsm));
-  const cube & fderivDtheta = fOdeModel.fOdeDtheta(theta, join_horiz(Vsm, Rsm));
-  
-  mat res(2,3);
+  mat res(pdimension,3);
   
   // V 
-  vec frV = (fderiv.col(0) - CovV.mphi * Vsm); // n^2 operation
-  vec fitLevelErrorV = Vsm - yobs.col(0);
-  fitLevelErrorV(find_nonfinite(fitLevelErrorV)).fill(0.0);
-  res(0,0) = -0.5 * sum(square( fitLevelErrorV )) / pow(sigma,2);
-  res(0,1) = -0.5 * as_scalar( frV.t() * CovV.Kinv * frV);
-  res(0,2) = -0.5 * as_scalar( Vsm.t() * CovV.Cinv * Vsm);
+  mat fitLevelError(n, pdimension);
+  mat fitDerivError(n, pdimension);
+  for( int vEachDim = 0; vEachDim < pdimension; vEachDim++){
+    fitDerivError.col(vEachDim) = fderiv.col(vEachDim);
+    fitDerivError.col(vEachDim) -= CovAllDimensions[vEachDim].mphi * xlatent.col(vEachDim); // n^2 operation
+    
+    fitLevelError.col(vEachDim) = xlatent.col(vEachDim) - yobs.col(vEachDim);
+  }
+  fitLevelError(find_nonfinite(fitLevelError)).fill(0.0);
+  res.col(0) = -0.5 * sum(square( fitLevelError )).t() / pow(sigma,2);
   
-  // R
-  vec frR = (fderiv.col(1) - CovR.mphi * Rsm); // n^2 operation
-  vec fitLevelErrorR = Rsm - yobs.col(1);
-  fitLevelErrorR(find_nonfinite(fitLevelErrorR)).fill(0.0);
+  for( int vEachDim = 0; vEachDim < pdimension; vEachDim++){
+    res(vEachDim, 1) = -0.5 * as_scalar( fitDerivError.col(vEachDim).t() * 
+      CovAllDimensions[vEachDim].Kinv * fitDerivError.col(vEachDim));
+    res(vEachDim, 2) = -0.5 * as_scalar( xlatent.col(vEachDim).t() * 
+      CovAllDimensions[vEachDim].Cinv * xlatent.col(vEachDim));
+  }
   
-  res(1,0) = -0.5 * sum(square( fitLevelErrorR )) / pow(sigma,2);
-  res(1,1) = -0.5 * as_scalar( frR.t() * CovR.Kinv * frR);
-  res(1,2) = -0.5 * as_scalar( Rsm.t() * CovR.Cinv * Rsm);
-  
-  //cout << "lglik component = \n" << res << endl;
+  // cout << "lglik component = \n" << res << endl;
   
   ret.value = accu(res);
   
@@ -259,33 +255,26 @@ lp xthetallik( const vec & xtheta,
   
   // gradient 
   // V contrib
-  mat Vtemp = -CovV.mphi;
-  Vtemp.diag() += fderivDx.slice(0).col(0);
+  mat eachDimensionC2(n*pdimension+theta.size(), pdimension);
+  for( int vEachDim = 0; vEachDim < pdimension; vEachDim++){
+    vec KinvFrV = CovAllDimensions[vEachDim].Kinv * fitDerivError.col(vEachDim);
+    eachDimensionC2.col(vEachDim).subvec(0, n*pdimension-1) =
+      vectorise(fderivDx.slice(vEachDim).each_col() % KinvFrV);
+    eachDimensionC2.col(vEachDim).subvec(n*pdimension, eachDimensionC2.n_rows-1) =
+      fderivDtheta.slice(vEachDim).t() * KinvFrV;
+    eachDimensionC2.col(vEachDim).subvec(n*vEachDim, n*vEachDim+n-1) -=
+      CovAllDimensions[vEachDim].mphi.t() * KinvFrV;
+  }
   
-  vec KinvFrV = (CovV.Kinv * frV);
+  vec C3(n*pdimension+theta.size(), fill::zeros);
+  vec C1(n*pdimension+theta.size(), fill::zeros);
   
-  vec VC2 =  2.0 * join_vert(join_vert( Vtemp.t() * KinvFrV, // n^2 operation
-                                        fderivDx.slice(0).col(1) % KinvFrV ),
-                                        fderivDtheta.slice(0).t() * KinvFrV );
+  for( int vEachDim = 0; vEachDim < pdimension; vEachDim++){
+    C3.subvec(n*vEachDim, n*vEachDim+n-1) = CovAllDimensions[vEachDim].Cinv * xlatent.col(vEachDim);
+    C1.subvec(n*vEachDim, n*vEachDim+n-1) = fitLevelError.col(vEachDim) / pow(sigma, 2);
+  }
   
-  
-  // R contrib
-  mat Rtemp = -CovR.mphi;
-  Rtemp.diag() += fderivDx.slice(1).col(1);
-  
-  vec KinvFrR = (CovR.Kinv * frR);
-  vec RC2 = 2.0 * join_vert(join_vert( fderivDx.slice(1).col(0) % KinvFrR,
-                                       Rtemp.t() * KinvFrR), // n^2 operation
-                                       fderivDtheta.slice(1).t() * KinvFrR );
-  
-  vec C3 = join_vert(join_vert( 2.0 * CovV.Cinv * Vsm,  
-                                2.0 * CovR.Cinv * Rsm ), 
-                                zeros<vec>(theta.size()));  
-  vec C1 = join_vert(join_vert( 2.0 * fitLevelErrorV / pow(sigma,2) ,  
-                                2.0 * fitLevelErrorR / pow(sigma,2) ),
-                                zeros<vec>(theta.size()));
-  
-  ret.gradient = ((VC2 + RC2)  + C3 + C1 ) * -0.5;
+  ret.gradient = -(sum(eachDimensionC2, 1)  + C3 + C1 );
   
   return ret;
 }
@@ -295,11 +284,13 @@ lp xthetallik( const vec & xtheta,
 //' @param phisig      the parameter phi and sigma
 //' @param yobs        observed data
 lp xthetallik_withmu( const vec & xtheta, 
-                      const gpcov & CovV, 
-                      const gpcov & CovR, 
+                      const std::vector<gpcov> & CovAllDimensions, 
                       const double & sigma, 
                       const mat & yobs, 
                       const OdeSystem & fOdeModel) {
+  const gpcov & CovV = CovAllDimensions[0];
+  const gpcov & CovR = CovAllDimensions[1];
+  
   int n = (xtheta.size() - 3)/2;
   const vec & theta = xtheta.subvec(xtheta.size() - 3, xtheta.size() - 1);
   lp ret;
@@ -490,11 +481,13 @@ lp xthetallik_rescaled( const vec & xtheta,
 //' @noRd
 //' FIXME xtheta currently passed by value for Fortran code
 lp xthetallikBandApprox( const vec & xtheta, 
-                         const gpcov & CovV, 
-                         const gpcov & CovR, 
+                         const std::vector<gpcov> & CovAllDimensions, 
                          const double & sigma, 
                          const mat & yobs,
                          const OdeSystem & fOdeModel) {
+  const gpcov & CovV = CovAllDimensions[0];
+  const gpcov & CovR = CovAllDimensions[1]; 
+  
   int n = (xtheta.size() - 3)/2;
   lp ret;
   const vec & theta = xtheta.subvec(xtheta.size() - 3, xtheta.size() - 1);
@@ -591,12 +584,13 @@ lp xthetallikBandApprox( const vec & xtheta,
 // log likelihood for latent states and ODE theta conditional on phi sigma
 // with mean 
 lp xthetallikWithmuBand( const vec & xtheta, 
-                         const gpcov & CovV, 
-                         const gpcov & CovR, 
+                         const std::vector<gpcov> & CovAllDimensions,
                          const double & sigma, 
                          const mat & yobs, 
                          const OdeSystem & fOdeModel,
                          const bool useBand) {
+  const gpcov & CovV = CovAllDimensions[0];
+  const gpcov & CovR = CovAllDimensions[1];
   int n = (xtheta.size() - 3)/2;
   vec xthetaShifted = xtheta;
   xthetaShifted.subvec(0, n - 1) -= CovV.mu;
@@ -606,7 +600,7 @@ lp xthetallikWithmuBand( const vec & xtheta,
   yobsShifted.col(0) -= CovV.mu;
   yobsShifted.col(1) -= CovR.mu;
   
-  OdeSystem fOdeModelShifted;
+  OdeSystem fOdeModelShifted = fOdeModel;
   
   fOdeModelShifted.fOde = [&CovV, &CovR, &fOdeModel](const vec & theta, const mat & x) -> mat{
     return fOdeModel.fOde(theta, x+join_horiz(CovV.mu, CovR.mu)) - join_horiz(CovV.dotmu, CovR.dotmu);
@@ -622,9 +616,9 @@ lp xthetallikWithmuBand( const vec & xtheta,
   
   lp ret;
   if(useBand){
-    ret = xthetallikBandApprox(xthetaShifted, CovV, CovR, sigma, yobsShifted, fOdeModelShifted); 
+    ret = xthetallikBandApprox(xthetaShifted, CovAllDimensions, sigma, yobsShifted, fOdeModelShifted); 
   }else{
-    ret = xthetallik(xthetaShifted, CovV, CovR, sigma, yobsShifted, fOdeModelShifted); 
+    ret = xthetallik(xthetaShifted, CovAllDimensions, sigma, yobsShifted, fOdeModelShifted); 
   }
   return ret;
 }

@@ -55,14 +55,26 @@ public:
   std::function<arma::cube (arma::vec, arma::mat)> fOdeDx;
   // row is observations, col is each partial theta denominator, slice is each X variable numerator
   std::function<arma::cube (arma::vec, arma::mat)> fOdeDtheta;
+  
   std::string name;
+  
+  arma::vec thetaLowerBound;
+  arma::vec thetaUpperBound;
+  
+  arma::vec xLowerBound;
+  arma::vec xUpperBound;
   
   OdeSystem(
     const std::function<arma::mat (arma::vec, arma::mat)> & fOdeInput,
     const std::function<arma::cube (arma::vec, arma::mat)> & fOdeDxInput,
-    const std::function<arma::cube (arma::vec, arma::mat)> & fOdeDthetaInput
-  ) : fOde(fOdeInput), fOdeDx(fOdeDxInput), fOdeDtheta(fOdeDthetaInput) {};
+    const std::function<arma::cube (arma::vec, arma::mat)> & fOdeDthetaInput,
+    arma::vec thetaLowerBoundInput,
+    arma::vec thetaUpperBoundInput
+  ) : fOde(fOdeInput), fOdeDx(fOdeDxInput), fOdeDtheta(fOdeDthetaInput), 
+  thetaLowerBound(thetaLowerBoundInput), thetaUpperBound(thetaUpperBoundInput) {};
+  
   OdeSystem() {};
+  bool checkBound(const arma::mat & xlatent, const arma::vec & theta, lp* retPtr) const;
 };
 
 #endif
