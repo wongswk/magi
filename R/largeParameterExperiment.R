@@ -10,7 +10,7 @@ indicatorArray <- array(FALSE, dim=c(length(kernel.candidates),
                                      length(nobs.candidates),
                                      length(filllevel.candidates) ))
 arg <- commandArgs(trailingOnly = TRUE)
-arg <- as.numeric(arg) %% length(indicatorArray) + 1
+arg <- as.numeric(arg) %% (length(indicatorArray)-100) + 101 # --array=0-9999
 
 indicatorArray[arg] <- TRUE
 
