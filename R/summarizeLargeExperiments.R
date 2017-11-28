@@ -50,7 +50,7 @@ for(arg in 1:length(indicatorArray)){
   sizeSummary[[arg]] <- table(label)
 }
 save.image("largeExperimentSummary.rda")
-# load("../results/2017-11-25/largeExperimentSummary.rda")
+# load("../results/2017-11-27/largeExperimentSummary.rda")
 
 length(sizeSummary)
 length(which(sapply(sizeSummary, is.null)))
@@ -80,7 +80,8 @@ organizeOutput <- function(maternDf, noise, nobs){
   outSize <- do.call(rbind, sizeSummary[indicatorVec])
   outCoverage <- resultSummary[indicatorVec]
   rownames(outSize) <- names(outCoverage) <- paste0("discretize-", ndiscretize)
-  
+  outCoverage <- sapply(outCoverage, identity, simplify = "array")
+  dimnames(outCoverage)[[2]] <- c("a", "b", "c")  
   list(repetitionSize = outSize, coverage = outCoverage)
 }
 
@@ -93,3 +94,7 @@ organizeOutput(maternDf = 2.01, noise = 0.1, nobs = 201)
 organizeOutput(maternDf = 2.01, noise = 0.1, nobs = 401) # TODO: re-run for filllevel=0
 
 organizeOutput(maternDf = 2.01, noise = 0.5, nobs = 201)
+
+organizeOutput(maternDf = 2.01, noise = 1.0, nobs = 201)
+
+# shiny app?

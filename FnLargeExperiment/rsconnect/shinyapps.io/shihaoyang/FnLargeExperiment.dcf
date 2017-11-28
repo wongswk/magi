@@ -1,0 +1,12 @@
+name: FnLargeExperiment
+title: FnLargeExperiment
+username:
+account: shihaoyang
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 241022
+bundleId: 1101631
+url: https://shihaoyang.shinyapps.io/FnLargeExperiment/
+when: 1511890180.41112
+asMultiple: FALSE
+asStatic: FALSE
