@@ -55,11 +55,7 @@ shinyUI(fluidPage(
       hr(),
       tabPanel("repetition size", 
                h4('repetition size'),
-               DT::dataTableOutput('repSizeTable')),
-      hr(),
-      tabPanel("pdf visulization", 
-               h4('pdf visulization'),
-               tableOutput('urlTable4Pdf'))
+               DT::dataTableOutput('repSizeTable'))
     )
   
     )

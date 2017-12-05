@@ -36,20 +36,13 @@ shinyServer(function(input, output) {
                   options = list(destroy = TRUE,paging=FALSE,searching=FALSE, bInfo=FALSE))
     })
   
+  
   repSizeTable <- reactive({
     outTab <- organizeOutput(maternDf = input$maternDf, 
                              noise = input$noise, 
                              nobs = input$nobs)
-    outTab$repetitionSize[,input$phaseType]
-    data.frame(outTab$repetitionSize)
-  })
-  output$repSizeTable <- DT::renderDataTable({
-    DT::datatable(repSizeTable(), 
-                  options = list(destroy = TRUE,paging=FALSE,searching=FALSE, bInfo=FALSE))
-  })
-  
-  pdfBaseLink <- "/Users/shihaoyang/GoogleDrive/results"
-  output$urlTable4Pdf <- renderTable({
+    baseInfoTab <- data.frame(outTab$repetitionSize)
+    
     if(input$maternDf == 2.01){
       kernelType = "generalMatern"
     }else if(input$maternDf == 2.5){
@@ -57,6 +50,7 @@ shinyServer(function(input, output) {
     }else{
       stop("invalid kernel df")
     }
+    pdfBaseLink <- "/Users/shihaoyang/GoogleDrive/results"
     subDir <- paste0("withmeanBand-", kernelType, "-nobs", input$nobs, "-noise", input$noise, "-ndis")
     subDir <- list.dirs(pdfBaseLink)[grep(subDir, list.dirs(pdfBaseLink))]
     ndis <- as.numeric(gsub(".*-ndis([0-9]+)", "\\1", subDir))
@@ -64,9 +58,10 @@ shinyServer(function(input, output) {
     ndis <- sort(ndis)
     urls <- paste0("file://", subDir)
     refs <- paste0("<a href='",  urls, "' target='_blank'>pdf visualization ndis-",ndis,"</a>")
-
-    data.frame(refs)
+    baseInfoTab$visualizations <- refs
+    baseInfoTab
     
-  }, sanitize.text.function = identity)
-  
+  })
+  output$repSizeTable <- DT::renderDataTable(
+     repSizeTable(), escape = FALSE, options = list(destroy = TRUE,paging=FALSE,searching=FALSE, bInfo=FALSE))
 })
