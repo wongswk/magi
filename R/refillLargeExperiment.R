@@ -40,16 +40,17 @@ if(config$ndis <= 801){
   fileLists <- list.files(outDir)
   seedLists <- gsub(".*-([0-9]+)[-\\.].*", "\\1", fileLists)
   seedLists <- as.numeric(unique(seedLists))
+  if(config$kernel == "matern") seedLists <- head(sort(seedLists), 3)
   for(oldSeed in seedLists){
     config$seed <- oldSeed
     
     rdsFile <- paste0(
       outDir,
-      config$loglikflag,"-priorTempered-",config$kernel,"-",config$seed,".rds")
+      config$loglikflag,"-priorTemperedPhase2-",config$kernel,"-",config$seed,".rds")
     
     pdfFile <- paste0(
       outDir,
-      config$kernel,"-",config$seed,"-priorTempered.pdf")
+      config$kernel,"-",config$seed,"-priorTemperedPhase2.pdf")
     
     if(file.exists(rdsFile) && file.exists(pdfFile)){
       next
