@@ -1,4 +1,4 @@
-#### run with priorTempered --------------------------------------------------
+#### run with priorTempered phase 1 --------------------------------------------
 library(gpds)
 if(!exists("config")){
   config <- list(
@@ -138,3 +138,56 @@ startTheta <- colMeans(gpode$abc)
 dotmuV <- rowMeans(gpode$fode[,1,])
 dotmuR <- rowMeans(gpode$fode[,2,])
 
+# run with priorTempered phase 2 -------------------------------------------
+
+curCovV$mu <- muV
+curCovR$mu <- muR
+
+curCovV$dotmu <- dotmuV
+curCovR$dotmu <- dotmuR
+
+cursigma <- mean((data.matrix(fn.sim[,1:2])-cbind(curCovV$mu, curCovR$mu))[!is.nan(fn.sim[,1]),]^2)
+cursigma <- sqrt(cursigma)
+
+nall <- nrow(fn.sim)
+numparam <- nall*2+3
+n.iter <- config$n.iter
+
+xInit <- c(muV, muR, startTheta)
+stepLowInit <- chainSamplesOut$stepLow
+
+singleSampler <- function(xthetaValues, stepSize) 
+  xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
+               xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
+               priorTemperature = config$priorTemperature)
+chainSamplesOut <- chainSampler(config, xInit, singleSampler, stepLowInit, verbose=TRUE)
+
+
+gpode <- list(abc=chainSamplesOut$xth[-(1:burnin), (nall*2+1):(nall*2+3)],
+              sigma=rep(marlikmap$par[5], n.iter-burnin),
+              rphi=matrix(marlikmap$par[3:4], ncol=2,nrow=n.iter-burnin,byrow=T),
+              vphi=matrix(marlikmap$par[1:2], ncol=2,nrow=n.iter-burnin,byrow=T),
+              rtrue=chainSamplesOut$xth[-(1:burnin), (nall+1):(nall*2)],
+              vtrue=chainSamplesOut$xth[-(1:burnin), 1:nall],
+              lp__=chainSamplesOut$lliklist[-(1:burnin)],
+              lglik=chainSamplesOut$lliklist[-(1:burnin)])
+
+
+gpode$fode <- sapply(1:length(gpode$lp__), function(t) 
+  with(gpode, fODE(abc[t,], cbind(vtrue[t,],rtrue[t,]))), simplify = "array")
+
+fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtrue))
+fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
+
+gpds:::plotPostSamples(paste0(
+  outDir,
+  config$kernel,"-",config$seed,"-priorTemperedPhase2.pdf"), 
+  fn.true, fn.sim, gpode, pram.true, config)
+
+absCI <- apply(gpode$abc, 2, quantile, probs = c(0.025, 0.5, 0.975))
+absCI <- rbind(absCI, mean=colMeans(gpode$abc))
+absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$abc &  pram.true$abc < absCI["97.5%",]))
+
+saveRDS(absCI, paste0(
+  outDir,
+  config$loglikflag,"-priorTemperedPhase2-",config$kernel,"-",config$seed,".rds"))
