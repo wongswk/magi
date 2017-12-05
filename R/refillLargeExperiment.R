@@ -10,7 +10,7 @@ indicatorArray <- array(FALSE, dim=c(length(kernel.candidates),
                                      length(nobs.candidates),
                                      length(filllevel.candidates) ))
 arg <- commandArgs(trailingOnly = TRUE)
-arg <- as.numeric(arg) %% (length(indicatorArray)-100) + 101 # --array=0-9999
+arg <- as.numeric(arg) %% length(indicatorArray) + 1
 
 indicatorArray[arg] <- TRUE
 
@@ -28,8 +28,11 @@ config <- list(
   filllevel = filllevel.candidates[apply(indicatorArray, 4, any)]
 )
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
-baseDir <- "/n/regal/kou_lab/shihaoyang/DynamicSys/results/" # tmp folder on cluster
-baseDir <- "~/Workspace/DynamicSys/results/"
+if(grepl("/n/",getwd())){
+  baseDir <- "/n/regal/kou_lab/shihaoyang/DynamicSys/results/" # tmp folder on cluster 
+}else{
+  baseDir <- "~/Workspace/DynamicSys/results/"  
+}
 outDir <- with(config, paste0(baseDir, loglikflag,"-", kernel,
                               "-nobs",nobs,"-noise",noise,"-ndis",ndis,"/"))
 
@@ -48,7 +51,7 @@ if(config$ndis <= 801){
       outDir,
       config$kernel,"-",config$seed,"-priorTempered.pdf")
     
-    if(rdsFile %in% fileLists && pdfFile %in% fileLists){
+    if(file.exists(rdsFile) && file.exists(pdfFile)){
       next
     }
     source("R/priorTempered-repeated-sample.R")
