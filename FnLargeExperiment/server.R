@@ -47,4 +47,26 @@ shinyServer(function(input, output) {
     DT::datatable(repSizeTable(), 
                   options = list(destroy = TRUE,paging=FALSE,searching=FALSE, bInfo=FALSE))
   })
+  
+  pdfBaseLink <- "/Users/shihaoyang/GoogleDrive/results"
+  output$urlTable4Pdf <- renderTable({
+    if(input$maternDf == 2.01){
+      kernelType = "generalMatern"
+    }else if(input$maternDf == 2.5){
+      kernelType = "matern"
+    }else{
+      stop("invalid kernel df")
+    }
+    subDir <- paste0("withmeanBand-", kernelType, "-nobs", input$nobs, "-noise", input$noise, "-ndis")
+    subDir <- list.dirs(pdfBaseLink)[grep(subDir, list.dirs(pdfBaseLink))]
+    ndis <- as.numeric(gsub(".*-ndis([0-9]+)", "\\1", subDir))
+    subDir <- subDir[order(ndis)]
+    ndis <- sort(ndis)
+    urls <- paste0("file://", subDir)
+    refs <- paste0("<a href='",  urls, "' target='_blank'>pdf visualization ndis-",ndis,"</a>")
+
+    data.frame(refs)
+    
+  }, sanitize.text.function = identity)
+  
 })

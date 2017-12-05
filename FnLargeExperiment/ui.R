@@ -51,11 +51,15 @@ shinyUI(fluidPage(
     mainPanel(
       tabPanel("Summary Statistics", 
                h4("Summary Statistics"),
-               DT::dataTableOutput('performTable'))
-      ,hr(),
+               DT::dataTableOutput('performTable')),
+      hr(),
       tabPanel("repetition size", 
                h4('repetition size'),
-               DT::dataTableOutput('repSizeTable'))
+               DT::dataTableOutput('repSizeTable')),
+      hr(),
+      tabPanel("pdf visulization", 
+               h4('pdf visulization'),
+               tableOutput('urlTable4Pdf'))
     )
   
     )
