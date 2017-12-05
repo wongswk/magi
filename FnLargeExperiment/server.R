@@ -22,10 +22,8 @@ shinyServer(function(input, output) {
     outTabCoverage <- round(outTabCoverage, 4)
     
     outTabCoveragePrint <- lapply(1:dim(outTabCoverage)[3], function(itab){
-      outEachTab <- rbind(rep("------", dim(outTabCoverage)[2]), 
-                          format(outTabCoverage[input$variablePrint,,itab], nsmall=4))
-      rownames(outEachTab) <- c("num. repetition", input$variablePrint)
-      outEachTab[1,1] <- outTab$repetitionSize[itab,input$phaseType]
+      outEachTab <- format(outTabCoverage[,,itab][input$variablePrint,,drop=FALSE], nsmall=4)
+      rownames(outEachTab) <- input$variablePrint
       rownames(outEachTab) <- paste0(dimnames(outTabCoverage)[[3]][itab],
                                      " || ", rownames(outEachTab))
       outEachTab
@@ -38,4 +36,15 @@ shinyServer(function(input, output) {
                   options = list(destroy = TRUE,paging=FALSE,searching=FALSE, bInfo=FALSE))
     })
   
+  repSizeTable <- reactive({
+    outTab <- organizeOutput(maternDf = input$maternDf, 
+                             noise = input$noise, 
+                             nobs = input$nobs)
+    outTab$repetitionSize[,input$phaseType]
+    data.frame(outTab$repetitionSize)
+  })
+  output$repSizeTable <- DT::renderDataTable({
+    DT::datatable(repSizeTable(), 
+                  options = list(destroy = TRUE,paging=FALSE,searching=FALSE, bInfo=FALSE))
+  })
 })
