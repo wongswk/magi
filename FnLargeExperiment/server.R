@@ -50,7 +50,7 @@ shinyServer(function(input, output) {
     }else{
       stop("invalid kernel df")
     }
-    pdfBaseLink <- "/Users/shihaoyang/GoogleDrive/results"
+    pdfBaseLink <- input$pdfBaseDir
     subDir <- paste0("withmeanBand-", kernelType, "-nobs", input$nobs, "-noise", input$noise, "-ndis")
     subDir <- list.dirs(pdfBaseLink)[grep(subDir, list.dirs(pdfBaseLink))]
     ndis <- as.numeric(gsub(".*-ndis([0-9]+)", "\\1", subDir))

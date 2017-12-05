@@ -44,7 +44,9 @@ shinyUI(fluidPage(
                             "avg 97.5% quantile" = "97.5%",
                             "avg mean" = "mean",
                             "avg coverage" = "coverage"),
-                          "coverage")
+                          "coverage"),
+       hr(),
+       textInput("pdfBaseDir", "directory for pdf results", "~/GoogleDrive/results")
     ),
     
     # Show a plot of the generated distribution
