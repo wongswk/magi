@@ -213,7 +213,8 @@ lp xthetallik( const vec & xtheta,
                const double & sigma, 
                const mat & yobs, 
                const OdeSystem & fOdeModel,
-               const bool useBand) {
+               const bool useBand,
+               const double & priorTemperature) {
   int n = yobs.n_rows;
   int pdimension = yobs.n_cols;
   const mat & xlatent = mat(const_cast<double*>( xtheta.memptr()), n, pdimension, false, false);
@@ -268,8 +269,8 @@ lp xthetallik( const vec & xtheta,
       CinvX.col(vEachDim) = CovAllDimensions[vEachDim].Cinv * xlatent.col(vEachDim);  
     }
   }
-  res.col(1) = -0.5 * sum(fitDerivError % KinvfitDerivError).t();
-  res.col(2) = -0.5 * sum(xlatent % CinvX).t();
+  res.col(1) = -0.5 * sum(fitDerivError % KinvfitDerivError).t() / priorTemperature;
+  res.col(2) = -0.5 * sum(xlatent % CinvX).t() / priorTemperature;
   
   // cout << "lglik component = \n" << res << endl;
   
@@ -302,8 +303,8 @@ lp xthetallik( const vec & xtheta,
       fderivDtheta.slice(vEachDim).t() * KinvfitDerivError.col(vEachDim);
   }
   
-  ret.gradient = -sum(eachDimensionC2, 1);
-  ret.gradient.subvec(0, n*pdimension-1) -= vectorise(CinvX);
+  ret.gradient = -sum(eachDimensionC2, 1) / priorTemperature;
+  ret.gradient.subvec(0, n*pdimension-1) -= vectorise(CinvX) / priorTemperature;
   ret.gradient.subvec(0, n*pdimension-1) -= vectorise(fitLevelError) / pow(sigma, 2);
   
   return ret;
@@ -317,7 +318,8 @@ lp xthetallikWithmuBand( const vec & xtheta,
                          const double & sigma, 
                          const mat & yobs, 
                          const OdeSystem & fOdeModel,
-                         const bool useBand) {
+                         const bool useBand,
+                         const double & priorTemperature) {
   const gpcov & CovV = CovAllDimensions[0];
   const gpcov & CovR = CovAllDimensions[1];
   int n = (xtheta.size() - 3)/2;
@@ -343,7 +345,7 @@ lp xthetallikWithmuBand( const vec & xtheta,
     return fOdeModel.fOdeDtheta(theta, x+join_horiz(CovV.mu, CovR.mu));
   };
   
-  lp ret = xthetallik(xthetaShifted, CovAllDimensions, sigma, yobsShifted, fOdeModelShifted, useBand); 
+  lp ret = xthetallik(xthetaShifted, CovAllDimensions, sigma, yobsShifted, fOdeModelShifted, useBand, priorTemperature); 
   return ret;
 }
 

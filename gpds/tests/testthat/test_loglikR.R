@@ -209,6 +209,16 @@ testthat::test_that("xthetallik_rescaledC runs without error and compare to non-
   testthat::expect_equal(sum(out$grad), gradExpect, tolerance = 1e-4, scale = gradExpect)
 })
 
+testthat::test_that("xthetallik_rescaledC compare to prior tempered xthetallik", {
+  dataInputWithMissing <- dataInput
+  dataInputWithMissing[-seq(1,nrow(dataInputWithMissing),4),] <- NA
+  out <- gpds::xthetallik_rescaledC(dataInputWithMissing, curCovV, curCovR, cursigma, xthInit)
+  pTemp <- nrow(dataInput)/nrow(na.omit(dataInputWithMissing))
+  out2 <- gpds::xthetallikC(dataInputWithMissing, curCovV, curCovR, cursigma, xthInit,
+                            useBand = FALSE, priorTemperature = pTemp)
+  testthat::expect_equal(out, out2)
+})
+
 testthat::test_that("xthetallik_withmuC runs without error and compare to zero-mean", {
   out <- gpds::xthetallik_withmuC(dataInput, curCovV, curCovR, cursigma, xthInit)
   out2 <- gpds::xthetallikWithmuBandC(dataInput, curCovV, curCovR, cursigma, xthInit, FALSE)

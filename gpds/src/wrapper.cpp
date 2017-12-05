@@ -93,7 +93,8 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
                          const int nsteps = 1, 
                          const bool traj = false, 
                          const std::string loglikflag = "usual",
-                         const double & temperature = 1){
+                         const double & overallTemperature = 1,
+                         const double & priorTemperature = 1){
   vector<gpcov> covAllDimensions(2);
   covAllDimensions[0] = cov_r2cpp(covVr);
   covAllDimensions[1] = cov_r2cpp(covRr);
@@ -101,16 +102,16 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
   OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta, zeros(3), ones(3)*datum::inf);
   if(loglikflag == "usual"){
     tgt = std::bind(xthetallik, std::placeholders::_1, 
-                    covAllDimensions, sigma, yobs, fnmodel, false);
+                    covAllDimensions, sigma, yobs, fnmodel, false, priorTemperature);
   }else if(loglikflag == "withmean"){
     tgt = std::bind(xthetallikWithmuBand, std::placeholders::_1, 
-                    covAllDimensions, sigma, yobs, fnmodel, false);
+                    covAllDimensions, sigma, yobs, fnmodel, false, priorTemperature);
   }else if(loglikflag == "band"){
     tgt = std::bind(xthetallik, std::placeholders::_1, 
-                    covAllDimensions, sigma, yobs, fnmodel, true);
+                    covAllDimensions, sigma, yobs, fnmodel, true, priorTemperature);
   }else if(loglikflag == "withmeanBand"){
     tgt = std::bind(xthetallikWithmuBand, std::placeholders::_1, 
-                    covAllDimensions, sigma, yobs, fnmodel, true);
+                    covAllDimensions, sigma, yobs, fnmodel, true, priorTemperature);
   }else{
     throw "loglikflag must be 'usual', 'withmean', 'band', or 'withmeanBand'";
   }
@@ -121,10 +122,10 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
   
   // lp tmp = tgt(initial);
   // cout << tmp.value << "\n" << tmp.gradient << endl;
-  std::function<lp(vec)> tgtTempered = [&tgt, &temperature](vec xInput) -> lp {
+  std::function<lp(vec)> tgtTempered = [&tgt, &overallTemperature](vec xInput) -> lp {
     lp ret = tgt(xInput);
-    ret.value /= temperature;
-    ret.gradient /= temperature;
+    ret.value /= overallTemperature;
+    ret.gradient /= overallTemperature;
     return ret;
   };
   
@@ -166,7 +167,7 @@ arma::cube parallel_temper_hmc_xtheta( const arma::mat & yobs,
   
   
   std::function<lp(vec)> tgt = std::bind(xthetallik, std::placeholders::_1, 
-                   covAllDimensions, sigma, yobs, fnmodel, true);
+                   covAllDimensions, sigma, yobs, fnmodel, true, 1.0);
   
   vec lb = ones<vec>(initial.size()) * (-datum::inf);
   lb.subvec(lb.size() - 3, lb.size() - 1).fill(0.0);
@@ -214,12 +215,13 @@ Rcpp::List xthetallikC(const arma::mat & yobs,
                        const Rcpp::List & covRr, 
                        const double & sigma, 
                        const arma::vec & initial,
-                       const bool useBand = false){
+                       const bool useBand = false,
+                       const double & priorTemperature = 1.0){
   vector<gpcov> covAllDimensions(2);
   covAllDimensions[0] = cov_r2cpp(covVr);
   covAllDimensions[1] = cov_r2cpp(covRr);
   OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta, zeros(3), ones(3)*datum::inf);
-  lp ret = xthetallik(initial, covAllDimensions, sigma, yobs, fnmodel);
+  lp ret = xthetallik(initial, covAllDimensions, sigma, yobs, fnmodel, useBand, priorTemperature);
   return List::create(Named("value")=ret.value,
                       Named("grad")=ret.gradient);
 }
@@ -233,12 +235,13 @@ Rcpp::List xthetallikWithmuBandC(const arma::mat & yobs,
                                  const Rcpp::List & covRr, 
                                  const double & sigma, 
                                  const arma::vec & initial,
-                                 const bool useBand = true){
+                                 const bool useBand = true,
+                                 const double & priorTemperature = 1.0){
   vector<gpcov> covAllDimensions(2);
   covAllDimensions[0] = cov_r2cpp(covVr);
   covAllDimensions[1] = cov_r2cpp(covRr);
   OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta, zeros(3), ones(3)*datum::inf);
-  lp ret = xthetallikWithmuBand(initial, covAllDimensions, sigma, yobs, fnmodel, useBand);
+  lp ret = xthetallikWithmuBand(initial, covAllDimensions, sigma, yobs, fnmodel, useBand, priorTemperature);
   return Rcpp::List::create(Rcpp::Named("value")=ret.value,
                             Rcpp::Named("grad")=ret.gradient);
 }

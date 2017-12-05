@@ -162,7 +162,7 @@ testthat::test_that("parallel_temper_hmc_xtheta runs without error", {
   singleSampler <- function(xthetaValues, stepSize) 
     xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
                  xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag, 
-                 temperature = 7)
+                 overallTemperature = 7)
   
   chainSamplesOut <- chainSampler(config, xInit, singleSampler, stepLowInit, verbose=TRUE)
   sink()
