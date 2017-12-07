@@ -104,7 +104,7 @@ organizeOutput(maternDf = 2.01, noise = 1.0, nobs = 201)
 
 # summarize refilled priorTempered first phase --------------------------------
 library(gpds)
-
+library(parallel)
 nobs.candidates <- c(5, 11, 26, 51, 101, 201, 401)
 noise.candidates <- c(0.01, 0.1, 0.2, 0.5, 1.0, 2)
 filllevel.candidates <- 0:4
@@ -119,7 +119,7 @@ resultSummary <- list()
 sizeSummary <- list()
 files2zip <- c()
 
-for(arg in 270:length(indicatorArray)){
+allSummaryList <- mclapply(1:length(indicatorArray), function(arg){
   indicatorArray[] <- FALSE
   indicatorArray[arg] <- TRUE
   config <- list(
@@ -137,7 +137,7 @@ for(arg in 270:length(indicatorArray)){
     filllevel = filllevel.candidates[apply(indicatorArray, 4, any)]
   )
   config$ndis <- (config$nobs-1)*2^config$filllevel+1
-  if(config$ndis > 801) next
+  if(config$ndis > 801) return(NULL)
   
   baseDir <- "/n/regal/kou_lab/shihaoyang/DynamicSys/results/" # tmp folder on cluster
   outDir <- with(config, paste0(baseDir, loglikflag,"-", kernel,
@@ -145,7 +145,13 @@ for(arg in 270:length(indicatorArray)){
   
   allf <- list.files(outDir)
   allf <- allf[grep("priorTempered", allf)]
-  allpdff <- head(sort(allf[grep("pdf", allf)]), 3)
+  allf.priorTemperedPhase2 <- allf[grep("priorTemperedPhase2\\.pdf", allf)]
+  seed.priorTemperedPhase2 <- gsub(".*-([0-9]+)-.*", "\\1", allf.priorTemperedPhase2)
+  seed.priorTemperedPhase2 <- head(sort(as.numeric(seed.priorTemperedPhase2)), 3)
+  seed.priorTemperedPhase2 <- as.character(seed.priorTemperedPhase2)
+  allpdff <- allf[grep("pdf", allf)]
+  allpdff <- allpdff[gsub(".*-([0-9]+)-.*", "\\1", allpdff) %in% seed.priorTemperedPhase2]
+  
   allf <- allf[grep("rds", allf)]
   ci <- sapply(allf, function(f) readRDS(file.path(outDir, f)), 
                simplify = "array")
@@ -153,12 +159,21 @@ for(arg in 270:length(indicatorArray)){
   label <- strsplit(label, "-")
   label <- sapply(label, function(x) x[2])
   
-  resultSummary[[arg]] <- sapply(tapply(1:length(label), label, function(id) apply(ci[,,id], 1:2, mean)),
+  resultSummaryEach <- sapply(tapply(1:length(label), label, function(id) apply(ci[,,id], 1:2, mean)),
                                  identity, simplify = "array")
-  sizeSummary[[arg]] <- table(label)
-  files2zip <- c(files2zip, file.path(outDir, allpdff))
-  print(arg)
-}
+  sizeSummaryEach <- table(label)
+  
+  return(list(
+    resultSummaryEach,
+    sizeSummaryEach,
+    file.path(outDir, allpdff)
+  ))
+}, mc.cores = 12)
+
+resultSummary <- lapply(allSummaryList, function(x) x[[1]])
+sizeSummary <- lapply(allSummaryList, function(x) x[[2]])
+files2zip <- unlist(lapply(allSummaryList, function(x) x[[3]]))
+
 save.image("largeExperimentSummary-priorTempered.rda")
 cat(files2zip, file="file_list-priorTempered.txt", sep = "\n")
 system("tar -czv -T file_list-priorTempered.txt -f pdfVisuals-priorTempered.tar.gz")
@@ -166,7 +181,7 @@ system("tar -czv -T file_list-priorTempered.txt -f pdfVisuals-priorTempered.tar.
 
 # consolidate to previous rda file --------------------------------------------
 library(abind)
-load("../results/2017-12-05/largeExperimentSummary-priorTempered.rda")
+load("../results/2017-12-07/largeExperimentSummary-priorTempered.rda")
 resultSummaryPriorTempered <- resultSummary
 sizeSummaryPriorTempered <- sizeSummary
 load("../results/2017-11-28/largeExperimentSummary.rda")
@@ -193,4 +208,85 @@ for(arg in 1:length(indicatorArray)){
   resultSummary[[arg]] <- abind(resultSummary[[arg]], resultSummaryPriorTempered[[arg]])
   sizeSummary[[arg]] <- c(sizeSummary[[arg]], sizeSummaryPriorTempered[[arg]])
 }
-save.image("../results/2017-12-05/largeExperimentSummary-added-priorTempered.rda")
+save.image("../results/2017-12-07/largeExperimentSummary.rda")
+
+# see if coverage of df 2.5 is universally better ---------------------------
+load("../results/2017-12-07/largeExperimentSummary.rda")
+
+# in terms of coverage
+# exclude trueMu as it is unfair
+# exclude priorTemperedPhase2 as I only ran three repetitions
+
+# use sample counting table
+comparisonMaternDf <- sapply(noise.candidates, function(noise){
+  sapply(nobs.candidates, function(nobs){
+    out <- organizeOutput(maternDf = 2.01, noise = noise, nobs = nobs)$coverage["coverage",,c(-5),] -
+      organizeOutput(maternDf = 2.5, noise = noise, nobs = nobs)$coverage["coverage",,c(-5),]
+    apply((out > 0.05) - (out < -0.05), 2, mean)
+    apply(out, 2, mean)
+    # apply(out[,,(dim(out)[3]-1):dim(out)[3]], 2:3, mean)
+  }, simplify = "array")
+}, simplify = "array")
+
+dim(comparisonMaternDf)
+dimnames(comparisonMaternDf)[[2]] <- nobs.candidates
+dimnames(comparisonMaternDf)[[3]] <- noise.candidates
+mean(comparisonMaternDf)
+apply(comparisonMaternDf, 1, mean)
+apply(comparisonMaternDf, 2, mean)
+apply(comparisonMaternDf, 3, mean)
+# df = 2.5 is only better in the very low observation case
+# df = 2.01 is particularly good for low noise high observation case high discretization
+
+
+# in terms of bias
+comparisonMaternDf <- sapply(noise.candidates, function(noise){
+  sapply(nobs.candidates, function(nobs){
+    out <- 
+      abs(organizeOutput(maternDf = 2.01, noise = noise, nobs = nobs)$coverage["mean",,c(-5),]-c(0.2,0.2,3)) -
+      abs(organizeOutput(maternDf = 2.5, noise = noise, nobs = nobs)$coverage["mean",,c(-5),]-c(0.2,0.2,3))
+    pmin(1,pmax(-1, apply(out, 2, mean)))
+    # apply(out[,,(dim(out)[3]-1):dim(out)[3]], 2:3, mean)
+  }, simplify = "array")
+}, simplify = "array")
+
+dim(comparisonMaternDf)
+dimnames(comparisonMaternDf)[[2]] <- nobs.candidates
+dimnames(comparisonMaternDf)[[3]] <- noise.candidates
+mean(comparisonMaternDf)
+apply(comparisonMaternDf, 1, mean)
+apply(comparisonMaternDf, 2, mean)
+apply(comparisonMaternDf, 3, mean)
+# df = 2.01 is particularly good for low noise high observation case high discretization
+
+# see if coverage of prior tempered phase 2 is universally better --------------
+
+
+# in terms of coverage
+comparisonMaternDf <- sapply(noise.candidates, function(noise){
+  sapply(nobs.candidates, function(nobs){
+    out <- organizeOutput(maternDf = 2.01, noise = noise, nobs = nobs)$coverage["coverage",,"priorTemperedPhase2",] -
+      organizeOutput(maternDf = 2.01, noise = noise, nobs = nobs)$coverage["coverage",,"phase2",]
+    mean(out)
+  }, simplify = "array")
+}, simplify = "array")
+dimnames(comparisonMaternDf)[[1]] <- nobs.candidates
+dimnames(comparisonMaternDf)[[2]] <- noise.candidates
+
+comparisonMaternDf
+# coverage is almost universally better
+
+# in terms of bias
+comparisonMaternDf <- sapply(noise.candidates, function(noise){
+  sapply(nobs.candidates, function(nobs){
+    coverageInfo <- organizeOutput(maternDf = 2.01, noise = noise, nobs = nobs)$coverage
+    out <- abs(coverageInfo["mean",,"priorTemperedPhase2",] - c(0.2, 0.2, 3)) -
+      abs(coverageInfo["mean",,"phase2",] - c(0.2, 0.2, 3))
+    mean(out)
+  }, simplify = "array")
+}, simplify = "array")
+dimnames(comparisonMaternDf)[[1]] <- nobs.candidates
+dimnames(comparisonMaternDf)[[2]] <- noise.candidates
+
+comparisonMaternDf
+# prior Tempered phase 2 bias is smaller at reasonable range of noise / nobs

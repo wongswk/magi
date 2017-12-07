@@ -35,7 +35,7 @@ shinyUI(fluidPage(
        hr(),
        selectInput("phaseType", 
                    "what mu to plug-in",
-                   c("phase1", "phase2", "trueMu"),
+                   c("phase1", "phase2", "trueMu", "priorTempered"),
                    "phase2"),
        hr(),
        checkboxGroupInput("variablePrint", "Variables to print:",
