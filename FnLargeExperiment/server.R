@@ -51,11 +51,10 @@ shinyServer(function(input, output) {
       stop("invalid kernel df")
     }
     pdfBaseLink <- input$pdfBaseDir
-    subDir <- paste0("withmeanBand-", kernelType, "-nobs", input$nobs, "-noise", input$noise, "-ndis")
-    subDir <- list.dirs(pdfBaseLink)[grep(subDir, list.dirs(pdfBaseLink))]
-    ndis <- as.numeric(gsub(".*-ndis([0-9]+)", "\\1", subDir))
-    subDir <- subDir[order(ndis)]
-    ndis <- sort(ndis)
+    subDir <- paste0("withmeanBand-", kernelType, "-nobs", input$nobs, "-noise", input$noise)
+    ndis <- substr(rownames(baseInfoTab), 12, nchar(rownames(baseInfoTab)))
+    subDir <- paste0(subDir, "-ndis", ndis)
+    subDir <- file.path(pdfBaseLink, subDir)
     urls <- paste0("file://", subDir)
     refs <- paste0("<a href='",  urls, "' target='_blank'>pdf visualization ndis-",ndis,"</a>")
     baseInfoTab$visualizations <- refs

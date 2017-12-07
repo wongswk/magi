@@ -35,8 +35,8 @@ shinyUI(fluidPage(
        hr(),
        selectInput("phaseType", 
                    "what mu to plug-in",
-                   c("phase1", "phase2", "trueMu", "priorTempered"),
-                   "phase2"),
+                   c("phase1", "phase2", "trueMu", "priorTempered", "priorTemperedPhase2"),
+                   "priorTemperedPhase2"),
        hr(),
        checkboxGroupInput("variablePrint", "Variables to print:",
                           c("avg 2.5% quantile" = "2.5%",
@@ -46,7 +46,8 @@ shinyUI(fluidPage(
                             "avg coverage" = "coverage"),
                           "coverage"),
        hr(),
-       textInput("pdfBaseDir", "directory for pdf results", "~/GoogleDrive/results")
+       textInput("pdfBaseDir", "directory for pdf results (must be absolute)", 
+                 "/Users/shihaoyang/GoogleDrive/results")
     ),
     
     # Show a plot of the generated distribution

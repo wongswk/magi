@@ -26,3 +26,11 @@ organizeOutput <- function(maternDf, noise, nobs){
   dimnames(outCoverage)[[2]] <- c("a", "b", "c")  
   list(repetitionSize = outSize, coverage = outCoverage)
 }
+
+# for debug purpose ---------------------------------------------------------
+input <- list(
+  maternDf = 2.01,
+  noise = 0.1,
+  nobs = 51,
+  pdfBaseDir = "/Users/shihaoyang/GoogleDrive/results"
+)
