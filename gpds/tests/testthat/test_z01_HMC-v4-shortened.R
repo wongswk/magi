@@ -148,7 +148,7 @@ for(it.pilot in 1:nfold.pilot){
   t <- 2
   for (t in 2:n.iter.pilot) {
     rstep <- runif(length(stepLow), stepLow, 2*stepLow)
-    foo <- xthetaSample(data.matrix(fn.sim.pilot[,1:2]), pilotCovV, pilotCovR, cursigma, 
+    foo <- xthetaSample(data.matrix(fn.sim.pilot[,1:2]), list(pilotCovV, pilotCovR), cursigma, 
                         xth.pilot[,t-1,it.pilot], rstep, 20, T)
     xth.pilot[,t,it.pilot] <- foo$final
     accepts.pilot[t,it.pilot] <- foo$acc
@@ -237,10 +237,10 @@ for (t in 2:n.iter) {
   rstep <- runif(length(stepLow), stepLow, 2*stepLow)
   #rstep <- rstep / 10
   if(t < n.iter.approx){
-    foo <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
+    foo <- xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma, 
                         xth.formal[t-1,], rstep, 1000, T, loglikflag = "band")    
   }else{
-    foo <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
+    foo <- xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma, 
                         xth.formal[t-1,], rstep, 1000, T, loglikflag = "usual")
   }
   

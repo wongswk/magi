@@ -140,7 +140,7 @@ testthat::test_that("parallel_temper_hmc_xtheta runs without error", {
   t <- 2
   
   rstep <- stepLow
-  foo <- xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
+  foo <- xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma, 
                       xth.formal[t-1,], rstep, config$hmcSteps, F, loglikflag = config$loglikflag)
   sink("testout_parallel_temper_hmc_xtheta.txt")
   out <- parallel_temper_hmc_xtheta(
@@ -160,7 +160,7 @@ testthat::test_that("parallel_temper_hmc_xtheta runs without error", {
   stepLowInit <- rep(0.001, 2*nall+3)*config$stepSizeFactor
   
   singleSampler <- function(xthetaValues, stepSize) 
-    xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
+    xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma, 
                  xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag, 
                  overallTemperature = 7)
   

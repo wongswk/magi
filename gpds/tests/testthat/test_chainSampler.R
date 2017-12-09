@@ -60,7 +60,7 @@ xInit <- c(fn.true$Vtrue, fn.true$Rtrue, pram.true$abc)
 stepLowInit <- rep(0.00035, 2*nall+3)*config$stepSizeFactor
 
 singleSampler <- function(xthetaValues, stepSize) 
-  xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
+  xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma, 
                xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag)
 
 varKeep <- c("config", "xInit", "singleSampler", "stepLowInit", "fn.sim", 

@@ -85,8 +85,7 @@ gpcov cov_r2cpp(const Rcpp::List & cov_r){
 //' @export
 // [[Rcpp::export]]
 Rcpp::List xthetaSample( const arma::mat & yobs, 
-                         const Rcpp::List & covVr, 
-                         const Rcpp::List & covRr, 
+                         const Rcpp::List & covList, 
                          const double & sigma, 
                          const arma::vec & initial, 
                          const arma::vec & step,
@@ -94,24 +93,35 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
                          const bool traj = false, 
                          const std::string loglikflag = "usual",
                          const double & overallTemperature = 1,
-                         const double & priorTemperature = 1){
-  vector<gpcov> covAllDimensions(2);
-  covAllDimensions[0] = cov_r2cpp(covVr);
-  covAllDimensions[1] = cov_r2cpp(covRr);
+                         const double & priorTemperature = 1, 
+                         const std::string modelName = "FN"){
+  vector<gpcov> covAllDimensions(covList.size());
+  for(unsigned int i = 0; i < covList.size(); i++){
+    covAllDimensions[i] = cov_r2cpp(covList[i]);
+  }
   std::function<lp(vec)> tgt;
-  OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta, zeros(3), ones(3)*datum::inf);
+  OdeSystem model;
+  
+  if(modelName == "FN"){
+    model = OdeSystem(fnmodelODE, fnmodelDx, fnmodelDtheta, zeros(3), ones(3)*datum::inf);
+  }else if(modelName == "Hes1"){
+    model = OdeSystem(hes1modelODE, hes1modelDx, hes1modelDtheta, zeros(7), ones(7)*datum::inf); 
+  }else{
+    throw "modelName bust be one of 'FN', 'Hes1'";
+  }
+    
   if(loglikflag == "usual"){
     tgt = std::bind(xthetallik, std::placeholders::_1, 
-                    covAllDimensions, sigma, yobs, fnmodel, false, priorTemperature);
+                    covAllDimensions, sigma, yobs, model, false, priorTemperature);
   }else if(loglikflag == "withmean"){
     tgt = std::bind(xthetallikWithmuBand, std::placeholders::_1, 
-                    covAllDimensions, sigma, yobs, fnmodel, false, priorTemperature);
+                    covAllDimensions, sigma, yobs, model, false, priorTemperature);
   }else if(loglikflag == "band"){
     tgt = std::bind(xthetallik, std::placeholders::_1, 
-                    covAllDimensions, sigma, yobs, fnmodel, true, priorTemperature);
+                    covAllDimensions, sigma, yobs, model, true, priorTemperature);
   }else if(loglikflag == "withmeanBand"){
     tgt = std::bind(xthetallikWithmuBand, std::placeholders::_1, 
-                    covAllDimensions, sigma, yobs, fnmodel, true, priorTemperature);
+                    covAllDimensions, sigma, yobs, model, true, priorTemperature);
   }else{
     throw "loglikflag must be 'usual', 'withmean', 'band', or 'withmeanBand'";
   }
