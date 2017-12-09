@@ -632,3 +632,79 @@ lp xthetallikTwoDimension( const vec & xtheta,
   return ret;
 }
 
+//' log likelihood for Gaussian Process marginal likelihood with Matern kernel
+//' 
+//' @param phisig      the parameter phi and sigma
+//' @param yobs        observed data
+lp phisigllikHard2D( const vec & phisig, 
+                     const mat & yobs, 
+                     const mat & dist, 
+                     string kernel){
+  int n = yobs.n_rows;
+  int p = phisig.size();
+  double sigma = phisig(p-1);
+  vec res(2);
+  
+  // likelihood value part
+  std::function<gpcov(vec, mat, int)> kernelCov;
+  if(kernel == "matern"){
+    kernelCov = maternCov;
+  }else if(kernel == "rbf"){
+    kernelCov = rbfCov;
+  }else if(kernel == "compact1"){
+    kernelCov = compact1Cov;
+  }else{
+    throw "kernel is not specified correctly";
+  }
+  
+  // V 
+  gpcov CovV = kernelCov(phisig.subvec(0,(p-1)/2-1), dist, 1);
+  mat Kv = CovV.C+ eye<mat>(n,n)*pow(sigma, 2);
+  mat Kvl = chol(Kv, "lower");
+  mat Kvlinv = inv(Kvl);
+  vec veta = Kvlinv * yobs.col(0);
+  res(0) = -n/2.0*log(2.0*datum::pi) - sum(log(Kvl.diag())) - 0.5*sum(square(veta));
+  
+  // R
+  gpcov CovR = kernelCov(phisig.subvec((p-1)/2,p-2), dist, 1);
+  mat Kr = CovR.C+ eye<mat>(n,n)*pow(sigma, 2);
+  mat Krl = chol(Kr, "lower");
+  mat Krlinv = inv(Krl);
+  vec reta = Krlinv * yobs.col(1);
+  res(1) = -n/2.0*log(2.0*datum::pi) - sum(log(Krl.diag())) - 0.5*sum(square(reta));
+  
+  lp ret;  
+  ret.value = sum(res);
+  
+  // gradient part
+  // V contrib
+  mat Kvinv = Kvlinv.t() * Kvlinv;
+  mat alphaV = Kvlinv.t() * veta;
+  mat facVtemp = alphaV * alphaV.t() - Kvinv;
+  double dVdsig = sigma * sum(facVtemp.diag());
+  
+  vec dVdphi(CovV.dCdphiCube.n_slices);
+  for(unsigned int i=0; i<dVdphi.size(); i++){
+    dVdphi(i) = accu(facVtemp % CovV.dCdphiCube.slice(i))/2.0;
+  }
+  
+  // R contrib
+  mat Krinv = Krlinv.t() * Krlinv;
+  mat alphaR = Krlinv.t() * reta;
+  mat facRtemp = alphaR * alphaR.t() - Krinv;
+  double dRdsig = sigma * sum(facRtemp.diag());
+  
+  vec dRdphi(CovR.dCdphiCube.n_slices);
+  for(unsigned int i=0; i<dRdphi.size(); i++){
+    dRdphi(i) = accu(facRtemp % CovR.dCdphiCube.slice(i))/2.0;
+  }
+  
+  ret.gradient.set_size(p);
+  ret.gradient.subvec(0, dVdphi.size()-1) = dVdphi;
+  ret.gradient.subvec(dVdphi.size(), p-2) = dRdphi;
+  ret.gradient(p-1) = dVdsig+dRdsig;
+  
+  // cout << ret.value << endl << ret.gradient;
+  
+  return ret;
+}

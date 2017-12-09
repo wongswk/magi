@@ -45,6 +45,8 @@ lp xthetallikHardCode( const vec & xtheta,
                        const mat & yobs, 
                        const std::function<mat (vec, mat)> & fODE);
 
+lp phisigllikHard2D( const arma::vec &, const arma::mat &, const arma::mat &, string kernel = "matern");
+
 // using namespace Rcpp;
 
 //' R wrapper for basic_hmcC for normal distribution
@@ -254,3 +256,14 @@ void cov_r2cpp_t3(arma::mat & cov_r){
   cov_r(0) = 0;
 }
 
+//' R wrapper for phisigllik
+//' @export
+// [[Rcpp::export]]
+Rcpp::List phisigllikHard2DC(const arma::vec & phisig, 
+                             const arma::mat & yobs, 
+                             const arma::mat & dist, 
+                             std::string kernel="matern"){
+  lp ret = phisigllikHard2D(phisig, yobs, dist, kernel);
+  return List::create(Named("value")=ret.value,
+                      Named("grad")=ret.gradient);
+}

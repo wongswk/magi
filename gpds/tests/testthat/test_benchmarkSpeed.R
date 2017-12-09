@@ -6,7 +6,7 @@ library(gpds)
 
 #### prepare for tests ####
 config <- list(
-  nobs = 41,
+  nobs = 201,
   noise = 0.1,
   seed = 123,
   bandsize = 20,
@@ -90,3 +90,9 @@ testthat::test_that("loglik speed increase", {
 # t.test(lapseTime["xthetallik_withmu",] - lapseTime["xthetallik_withmu2",])
 # t.test(lapseTime["xthetallik",] - lapseTime["xthetallik_withmu2",])
 # t.test(lapseTime["xthetallikHardCode",] - lapseTime["xthetallik_withmu2",])
+
+testpoint <- abs(rnorm(5))
+microbenchmark::microbenchmark(
+  phisigllikC( testpoint, data.matrix(fn.sim[,1:2]), r, config$kernel),
+  gpds:::phisigllikHard2DC( testpoint, data.matrix(fn.sim[,1:2]), r, config$kernel)
+)

@@ -57,3 +57,14 @@ for(kerneltype in c("compact1","rbf","matern","periodicMatern","generalMatern"))
                  rep(0.03,5), 20, F, kerneltype)
   })
 }
+
+for(kerneltype in c("compact1","rbf","matern")){
+  testpoint <- abs(rnorm(length(phitrue[[kerneltype]])+1))
+  xc <- phisigllikC( testpoint, data.matrix(fn.sim[,1:2]), r, kerneltype)
+  xc2 <- gpds:::phisigllikHard2DC( testpoint, data.matrix(fn.sim[,1:2]), r, kerneltype)
+  
+  test_that(paste("phisigllik returns -", kerneltype), {
+    expect_equal(xc, xc2, tolerance = 1e-4)
+  })
+  
+}
