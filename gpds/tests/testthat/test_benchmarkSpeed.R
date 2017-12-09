@@ -91,8 +91,8 @@ testthat::test_that("loglik speed increase", {
 # t.test(lapseTime["xthetallik",] - lapseTime["xthetallik_withmu2",])
 # t.test(lapseTime["xthetallikHardCode",] - lapseTime["xthetallik_withmu2",])
 
-testpoint <- abs(rnorm(5))
-microbenchmark::microbenchmark(
-  phisigllikC( testpoint, data.matrix(fn.sim[,1:2]), r, config$kernel),
-  gpds:::phisigllikHard2DC( testpoint, data.matrix(fn.sim[,1:2]), r, config$kernel)
-)
+# testpoint <- abs(rnorm(5))
+# microbenchmark::microbenchmark(
+#   phisigllikC( testpoint, data.matrix(fn.sim[,1:2]), r, config$kernel),
+#   gpds:::phisigllikHard2DC( testpoint, data.matrix(fn.sim[,1:2]), r, config$kernel)
+# )

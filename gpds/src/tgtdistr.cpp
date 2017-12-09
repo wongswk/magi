@@ -180,6 +180,13 @@ lp phisigllik( const vec & phisig,
     }
     ret.gradient(ret.gradient.size()-1) += dVdsig;
   }
+  // mat CmatCholLow = chol(covThisDim.C, "lower");
+  // mat CmatCholLowInv = inv(trimatl(CmatCholLow));
+  // vec eta = CmatCholLowInv.t() * yobs.col(pDimEach);
+  // ret.value += -n/2.0*log(2.0*datum::pi) - sum(log(CmatCholLow.diag())) - 0.5*sum(square(eta));
+  // 
+  // vec alpha = CmatCholLowInv.t() * eta;
+  // mat facVtemp = alpha * alpha.t() - CmatCholLowInv.t() * CmatCholLowInv;
   return ret;
 }
 

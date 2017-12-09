@@ -43,7 +43,7 @@ testthat::test_that("phisigllikC runs without error and is correct", {
   testthat::expect_equal(marlikmapCompact1$par,
                          c(2.04871398302633, 3.59648132314111, 0.625313733996474, 8.96656240950113, 
                            0.0431289806093459),
-                         tolerance = 1e-5)
+                         tolerance = 1e-3)
   
   fn <- function(par) -phisigllikC( par, data.matrix(fn.sim[,1:2]), r, "rbf")$value
   gr <- function(par) -as.vector(phisigllikC( par, data.matrix(fn.sim[,1:2]), r, "rbf")$grad)
