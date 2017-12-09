@@ -2,18 +2,18 @@
 library(gpds)
 if(!exists("config")){
   config <- list(
-    nobs = 41,
+    nobs = 51,
     noise = 0.1,
     kernel = "generalMatern",
     seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 5,
     loglikflag = "withmeanBand",
     bandsize = 20,
-    hmcSteps = 1000,
-    n.iter = 300,
+    hmcSteps = 200,
+    n.iter = 1000,
     burninRatio = 0.1,
     stepSizeFactor = 0.1,
-    filllevel = 4
+    filllevel = 2
   )
 }
 
@@ -94,7 +94,7 @@ rInit <- getMeanCurve(fn.sim.obs$time, fn.sim.obs$Rtrue, fn.sim$time,
 # xInit <- c(vInit, rInit, rep(1,3))
 
 singleSampler <- function(xthetaValues, stepSize) 
-  xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
+  xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma, 
                xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
                priorTemperature = config$priorTemperature)
 chainSamplesOut <- chainSampler(config, xInit, singleSampler, stepLowInit, verbose=TRUE)
@@ -157,7 +157,7 @@ xInit <- c(muV, muR, startTheta)
 stepLowInit <- chainSamplesOut$stepLow
 
 singleSampler <- function(xthetaValues, stepSize) 
-  xthetaSample(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma, 
+  xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma, 
                xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
                priorTemperature = config$priorTemperature)
 chainSamplesOut <- chainSampler(config, xInit, singleSampler, stepLowInit, verbose=TRUE)
