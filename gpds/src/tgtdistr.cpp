@@ -306,32 +306,38 @@ lp xthetallikWithmuBand( const vec & xtheta,
                          const OdeSystem & fOdeModel,
                          const bool useBand,
                          const double & priorTemperature) {
-  const gpcov & CovV = CovAllDimensions[0];
-  const gpcov & CovR = CovAllDimensions[1];
-  int n = (xtheta.size() - 3)/2;
+  int n = yobs.n_rows;
   vec xthetaShifted = xtheta;
-  xthetaShifted.subvec(0, n - 1) -= CovV.mu;
-  xthetaShifted.subvec(n, 2*n - 1) -= CovR.mu;
-  
   mat yobsShifted = yobs;
-  yobsShifted.col(0) -= CovV.mu;
-  yobsShifted.col(1) -= CovR.mu;
+  mat muAllDimension(yobs.n_rows, yobs.n_cols);
+  mat dotmuAllDimension(yobs.n_rows, yobs.n_cols);
   
+  for(unsigned int i = 0; i < yobs.n_cols; i++){
+    xthetaShifted.subvec(i*n, i*n + n - 1) -= CovAllDimensions[i].mu;
+    yobsShifted.col(i) -= CovAllDimensions[i].mu;
+    muAllDimension.col(i) = CovAllDimensions[i].mu;
+    dotmuAllDimension.col(i) = CovAllDimensions[i].dotmu;
+  }
+
   OdeSystem fOdeModelShifted = fOdeModel;
   
-  fOdeModelShifted.fOde = [&CovV, &CovR, &fOdeModel](const vec & theta, const mat & x) -> mat{
-    return fOdeModel.fOde(theta, x+join_horiz(CovV.mu, CovR.mu)) - join_horiz(CovV.dotmu, CovR.dotmu);
+  fOdeModelShifted.fOde = [&muAllDimension, &dotmuAllDimension, &fOdeModel]
+  (const vec & theta, const mat & x) -> mat{
+    return fOdeModel.fOde(theta, x+muAllDimension) - dotmuAllDimension;
   };
   
-  fOdeModelShifted.fOdeDx = [&CovV, &CovR, &fOdeModel](const vec & theta, const mat & x) -> cube{ 
-    return fOdeModel.fOdeDx(theta, x+join_horiz(CovV.mu, CovR.mu));
+  fOdeModelShifted.fOdeDx = [&muAllDimension, &dotmuAllDimension, &fOdeModel]
+  (const vec & theta, const mat & x) -> cube{ 
+    return fOdeModel.fOdeDx(theta, x+muAllDimension);
   };
   
-  fOdeModelShifted.fOdeDtheta = [&CovV, &CovR, &fOdeModel](const vec & theta, const mat & x) -> cube{ 
-    return fOdeModel.fOdeDtheta(theta, x+join_horiz(CovV.mu, CovR.mu));
+  fOdeModelShifted.fOdeDtheta = [&muAllDimension, &dotmuAllDimension, &fOdeModel]
+  (const vec & theta, const mat & x) -> cube{ 
+    return fOdeModel.fOdeDtheta(theta, x+muAllDimension);
   };
   
-  lp ret = xthetallik(xthetaShifted, CovAllDimensions, sigma, yobsShifted, fOdeModelShifted, useBand, priorTemperature); 
+  lp ret = xthetallik(xthetaShifted, CovAllDimensions, sigma, yobsShifted, 
+                      fOdeModelShifted, useBand, priorTemperature); 
   return ret;
 }
 

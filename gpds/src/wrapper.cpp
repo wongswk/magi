@@ -126,7 +126,7 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
     throw "loglikflag must be 'usual', 'withmean', 'band', or 'withmeanBand'";
   }
   vec lb = ones<vec>(initial.size()) * (-datum::inf);
-  lb.subvec(lb.size() - 3, lb.size() - 1).fill(0.0);
+  lb.subvec(yobs.size(), lb.size() - 1) = model.thetaLowerBound;
   
   // cout << lb << endl;
   

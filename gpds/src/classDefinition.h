@@ -68,8 +68,8 @@ public:
     const std::function<arma::mat (arma::vec, arma::mat)> & fOdeInput,
     const std::function<arma::cube (arma::vec, arma::mat)> & fOdeDxInput,
     const std::function<arma::cube (arma::vec, arma::mat)> & fOdeDthetaInput,
-    arma::vec thetaLowerBoundInput,
-    arma::vec thetaUpperBoundInput
+    const arma::vec & thetaLowerBoundInput,
+    const arma::vec & thetaUpperBoundInput
   ) : fOde(fOdeInput), fOdeDx(fOdeDxInput), fOdeDtheta(fOdeDthetaInput), 
   thetaLowerBound(thetaLowerBoundInput), thetaUpperBound(thetaUpperBoundInput) {};
   
