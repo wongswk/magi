@@ -16,3 +16,4 @@ gpds/R/RcppExports.R
 gpds/man/*
 gpds/tests/testthat/testout*.txt
 FnLargeExperiment/rsconnect/shinyapps.io/*
+gpds/testout*.txt

@@ -46,7 +46,7 @@ for(kerneltype in c("compact1","rbf","matern","periodicMatern","generalMatern"))
       gradNum[i] <- ((phisigllikC(x1, data.matrix(fn.sim[,1:2]), r, kerneltype)$value - 
                         phisigllikC(x0, data.matrix(fn.sim[,1:2]), r, kerneltype)$value)/1e-9)
     }
-    expect_equal(gradNum, as.numeric(gradTrue), tolerance = 1e-4)
+    expect_equal(gradNum, as.numeric(gradTrue), tolerance = 1e-3)
   })
   
   test_that(paste("phisigSample runs without error -", kerneltype), {
