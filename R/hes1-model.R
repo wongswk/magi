@@ -1,13 +1,12 @@
 #### run with priorTempered phase 1 --------------------------------------------
 library(gpds)
-rm(list=ls())
 if(!exists("config")){
   config <- list(
     nobs = 51,
     noise = 0.1,
     kernel = "generalMatern",
-    seed = 123, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
-    npostplot = 5,
+    seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+    npostplot = 50,
     loglikflag = "withmeanBand",
     bandsize = 20,
     hmcSteps = 200,
