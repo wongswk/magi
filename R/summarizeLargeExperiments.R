@@ -290,3 +290,87 @@ dimnames(comparisonMaternDf)[[2]] <- noise.candidates
 
 comparisonMaternDf
 # prior Tempered phase 2 bias is smaller at reasonable range of noise / nobs
+
+# summarize priorTempered hes1 model --------------------------------
+library(colorout)
+library(gpds)
+library(parallel)
+
+nobs.candidates <- c(5, 11, 26, 51, 101, 201, 401)
+noise.candidates <- c(0.01, 0.1, 0.2, 0.5, 1.0, 2) * 5
+filllevel.candidates <- 0:4
+
+indicatorArray <- array(FALSE, dim=c(length(noise.candidates), 
+                                     length(nobs.candidates),
+                                     length(filllevel.candidates) ))
+
+resultSummary <- list()
+sizeSummary <- list()
+files2zip <- c()
+
+allSummaryList <- mclapply(1:length(indicatorArray), function(arg){
+  indicatorArray[] <- FALSE
+  indicatorArray[arg] <- TRUE
+  config <- list(
+    nobs = nobs.candidates[apply(indicatorArray, 2, any)],
+    noise = noise.candidates[apply(indicatorArray, 1, any)],
+    kernel = "generalMatern",
+    seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+    npostplot = 50,
+    loglikflag = "withmeanBand",
+    bandsize = 20,
+    hmcSteps = 200,
+    n.iter = 10000,
+    burninRatio = 0.2,
+    stepSizeFactor = 0.1,
+    filllevel = filllevel.candidates[apply(indicatorArray, 3, any)],
+    modelName = "hes1"
+  )
+  config$ndis <- (config$nobs-1)*2^config$filllevel+1
+  
+  if(config$ndis > 801) return(NULL)
+  
+  if(grepl("/n/",getwd())){
+    baseDir <- "/n/regal/kou_lab/shihaoyang/DynamicSys/results/" # tmp folder on cluster 
+  }else{
+    baseDir <- "~/Workspace/DynamicSys/results/"  
+  }
+  outDir <- with(config, paste0(baseDir, modelName, "-", loglikflag,"-", kernel,
+                                "-nobs",nobs,"-noise",noise,"-ndis",ndis,"/"))
+  
+  
+  allf <- list.files(outDir)
+  
+  seedOutputPdf <- allf[grep("trueMu\\.pdf", allf)]
+  seedOutputPdf <- gsub(".*-([0-9]+)-.*", "\\1", seedOutputPdf)
+  seedOutputPdf <- head(sort(as.numeric(seedOutputPdf)), 3)
+  seedOutputPdf <- as.character(seedOutputPdf)
+  allpdff <- allf[grep("pdf", allf)]
+  allpdff <- allpdff[gsub(".*-([0-9]+)-.*", "\\1", allpdff) %in% seedOutputPdf]
+  
+  allf <- allf[grep("rds", allf)]
+  ci <- sapply(allf, function(f) readRDS(file.path(outDir, f)), 
+               simplify = "array")
+  label <- dimnames(ci)[[3]]
+  label <- strsplit(label, "-")
+  label <- sapply(label, function(x) x[2])
+  
+  resultSummaryEach <- sapply(tapply(1:length(label), label, function(id) apply(ci[,,id], 1:2, mean)),
+                              identity, simplify = "array")
+  sizeSummaryEach <- table(label)
+  
+  return(list(
+    resultSummaryEach,
+    sizeSummaryEach,
+    file.path(outDir, allpdff)
+  ))
+}, mc.cores = 12)
+
+resultSummary <- lapply(allSummaryList, function(x) x[[1]])
+sizeSummary <- lapply(allSummaryList, function(x) x[[2]])
+files2zip <- unlist(lapply(allSummaryList, function(x) x[[3]]))
+
+save.image("hes1-largeExperimentSummary.rda")
+cat(files2zip, file="hes1-file_list.txt", sep = "\n")
+system("tar -czv -T hes1-file_list.txt -f pdfVisuals-hes1.tar.gz")
+# load("../results/2017-11-28/largeExperimentSummary.rda")
