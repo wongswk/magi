@@ -1,11 +1,12 @@
 #### run with priorTempered phase 1 --------------------------------------------
 library(gpds)
+rm(list=ls())
 if(!exists("config")){
   config <- list(
     nobs = 51,
     noise = 0.1,
     kernel = "generalMatern",
-    seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+    seed = 123, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 5,
     loglikflag = "withmeanBand",
     bandsize = 20,
@@ -88,117 +89,93 @@ curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
   covEach
 })
 
-curCovV$mu[] <- mean(xsim.obs$Vtrue)
-curCovR$mu[] <- mean(xsim.obs$Rtrue)
-
 nall <- nrow(xsim)
 burnin <- as.integer(config$n.iter*config$burninRatio)
 
-xInit <- c(xtrue.Vfunc(xsim$time), xtrue.Rfunc(xsim$time), pram.true$abc)
-stepLowInit <- rep(0.00035, 2*nall+3)*config$stepSizeFactor
+xInit <- c(unlist(lapply(xtrueFunc, function(f) f(xsim$time))), pram.true$theta)
+stepLowInit <- rep(0.000035, (ncol(xsim)-1)*nall+length(pram.true$theta))
+stepLowInit <- stepLowInit*config$stepSizeFactor
 
-vInit <- getMeanCurve(xsim.obs$time, xsim.obs$Vtrue, xsim$time, 
-                      t(marlikmap$par[1:2]), cursigma, config$kernel)
-rInit <- getMeanCurve(xsim.obs$time, xsim.obs$Rtrue, xsim$time, 
-                      t(marlikmap$par[3:4]), cursigma, config$kernel)
 # TODO: add back the pilot idea to solve initial moving to target area problem
 # or use tempered likelihood instead
 # xInit <- c(vInit, rInit, rep(1,3))
 
 singleSampler <- function(xthetaValues, stepSize) 
-  xthetaSample(data.matrix(xsim[,1:2]), list(curCovV, curCovR), cursigma, 
+  xthetaSample(data.matrix(xsim[,-1]), curCov, cursigma, 
                xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
-               priorTemperature = config$priorTemperature)
+               priorTemperature = config$priorTemperature, modelName = "Hes1")
 chainSamplesOut <- chainSampler(config, xInit, singleSampler, stepLowInit, verbose=TRUE)
 
-xth.formal <- chainSamplesOut[[1]]
-lliklist <- chainSamplesOut[[2]]
 
-n.iter <- config$n.iter
+gpode <- list(theta=chainSamplesOut$xth[-(1:burnin), (length(data.matrix(xsim[,-1]))+1):(ncol(chainSamplesOut$xth))],
+              xsampled=array(chainSamplesOut$xth[-(1:burnin), 1:length(data.matrix(xsim[,-1]))], 
+                             dim=c(config$n.iter-burnin, nall, ncol(xsim)-1)),
+              lglik=chainSamplesOut$lliklist[-(1:burnin)],
+              sigma = cursigma,
+              phi = matrix(marlikmap$par[-length(marlikmap$par)], 2))
+gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
+  with(gpode, gpds:::hes1modelODE(theta[t,], xsampled[t,,])), simplify = "array")
+gpode$fode <- aperm(gpode$fode, c(3,1,2))
 
-gpode <- list(abc=xth.formal[-(1:burnin), (nall*2+1):(nall*2+3)],
-              sigma=rep(marlikmap$par[5], n.iter-burnin),
-              rphi=matrix(marlikmap$par[3:4], ncol=2,nrow=n.iter-burnin,byrow=T),
-              vphi=matrix(marlikmap$par[1:2], ncol=2,nrow=n.iter-burnin,byrow=T),
-              rtrue=xth.formal[-(1:burnin), (nall+1):(nall*2)],
-              vtrue=xth.formal[-(1:burnin), 1:nall],
-              lp__=lliklist[-(1:burnin)],
-              lglik=lliklist[-(1:burnin)])
-gpode$fode <- sapply(1:length(gpode$lp__), function(t) 
-  with(gpode, fODE(abc[t,], cbind(vtrue[t,],rtrue[t,]))), simplify = "array")
+dotxtrue = gpds:::hes1modelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
-xtrue$dVtrue = with(c(xtrue,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtrue))
-xtrue$dRtrue = with(c(xtrue,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
+gpds:::plotPostSamplesFlex(
+  paste0(outDir, config$kernel,"-",config$seed,"-priorTempered.pdf"), 
+  xtrue, dotxtrue, xsim, gpode, pram.true, config)
 
-gpds:::plotPostSamples(paste0(
-  outDir,
-  config$kernel,"-",config$seed,"-priorTempered.pdf"), 
-  xtrue, xsim, gpode, pram.true, config)
-
-absCI <- apply(gpode$abc, 2, quantile, probs = c(0.025, 0.5, 0.975))
-absCI <- rbind(absCI, mean=colMeans(gpode$abc))
-absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$abc &  pram.true$abc < absCI["97.5%",]))
+absCI <- apply(gpode$theta, 2, quantile, probs = c(0.025, 0.5, 0.975))
+absCI <- rbind(absCI, mean=colMeans(gpode$theta))
+absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$theta &  pram.true$theta < absCI["97.5%",]))
 
 saveRDS(absCI, paste0(
   outDir,
   config$loglikflag,"-priorTempered-",config$kernel,"-",config$seed,".rds"))
 
 
-muV <- colMeans(gpode$vtrue)
-muR <- colMeans(gpode$rtrue)
-startTheta <- colMeans(gpode$abc)
-dotmuV <- rowMeans(gpode$fode[,1,])
-dotmuR <- rowMeans(gpode$fode[,2,])
+muAllDim <- apply(gpode$xsampled, 2:3, mean)
+startTheta <- colMeans(gpode$theta)
+dotmuAllDim <- apply(gpode$fode, 2:3, mean) 
 
 # run with priorTempered phase 2 -------------------------------------------
+for(j in 1:ncol(muAllDim)){
+  curCov[[j]]$mu <- muAllDim[,j]
+  curCov[[j]]$dotmu <- dotmuAllDim[,j]
+}
 
-curCovV$mu <- muV
-curCovR$mu <- muR
-
-curCovV$dotmu <- dotmuV
-curCovR$dotmu <- dotmuR
-
-cursigma <- mean((data.matrix(xsim[,1:2])-cbind(curCovV$mu, curCovR$mu))[!is.nan(xsim[,1]),]^2)
+cursigma <- mean((data.matrix(xsim[,-1])-muAllDim)^2, na.rm = TRUE)
 cursigma <- sqrt(cursigma)
 
 nall <- nrow(xsim)
-numparam <- nall*2+3
-n.iter <- config$n.iter
 
-xInit <- c(muV, muR, startTheta)
+xInit <- c(muAllDim, startTheta)
 stepLowInit <- chainSamplesOut$stepLow
 
 singleSampler <- function(xthetaValues, stepSize) 
-  xthetaSample(data.matrix(xsim[,1:2]), list(curCovV, curCovR), cursigma, 
+  xthetaSample(data.matrix(xsim[,-1]), curCov, cursigma, 
                xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
-               priorTemperature = config$priorTemperature)
+               priorTemperature = config$priorTemperature, modelName = "Hes1")
 chainSamplesOut <- chainSampler(config, xInit, singleSampler, stepLowInit, verbose=TRUE)
 
 
-gpode <- list(abc=chainSamplesOut$xth[-(1:burnin), (nall*2+1):(nall*2+3)],
-              sigma=rep(marlikmap$par[5], n.iter-burnin),
-              rphi=matrix(marlikmap$par[3:4], ncol=2,nrow=n.iter-burnin,byrow=T),
-              vphi=matrix(marlikmap$par[1:2], ncol=2,nrow=n.iter-burnin,byrow=T),
-              rtrue=chainSamplesOut$xth[-(1:burnin), (nall+1):(nall*2)],
-              vtrue=chainSamplesOut$xth[-(1:burnin), 1:nall],
-              lp__=chainSamplesOut$lliklist[-(1:burnin)],
-              lglik=chainSamplesOut$lliklist[-(1:burnin)])
+gpode <- list(theta=chainSamplesOut$xth[-(1:burnin), (length(data.matrix(xsim[,-1]))+1):(ncol(chainSamplesOut$xth))],
+              xsampled=array(chainSamplesOut$xth[-(1:burnin), 1:length(data.matrix(xsim[,-1]))], 
+                             dim=c(config$n.iter-burnin, nall, ncol(xsim)-1)),
+              lglik=chainSamplesOut$lliklist[-(1:burnin)],
+              sigma = cursigma,
+              phi = matrix(marlikmap$par[-length(marlikmap$par)], 2))
+gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
+  with(gpode, gpds:::hes1modelODE(theta[t,], xsampled[t,,])), simplify = "array")
+gpode$fode <- aperm(gpode$fode, c(3,1,2))
 
+dotxtrue = gpds:::hes1modelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
-gpode$fode <- sapply(1:length(gpode$lp__), function(t) 
-  with(gpode, fODE(abc[t,], cbind(vtrue[t,],rtrue[t,]))), simplify = "array")
+gpds:::plotPostSamplesFlex(
+  paste0(outDir, config$kernel,"-",config$seed,"-priorTemperedPhase2.pdf"), 
+  xtrue, dotxtrue, xsim, gpode, pram.true, config)
 
-xtrue$dVtrue = with(c(xtrue,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtrue))
-xtrue$dRtrue = with(c(xtrue,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
-
-gpds:::plotPostSamples(paste0(
-  outDir,
-  config$kernel,"-",config$seed,"-priorTemperedPhase2.pdf"), 
-  xtrue, xsim, gpode, pram.true, config)
-
-absCI <- apply(gpode$abc, 2, quantile, probs = c(0.025, 0.5, 0.975))
-absCI <- rbind(absCI, mean=colMeans(gpode$abc))
-absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$abc &  pram.true$abc < absCI["97.5%",]))
+absCI <- apply(gpode$theta, 2, quantile, probs = c(0.025, 0.5, 0.975))
+absCI <- rbind(absCI, mean=colMeans(gpode$theta))
+absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$theta &  pram.true$theta < absCI["97.5%",]))
 
 saveRDS(absCI, paste0(
   outDir,
@@ -206,53 +183,50 @@ saveRDS(absCI, paste0(
 
 #### last run with true mean --------------------------------------------------
 
-curCovV$mu <- xtrue.Vfunc(xsim$time)  # pretend these are the means
-curCovR$mu <- xtrue.Rfunc(xsim$time)
+muAllDim <- sapply(xtrueFunc, function(f) f(xsim$time))  # pretend these are the means
+dotmuAllDim <- gpds:::hes1modelODE(pram.true$theta, muAllDim) # pretend these are the means for derivatives
 
-dotmu <- fODE(pram.true$abc, cbind(curCovV$mu, curCovR$mu)) # pretend these are the means for derivatives
-curCovV$dotmu <- as.vector(dotmu[,1])  
-curCovR$dotmu <- as.vector(dotmu[,2])
+for(j in 1:ncol(muAllDim)){
+  curCov[[j]]$mu <- muAllDim[,j]
+  curCov[[j]]$dotmu <- dotmuAllDim[,j]
+}
 
-cursigma <- mean((data.matrix(xsim[,1:2])-cbind(curCovV$mu, curCovR$mu))[!is.nan(xsim[,1]),]^2)
+cursigma <- mean((data.matrix(xsim[,-1])-muAllDim)^2, na.rm = TRUE)
 cursigma <- sqrt(cursigma)
 
 nall <- nrow(xsim)
-numparam <- nall*2+3
-n.iter <- config$n.iter
 
-xInit <- c(curCovV$mu, curCovR$mu, pram.true$abc)  
+xInit <- c(muAllDim, pram.true$theta)
 stepLowInit <- chainSamplesOut$stepLow
 
 singleSampler <- function(xthetaValues, stepSize) 
-  xthetaSample(data.matrix(xsim[,1:2]), list(curCovV, curCovR), cursigma, 
-               xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag)
+  xthetaSample(data.matrix(xsim[,-1]), curCov, cursigma, 
+               xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
+               priorTemperature = config$priorTemperature, modelName = "Hes1")
 chainSamplesOut <- chainSampler(config, xInit, singleSampler, stepLowInit, verbose=TRUE)
 
 
-gpode <- list(abc=chainSamplesOut$xth[-(1:burnin), (nall*2+1):(nall*2+3)],
-              sigma=rep(marlikmap$par[5], n.iter-burnin),
-              rphi=matrix(marlikmap$par[3:4], ncol=2,nrow=n.iter-burnin,byrow=T),
-              vphi=matrix(marlikmap$par[1:2], ncol=2,nrow=n.iter-burnin,byrow=T),
-              rtrue=chainSamplesOut$xth[-(1:burnin), (nall+1):(nall*2)],
-              vtrue=chainSamplesOut$xth[-(1:burnin), 1:nall],
-              lp__=chainSamplesOut$lliklist[-(1:burnin)],
-              lglik=chainSamplesOut$lliklist[-(1:burnin)])
+gpode <- list(theta=chainSamplesOut$xth[-(1:burnin), (length(data.matrix(xsim[,-1]))+1):(ncol(chainSamplesOut$xth))],
+              xsampled=array(chainSamplesOut$xth[-(1:burnin), 1:length(data.matrix(xsim[,-1]))], 
+                             dim=c(config$n.iter-burnin, nall, ncol(xsim)-1)),
+              lglik=chainSamplesOut$lliklist[-(1:burnin)],
+              sigma = cursigma,
+              phi = matrix(marlikmap$par[-length(marlikmap$par)], 2))
+gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
+  with(gpode, gpds:::hes1modelODE(theta[t,], xsampled[t,,])), simplify = "array")
+gpode$fode <- aperm(gpode$fode, c(3,1,2))
 
-gpode$fode <- sapply(1:length(gpode$lp__), function(t) 
-  with(gpode, fODE(abc[t,], cbind(vtrue[t,],rtrue[t,]))), simplify = "array")
+dotxtrue = gpds:::hes1modelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
-xtrue$dVtrue = with(c(xtrue,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtrue))
-xtrue$dRtrue = with(c(xtrue,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
+gpds:::plotPostSamplesFlex(
+  paste0(outDir, config$kernel,"-",config$seed,"-trueMu.pdf"), 
+  xtrue, dotxtrue, xsim, gpode, pram.true, config)
 
-gpds:::plotPostSamples(paste0(
-  outDir,
-  config$kernel,"-",config$seed,"-trueMu.pdf"), 
-  xtrue, xsim, gpode, pram.true, config)
-
-absCI <- apply(gpode$abc, 2, quantile, probs = c(0.025, 0.5, 0.975))
-absCI <- rbind(absCI, mean=colMeans(gpode$abc))
-absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$abc &  pram.true$abc < absCI["97.5%",]))
+absCI <- apply(gpode$theta, 2, quantile, probs = c(0.025, 0.5, 0.975))
+absCI <- rbind(absCI, mean=colMeans(gpode$theta))
+absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$theta &  pram.true$theta < absCI["97.5%",]))
 
 saveRDS(absCI, paste0(
   outDir,
   config$loglikflag,"-trueMu-",config$kernel,"-",config$seed,".rds"))
+

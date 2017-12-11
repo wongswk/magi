@@ -22,8 +22,8 @@ getMeanDerivCurve <- function(x, y.mat, dy.mat, x.new, phi.mat, delta = 1e-9, si
   t(sapply(1:nrow(phi.mat), function(it){
     y <- y.mat[it,]
     dy <- dy.mat[it,]
-    sigma <- sigma.mat[it]
-    phi <- phi.mat[it,]
+    sigma <- sigma.mat[min(it, length(sigma.mat))]
+    phi <- phi.mat[min(it, nrow(phi.mat)),]
     if(is.null(gamma.mat)){
       gamma <- 0
     }else{
@@ -203,6 +203,97 @@ plotPostSamples <- function(filename, fn.true, fn.sim, gpode, init, config){
   matplot(fn.sim$time, t(gpode$dvobs[id.max,,drop=FALSE]), col="grey",add=TRUE, type="p",lty=1, pch=20)
   matplot(fn.true$time, tail(t(vdVpostcurve[1:length(id.max),,drop=FALSE]),nrow(fn.true)), col="grey",add=TRUE, type="l",lty=1)
 
+  dev.off()
+}
+
+#' flexible plot posterior sample from ode inference
+#' 
+#' see test run cases for how to use this function, allow for multiple dimensions
+#' of the X
+#'
+#' @param filename string of pdf filename to save
+#' @param xtrue VRtrue plus time and derivative
+#' @param xsim noisy observations
+#' @param gpode list of ode posterior that contains element stated in example
+#' section
+#' @param param list of true parameters abc and sigma
+#' 
+#' @importFrom gridExtra grid.table
+#' @importFrom gridBase baseViewports
+#' @importFrom grid pushViewport
+#'
+#' @export
+plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, config){
+  npostplot <- config$npostplot
+  if(is.null(npostplot)) {
+    npostplot <- 20
+  }
+  id.max <- which.max(gpode$lglik)
+  infoTab <- as.data.frame(config)
+  
+  pdf(filename, width = 8, height = 8)
+  
+  if(all(c("gridExtra","gridBase") %in% rownames(installed.packages()))){
+    infoPerRow <- 8 # FIXME grid layout not right for now
+    npanel <- ceiling(ncol(infoTab)/infoPerRow)
+    layout(1:npanel)
+    oldmar <- par(mar=c(0,0,0,0))
+    for(i in 1:npanel){
+      plot.new()
+      grid::pushViewport(gridBase::baseViewports()$figure)
+      gridExtra::grid.table(infoTab[,((i-1)*infoPerRow+1):min(ncol(infoTab), i*infoPerRow)]) 
+    }
+    layout(1)
+    par(mar=oldmar)
+  }
+  
+  id.plot <- seq(1,nrow(gpode$theta),length=npostplot)
+  id.plot <- unique(as.integer(id.plot))
+  id.plot <- unique(c(id.max, id.plot))
+ 
+  for(j in 1:(ncol(xsim)-1)){
+    matplot(xtrue$time, cbind(xtrue[,j+1], dotxtrue[,j]), type="l", lty=1, col=c(2,1),
+            ylab=paste0("component-",j), main="full posterior")
+    points(xsim$time, xsim[,j+1], col=2)
+    matplot(xsim$time, t(gpode$xsampled[id.plot,,j]), col="skyblue",add=TRUE, type="p",lty=1, pch=20)
+    matplot(xsim$time, t(gpode$xsampled[id.plot,,j]), col="skyblue",add=TRUE, type="l",lty=1)
+    matplot(xsim$time, t(gpode$fode[id.plot,,j]), col="grey",add=TRUE, type="p",lty=1, pch=20)
+    matplot(xsim$time, t(gpode$fode[id.plot,,j]), col="grey",add=TRUE, type="l",lty=1)
+  }
+  
+  layout(matrix(1:4,2,byrow = TRUE))
+  for(i in 1:length(param$theta)){
+    hist(gpode$theta[,i], main=letters[i])
+    abline(v=param$theta[i], col=2)
+    abline(v=quantile(gpode$theta[,i], c(0.025, 0.975)), col=3)  
+  }
+  
+  hist(gpode$sigma, main="sigma")
+  abline(v=param$sigma, col=2)
+  abline(v=quantile(gpode$sigma, c(0.025, 0.975)), col=3)
+  
+  layout(matrix(1:4,2,byrow = TRUE))
+  for(i in 1:length(param$theta)){
+    plot.ts(gpode$theta[,i], main=letters[i])
+    abline(h=param$theta[i], col=2)
+    abline(h=quantile(gpode$theta[,i], c(0.025, 0.975)), col=3)  
+  }
+  
+  layout(1:2)
+  plot(gpode$lglik, type="l")
+  hist(gpode$lglik)
+  
+  layout(1)
+  for(j in 1:(ncol(xsim)-1)){
+    matplot(xtrue$time, cbind(xtrue[,j+1], dotxtrue[,j]), type="l", lty=1, col=c(2,1),
+            ylab=paste0("component-",j), main="maximum a posterior")
+    points(xsim$time, xsim[,j+1], col=2)
+    points(xsim$time, gpode$xsampled[id.max,,j], col="skyblue", pch=20)
+    lines(xsim$time, gpode$xsampled[id.max,,j], col="skyblue")
+    points(xsim$time, gpode$fode[id.max,,j], col="grey", pch=20)
+    lines(xsim$time, gpode$fode[id.max,,j], col="grey")
+  }
+  
   dev.off()
 }
 

@@ -3,7 +3,8 @@
 #' @param config need at least `n.iter`, `burninRatio`, `loglikflag`, `hmcSteps`
 #' 
 #' @export 
-chainSampler <- function(config, xInit, singleSampler, stepLowInit, verbose=TRUE){
+chainSampler <- function(config, xInit, singleSampler, stepLowInit, verbose=TRUE, 
+                         thetaDim=3){
   numparam <- length(xInit)
   n.iter <- config$n.iter
   xth.formal <- matrix(NA, n.iter, numparam)
@@ -35,7 +36,7 @@ chainSampler <- function(config, xInit, singleSampler, stepLowInit, verbose=TRUE
     lliklist[t] <- foo$lpr
     
     if(verbose && t %% 100 ==0) 
-      methods::show(c(t, mean(tail(accepts[1:t],100)), tail(foo$final, 3)))
+      methods::show(c(t, mean(tail(accepts[1:t],100)), tail(foo$final, thetaDim)))
     
   }
   list(xth=xth.formal, lliklist=lliklist, stepLow=stepLow)
