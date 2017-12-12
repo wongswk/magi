@@ -106,8 +106,10 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
     model = OdeSystem(fnmodelODE, fnmodelDx, fnmodelDtheta, zeros(3), ones(3)*datum::inf);
   }else if(modelName == "Hes1"){
     model = OdeSystem(hes1modelODE, hes1modelDx, hes1modelDtheta, zeros(7), ones(7)*datum::inf); 
+  }else if(modelName == "HIV"){
+    model = OdeSystem(HIVmodelODE, HIVmodelDx, HIVmodelDtheta, zeros(6), ones(6)*datum::inf);     
   }else{
-    throw "modelName bust be one of 'FN', 'Hes1'";
+    throw "modelName must be one of 'FN', 'Hes1', 'HIV'";
   }
     
   if(loglikflag == "usual"){
