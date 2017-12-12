@@ -349,8 +349,13 @@ allSummaryList <- mclapply(1:length(indicatorArray), function(arg){
   allpdff <- allpdff[gsub(".*-([0-9]+)-.*", "\\1", allpdff) %in% seedOutputPdf]
   
   allf <- allf[grep("rds", allf)]
-  ci <- sapply(allf, function(f) readRDS(file.path(outDir, f)), 
-               simplify = "array")
+  ci <- sapply(allf, function(f) {
+    tryCatch(readRDS(file.path(outDir, f)),
+             error = function(e) NULL)
+  }, simplify = "array")
+  if(class(ci) == "list"){
+    ci <- sapply(ci[-which(sapply(ci, is.null))], identity, simplify = "array")
+  }
   label <- dimnames(ci)[[3]]
   label <- strsplit(label, "-")
   label <- sapply(label, function(x) x[2])
