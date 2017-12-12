@@ -23,9 +23,14 @@ organizeOutput <- function(maternDf, noise, nobs){
   outCoverage <- resultSummary[indicatorVec]
   rownames(outSize) <- names(outCoverage) <- paste0("discretize-", ndiscretize)
   outCoverage <- sapply(outCoverage, identity, simplify = "array")
-  dimnames(outCoverage)[[2]] <- c("a", "b", "c")  
+  dimnames(outCoverage)[[2]] <- letters[1:dim(outCoverage)[[2]]]
   list(repetitionSize = outSize, coverage = outCoverage)
 }
+
+physicalSystem.choices <- c(
+  "FitzHugh-Nagumo (FN) Model",
+  "Oscillatory expression of the Hes1"
+)
 
 # for debug purpose ---------------------------------------------------------
 input <- list(
