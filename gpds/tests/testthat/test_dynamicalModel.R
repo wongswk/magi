@@ -57,6 +57,6 @@ theta <- c(0.014, 1.16e-9, 1.3e-9, 5e-10, 3.62e-9, 1.56e-9)
 dynamicalModelList <- list(
   modelODE = gpds:::HIVmodelODE,
   modelDtheta = gpds:::HIVmodelDtheta,
-  modelDx = gpds::HIVmodelDx
+  modelDx = gpds:::HIVmodelDx
 )
 testDynamicalModel(dynamicalModelList, "HIV system", x, theta)

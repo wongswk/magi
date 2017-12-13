@@ -170,7 +170,7 @@ arma::cube HIVmodelDtheta(const arma::vec & theta, const arma::mat & x) {
   
   resultDtheta.slice(2).col(2) = T%Tw;
   resultDtheta.slice(2).col(3) = 0.25*Tmw%T;
-  resultDtheta.slice(2).col(6) = -Tm % Tw;
+  resultDtheta.slice(2).col(5) = -Tm % Tw;
   
   resultDtheta.slice(3).col(3) = 0.5 * Tmw % T;
   resultDtheta.slice(3).col(4) = Tw % Tm;
