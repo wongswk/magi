@@ -54,7 +54,7 @@ arma::mat hes1modelODE(const arma::vec & theta, const arma::mat & x) {
   
   mat PMHdt(x.n_rows, x.n_cols);
   PMHdt.col(0) = -theta(0)*P%H + theta(1)*M - theta(2)*P;
-  PMHdt.col(1) = theta(3)*M + theta(4)/(1+square(P));
+  PMHdt.col(1) = -theta(3)*M + theta(4)/(1+square(P));
   PMHdt.col(2) = -theta(0)*P%H + theta(5)/(1+square(P)) - theta(6)*H;
   
   return PMHdt;
@@ -72,7 +72,7 @@ arma::cube hes1modelDx(const arma::vec & theta, const arma::mat & x) {
   resultDx.slice(0).col(2) = -theta(0)*P;
   
   resultDx.slice(1).col(0) = -2*theta(4)*P / square(1.0 + square(P));
-  resultDx.slice(1).col(1).fill( theta(3) );
+  resultDx.slice(1).col(1).fill( -theta(3) );
   
   resultDx.slice(2).col(0) = -theta(0)*H - 2*theta(5)*P / square(1.0 + square(P));
   resultDx.slice(2).col(2) = -theta(0)*P - theta(6);
@@ -92,7 +92,7 @@ arma::cube hes1modelDtheta(const arma::vec & theta, const arma::mat & x) {
   resultDtheta.slice(0).col(1) = M;
   resultDtheta.slice(0).col(2) = -P;
   
-  resultDtheta.slice(1).col(3) = M;
+  resultDtheta.slice(1).col(3) = -M;
   resultDtheta.slice(1).col(4) = 1/(1 + square(P));
   
   resultDtheta.slice(2).col(0) = -P % H;
