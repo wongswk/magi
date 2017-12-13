@@ -153,9 +153,12 @@ Rcpp::List xthetallik_withmuC(const arma::mat & yobs,
 arma::vec speedbenchmarkXthetallik(const arma::mat & yobs, 
                                    const Rcpp::List & covVr, 
                                    const Rcpp::List & covRr, 
-                                   const double & sigma, 
+                                   const double & sigmaScalar,
                                    const arma::vec & initial,
                                    const int & nrep = 10000){
+  vec sigma( yobs.n_cols);
+  sigma.fill( as_scalar( sigmaScalar));
+  
   vector<gpcov> covAllDimensions(2);
   covAllDimensions[0] = cov_r2cpp_legacy(covVr);
   covAllDimensions[1] = cov_r2cpp_legacy(covRr);
@@ -169,15 +172,15 @@ arma::vec speedbenchmarkXthetallik(const arma::mat & yobs,
   // capture run time here
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrepShort; i++){
-    lp tmp1 = xthetallik_rescaled(initial, covAllDimensions[0], covAllDimensions[1], sigma, yobs, fnmodelODE);  
+    lp tmp1 = xthetallik_rescaled(initial, covAllDimensions[0], covAllDimensions[1], sigmaScalar, yobs, fnmodelODE);  
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
-    lp tmp2 = xthetallikBandApproxHardCode(initial, covAllDimensions[0], covAllDimensions[1], sigma, yobs, fnmodelODE);
+    lp tmp2 = xthetallikBandApproxHardCode(initial, covAllDimensions[0], covAllDimensions[1], sigmaScalar, yobs, fnmodelODE);
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
-    lp tmp3 = xthetallikHardCode(initial, covAllDimensions[0], covAllDimensions[1], sigma, yobs, fnmodelODE);  
+    lp tmp3 = xthetallikHardCode(initial, covAllDimensions[0], covAllDimensions[1], sigmaScalar, yobs, fnmodelODE);  
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
@@ -185,7 +188,7 @@ arma::vec speedbenchmarkXthetallik(const arma::mat & yobs,
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
-    lp tmp5 = xthetallik_withmu(initial, covAllDimensions, sigma, yobs, fnmodel);
+    lp tmp5 = xthetallik_withmu(initial, covAllDimensions, sigmaScalar, yobs, fnmodel);
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
@@ -193,7 +196,7 @@ arma::vec speedbenchmarkXthetallik(const arma::mat & yobs,
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
-    lp tmp7 = xthetallikBandApprox(initial, covAllDimensions, sigma, yobs, fnmodel);
+    lp tmp7 = xthetallikBandApprox(initial, covAllDimensions, sigmaScalar, yobs, fnmodel);
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
@@ -201,7 +204,7 @@ arma::vec speedbenchmarkXthetallik(const arma::mat & yobs,
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){
-    lp tmp9 = xthetallikTwoDimension(initial, covAllDimensions[0], covAllDimensions[1], sigma, yobs, fnmodel);
+    lp tmp9 = xthetallikTwoDimension(initial, covAllDimensions[0], covAllDimensions[1], sigmaScalar, yobs, fnmodel);
   }
   timestamps.push_back(chrono::high_resolution_clock::now());
   for(int i=0; i < nrep; i++){

@@ -196,7 +196,7 @@ lp phisigllik( const vec & phisig,
 //' @param yobs        observed data
 lp xthetallik( const vec & xtheta, 
                const std::vector<gpcov> & CovAllDimensions, 
-               const double & sigma, 
+               const vec & sigma, 
                const mat & yobs, 
                const OdeSystem & fOdeModel,
                const bool useBand,
@@ -233,7 +233,7 @@ lp xthetallik( const vec & xtheta,
     }
   }
   fitLevelError(find_nonfinite(fitLevelError)).fill(0.0);
-  res.col(0) = -0.5 * sum(square( fitLevelError )).t() / pow(sigma,2);
+  res.col(0) = -0.5 * sum(square( fitLevelError )).t() / square(sigma);
   
   mat KinvfitDerivError(n, pdimension);
   mat CinvX(n, pdimension);
@@ -291,7 +291,9 @@ lp xthetallik( const vec & xtheta,
   
   ret.gradient = -sum(eachDimensionC2, 1) / priorTemperature;
   ret.gradient.subvec(0, n*pdimension-1) -= vectorise(CinvX) / priorTemperature;
-  ret.gradient.subvec(0, n*pdimension-1) -= vectorise(fitLevelError) / pow(sigma, 2);
+  rowvec sigmaSq = square(sigma.t());
+  fitLevelError.each_row() /= sigmaSq;
+  ret.gradient.subvec(0, n*pdimension-1) -= vectorise(fitLevelError);
   
   return ret;
 }
@@ -301,7 +303,7 @@ lp xthetallik( const vec & xtheta,
 // with mean 
 lp xthetallikWithmuBand( const vec & xtheta, 
                          const std::vector<gpcov> & CovAllDimensions,
-                         const double & sigma, 
+                         const vec & sigma, 
                          const mat & yobs, 
                          const OdeSystem & fOdeModel,
                          const bool useBand,

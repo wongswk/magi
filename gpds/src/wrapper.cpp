@@ -86,7 +86,7 @@ gpcov cov_r2cpp(const Rcpp::List & cov_r){
 // [[Rcpp::export]]
 Rcpp::List xthetaSample( const arma::mat & yobs, 
                          const Rcpp::List & covList, 
-                         const double & sigma, 
+                         const arma::vec & sigmaInput,
                          const arma::vec & initial, 
                          const arma::vec & step,
                          const int nsteps = 1, 
@@ -95,6 +95,15 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
                          const double & overallTemperature = 1,
                          const double & priorTemperature = 1, 
                          const std::string modelName = "FN"){
+  vec sigma( yobs.n_cols);
+  if(sigmaInput.size() == 1){
+    sigma.fill( as_scalar( sigmaInput));
+  }else if(sigmaInput.size() == yobs.n_cols){
+    sigma = sigmaInput;
+  }else{
+    throw "sigmaInput size not right";
+  }
+  
   vector<gpcov> covAllDimensions(covList.size());
   for(unsigned int i = 0; i < covList.size(); i++){
     covAllDimensions[i] = cov_r2cpp(covList[i]);
@@ -164,13 +173,22 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
 arma::cube parallel_temper_hmc_xtheta( const arma::mat & yobs, 
                                        const Rcpp::List & covVr, 
                                        const Rcpp::List & covRr, 
-                                       const double & sigma, 
+                                       const arma::vec & sigmaInput,
                                        const arma::vec & temperature, 
                                        const double & alpha0, 
                                        const arma::vec & initial, 
                                        const arma::vec & step, 
                                        int nsteps = 1, 
                                        int niter=1e4){
+  vec sigma( yobs.n_cols);
+  if(sigmaInput.size() == 1){
+    sigma.fill( as_scalar( sigmaInput));
+  }else if(sigmaInput.size() == yobs.n_cols){
+    sigma = sigmaInput;
+  }else{
+    throw "sigmaInput size not right";
+  }
+  
   vector<gpcov> covAllDimensions(2);
   covAllDimensions[0] = cov_r2cpp(covVr);
   covAllDimensions[1] = cov_r2cpp(covRr);
@@ -225,10 +243,19 @@ arma::cube parallel_temper_hmc_xtheta( const arma::mat & yobs,
 Rcpp::List xthetallikC(const arma::mat & yobs, 
                        const Rcpp::List & covVr, 
                        const Rcpp::List & covRr, 
-                       const double & sigma, 
+                       const arma::vec & sigmaInput,
                        const arma::vec & initial,
                        const bool useBand = false,
                        const double & priorTemperature = 1.0){
+ 
+  vec sigma( yobs.n_cols);
+  if(sigmaInput.size() == 1){
+    sigma.fill( as_scalar( sigmaInput));
+  }else if(sigmaInput.size() == yobs.n_cols){
+    sigma = sigmaInput;
+  }else{
+    throw "sigmaInput size not right";
+  }
   vector<gpcov> covAllDimensions(2);
   covAllDimensions[0] = cov_r2cpp(covVr);
   covAllDimensions[1] = cov_r2cpp(covRr);
@@ -245,10 +272,18 @@ Rcpp::List xthetallikC(const arma::mat & yobs,
 Rcpp::List xthetallikWithmuBandC(const arma::mat & yobs, 
                                  const Rcpp::List & covVr, 
                                  const Rcpp::List & covRr, 
-                                 const double & sigma, 
+                                 const arma::vec & sigmaInput,
                                  const arma::vec & initial,
                                  const bool useBand = true,
                                  const double & priorTemperature = 1.0){
+  vec sigma( yobs.n_cols);
+  if(sigmaInput.size() == 1){
+    sigma.fill( as_scalar( sigmaInput));
+  }else if(sigmaInput.size() == yobs.n_cols){
+    sigma = sigmaInput;
+  }else{
+    throw "sigmaInput size not right";
+  }
   vector<gpcov> covAllDimensions(2);
   covAllDimensions[0] = cov_r2cpp(covVr);
   covAllDimensions[1] = cov_r2cpp(covRr);
