@@ -3,7 +3,7 @@ library(gpds)
 if(!exists("config")){
   config <- list(
     nobs = 51,
-    noise = c(2,1,3),
+    noise = c(4,1,8),
     kernel = "generalMatern",
     seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 50,
@@ -32,7 +32,7 @@ system(paste("mkdir -p", outDir))
 
 pram.true <- list(
   theta = c(0.022, 0.3, 0.031, 0.028, 0.5, 20, 0.3),
-  xinit = c(1, 1, 1),
+  x0 = c(0.5, 2, 1),
   phi = c(122.4027613, 41.8511396,  
           56.5612956, 91.4189948,
           164.3556832, 11.9474091),
@@ -44,7 +44,7 @@ modelODE <- function(t, state, parameters) {
   list(as.vector(gpds:::hes1modelODE(parameters, t(state))))
 }
 
-xtrue <- deSolve::ode(y = c(0.5, 2, 1), times = times, func = modelODE, parms = pram.true$theta)
+xtrue <- deSolve::ode(y = pram.true$x0, times = times, func = modelODE, parms = pram.true$theta)
 xtrue <- data.frame(xtrue)
 matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=1)
 
