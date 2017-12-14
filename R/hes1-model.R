@@ -3,7 +3,7 @@ library(gpds)
 if(!exists("config")){
   config <- list(
     nobs = 51,
-    noise = 1,
+    noise = c(2,1,3),
     kernel = "generalMatern",
     seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 50,
@@ -26,7 +26,8 @@ if(grepl("/n/",getwd())){
   baseDir <- "~/Workspace/DynamicSys/results/"  
 }
 outDir <- with(config, paste0(baseDir, modelName, "-", loglikflag,"-", kernel,
-                              "-nobs",nobs,"-noise",noise,"-ndis",ndis,"/"))
+                              "-nobs",nobs,"-noise", paste(round(noise,3), collapse = "_"),
+                              "-ndis",ndis,"/"))
 system(paste("mkdir -p", outDir))
 
 pram.true <- list(
@@ -53,8 +54,12 @@ xtrueFunc <- lapply(2:ncol(xtrue), function(j)
 xsim <- xtrue
 
 set.seed(config$seed)
-xsim[,-1] <- xsim[,-1]+rnorm(length(unlist(xsim[,-1])), sd=config$noise)
+for(j in 1:(ncol(xsim)-1)){
+  xsim[,1+j] <- xsim[,1+j]+rnorm(nrow(xsim), sd=config$noise[j])  
+}
+
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
+matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
 
 xsim <- insertNaN(xsim.obs,config$filllevel)
 
@@ -71,18 +76,24 @@ r.nobs <- abs(foo)
 r2.nobs <- r.nobs^2
 signr.nobs <- -sign(foo)
 
-phisigllikC( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, 1, 1, config$noise), 
-             data.matrix(xsim.obs[,-1]), r.nobs, config$kernel)
-fn <- function(par) -phisigllikC( par, data.matrix(xsim.obs[, -1]), 
-                                  r.nobs, config$kernel)$value
-gr <- function(par) -as.vector(phisigllikC( par, data.matrix(xsim.obs[, -1]),
-                                            r.nobs, config$kernel)$grad)
-marlikmap <- optim(rep(1, 2*ncol(xsim.obs)-1), fn, gr, method="L-BFGS-B", lower = 0.0001)
+cursigma <- rep(NA, ncol(xsim)-1)
+curphi <- matrix(NA, 2, ncol(xsim)-1)
 
-cursigma <- tail(marlikmap$par, 1)
+for(j in 1:(ncol(xsim)-1)){
+  fn <- function(par) -phisigllikC( par, data.matrix(xsim.obs[,1+j]), 
+                                    r.nobs, config$kernel)$value
+  gr <- function(par) -as.vector(phisigllikC( par, data.matrix(xsim.obs[,1+j]), 
+                                              r.nobs, config$kernel)$grad)
+  marlikmap <- optim(rep(1, 3), fn, gr, method="L-BFGS-B", lower = 0.0001)
+  
+  cursigma[j] <- marlikmap$par[3]
+  curphi[,j] <- marlikmap$par[1:2]
+}
+cursigma
+curphi
 
 curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
-  covEach <- calCov(marlikmap$par[(2*j-1):(2*j)], r, signr, bandsize=config$bandsize, 
+  covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize, 
                     kerneltype=config$kernel)
   covEach$mu[] <- mean(xsim.obs[,j+1])
   covEach
@@ -141,7 +152,7 @@ for(j in 1:ncol(muAllDim)){
   curCov[[j]]$dotmu <- dotmuAllDim[,j]
 }
 
-cursigma <- mean((data.matrix(xsim[,-1])-muAllDim)^2, na.rm = TRUE)
+cursigma <- colMeans((data.matrix(xsim[,-1])-muAllDim)^2, na.rm = TRUE)
 cursigma <- sqrt(cursigma)
 
 nall <- nrow(xsim)
@@ -190,7 +201,7 @@ for(j in 1:ncol(muAllDim)){
   curCov[[j]]$dotmu <- dotmuAllDim[,j]
 }
 
-cursigma <- mean((data.matrix(xsim[,-1])-muAllDim)^2, na.rm = TRUE)
+cursigma <- colMeans((data.matrix(xsim[,-1])-muAllDim)^2, na.rm = TRUE)
 cursigma <- sqrt(cursigma)
 
 nall <- nrow(xsim)

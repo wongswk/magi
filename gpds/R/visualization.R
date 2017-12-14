@@ -229,6 +229,7 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
     npostplot <- 20
   }
   id.max <- which.max(gpode$lglik)
+  config$noise <- paste(round(config$noise, 3), collapse = "; ")
   infoTab <- as.data.frame(config)
   
   pdf(filename, width = 8, height = 8)
