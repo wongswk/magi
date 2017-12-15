@@ -297,7 +297,7 @@ library(gpds)
 library(parallel)
 
 nobs.candidates <- c(5, 11, 26, 51, 101, 201, 401)
-noise.candidates <- c(0.01, 0.1, 0.2, 0.5, 1.0, 2) * 5
+noise.candidates <- c(0.01, 0.1, 0.2, 0.5, 1.0, 2)
 filllevel.candidates <- 0:4
 
 indicatorArray <- array(FALSE, dim=c(length(noise.candidates), 
@@ -313,7 +313,7 @@ allSummaryList <- mclapply(1:length(indicatorArray), function(arg){
   indicatorArray[arg] <- TRUE
   config <- list(
     nobs = nobs.candidates[apply(indicatorArray, 2, any)],
-    noise = noise.candidates[apply(indicatorArray, 1, any)],
+    noise = noise.candidates[apply(indicatorArray, 1, any)] * c(4, 1, 8),
     kernel = "generalMatern",
     seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 50,
@@ -336,8 +336,8 @@ allSummaryList <- mclapply(1:length(indicatorArray), function(arg){
     baseDir <- "~/Workspace/DynamicSys/results/"  
   }
   outDir <- with(config, paste0(baseDir, modelName, "-", loglikflag,"-", kernel,
-                                "-nobs",nobs,"-noise",noise,"-ndis",ndis,"/"))
-  
+                                "-nobs",nobs,"-noise", paste(round(noise,3), collapse = "_"),
+                                "-ndis",ndis,"/"))
   
   allf <- list.files(outDir)
   
