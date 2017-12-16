@@ -41,3 +41,44 @@ chainSampler <- function(config, xInit, singleSampler, stepLowInit, verbose=TRUE
   }
   list(xth=xth.formal, lliklist=lliklist, stepLow=stepLow)
 }
+
+#' pilot Sampler generate one MCMC chain
+#' 
+#' @param config need at least `n.iter`, `burninRatio`, 
+#' `loglikflag`, `hmcSteps`, `pilotRatio`, `stepSize`, 
+#' 
+#' @export 
+runPilot <- function(pilotIndex, xsim.obs, r.nobs, signr.nobs, curphi,
+                     gpsmoothFuncList, thetaSize, config){
+  xsim.obs <- xsim.obs[pilotIndex, ]
+  r.nobs <- r.nobs[pilotIndex, pilotIndex]
+  signr.nobs <- signr.nobs[pilotIndex, pilotIndex]
+  
+  pilotCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
+    covEach <- calCov(curphi[, j], r.nobs, signr.nobs, bandsize=config$bandsize, 
+                      kerneltype=config$kernel)
+    covEach$mu[] <- mean(xsim.obs[,j+1])
+    covEach
+  })
+  
+  pilotIterations <- as.integer(config$n.iter*config$pilotRatio)
+  config$n.iter <- pilotIterations
+  burnin <- as.integer(config$n.iter*config$burninRatio)
+  
+  xInit <- lapply(gpsmoothFuncList, function(f) f(xsim.obs$time))
+  xInit <- unlist(xInit)
+  xInit <- c(xInit, rep(1, thetaSize))
+  
+  stepLowInit <- rep(config$stepSize, length(data.matrix(xsim.obs[,-1])) + thetaSize)
+  
+  singleSampler <- function(xthetaValues, stepSize) 
+    xthetaSample(data.matrix(xsim.obs[,-1]), pilotCov, cursigma, 
+                 xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
+                 priorTemperature = config$priorTemperature, modelName = config$modelName)
+  chainSamplesOut <- chainSampler(config, xInit, singleSampler, stepLowInit, verbose=TRUE)
+  
+  gpode <- list(theta=chainSamplesOut$xth[-(1:burnin), (length(data.matrix(xsim.obs[,-1]))+1):(ncol(chainSamplesOut$xth))],
+                xsampled=array(chainSamplesOut$xth[-(1:burnin), 1:length(data.matrix(xsim.obs[,-1]))], 
+                               dim=c(config$n.iter-burnin, nrow(xsim.obs), ncol(xsim.obs)-1)))
+  list(theta = colMeans(gpode$theta), x = apply(gpode$xsampled, 2:3, mean))
+}
