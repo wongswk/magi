@@ -24,6 +24,8 @@ shinyServer(function(input, output, session) {
       assign("maternDf.candidates", 2.01, envir = .GlobalEnv)
       assign("kernel.candidates", "generalMatern", envir = .GlobalEnv)
       assign("phaseType.candidates", c("trueMu", "priorTempered", "priorTemperedPhase2"), envir = .GlobalEnv)
+      noise.candidates <- sapply(noise.candidates, function(noi) paste(round(noi * c(4, 1, 8), 3), collapse = "_"))
+      assign("noise.candidates", noise.candidates, envir = .GlobalEnv)
     }
     
     updateSelectInput(session, "nobs", choices=nobs.candidates, selected=nobs.candidates[4])
