@@ -75,6 +75,7 @@ runPilot <- function(pilotIndex, xsim.obs, r.nobs, signr.nobs, curphi,
     xthetaSample(data.matrix(xsim.obs[,-1]), pilotCov, cursigma, 
                  xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
                  priorTemperature = config$priorTemperature, modelName = config$modelName)
+  # save(list=ls(), file="debug_in_fun.rda")
   chainSamplesOut <- chainSampler(config, xInit, singleSampler, stepLowInit, verbose=TRUE)
   
   gpode <- list(theta=chainSamplesOut$xth[-(1:burnin), (length(data.matrix(xsim.obs[,-1]))+1):(ncol(chainSamplesOut$xth))],

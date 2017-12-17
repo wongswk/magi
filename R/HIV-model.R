@@ -2,10 +2,10 @@
 library(gpds)
 if(!exists("config")){
   config <- list(
-    nobs = 51,
+    nobs = 42,
     noise = 0.1,
     kernel = "generalMatern",
-    seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+    seed = 396033147,
     npostplot = 50,
     loglikflag = "withmeanBand",
     bandsize = 20,
