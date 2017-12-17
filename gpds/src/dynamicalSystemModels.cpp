@@ -104,16 +104,22 @@ arma::cube hes1modelDtheta(const arma::vec & theta, const arma::mat & x) {
 
 // [[Rcpp::export]]
 arma::mat HIVmodelODE(const arma::vec & theta, const arma::mat & x) {
-  const vec & T = x.col(0);
-  const vec & Tm = x.col(1);
-  const vec & Tw = x.col(2); 
-  const vec & Tmw = x.col(3);
+  const vec & T = exp(x.col(0));
+  const vec & Tm = exp(x.col(1));
+  const vec & Tw = exp(x.col(2));
+  const vec & Tmw = exp(x.col(3));
+  // const vec & T = x.col(0);
+  // const vec & Tm = x.col(1);
+  // const vec & Tw = x.col(2); 
+  // const vec & Tmw = x.col(3);
   
+    
   mat HIVdt(x.n_rows, x.n_cols);
-  HIVdt.col(0) = (theta(0) - theta(1)*Tm - theta(2)*Tw - theta(3)*Tmw)%T;
-  HIVdt.col(1) = (theta(1)*T - theta(4)*Tw)%Tm + 0.25*theta(3)*Tmw%T;
-  HIVdt.col(2) = (theta(2)*T - theta(5)*Tm)%Tw + 0.25*theta(3)*Tmw%T;
-  HIVdt.col(3) = 0.5*theta(3)*Tmw%T + (theta(4)+theta(5))*Tw%Tm;
+
+  HIVdt.col(0) = (theta(0) - 1e-6*theta(1)*Tm - 1e-6*theta(2)*Tw - 1e-6*theta(3)*Tmw);
+  HIVdt.col(1) = (-theta(6) + 1e-6*theta(1)*T - 1e-6*theta(4)*Tw) + 1e-6*0.25*theta(3)*Tmw%T / Tm;
+  HIVdt.col(2) = (theta(7) + 1e-6*theta(2)*T - 1e-6*theta(5)*Tm) + 1e-6*0.25*theta(3)*Tmw%T / Tw;
+  HIVdt.col(3) = theta(8) + 0.5*1e-6*theta(3)*T + (1e-6*theta(4)+1e-6*theta(5))*Tw%Tm / Tmw;
   
   return HIVdt;
 }
@@ -122,31 +128,31 @@ arma::mat HIVmodelODE(const arma::vec & theta, const arma::mat & x) {
 arma::cube HIVmodelDx(const arma::vec & theta, const arma::mat & x) {
   cube resultDx(x.n_rows, x.n_cols, x.n_cols, fill::zeros);
   
-  const vec & T = x.col(0);
-  const vec & Tm = x.col(1);
-  const vec & Tw = x.col(2); 
-  const vec & Tmw = x.col(3);
+  const vec & T = exp(x.col(0));
+  const vec & Tm = exp(x.col(1));
+  const vec & Tw = exp(x.col(2));
+  const vec & Tmw = exp(x.col(3));
+
+  resultDx.slice(0).col(0).fill(0);
+  resultDx.slice(0).col(1) = -1e-6*theta(1)*Tm;
+  resultDx.slice(0).col(2) = -1e-6*theta(2)*Tw;
+  resultDx.slice(0).col(3) = -1e-6*theta(3)*Tmw;
   
-  resultDx.slice(0).col(0) = theta(0) - theta(1)*Tm - theta(2)*Tw - theta(3)*Tmw;
-  resultDx.slice(0).col(1) = -theta(1)*T;
-  resultDx.slice(0).col(2) = -theta(2)*T;
-  resultDx.slice(0).col(3) = -theta(3)*T;
+  resultDx.slice(1).col(0) = 1e-6*theta(1)*T + 1e-6*0.25*theta(3)*Tmw%T/Tm;
+  resultDx.slice(1).col(1) = -1e-6*0.25*theta(3)*Tmw%T / Tm;
+  resultDx.slice(1).col(2) = -1e-6*theta(4)*Tw;
+  resultDx.slice(1).col(3) = 0.25*1e-6*theta(3)*Tmw%T/Tm;
   
-  resultDx.slice(1).col(0) = theta(1)*Tm + 0.25*theta(3)*Tm;
-  resultDx.slice(1).col(1) = theta(1)*T - theta(4)*Tw;
-  resultDx.slice(1).col(2) = -theta(4)*Tm;
-  resultDx.slice(1).col(3) = 0.25*theta(3)*T;
+  resultDx.slice(2).col(0) = 1e-6*theta(2)*T + 0.25*1e-6*theta(3)*Tmw%T/Tw;
+  resultDx.slice(2).col(1) = -1e-6*theta(5)*Tm;
+  resultDx.slice(2).col(2) = -1e-6*0.25*theta(3)*Tmw%T / Tw;
+  resultDx.slice(2).col(3) = 1e-6*0.25*theta(3)*Tmw%T/Tw;
   
-  resultDx.slice(2).col(0) = theta(2)*Tw + 0.25*theta(3)*Tm;
-  resultDx.slice(2).col(1) = -theta(5)*Tw;
-  resultDx.slice(2).col(2) = theta(2)*T - theta(5)*Tm;
-  resultDx.slice(2).col(3) = 0.25*theta(3)*T;
-  
-  resultDx.slice(3).col(0) = 0.5*theta(3)*Tmw;
-  resultDx.slice(3).col(1) = (theta(4)+theta(5))*Tw;
-  resultDx.slice(3).col(2) = (theta(4)+theta(5))*Tm;
-  resultDx.slice(3).col(3) = 0.5*theta(3)*T;
-  
+  resultDx.slice(3).col(0) = 1e-6*0.5*theta(3)*T;
+  resultDx.slice(3).col(1) = (1e-6*theta(4)+1e-6*theta(5))*Tw%Tm/Tmw;
+  resultDx.slice(3).col(2) = (1e-6*theta(4)+1e-6*theta(5))*Tm%Tw/Tmw;
+  resultDx.slice(3).col(3) = -(1e-6*theta(4)+1e-6*theta(5))*Tw%Tm/Tmw;  
+      
   return resultDx;
 }
 
@@ -154,27 +160,32 @@ arma::cube HIVmodelDx(const arma::vec & theta, const arma::mat & x) {
 arma::cube HIVmodelDtheta(const arma::vec & theta, const arma::mat & x) {
   cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
   
-  const vec & T = x.col(0);
-  const vec & Tm = x.col(1);
-  const vec & Tw = x.col(2); 
-  const vec & Tmw = x.col(3);
+  const vec & T = exp(x.col(0));
+  const vec & Tm = exp(x.col(1));
+  const vec & Tw = exp(x.col(2));
+  const vec & Tmw = exp(x.col(3));
   
-  resultDtheta.slice(0).col(0) = T;
-  resultDtheta.slice(0).col(1) = -Tm % T;
-  resultDtheta.slice(0).col(2) = -Tw % T;
-  resultDtheta.slice(0).col(3) = -Tmw % T;
+
+  resultDtheta.slice(0).col(0).fill(1.0);
+  resultDtheta.slice(0).col(1) = -1e-6*Tm ;
+  resultDtheta.slice(0).col(2) = -1e-6*Tw ;
+  resultDtheta.slice(0).col(3) = -1e-6*Tmw;
   
-  resultDtheta.slice(1).col(1) = T%Tm;
-  resultDtheta.slice(1).col(3) = 0.25*Tmw%T;
-  resultDtheta.slice(1).col(4) = -Tw % Tm;
+  resultDtheta.slice(1).col(1) = 1e-6*T;
+  resultDtheta.slice(1).col(3) = 1e-6*0.25*Tmw%T / Tm;
+  resultDtheta.slice(1).col(4) = -1e-6*Tw;
+  // resultDtheta.slice(1).col(6).fill(1.0);
+  resultDtheta.slice(1).col(6).fill(-1.0);
   
-  resultDtheta.slice(2).col(2) = T%Tw;
-  resultDtheta.slice(2).col(3) = 0.25*Tmw%T;
-  resultDtheta.slice(2).col(5) = -Tm % Tw;
+  resultDtheta.slice(2).col(2) = 1e-6*T;
+  resultDtheta.slice(2).col(3) = 1e-6*0.25*Tmw%T / Tw;
+  resultDtheta.slice(2).col(5) = -1e-6*Tm;
+  resultDtheta.slice(2).col(7).fill(1.0);
   
-  resultDtheta.slice(3).col(3) = 0.5 * Tmw % T;
-  resultDtheta.slice(3).col(4) = Tw % Tm;
-  resultDtheta.slice(3).col(5) = Tw % Tm;
-  
+  resultDtheta.slice(3).col(3) = 1e-6*0.5 * T;
+  resultDtheta.slice(3).col(4) = 1e-6*Tw % Tm / Tmw;
+  resultDtheta.slice(3).col(5) = 1e-6*Tw % Tm / Tmw;
+  resultDtheta.slice(3).col(8).fill(1.0);
+        
   return resultDtheta;
 }
