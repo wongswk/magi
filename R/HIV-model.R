@@ -2,7 +2,7 @@
 library(gpds)
 if(!exists("config")){
   config <- list(
-    nobs = 42,
+    nobs = 51,
     noise = 0.1,
     kernel = "generalMatern",
     seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
@@ -20,8 +20,8 @@ if(!exists("config")){
 
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
 config$priorTemperature <- config$ndis / config$nobs
-if(grepl("/n/",getwd())){
-  baseDir <- "/n/regal/kou_lab/shihaoyang/DynamicSys/results/" # tmp folder on cluster 
+if(grepl("/ufrc/",getwd())){
+  baseDir <- "/ufrc/swong/swkwong/gpds/results/" # tmp folder on cluster 
 }else{
   baseDir <- "c:/data/projects/DynamicSys/results/"  
 }
@@ -30,16 +30,14 @@ outDir <- with(config, paste0(baseDir, modelName, "-", loglikflag,"-", kernel,
 system(paste("mkdir -p", outDir))
 
 pram.true <- list(
-  #theta = c(0.014, 1.16e-9, 1.3e-9, 5e-10, 3.62e-9, 1.56e-9),
-  theta = c(0.0014, 1.16e-7, 1.3e-7, 5e-5, 3.62e-9, 1.56e-9),
-  #xinit = c(3e7, 10, 10, 10),
-  xinit = c(500, 10, 10, 10),
+  theta = c(0.015, 1.51e-3, 1.11e-3, 4.4e-4, 4.15e-3, 1.1e-3, 2.29e-2, 7.13e-03, 5.68e-04),
+  xinit = log(c(3.2e7, 134000, 26000, 10000)),
   phi = c(122.4027613, 41.8511396,  
           56.5612956, 91.4189948,
           164.3556832, 11.9474091),
   sigma = config$noise
 )
-times <- seq(0, 168, by = 1)
+times <- seq(0, 100, by = 0.25)
 
 modelODE <- function(t, state, parameters) {
   list(as.vector(gpds:::HIVmodelODE(parameters, t(state))))
