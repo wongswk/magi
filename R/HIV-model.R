@@ -2,7 +2,7 @@
 library(gpds)
 if(!exists("config")){
   config <- list(
-    nobs = 42,
+    nobs = 51,
     noise = 0.1,
     kernel = "generalMatern",
     seed = 396033147,
@@ -30,7 +30,7 @@ outDir <- with(config, paste0(baseDir, modelName, "-", loglikflag,"-", kernel,
 system(paste("mkdir -p", outDir))
 
 pram.true <- list(
-  theta = c(0.015, 1.51e-3, 1.11e-3, 4.4e-4, 4.15e-3, 1.1e-3, 2.29e-2, 7.13e-03, 5.68e-04),
+  theta = c(0.015, 1.51e-3, 1.11e-3, 4.4e-4, 4.15e-3, 1.1e-3, -2.29e-2, 7.13e-03, 5.68e-04),
   xinit = log(c(3.2e7, 134000, 26000, 10000)),
   phi = c(122.4027613, 41.8511396,  
           56.5612956, 91.4189948,
