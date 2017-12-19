@@ -1,4 +1,4 @@
-load("data/largeExperimentSummary.rda")
+load("data/hes1-largeExperimentSummary.rda", envir = .GlobalEnv)
 
 organizeOutput <- function(maternDf, noise, nobs){
   indicatorArray <- array(FALSE, dim=c(length(kernel.candidates), 
@@ -29,7 +29,8 @@ organizeOutput <- function(maternDf, noise, nobs){
 
 physicalSystem.choices <- c(
   "FitzHugh-Nagumo (FN) Model",
-  "Oscillatory expression of the Hes1"
+  "Oscillatory expression of the Hes1",
+  "HIV model"
 )
 
 # for debug purpose ---------------------------------------------------------

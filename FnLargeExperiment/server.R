@@ -26,6 +26,11 @@ shinyServer(function(input, output, session) {
       assign("phaseType.candidates", c("trueMu", "priorTempered", "priorTemperedPhase2"), envir = .GlobalEnv)
       noise.candidates <- sapply(noise.candidates, function(noi) paste(round(noi * c(4, 1, 8), 3), collapse = "_"))
       assign("noise.candidates", noise.candidates, envir = .GlobalEnv)
+    }else if(physicalSystem == "HIV model"){
+      load("data/HIV-largeExperimentSummary.rda", envir = .GlobalEnv)
+      assign("maternDf.candidates", 2.01, envir = .GlobalEnv)
+      assign("kernel.candidates", "generalMatern", envir = .GlobalEnv)
+      assign("phaseType.candidates", c("trueMu", "priorTempered", "priorTemperedPhase2"), envir = .GlobalEnv)
     }
     
     updateSelectInput(session, "nobs", choices=nobs.candidates, selected=nobs.candidates[4])
@@ -77,6 +82,8 @@ shinyServer(function(input, output, session) {
       folderPrefix <- ""
     }else if(input$physicalSystem=="Oscillatory expression of the Hes1"){
       folderPrefix <- "hes1-"
+    }else if(input$physicalSystem=="HIV model"){
+      folderPrefix <- "HIV-"
     }
     subDir <- paste0(folderPrefix, "withmeanBand-", kernelType, "-nobs", input$nobs, "-noise", input$noise)
     ndis <- substr(rownames(baseInfoTab), 12, nchar(rownames(baseInfoTab)))

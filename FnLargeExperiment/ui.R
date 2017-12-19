@@ -19,7 +19,7 @@ shinyUI(
     selectInput("physicalSystem", 
                 "Physical System",  
                 physicalSystem.choices,
-                physicalSystem.choices[1],
+                physicalSystem.choices[2],
                 width="400%"),
     # Sidebar with a slider input for number of bins 
     sidebarLayout(
