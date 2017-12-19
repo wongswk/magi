@@ -77,7 +77,7 @@ shinyServer(function(input, output, session) {
     }else{
       stop("invalid kernel df")
     }
-    pdfBaseLink <- input$pdfBaseDir
+    pdfBaseLink <- "35.227.57.42/results"
     if(input$physicalSystem=="FitzHugh-Nagumo (FN) Model"){
       folderPrefix <- ""
     }else if(input$physicalSystem=="Oscillatory expression of the Hes1"){
@@ -89,7 +89,7 @@ shinyServer(function(input, output, session) {
     ndis <- substr(rownames(baseInfoTab), 12, nchar(rownames(baseInfoTab)))
     subDir <- paste0(subDir, "-ndis", ndis)
     subDir <- file.path(pdfBaseLink, subDir)
-    urls <- paste0("file://", subDir)
+    urls <- paste0("http://", subDir)
     refs <- paste0("<a href='",  urls, "' target='_blank'>pdf visualization ndis-",ndis,"</a>")
     baseInfoTab$visualizations <- refs
     baseInfoTab
