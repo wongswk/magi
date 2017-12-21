@@ -116,10 +116,11 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
   }else if(modelName == "Hes1"){
     model = OdeSystem(hes1modelODE, hes1modelDx, hes1modelDtheta, zeros(7), ones(7)*datum::inf); 
   }else if(modelName == "HIV"){
-    model = OdeSystem(HIVmodelODE, HIVmodelDx, HIVmodelDtheta, zeros(9), ones(9)*datum::inf);     
+    model = OdeSystem(HIVmodelODE, HIVmodelDx, HIVmodelDtheta, {-datum::inf, 0,0,0,0,0, -datum::inf,-datum::inf,-datum::inf}, ones(9)*datum::inf);   
   }else{
     throw "modelName must be one of 'FN', 'Hes1', 'HIV'";
   }
+  
     
   if(loglikflag == "usual"){
     tgt = std::bind(xthetallik, std::placeholders::_1, 

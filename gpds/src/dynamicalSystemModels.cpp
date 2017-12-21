@@ -117,7 +117,7 @@ arma::mat HIVmodelODE(const arma::vec & theta, const arma::mat & x) {
   mat HIVdt(x.n_rows, x.n_cols);
 
   HIVdt.col(0) = (theta(0) - 1e-6*theta(1)*Tm - 1e-6*theta(2)*Tw - 1e-6*theta(3)*Tmw);
-  HIVdt.col(1) = (-theta(6) + 1e-6*theta(1)*T - 1e-6*theta(4)*Tw) + 1e-6*0.25*theta(3)*Tmw%T / Tm;
+  HIVdt.col(1) = (theta(6) + 1e-6*theta(1)*T - 1e-6*theta(4)*Tw) + 1e-6*0.25*theta(3)*Tmw%T / Tm;
   HIVdt.col(2) = (theta(7) + 1e-6*theta(2)*T - 1e-6*theta(5)*Tm) + 1e-6*0.25*theta(3)*Tmw%T / Tw;
   HIVdt.col(3) = theta(8) + 0.5*1e-6*theta(3)*T + (1e-6*theta(4)+1e-6*theta(5))*Tw%Tm / Tmw;
   
@@ -174,9 +174,8 @@ arma::cube HIVmodelDtheta(const arma::vec & theta, const arma::mat & x) {
   resultDtheta.slice(1).col(1) = 1e-6*T;
   resultDtheta.slice(1).col(3) = 1e-6*0.25*Tmw%T / Tm;
   resultDtheta.slice(1).col(4) = -1e-6*Tw;
-  // resultDtheta.slice(1).col(6).fill(1.0);
-  resultDtheta.slice(1).col(6).fill(-1.0);
-  
+  resultDtheta.slice(1).col(6).fill(1.0);
+
   resultDtheta.slice(2).col(2) = 1e-6*T;
   resultDtheta.slice(2).col(3) = 1e-6*0.25*Tmw%T / Tw;
   resultDtheta.slice(2).col(5) = -1e-6*Tm;
