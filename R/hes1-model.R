@@ -129,9 +129,15 @@ gpode$fode <- aperm(gpode$fode, c(3,1,2))
 
 dotxtrue = gpds:::hes1modelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
+configWithPhiSig <- config
+configWithPhiSig$sigma <- paste(round(cursigma, 3), collapse = ";")
+philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = ";"))
+names(philist) <- paste0("phi", 1:length(philist))
+configWithPhiSig <- c(configWithPhiSig, philist)
+  
 gpds:::plotPostSamplesFlex(
   paste0(outDir, config$kernel,"-",config$seed,"-priorTempered.pdf"), 
-  xtrue, dotxtrue, xsim, gpode, pram.true, config)
+  xtrue, dotxtrue, xsim, gpode, pram.true, configWithPhiSig)
 
 absCI <- apply(gpode$theta, 2, quantile, probs = c(0.025, 0.5, 0.975))
 absCI <- rbind(absCI, mean=colMeans(gpode$theta))
@@ -179,9 +185,15 @@ gpode$fode <- aperm(gpode$fode, c(3,1,2))
 
 dotxtrue = gpds:::hes1modelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
+configWithPhiSig <- config
+configWithPhiSig$sigma <- paste(round(cursigma, 3), collapse = ";")
+philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = ";"))
+names(philist) <- paste0("phi", 1:length(philist))
+configWithPhiSig <- c(configWithPhiSig, philist)
+
 gpds:::plotPostSamplesFlex(
   paste0(outDir, config$kernel,"-",config$seed,"-priorTemperedPhase2.pdf"), 
-  xtrue, dotxtrue, xsim, gpode, pram.true, config)
+  xtrue, dotxtrue, xsim, gpode, pram.true, configWithPhiSig)
 
 absCI <- apply(gpode$theta, 2, quantile, probs = c(0.025, 0.5, 0.975))
 absCI <- rbind(absCI, mean=colMeans(gpode$theta))
@@ -228,9 +240,15 @@ gpode$fode <- aperm(gpode$fode, c(3,1,2))
 
 dotxtrue = gpds:::hes1modelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
+configWithPhiSig <- config
+configWithPhiSig$sigma <- paste(round(cursigma, 3), collapse = ";")
+philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = ";"))
+names(philist) <- paste0("phi", 1:length(philist))
+configWithPhiSig <- c(configWithPhiSig, philist)
+
 gpds:::plotPostSamplesFlex(
   paste0(outDir, config$kernel,"-",config$seed,"-trueMu.pdf"), 
-  xtrue, dotxtrue, xsim, gpode, pram.true, config)
+  xtrue, dotxtrue, xsim, gpode, pram.true, configWithPhiSig)
 
 absCI <- apply(gpode$theta, 2, quantile, probs = c(0.025, 0.5, 0.975))
 absCI <- rbind(absCI, mean=colMeans(gpode$theta))
