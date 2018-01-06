@@ -130,8 +130,8 @@ gpode$fode <- aperm(gpode$fode, c(3,1,2))
 dotxtrue = gpds:::hes1modelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
 configWithPhiSig <- config
-configWithPhiSig$sigma <- paste(round(cursigma, 3), collapse = ";")
-philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = ";"))
+configWithPhiSig$sigma <- paste(round(cursigma, 3), collapse = "; ")
+philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = "; "))
 names(philist) <- paste0("phi", 1:length(philist))
 configWithPhiSig <- c(configWithPhiSig, philist)
   
@@ -186,8 +186,8 @@ gpode$fode <- aperm(gpode$fode, c(3,1,2))
 dotxtrue = gpds:::hes1modelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
 configWithPhiSig <- config
-configWithPhiSig$sigma <- paste(round(cursigma, 3), collapse = ";")
-philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = ";"))
+configWithPhiSig$sigma <- paste(round(cursigma, 3), collapse = "; ")
+philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = "; "))
 names(philist) <- paste0("phi", 1:length(philist))
 configWithPhiSig <- c(configWithPhiSig, philist)
 
@@ -241,8 +241,8 @@ gpode$fode <- aperm(gpode$fode, c(3,1,2))
 dotxtrue = gpds:::hes1modelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
 configWithPhiSig <- config
-configWithPhiSig$sigma <- paste(round(cursigma, 3), collapse = ";")
-philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = ";"))
+configWithPhiSig$sigma <- paste(round(cursigma, 3), collapse = "; ")
+philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = "; "))
 names(philist) <- paste0("phi", 1:length(philist))
 configWithPhiSig <- c(configWithPhiSig, philist)
 

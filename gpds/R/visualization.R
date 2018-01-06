@@ -235,17 +235,12 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
   pdf(filename, width = 8, height = 8)
   
   if(all(c("gridExtra","gridBase") %in% rownames(installed.packages()))){
-    infoPerRow <- 8 # FIXME grid layout not right for now
+    infoPerRow <- 7
     npanel <- ceiling(ncol(infoTab)/infoPerRow)
-    layout(1:npanel)
-    oldmar <- par(mar=c(0,0,0,0))
-    for(i in 1:npanel){
-      plot.new()
-      grid::pushViewport(gridBase::baseViewports()$figure)
-      gridExtra::grid.table(infoTab[,((i-1)*infoPerRow+1):min(ncol(infoTab), i*infoPerRow)]) 
-    }
-    layout(1)
-    par(mar=oldmar)
+    tbls <- lapply(1:npanel, function(i){
+      gridExtra::tableGrob(infoTab[,((i-1)*infoPerRow+1):min(ncol(infoTab), i*infoPerRow)]) 
+    })
+    do.call(gridExtra::grid.arrange, c(tbls, nrow=length(tbls)))
   }
   
   id.plot <- seq(1,nrow(gpode$theta),length=npostplot)
