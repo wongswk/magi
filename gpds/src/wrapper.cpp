@@ -93,8 +93,10 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
                          const bool traj = false, 
                          const std::string loglikflag = "usual",
                          const double & overallTemperature = 1,
-                         const double & priorTemperature = 1, 
+                         const Rcpp::NumericVector & priorTemperatureInput = 1.0, 
                          const std::string modelName = "FN"){
+  const arma::vec priorTemperature = Rcpp::as<arma::vec>(priorTemperatureInput);
+  
   vec sigma( yobs.n_cols);
   if(sigmaInput.size() == 1){
     sigma.fill( as_scalar( sigmaInput));
@@ -198,7 +200,7 @@ arma::cube parallel_temper_hmc_xtheta( const arma::mat & yobs,
   
   
   std::function<lp(vec)> tgt = std::bind(xthetallik, std::placeholders::_1, 
-                   covAllDimensions, sigma, yobs, fnmodel, true, 1.0);
+                   covAllDimensions, sigma, yobs, fnmodel, true, arma::ones(1));
   
   vec lb = ones<vec>(initial.size()) * (-datum::inf);
   lb.subvec(lb.size() - 3, lb.size() - 1).fill(0.0);
@@ -247,8 +249,9 @@ Rcpp::List xthetallikC(const arma::mat & yobs,
                        const arma::vec & sigmaInput,
                        const arma::vec & initial,
                        const bool useBand = false,
-                       const double & priorTemperature = 1.0){
- 
+                       const Rcpp::NumericVector & priorTemperatureInput = 1.0){
+  const arma::vec priorTemperature = Rcpp::as<arma::vec>(priorTemperatureInput);
+  
   vec sigma( yobs.n_cols);
   if(sigmaInput.size() == 1){
     sigma.fill( as_scalar( sigmaInput));
@@ -276,7 +279,8 @@ Rcpp::List xthetallikWithmuBandC(const arma::mat & yobs,
                                  const arma::vec & sigmaInput,
                                  const arma::vec & initial,
                                  const bool useBand = true,
-                                 const double & priorTemperature = 1.0){
+                                 const Rcpp::NumericVector & priorTemperatureInput = 1.0){
+  const arma::vec priorTemperature = Rcpp::as<arma::vec>(priorTemperatureInput);
   vec sigma( yobs.n_cols);
   if(sigmaInput.size() == 1){
     sigma.fill( as_scalar( sigmaInput));

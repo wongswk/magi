@@ -16,7 +16,7 @@ lp xthetallik( const arma::vec & xtheta,
                const arma::mat & yobs,
                const OdeSystem & fOdeModel,
                const bool useBand = false,
-               const double & priorTemperature = 1.0);
+               const arma::vec & priorTemperatureInput = arma::ones(2));
 
 lp xthetallikWithmuBand( const arma::vec & xtheta, 
                          const std::vector<gpcov> & CovAllDimensions,
@@ -24,4 +24,4 @@ lp xthetallikWithmuBand( const arma::vec & xtheta,
                          const arma::mat & yobs,
                          const OdeSystem & fOdeModel,
                          const bool useBand = true,
-                         const double & priorTemperature = 1.0);
+                         const arma::vec & priorTemperature = arma::ones(2));
