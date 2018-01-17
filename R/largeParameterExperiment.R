@@ -28,6 +28,7 @@ config <- list(
   modelName = "hes1"
 )
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
+# config$hmcSteps = max(1, config$ndis/100)*200
 
 if(config$ndis <= 801){
   for(dummy in 1:20){

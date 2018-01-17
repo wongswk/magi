@@ -3,17 +3,17 @@ library(gpds)
 if(!exists("config")){
   config <- list(
     nobs = 51,
-    noise = c(4,1,8),
+    noise = c(4,1,8)*0.2,
     kernel = "generalMatern",
-    seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+    seed = 484206367, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 50,
     loglikflag = "withmeanBand",
     bandsize = 20,
-    hmcSteps = 200,
-    n.iter = 1000,
-    burninRatio = 0.1,
-    stepSizeFactor = 0.1,
-    filllevel = 2,
+    hmcSteps = 500,
+    n.iter = 5000,
+    burninRatio = 0.50,
+    stepSizeFactor = 1,
+    filllevel = 1,
     modelName = "hes1"
   )
 }
@@ -84,13 +84,16 @@ for(j in 1:(ncol(xsim)-1)){
                                     r.nobs, config$kernel)$value
   gr <- function(par) -as.vector(phisigllikC( par, data.matrix(xsim.obs[,1+j]), 
                                               r.nobs, config$kernel)$grad)
-  marlikmap <- optim(rep(1, 3), fn, gr, method="L-BFGS-B", lower = 0.0001)
+  marlikmap <- optim(rep(1, 3), fn, gr, method="L-BFGS-B", lower = 0.0001,
+                     upper = c(Inf, 60*4*2, Inf))
   
   cursigma[j] <- marlikmap$par[3]
   curphi[,j] <- marlikmap$par[1:2]
 }
 cursigma
 curphi
+# curphi[1,] <- pmax(c(10, 2, 15), curphi[1,])
+# curphi[2,] <- pmin(c(40, 40, 10)*0.8, curphi[2,])
 
 curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
   covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize, 
@@ -160,6 +163,19 @@ for(j in 1:ncol(muAllDim)){
 
 cursigma <- colMeans((data.matrix(xsim[,-1])-muAllDim)^2, na.rm = TRUE)
 cursigma <- sqrt(cursigma)
+
+# refit phi idea doesn't help convergence
+# curphi <- matrix(NA, 2, ncol(xsim)-1)
+# for(j in 1:(ncol(xsim)-1)){
+#   fn <- function(par) -phisigllikC( c(par, cursigma[j]), muAllDim[,j,drop=FALSE],
+#                                     r, config$kernel)$value
+#   gr <- function(par) -as.vector(phisigllikC( c(par, cursigma[j]), muAllDim[,j,drop=FALSE],
+#                                               r, config$kernel)$grad)[1:2]
+#   marlikmap <- optim(rep(1, 2), fn, gr, method="L-BFGS-B", lower = 0.0001,
+#                      upper = c(Inf, 60*4*2))
+#   curphi[,j] <- marlikmap$par
+# }
+# curphi
 
 nall <- nrow(xsim)
 
