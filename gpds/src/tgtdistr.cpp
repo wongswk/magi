@@ -200,7 +200,7 @@ lp xthetallik( const vec & xtheta,
                const mat & yobs, 
                const OdeSystem & fOdeModel,
                const bool useBand,
-               const double & priorTemperature) {
+               const arma::vec & priorTemperatureInput) {
   int n = yobs.n_rows;
   int pdimension = yobs.n_cols;
   const mat & xlatent = mat(const_cast<double*>( xtheta.memptr()), n, pdimension, false, false);
@@ -208,6 +208,15 @@ lp xthetallik( const vec & xtheta,
   lp ret;
   if (fOdeModel.checkBound(xlatent, theta, &ret)) {
     return ret;
+  }
+  
+  arma::vec priorTemperature(2);
+  if(priorTemperatureInput.n_rows == 1){
+    priorTemperature.fill(as_scalar(priorTemperatureInput));
+  }else if(priorTemperatureInput.n_rows == 2){
+    priorTemperature = priorTemperatureInput;
+  }else{
+    throw std::invalid_argument("priorTemperatureInput must be scaler or 2-vector");
   }
   
   const mat & fderiv = fOdeModel.fOde(theta, xlatent);
@@ -255,8 +264,8 @@ lp xthetallik( const vec & xtheta,
       CinvX.col(vEachDim) = CovAllDimensions[vEachDim].Cinv * xlatent.col(vEachDim);  
     }
   }
-  res.col(1) = -0.5 * sum(fitDerivError % KinvfitDerivError).t() / priorTemperature;
-  res.col(2) = -0.5 * sum(xlatent % CinvX).t() / priorTemperature;
+  res.col(1) = -0.5 * sum(fitDerivError % KinvfitDerivError).t() / priorTemperature(0);
+  res.col(2) = -0.5 * sum(xlatent % CinvX).t() / priorTemperature(1);
   
   // cout << "lglik component = \n" << res << endl;
   
@@ -289,8 +298,8 @@ lp xthetallik( const vec & xtheta,
       fderivDtheta.slice(vEachDim).t() * KinvfitDerivError.col(vEachDim);
   }
   
-  ret.gradient = -sum(eachDimensionC2, 1) / priorTemperature;
-  ret.gradient.subvec(0, n*pdimension-1) -= vectorise(CinvX) / priorTemperature;
+  ret.gradient = -sum(eachDimensionC2, 1) / priorTemperature(0);
+  ret.gradient.subvec(0, n*pdimension-1) -= vectorise(CinvX) / priorTemperature(1);
   rowvec sigmaSq = square(sigma.t());
   fitLevelError.each_row() /= sigmaSq;
   ret.gradient.subvec(0, n*pdimension-1) -= vectorise(fitLevelError);
@@ -307,7 +316,7 @@ lp xthetallikWithmuBand( const vec & xtheta,
                          const mat & yobs, 
                          const OdeSystem & fOdeModel,
                          const bool useBand,
-                         const double & priorTemperature) {
+                         const arma::vec & priorTemperature) {
   int n = yobs.n_rows;
   vec xthetaShifted = xtheta;
   mat yobsShifted = yobs;
