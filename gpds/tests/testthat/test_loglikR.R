@@ -219,6 +219,30 @@ testthat::test_that("xthetallik_rescaledC compare to prior tempered xthetallik",
   testthat::expect_equal(out, out2)
 })
 
+testthat::test_that("prior tempered xthetallik with two separate temperature, and derivatives", {
+  dataInputWithMissing <- dataInput
+  dataInputWithMissing[-seq(1,nrow(dataInputWithMissing),4),] <- NA
+  
+  pTemp <- nrow(dataInput)/nrow(na.omit(dataInputWithMissing))
+  out <- gpds::xthetallikC(dataInputWithMissing, curCovV, curCovR, cursigma, xthInit,
+                           useBand = FALSE, priorTemperature = c(pTemp, pTemp*2))
+  out$value
+  
+  delta <- 1e-8
+  gradNum <- c()
+  for(it in 1:length(xthInit)){
+    xthInit1 <- xthInit
+    xthInit1[it] <- xthInit1[it] + delta
+    gradNum[it] <- 
+      (gpds::xthetallikC(dataInputWithMissing, curCovV, curCovR, cursigma, xthInit1,
+                         useBand = FALSE, priorTemperature = c(pTemp, pTemp*2))$value -
+         gpds::xthetallikC(dataInputWithMissing, curCovV, curCovR, cursigma, xthInit,
+                           useBand = FALSE, priorTemperature = c(pTemp, pTemp*2))$value)/delta
+  }
+  x <- (gradNum - out$grad)/abs(out$grad)
+  testthat::expect_true(all(abs(x) < 1e-3)) # gradient is self-consistent
+})
+
 testthat::test_that("xthetallik_withmuC runs without error and compare to zero-mean", {
   out <- gpds::xthetallik_withmuC(dataInput, curCovV, curCovR, cursigma, xthInit)
   out2 <- gpds::xthetallikWithmuBandC(dataInput, curCovV, curCovR, cursigma, xthInit, FALSE)
@@ -323,6 +347,24 @@ testthat::test_that("xthetallik_withmuC derivatives", {
   x <- (gradNum - out$grad)/out$grad
   testthat::expect_true(all(abs(x) < 1e-3)) # gradient is self-consistent
   
+  
+  out2 <- xthetallikWithmuBandC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit, FALSE,
+                                priorTemperatureInput = c(4,7))
+  
+  delta <- 1e-7
+  gradNum <- c()
+  for(it in 1:length(xthInit)){
+    xthInit1 <- xthInit
+    xthInit1[it] <- xthInit1[it] + delta
+    gradNum[it] <- 
+      (xthetallikWithmuBandC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit1, FALSE,
+                             priorTemperatureInput = c(4,7))$value -
+         xthetallikWithmuBandC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit, FALSE,
+                               priorTemperatureInput = c(4,7))$value)/delta
+  }
+  x <- (gradNum - out2$grad)/out2$grad
+  testthat::expect_true(all(abs(x) < 1e-3)) # gradient is self-consistent
+  
 })
 
 bandsize <- 10
@@ -346,6 +388,24 @@ testthat::test_that("band matrix approximation for withmean", {
     gradNum[it] <- 
       (xthetallikWithmuBandC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit1)$value -
          xthetallikWithmuBandC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit)$value)/delta
+  }
+  x <- (gradNum - outWithmeanBand$grad)/outWithmeanBand$grad
+  testthat::expect_true(all(abs(x) < 1e-3)) # gradient is self-consistent
+  
+  
+  outWithmeanBand <- xthetallikWithmuBandC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit,
+                                           priorTemperatureInput = c(2,3))
+  
+  delta <- 1e-7
+  gradNum <- c()
+  for(it in 1:length(xthInit)){
+    xthInit1 <- xthInit
+    xthInit1[it] <- xthInit1[it] + delta
+    gradNum[it] <- 
+      (xthetallikWithmuBandC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit1,
+                             priorTemperatureInput = c(2,3))$value -
+         xthetallikWithmuBandC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit,
+                               priorTemperatureInput = c(2,3))$value)/delta
   }
   x <- (gradNum - outWithmeanBand$grad)/outWithmeanBand$grad
   testthat::expect_true(all(abs(x) < 1e-3)) # gradient is self-consistent
