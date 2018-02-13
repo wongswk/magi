@@ -84,7 +84,7 @@ for(j in 1:(ncol(xsim)-1)){
                                     r.nobs, config$kernel)$value
   gr <- function(par) -as.vector(phisigllikC( par, data.matrix(xsim.obs[,1+j]), 
                                               r.nobs, config$kernel)$grad)
-  marlikmap <- optim(rep(1, 3), fn, gr, method="L-BFGS-B", lower = 0.0001,
+  marlikmap <- optim(rep(100, 3), fn, gr, method="L-BFGS-B", lower = 0.0001,
                      upper = c(Inf, 60*4*2, Inf))
   
   cursigma[j] <- marlikmap$par[3]

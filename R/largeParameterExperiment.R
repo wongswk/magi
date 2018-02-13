@@ -1,6 +1,6 @@
 library(gpds)
 
-nobs.candidates <- c(5, 11, 26, 51, 101, 201, 401)
+nobs.candidates <- c(5, 11, 26, 51, 101)
 noise.candidates <- c(0.01, 0.1, 0.2, 0.5, 1.0, 2)
 filllevel.candidates <- 0:4
 
