@@ -164,6 +164,21 @@ for(j in 1:ncol(muAllDim)){
 cursigma <- colMeans((data.matrix(xsim[,-1])-muAllDim)^2, na.rm = TRUE)
 cursigma <- sqrt(cursigma)
 
+updatePhi <- curphi
+
+for(j in 1:(ncol(xsim)-1)){
+  updatePhiJ <- 
+    sapply(as.integer(seq(1, nrow(gpode$xsampled), length=5)), function(postId){
+      fn <- function(par) -phillikwithxdotx( par, gpode$xsampled[postId,,j], gpode$fode[postId,,j],
+                                             r, signr, config$kernel)
+      marlikmap <- optim(rep(10, 2), fn, method="L-BFGS-B", lower = 0.0001,
+                         upper = c(Inf, 60*4*2, Inf), hessian = TRUE)
+      marlikmap$par  
+    })
+  updatePhi[,j] <- apply(updatePhiJ, 1, median)
+}
+curphi <- updatePhi
+
 # refit phi idea doesn't help convergence
 # curphi <- matrix(NA, 2, ncol(xsim)-1)
 # for(j in 1:(ncol(xsim)-1)){

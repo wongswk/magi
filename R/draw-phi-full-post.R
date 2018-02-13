@@ -120,7 +120,7 @@ for(j in 1:(ncol(xsim)-1)){
   
   curphiWithTruth[,j] <- marlikmap$par[1:2]
 }
-curphiWithTruth
+curphiWithTruth  # doesn't work because over-smooth
 
 j <- 1
 curphi[,j]
@@ -146,3 +146,23 @@ gr <- function(par) -as.vector(phisigllikC( par, as.matrix(xtrueAtDiscretization
 marlikmap <- optim(rep(1, 3), fn, gr, method="L-BFGS-B", lower = 0.0001,
                    upper = c(Inf, 60*4*2, Inf))
 marlikmap$par
+
+load("hes1image-to-fit-phi.rda")
+gpode$xsampled
+gpode$fode
+
+j <- 3
+
+fn <- function(par) -phillikwithxdotx( par, colMeans(gpode$xsampled[,,j]), colMeans(gpode$fode[,,j]),
+                                       r, signr, config$kernel)
+marlikmap <- optim(rep(10, 2), fn, method="L-BFGS-B", lower = 0.0001,
+                   upper = c(Inf, 60*4*2, Inf), hessian = TRUE)
+marlikmap$par  # doesn't work because over-smooth, same as for curphiWithTruth
+
+
+fn <- function(par) -phillikwithxdotx( par, gpode$xsampled[2500,,j], gpode$fode[2500,,j],
+                                       r, signr, config$kernel)
+marlikmap <- optim(rep(10, 2), fn, method="L-BFGS-B", lower = 0.0001,
+                   upper = c(Inf, 60*4*2, Inf), hessian = TRUE)
+marlikmap$par  # better than curphiWithTruth, but still too large for no reason
+fn(c(10, 10))
