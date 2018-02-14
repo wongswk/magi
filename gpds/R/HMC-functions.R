@@ -412,10 +412,10 @@ xthetallik <- function(x, theta, CovV, CovR, sigma, y, grad = F, lambda = 1)  {
   #CovR <- calCov(phi[3:4])
   frR <- (f[,2] - CovR$mphi %*% Rsm)
   
-  res[1,] <- c( -0.5 * sum((Vsm - y[,1])^2) / sigma^2 * lambda[1], 
+  res[1,] <- c( -0.5 * sum((Vsm - y[,1])^2, na.rm = TRUE) / sigma^2 * lambda[1], 
                 -0.5 * t(frV) %*% CovV$Kinv %*% frV * lambda[2],
                 - 0.5 * t(Vsm) %*% CovV$Cinv %*% Vsm * lambda[3])
-  res[2,] <- c( -0.5 * sum((Rsm - y[,2])^2) / sigma^2 * lambda[1],
+  res[2,] <- c( -0.5 * sum((Rsm - y[,2])^2, na.rm = TRUE) / sigma^2 * lambda[1],
                 -0.5 * t(frR) %*% CovR$Kinv %*% frR * lambda[2],
                 - 0.5 * t(Rsm) %*% CovR$Cinv %*% Rsm * lambda[3])
   
@@ -442,6 +442,7 @@ xthetallik <- function(x, theta, CovV, CovR, sigma, y, grad = F, lambda = 1)  {
     
     C3 <- c(2 * CovV$Cinv %*% Vsm,  2 * CovR$Cinv %*% Rsm ,0,0,0)
     C1 <- c( 2 * (Vsm - y[,1]) / sigma^2 ,  2 * (Rsm - y[,2]) / sigma^2,0,0,0)
+    C1[is.na(C1)] <- 0
     
     attr(ret,"grad") <- c(((VC2 + RC2) * lambda[2] + C3 * lambda[3]+ C1 * lambda[1]) * (-0.5))
   }
