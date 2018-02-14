@@ -2,18 +2,18 @@
 library(gpds)
 if(!exists("config")){
   config <- list(
-    nobs = 51,
+    nobs = 11,
     noise = c(4,1,8)*0.2,
     kernel = "generalMatern",
-    seed = 484206367, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+    seed = 606377638, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 50,
     loglikflag = "withmeanBand",
     bandsize = 20,
     hmcSteps = 500,
-    n.iter = 5000,
+    n.iter = 1e4,
     burninRatio = 0.50,
     stepSizeFactor = 1,
-    filllevel = 1,
+    filllevel = 3,
     modelName = "hes1"
   )
 }
@@ -60,6 +60,8 @@ for(j in 1:(ncol(xsim)-1)){
 
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
+
+matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
 
 xsim <- insertNaN(xsim.obs,config$filllevel)
 
@@ -156,10 +158,6 @@ startTheta <- colMeans(gpode$theta)
 dotmuAllDim <- apply(gpode$fode, 2:3, mean) 
 
 # run with priorTempered phase 2 -------------------------------------------
-for(j in 1:ncol(muAllDim)){
-  curCov[[j]]$mu <- muAllDim[,j]
-  curCov[[j]]$dotmu <- dotmuAllDim[,j]
-}
 
 cursigma <- colMeans((data.matrix(xsim[,-1])-muAllDim)^2, na.rm = TRUE)
 cursigma <- sqrt(cursigma)
@@ -177,7 +175,21 @@ for(j in 1:(ncol(xsim)-1)){
     })
   updatePhi[,j] <- apply(updatePhiJ, 1, median)
 }
+updatePhi
+curphi
 curphi <- updatePhi
+
+curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
+  covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize, 
+                    kerneltype=config$kernel)
+  covEach$mu[] <- mean(xsim.obs[,j+1])
+  covEach
+})
+
+for(j in 1:ncol(muAllDim)){
+  curCov[[j]]$mu <- muAllDim[,j]
+  curCov[[j]]$dotmu <- dotmuAllDim[,j]
+}
 
 # refit phi idea doesn't help convergence
 # curphi <- matrix(NA, 2, ncol(xsim)-1)

@@ -3,7 +3,7 @@ rm(list=ls())
 library(gpds)
 if(!exists("config")){
   config <- list(
-    nobs = 26,
+    nobs = 11,
     noise = c(4,1,8)*0.2,
     kernel = "generalMatern",
     seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
@@ -14,7 +14,7 @@ if(!exists("config")){
     n.iter = 5000,
     burninRatio = 0.50,
     stepSizeFactor = 1,
-    filllevel = 1,
+    filllevel = 3,
     modelName = "hes1"
   )
 }
@@ -95,7 +95,7 @@ cursigma
 curphi
 
 j <- 1
-plot(xsim.obs[, "time"], data.matrix(xsim.obs[,1+j]))
+# plot(xsim.obs[, "time"], data.matrix(xsim.obs[,1+j]))
 phisigllikC(c(curphi[,j], cursigma[j]), data.matrix(xsim.obs[,1+j]), 
             r.nobs, config$kernel)
 phisigllikC(c(100, 100, cursigma[j]), data.matrix(xsim.obs[,1+j]), 
@@ -120,16 +120,16 @@ for(j in 1:(ncol(xsim)-1)){
   
   curphiWithTruth[,j] <- marlikmap$par[1:2]
 }
-curphiWithTruth  # doesn't work because over-smooth
+curphiWithTruth  # doesn't work because over-smooth, phi2 is too large
 
-j <- 1
+j <- 2
 curphi[,j]
 
 fn <- function(par) -phillikwithxdotx( par, xtrueAtDiscretization[,j], dotxNumerical[,j],
                                        r, signr, config$kernel)
 marlikmap <- optim(rep(1, 2), fn, method="L-BFGS-B", lower = 0.0001,
                    upper = c(Inf, 60*4*2, Inf))
-marlikmap$par
+marlikmap$par  # using dotxNumerical is ok but doesn't use ode information
 
 
 fn <- function(par) -phillikwithxdotx( par, xtrueAtDiscretization[,j], dotxtrueAtDiscretization[,j],

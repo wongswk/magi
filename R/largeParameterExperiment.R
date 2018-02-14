@@ -30,7 +30,7 @@ config <- list(
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
 # config$hmcSteps = max(1, config$ndis/100)*200
 
-if(config$ndis <= 801){
+if(config$ndis <= 201){
   for(dummy in 1:20){
     config$seed <- (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9
     source("R/hes1-model.R")    
