@@ -255,6 +255,69 @@ lp phisigloocvllik( const vec & phisig,
   return ret;
 }
 
+//' leave one out cross validation for Gaussian Process fitting with various kernel
+//' 
+//' loss function is predictive log likelihood
+//' 
+//' @param phisig      the parameter phi and sigma
+//' @param yobs        observed data
+lp phisigloocvmse( const vec & phisig, 
+                    const mat & yobs, 
+                    const mat & dist, 
+                    string kernel){
+  int obsDimension = yobs.n_cols;
+  int phiDimension = (phisig.size() - 1) / obsDimension;
+  const double sigma = phisig(phisig.size() - 1);
+  const mat & phiAllDim = mat(const_cast<double*>( phisig.begin()), 
+                              phiDimension, obsDimension, false, false);
+  
+  std::function<gpcov(vec, mat, int)> kernelCov;
+  if(kernel == "matern"){
+    kernelCov = maternCov;
+  }else if(kernel == "rbf"){
+    kernelCov = rbfCov;
+  }else if(kernel == "compact1"){
+    kernelCov = compact1Cov;
+  }else if(kernel == "periodicMatern"){
+    kernelCov = periodicMaternCov;
+  }else if(kernel == "generalMatern"){
+    kernelCov = generalMaternCov;
+  }else{
+    throw "kernel is not specified correctly";
+  }
+  
+  lp ret;  
+  ret.gradient = zeros( phisig.size());
+  ret.value = 0;
+  
+  for(unsigned int pDimEach = 0; pDimEach < obsDimension; pDimEach++){
+    gpcov covThisDim = kernelCov(phiAllDim.col(pDimEach), dist, 1);
+    covThisDim.C.diag() += pow(sigma, 2);
+    
+    mat Cinv = arma::inv_sympd(covThisDim.C);
+    
+    vec alpha = Cinv * yobs.col(pDimEach);
+    
+    vec muLooCv = yobs.col(pDimEach) - alpha / Cinv.diag();
+    vec sigmasqLooCv = 1 / Cinv.diag();
+    
+    ret.value += -0.5*sum(square(yobs.col(pDimEach) - muLooCv));
+    
+    cube Ztemp = Cinv * covThisDim.dCdphiCube.each_slice();
+    Ztemp = join_slices(Ztemp, 2*sigma*Cinv);
+    for(unsigned int j=0; j < Ztemp.n_slices; j++){
+      vec ZjCinvDiag = sum(Ztemp.slice(j).t() % Cinv).t();
+      vec dmudphisig = (Ztemp.slice(j) * alpha) / Cinv.diag() - alpha % ZjCinvDiag / square(Cinv.diag());
+      if(j < covThisDim.dCdphiCube.n_slices){
+        ret.gradient(pDimEach*phiDimension + j) = sum(dmudphisig % (yobs.col(pDimEach) - muLooCv));
+      }else{
+        ret.gradient(ret.gradient.size()-1) += sum(dmudphisig % (yobs.col(pDimEach) - muLooCv));
+      }
+    }
+  }
+  return ret;
+}
+
 //' log likelihood for latent states and ODE theta conditional on phi sigma
 //' 
 //' @param phisig      the parameter phi and sigma

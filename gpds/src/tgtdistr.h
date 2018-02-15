@@ -11,6 +11,7 @@ gpcov rbfCov( const arma::vec &, const arma::mat &, int);
 gpcov compact1Cov( const arma::vec &, const arma::mat &, int);
 lp phisigllik( const arma::vec &, const arma::mat &, const arma::mat &, string kernel = "matern");
 lp phisigloocvllik( const arma::vec &, const arma::mat &, const arma::mat &, string kernel = "matern");
+lp phisigloocvmse( const arma::vec &, const arma::mat &, const arma::mat &, string kernel = "matern");
 lp xthetallik( const arma::vec & xtheta,
                const std::vector<gpcov> & CovAllDimensions,
                const arma::vec & sigma,

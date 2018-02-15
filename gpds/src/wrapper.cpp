@@ -30,6 +30,19 @@ Rcpp::List phisigloocvllikC(const arma::vec & phisig,
                       Named("grad")=ret.gradient);
 }
 
+//' R wrapper for phisigloocvmse
+//' @export
+// [[Rcpp::export]]
+Rcpp::List phisigloocvmseC(const arma::vec & phisig, 
+                           const arma::mat & yobs, 
+                           const arma::mat & dist, 
+                           std::string kernel="matern"){
+  lp ret = phisigloocvmse(phisig, yobs, dist, kernel);
+  return List::create(Named("value")=ret.value,
+                      Named("grad")=ret.gradient);
+}
+
+
 //' sample from GP marginal likelihood for phi and sigma
 //' @export
 // [[Rcpp::export]]
