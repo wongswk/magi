@@ -1,10 +1,16 @@
+if(interactive()){
+  maxit <- 500
+}else{
+  maxit <- 10
+}
+
 #### run with priorTempered phase 1 --------------------------------------------
 library(gpds)
 library(parallel)
 phisigcompareMethods <- list()
 configAll <- list()
 updatePhisigcompareMethods <- list()
-for(dummyIterator in 1:500){
+for(dummyIterator in 1:maxit){
   print(dummyIterator)
   config <- list(
     nobs = 11,
@@ -257,7 +263,59 @@ for(dummyIterator in 1:500){
   configAll[[dummyIterator]] <- config
   
   updatePhisigcompareMethods[[dummyIterator]] <- do.call(rbind, updateList)
-  if(dummyIterator %% 10 == 0){
+  if(interactive() & dummyIterator %% 10 == 0){
     save(phisigcompareMethods, configAll, updatePhisigcompareMethods, file="2018-02-15.rda")
+  }
+}
+
+save(phisigcompareMethods, configAll, updatePhisigcompareMethods, 
+     file=paste0(outDir, "phi and update phi - ",config$seed,".rda"))
+
+if(interactive()){
+  rdafiles <- list.files(outDir)
+  rdafiles <- rdafiles[grep("rda", rdafiles)]
+  phisigcompareMethodsMerged <- list()
+  configAllMerged <- list()
+  updatePhisigcompareMethodsMerged <- list()
+  for(f in rdafiles){
+    load(paste0(outDir, f))
+    phisigcompareMethodsMerged <- c(phisigcompareMethodsMerged, phisigcompareMethods)
+    configAllMerged <- c(configAllMerged, configAll)
+    updatePhisigcompareMethodsMerged <- c(updatePhisigcompareMethodsMerged, updatePhisigcompareMethods)
+  }
+  
+  phisigcompareMethods[[1]][c(2,5,8),]
+  updatePhisigcompareMethods[[1]][c(2,5,8),]
+  
+  phi2compareMethodsCube <- sapply(phisigcompareMethods, function(x) x[c(2,5,8),], simplify = "array")
+  phi2updatecompareMethodsCube <- sapply(updatePhisigcompareMethods, function(x) x[c(2,5,8),], simplify = "array")
+  
+  dimnames(phi2compareMethodsCube)[[1]] <- c("phi2LoocvMse", "phi2LoocvLlik", "phi2MarginalLikelihood")
+  dimnames(phi2compareMethodsCube)[[2]] <- c("hes1P", "hes1M", "hes1H")
+  
+  dimnames(phi2updatecompareMethodsCube)[[1]] <- c("phi2LoocvMse", "phi2LoocvLlik", "phi2MarginalLikelihood")
+  dimnames(phi2updatecompareMethodsCube)[[2]] <- c("hes1P", "hes1M", "hes1H")
+  
+  ggobjs <- list()
+  for(component in c("hes1P", "hes1M", "hes1H")){
+    x <- data.frame(log(t(phi2compareMethodsCube[,component,])))
+    library(ggplot2);library(reshape2)
+    data <- melt(x)
+    ggobjs[[component]] <- 
+      ggplot(data,aes(x=value, fill=variable)) + geom_density(alpha=0.25) + 
+      ggplot2::labs(title=component) + xlab("log phi2")
+  }
+  
+  ggobjs <- list()
+  for(method in c("phi2LoocvMse", "phi2LoocvLlik", "phi2MarginalLikelihood")){
+    for(component in c("hes1P", "hes1M", "hes1H")){
+      x <- data.frame(phase1phi=log(phi2compareMethodsCube[method,component,]),
+                      updatephi=log(phi2updatecompareMethodsCube[method,component,]))
+      library(ggplot2);library(reshape2)
+      data <- melt(x)
+      ggobjs[[paste(method, "+", component)]] <- 
+        ggplot(data,aes(x=value, fill=variable)) + geom_density(alpha=0.25) + 
+        ggplot2::labs(title=paste(method, "+", component)) + xlab("log phi2")
+    }
   }
 }
