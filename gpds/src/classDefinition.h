@@ -40,8 +40,8 @@ struct mcmcstate {
 };
 
 struct gpcov {
-  arma::mat C, Cinv, mphi, Kphi, Kinv, CeigenVec, KeigenVec, mphiLeftHalf;
-  arma::cube dCdphiCube;
+  arma::mat C, Cprime, Cdoubleprime, Cinv, mphi, Kphi, Kinv, CeigenVec, KeigenVec, mphiLeftHalf;
+  arma::cube dCdphiCube, dCprimedphiCube, dCdoubleprimedphiCube;
   arma::mat CinvBand, mphiBand, KinvBand;
   arma::vec Ceigen1over, Keigen1over, mu, dotmu;
   int bandsize;

@@ -7,6 +7,7 @@
 using namespace std;
 
 gpcov maternCov( const arma::vec &, const arma::mat &, int);
+gpcov generalMaternCov( const arma::vec &, const arma::mat &, int);
 gpcov rbfCov( const arma::vec &, const arma::mat &, int);
 gpcov compact1Cov( const arma::vec &, const arma::mat &, int);
 lp phisigllik( const arma::vec &, const arma::mat &, const arma::mat &, string kernel = "matern");

@@ -106,6 +106,25 @@ gpcov cov_r2cpp(const Rcpp::List & cov_r){
   return cov_v;
 }
 
+
+Rcpp::List cov_cpp2r(const gpcov & cov_v){
+  // TODO: gpcov shoule be a class and this should be a constructor
+  Rcpp::List cov_r = List::create(
+    Named("C")=cov_v.C,
+    Named("dCdphiCube")=cov_v.dCdphiCube,
+    Named("Cprime")=cov_v.Cprime,
+    Named("Cdoubleprime")=cov_v.Cdoubleprime
+  );
+  return cov_r;
+}
+
+//' general matern cov calculation Rcpp wrapper
+//' @export
+// [[Rcpp::export]]
+Rcpp::List generalMaternCovRcpp( const arma::vec & phi, const arma::mat & distSigned, int complexity = 3){
+  return cov_cpp2r(generalMaternCov(phi, distSigned, complexity));
+}
+
 //' sample from GP ODE for latent x and theta
 //' @export
 // [[Rcpp::export]]

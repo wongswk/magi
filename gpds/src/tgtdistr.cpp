@@ -38,37 +38,76 @@ double modifiedBessel2ndKind (const double & nu, const double & x){
 //' @param phi         the parameter of (sigma_c_sq, alpha)
 //' @param dist        distance matrix
 //' @param complexity  how much derivative information should be calculated
-gpcov generalMaternCov( const vec & phi, const mat & dist, int complexity = 0){
+gpcov generalMaternCov( const vec & phi, const mat & distSigned, int complexity = 0){
   double df = 2.01;
   gpcov out;
-  mat dist2 = square(dist);
-  out.C.set_size(dist.n_rows, dist.n_cols);
-  mat x4bessel = sqrt(2.0 * df) * dist / phi(1);
-  for(unsigned int i = 0; i < dist.size(); i++){
-    if(abs(dist(i)) < 1e-14){
+  out.C.set_size(distSigned.n_rows, distSigned.n_cols);
+  mat x4bessel = sqrt(2.0 * df) * abs(distSigned) / phi(1);
+  for(unsigned int i = 0; i < distSigned.size(); i++){
+    if(abs(distSigned(i)) < 1e-14){
       out.C(i) = phi(0);
     }else{
       out.C(i) = phi(0) * pow(2.0, 1-df) * exp(-lgamma(df)) * pow( x4bessel(i), df) * 
         modifiedBessel2ndKind(df, x4bessel(i));  
     }
   }
-  out.C.diag() += 1e-7;
+  
   // cout << out.C << endl;
-  if (complexity == 0) return out;
+  if (complexity == 0) {
+    out.C.diag() += 1e-7;  // stabilizer
+    return out;
+  }
   out.dCdphiCube.set_size(out.C.n_rows, out.C.n_cols, 2);
   out.dCdphiCube.slice(0) = out.C/phi(0);
   out.dCdphiCube.slice(1) = out.C * df / x4bessel;
-  for(unsigned int i = 0; i < dist.size(); i++){
-    if(abs(dist(i)) < 1e-14){
+  for(unsigned int i = 0; i < distSigned.size(); i++){
+    if(abs(distSigned(i)) < 1e-14){
       out.dCdphiCube.slice(1)(i) = 0;
     }else{
       out.dCdphiCube.slice(1)(i) += phi(0) * pow(2.0, 1-df) * exp(-lgamma(df)) * pow( x4bessel(i), df) * 
         -(modifiedBessel2ndKind(df-1, x4bessel(i)) + modifiedBessel2ndKind(df+1, x4bessel(i)))/2.0;  
     }
-    out.dCdphiCube.slice(1)(i) *= -sqrt(2.0 * df) * dist(i) / pow(phi(1), 2);
+    out.dCdphiCube.slice(1)(i) *= -sqrt(2.0 * df) * std::abs(distSigned(i)) / pow(phi(1), 2);
   }
-  if (complexity == 1) return out;
-  // work from here continue for gp derivative
+  
+  if (complexity == 1) {
+    out.C.diag() += 1e-7;  // stabilizer
+    return out;
+  }
+  
+  // out.Cprime
+  out.Cprime.set_size(out.C.n_rows, out.C.n_cols);
+  for(unsigned int i = 0; i < distSigned.size(); i++){
+    if(abs(distSigned(i)) < 1e-14){
+      out.Cprime(i) = 0;
+    }else{
+      out.Cprime(i) = out.C(i) * (df / x4bessel(i) - 
+        (modifiedBessel2ndKind(df-1, x4bessel(i)) + modifiedBessel2ndKind(df+1, x4bessel(i)))/(2*modifiedBessel2ndKind(df, x4bessel(i))));
+    }
+  }
+  out.Cprime %= sqrt(2.0 * df) * sign(distSigned) / phi(1);
+  
+  // out.Cdoubleprime;
+  out.Cdoubleprime.set_size(out.C.n_rows, out.C.n_cols);
+  double CdoubleprimeDiag = phi(0) * pow(2.0, 1-df) * exp(-lgamma(df)) * 2.0 * df / pow(phi(1), 2) * exp(lgamma(df-1)) * pow(2, df-2);
+  for(unsigned int i = 0; i < distSigned.size(); i++){
+    if(abs(distSigned(i)) < 1e-14){
+      out.Cdoubleprime(i) = CdoubleprimeDiag;
+    }else{
+      out.Cdoubleprime(i) = -phi(0) * pow(2, 1-df) * exp(-lgamma(df)) * 2.0 * df / pow(phi(1), 2) * (
+        df * (df-1) * pow(x4bessel(i), df-2) * modifiedBessel2ndKind(df, x4bessel(i)) - 
+          df * pow(x4bessel(i), df-1) * (modifiedBessel2ndKind(df-1, x4bessel(i)) +
+          modifiedBessel2ndKind(df+1, x4bessel(i))) + 
+          pow(x4bessel(i), df) * 
+          (modifiedBessel2ndKind(df-2, x4bessel(i)) + 
+          2 * modifiedBessel2ndKind(df, x4bessel(i)) + 
+          modifiedBessel2ndKind(df+2, x4bessel(i))) /4 );
+    }
+  }
+  
+  // out.dCprimedphiCube;
+  // out.dCdoubleprimedphiCube;
+  out.C.diag() += 1e-7;  // stabilizer
   return out;
 }
 
