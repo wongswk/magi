@@ -177,7 +177,7 @@ for(j in 1:(ncol(xsim)-1)){
 }
 updatePhi
 curphi
-curphi <- updatePhi
+# curphi <- updatePhi
 
 curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
   covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize, 
