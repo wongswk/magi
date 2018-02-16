@@ -43,32 +43,49 @@ gpcov generalMaternCov( const vec & phi, const mat & distSigned, int complexity 
   gpcov out;
   out.C.set_size(distSigned.n_rows, distSigned.n_cols);
   mat x4bessel = sqrt(2.0 * df) * abs(distSigned) / phi(1);
-  for(unsigned int i = 0; i < distSigned.size(); i++){
-    if(abs(distSigned(i)) < 1e-14){
-      out.C(i) = phi(0);
-    }else{
-      out.C(i) = phi(0) * pow(2.0, 1-df) * exp(-lgamma(df)) * pow( x4bessel(i), df) * 
-        modifiedBessel2ndKind(df, x4bessel(i));  
+  
+  mat bessel_df(x4bessel.n_rows, x4bessel.n_cols);
+  for(unsigned int j = 0; j < bessel_df.n_cols; j++){
+    for(unsigned int i = 0; i < j; i ++){
+      bessel_df(i, j) = modifiedBessel2ndKind(df, x4bessel(i, j));
     }
   }
+  bessel_df.diag().fill(datum::inf);
+  bessel_df = symmatu(bessel_df);
+  
+  mat bessel_dfMinus1(x4bessel.n_rows, x4bessel.n_cols);
+  for(unsigned int j = 0; j < bessel_df.n_cols; j++){
+    for(unsigned int i = 0; i < j; i ++){
+      bessel_dfMinus1(i, j) = modifiedBessel2ndKind(df-1, x4bessel(i, j));
+    }
+  }
+  bessel_dfMinus1.diag().fill(datum::inf);
+  bessel_dfMinus1 = symmatu(bessel_dfMinus1);
+  
+  mat bessel_dfPlus1 = bessel_dfMinus1 + 2 * df / x4bessel % bessel_df;
+  bessel_dfPlus1.diag().fill(datum::inf);
+  
+  mat bessel_dfPlus2 = bessel_df + 2 * (df + 1) / x4bessel % bessel_dfPlus1;
+  bessel_dfPlus2.diag().fill(datum::inf);
+
+  mat bessel_dfMinus2 = bessel_df - 2 * (df - 1) / x4bessel % bessel_dfMinus1;
+  bessel_dfMinus2.diag().fill(datum::inf);
+  
+  out.C = phi(0) * pow(2.0, 1-df) * exp(-lgamma(df)) * pow( x4bessel, df) % bessel_df;  
+  out.C.diag().fill(phi(0));
   
   // cout << out.C << endl;
   if (complexity == 0) {
     out.C.diag() += 1e-7;  // stabilizer
     return out;
   }
+  
+  mat dCdx4bessel = out.C % (df / x4bessel - 0.5 * (bessel_dfMinus1 + bessel_dfPlus1) / bessel_df);
+  
   out.dCdphiCube.set_size(out.C.n_rows, out.C.n_cols, 2);
   out.dCdphiCube.slice(0) = out.C/phi(0);
-  out.dCdphiCube.slice(1) = out.C * df / x4bessel;
-  for(unsigned int i = 0; i < distSigned.size(); i++){
-    if(abs(distSigned(i)) < 1e-14){
-      out.dCdphiCube.slice(1)(i) = 0;
-    }else{
-      out.dCdphiCube.slice(1)(i) += phi(0) * pow(2.0, 1-df) * exp(-lgamma(df)) * pow( x4bessel(i), df) * 
-        -(modifiedBessel2ndKind(df-1, x4bessel(i)) + modifiedBessel2ndKind(df+1, x4bessel(i)))/2.0;  
-    }
-    out.dCdphiCube.slice(1)(i) *= -sqrt(2.0 * df) * std::abs(distSigned(i)) / pow(phi(1), 2);
-  }
+  out.dCdphiCube.slice(1) = dCdx4bessel % (-sqrt(2.0 * df) / pow(phi(1), 2) * abs(distSigned));
+  out.dCdphiCube.slice(1).diag().fill(0);
   
   if (complexity == 1) {
     out.C.diag() += 1e-7;  // stabilizer
@@ -76,34 +93,36 @@ gpcov generalMaternCov( const vec & phi, const mat & distSigned, int complexity 
   }
   
   // out.Cprime
-  out.Cprime.set_size(out.C.n_rows, out.C.n_cols);
-  for(unsigned int i = 0; i < distSigned.size(); i++){
-    if(abs(distSigned(i)) < 1e-14){
-      out.Cprime(i) = 0;
-    }else{
-      out.Cprime(i) = out.C(i) * (df / x4bessel(i) - 
-        (modifiedBessel2ndKind(df-1, x4bessel(i)) + modifiedBessel2ndKind(df+1, x4bessel(i)))/(2*modifiedBessel2ndKind(df, x4bessel(i))));
-    }
-  }
-  out.Cprime %= sqrt(2.0 * df) * sign(distSigned) / phi(1);
+  out.Cprime = dCdx4bessel % (sqrt(2.0 * df) / phi(1) * sign(distSigned));
+  out.Cprime.diag().fill(0);
   
   // out.Cdoubleprime;
-  out.Cdoubleprime.set_size(out.C.n_rows, out.C.n_cols);
   double CdoubleprimeDiag = phi(0) * pow(2.0, 1-df) * exp(-lgamma(df)) * 2.0 * df / pow(phi(1), 2) * exp(lgamma(df-1)) * pow(2, df-2);
-  for(unsigned int i = 0; i < distSigned.size(); i++){
-    if(abs(distSigned(i)) < 1e-14){
-      out.Cdoubleprime(i) = CdoubleprimeDiag;
-    }else{
-      out.Cdoubleprime(i) = -phi(0) * pow(2, 1-df) * exp(-lgamma(df)) * 2.0 * df / pow(phi(1), 2) * (
-        df * (df-1) * pow(x4bessel(i), df-2) * modifiedBessel2ndKind(df, x4bessel(i)) - 
-          df * pow(x4bessel(i), df-1) * (modifiedBessel2ndKind(df-1, x4bessel(i)) +
-          modifiedBessel2ndKind(df+1, x4bessel(i))) + 
-          pow(x4bessel(i), df) * 
-          (modifiedBessel2ndKind(df-2, x4bessel(i)) + 
-          2 * modifiedBessel2ndKind(df, x4bessel(i)) + 
-          modifiedBessel2ndKind(df+2, x4bessel(i))) /4 );
-    }
-  }
+  
+  // out.Cdoubleprime.set_size(out.C.n_rows, out.C.n_cols);
+  // for(unsigned int i = 0; i < distSigned.size(); i++){
+  //   if(abs(distSigned(i)) < 1e-14){
+  //     out.Cdoubleprime(i) = CdoubleprimeDiag;
+  //   }else{
+  //     out.Cdoubleprime(i) = -phi(0) * pow(2, 1-df) * exp(-lgamma(df)) * 2.0 * df / pow(phi(1), 2) * (
+  //       df * (df-1) * pow(x4bessel(i), df-2) * bessel_df(i) - 
+  //         df * pow(x4bessel(i), df-1) * (bessel_dfMinus1(i) +
+  //         bessel_dfPlus1(i)) + 
+  //         pow(x4bessel(i), df) * 
+  //         (bessel_dfMinus2(i) + 
+  //         2 * bessel_df(i) + 
+  //         bessel_dfPlus2(i)) /4 );
+  //   }
+  // }
+  
+  out.Cdoubleprime = pow(out.Cprime, 2) / out.C;
+  out.Cdoubleprime += (2 * df) / pow(phi(1), 2) * out.C  % (
+    - df / pow(x4bessel, 2)
+    + 0.25 * (bessel_dfMinus2 + 2*bessel_df + bessel_dfPlus2) / bessel_df
+    - 0.25 * pow((bessel_dfMinus1 + bessel_dfPlus1) / bessel_df, 2)
+  );
+  out.Cdoubleprime = -out.Cdoubleprime;
+  out.Cdoubleprime.diag().fill(CdoubleprimeDiag);
   
   // out.dCprimedphiCube;
   // out.dCdoubleprimedphiCube;
