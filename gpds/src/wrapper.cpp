@@ -113,7 +113,8 @@ Rcpp::List cov_cpp2r(const gpcov & cov_v){
     Named("C")=cov_v.C,
     Named("dCdphiCube")=cov_v.dCdphiCube,
     Named("Cprime")=cov_v.Cprime,
-    Named("Cdoubleprime")=cov_v.Cdoubleprime
+    Named("Cdoubleprime")=cov_v.Cdoubleprime,
+    Named("dCprimedphiCube")=cov_v.dCprimedphiCube
   );
   return cov_r;
 }

@@ -99,18 +99,22 @@ gpcov generalMaternCov( const vec & phi, const mat & distSigned, int complexity 
   out.Cprime.diag().fill(0);
   
   // out.Cdoubleprime;
-  double CdoubleprimeDiag = phi(0) * pow(2.0, 1-df) * exp(-lgamma(df)) * 2.0 * df / pow(phi(1), 2) * exp(lgamma(df-1)) * pow(2, df-2);
-  out.Cdoubleprime = Cpart1 * (2 * df) / pow(phi(1), 2);
-  out.Cdoubleprime %= (
+  mat dCprimedx4bessel =  Cpart1 * sqrt(2 * df) / phi(1);
+  dCprimedx4bessel %= (
     + df * (df - 1) * pow(x4bessel, -2) % bessel_df
     - df / x4bessel % (bessel_dfMinus1 + bessel_dfPlus1)
     + 0.25 * (bessel_dfMinus2 + 2*bessel_df + bessel_dfPlus2)
   );
-  
-  out.Cdoubleprime = -out.Cdoubleprime;
-  out.Cdoubleprime.diag().fill(CdoubleprimeDiag);
+  dCprimedx4bessel.diag().fill(
+      -phi(0) * pow(2.0, 1-df) * exp(-lgamma(df)) * sqrt(2 * df) / phi(1) * exp(lgamma(df-1)) * pow(2, df-2)
+  );
+  out.Cdoubleprime = -sqrt(2 * df) / phi(1) * dCprimedx4bessel;
   
   // out.dCprimedphiCube;
+  out.dCprimedphiCube.set_size(out.C.n_rows, out.C.n_cols, 2);
+  out.dCprimedphiCube.slice(0) = out.Cprime/phi(0);
+  out.dCprimedphiCube.slice(1) = dCprimedx4bessel % (-sqrt(2.0 * df) / pow(phi(1), 2) * distSigned);  // use signed dist
+  out.dCprimedphiCube.slice(1) += out.Cprime / (-phi(1));
   // out.dCdoubleprimedphiCube;
   // out.C.diag() += 1e-7;  // stabilizer
   return out;
@@ -245,7 +249,7 @@ lp phisigloocvllik( const vec & phisig,
                     const mat & dist, 
                     string kernel){
   int n = yobs.n_rows;
-  int obsDimension = yobs.n_cols;
+  unsigned int obsDimension = yobs.n_cols;
   int phiDimension = (phisig.size() - 1) / obsDimension;
   const double sigma = phisig(phisig.size() - 1);
   const mat & phiAllDim = mat(const_cast<double*>( phisig.begin()), 
@@ -309,7 +313,7 @@ lp phisigloocvmse( const vec & phisig,
                     const mat & yobs, 
                     const mat & dist, 
                     string kernel){
-  int obsDimension = yobs.n_cols;
+  unsigned int obsDimension = yobs.n_cols;
   int phiDimension = (phisig.size() - 1) / obsDimension;
   const double sigma = phisig(phisig.size() - 1);
   const mat & phiAllDim = mat(const_cast<double*>( phisig.begin()), 
