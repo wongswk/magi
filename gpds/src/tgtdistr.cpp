@@ -73,10 +73,10 @@ gpcov generalMaternCov( const vec & phi, const mat & distSigned, int complexity 
   
   out.C = phi(0) * pow(2.0, 1-df) * exp(-lgamma(df)) * pow( x4bessel, df) % bessel_df;  
   out.C.diag().fill(phi(0));
+  out.C.diag() += 1e-7;  // stabilizer
   
   // cout << out.C << endl;
   if (complexity == 0) {
-    out.C.diag() += 1e-7;  // stabilizer
     return out;
   }
   
@@ -88,7 +88,7 @@ gpcov generalMaternCov( const vec & phi, const mat & distSigned, int complexity 
   out.dCdphiCube.slice(1).diag().fill(0);
   
   if (complexity == 1) {
-    out.C.diag() += 1e-7;  // stabilizer
+    // out.C.diag() += 1e-7;  // stabilizer
     return out;
   }
   
@@ -98,7 +98,6 @@ gpcov generalMaternCov( const vec & phi, const mat & distSigned, int complexity 
   
   // out.Cdoubleprime;
   double CdoubleprimeDiag = phi(0) * pow(2.0, 1-df) * exp(-lgamma(df)) * 2.0 * df / pow(phi(1), 2) * exp(lgamma(df-1)) * pow(2, df-2);
-  
   // out.Cdoubleprime.set_size(out.C.n_rows, out.C.n_cols);
   // for(unsigned int i = 0; i < distSigned.size(); i++){
   //   if(abs(distSigned(i)) < 1e-14){
@@ -114,7 +113,6 @@ gpcov generalMaternCov( const vec & phi, const mat & distSigned, int complexity 
   //         bessel_dfPlus2(i)) /4 );
   //   }
   // }
-  
   out.Cdoubleprime = pow(out.Cprime, 2) / out.C;
   out.Cdoubleprime += (2 * df) / pow(phi(1), 2) * out.C  % (
     - df / pow(x4bessel, 2)
@@ -126,7 +124,7 @@ gpcov generalMaternCov( const vec & phi, const mat & distSigned, int complexity 
   
   // out.dCprimedphiCube;
   // out.dCdoubleprimedphiCube;
-  out.C.diag() += 1e-7;  // stabilizer
+  // out.C.diag() += 1e-7;  // stabilizer
   return out;
 }
 
@@ -190,7 +188,7 @@ lp phisigllik( const vec & phisig,
                const mat & dist, 
                string kernel){
   int n = yobs.n_rows;
-  int obsDimension = yobs.n_cols;
+  unsigned int obsDimension = yobs.n_cols;
   int phiDimension = (phisig.size() - 1) / obsDimension;
   double sigma = phisig(phisig.size() - 1);
   const mat & phiAllDim = mat(const_cast<double*>( phisig.begin()), 
