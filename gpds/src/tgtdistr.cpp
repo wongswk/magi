@@ -70,8 +70,9 @@ gpcov generalMaternCov( const vec & phi, const mat & distSigned, int complexity 
 
   mat bessel_dfMinus2 = bessel_df - 2 * (df - 1) / x4bessel % bessel_dfMinus1;
   bessel_dfMinus2.diag().fill(datum::inf);
-  
-  out.C = phi(0) * pow(2.0, 1-df) * exp(-lgamma(df)) * pow( x4bessel, df) % bessel_df;  
+ 
+  mat Cpart1 = phi(0) * pow(2.0, 1-df) * exp(-lgamma(df)) * pow( x4bessel, df);
+  out.C = Cpart1 % bessel_df;  
   out.C.diag().fill(phi(0));
   out.C.diag() += 1e-7;  // stabilizer
   
@@ -80,7 +81,8 @@ gpcov generalMaternCov( const vec & phi, const mat & distSigned, int complexity 
     return out;
   }
   
-  mat dCdx4bessel = out.C % (df / x4bessel - 0.5 * (bessel_dfMinus1 + bessel_dfPlus1) / bessel_df);
+  mat dCdx4bessel = Cpart1 % (df / x4bessel % bessel_df  - 0.5 * (bessel_dfMinus1 + bessel_dfPlus1));
+  dCdx4bessel.diag().fill(0);
   
   out.dCdphiCube.set_size(out.C.n_rows, out.C.n_cols, 2);
   out.dCdphiCube.slice(0) = out.C/phi(0);
@@ -98,27 +100,13 @@ gpcov generalMaternCov( const vec & phi, const mat & distSigned, int complexity 
   
   // out.Cdoubleprime;
   double CdoubleprimeDiag = phi(0) * pow(2.0, 1-df) * exp(-lgamma(df)) * 2.0 * df / pow(phi(1), 2) * exp(lgamma(df-1)) * pow(2, df-2);
-  // out.Cdoubleprime.set_size(out.C.n_rows, out.C.n_cols);
-  // for(unsigned int i = 0; i < distSigned.size(); i++){
-  //   if(abs(distSigned(i)) < 1e-14){
-  //     out.Cdoubleprime(i) = CdoubleprimeDiag;
-  //   }else{
-  //     out.Cdoubleprime(i) = -phi(0) * pow(2, 1-df) * exp(-lgamma(df)) * 2.0 * df / pow(phi(1), 2) * (
-  //       df * (df-1) * pow(x4bessel(i), df-2) * bessel_df(i) - 
-  //         df * pow(x4bessel(i), df-1) * (bessel_dfMinus1(i) +
-  //         bessel_dfPlus1(i)) + 
-  //         pow(x4bessel(i), df) * 
-  //         (bessel_dfMinus2(i) + 
-  //         2 * bessel_df(i) + 
-  //         bessel_dfPlus2(i)) /4 );
-  //   }
-  // }
-  out.Cdoubleprime = pow(out.Cprime, 2) / out.C;
-  out.Cdoubleprime += (2 * df) / pow(phi(1), 2) * out.C  % (
-    - df / pow(x4bessel, 2)
-    + 0.25 * (bessel_dfMinus2 + 2*bessel_df + bessel_dfPlus2) / bessel_df
-    - 0.25 * pow((bessel_dfMinus1 + bessel_dfPlus1) / bessel_df, 2)
+  out.Cdoubleprime = Cpart1 * (2 * df) / pow(phi(1), 2);
+  out.Cdoubleprime %= (
+    + df * (df - 1) * pow(x4bessel, -2) % bessel_df
+    - df / x4bessel % (bessel_dfMinus1 + bessel_dfPlus1)
+    + 0.25 * (bessel_dfMinus2 + 2*bessel_df + bessel_dfPlus2)
   );
+  
   out.Cdoubleprime = -out.Cdoubleprime;
   out.Cdoubleprime.diag().fill(CdoubleprimeDiag);
   
