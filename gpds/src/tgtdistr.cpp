@@ -70,13 +70,18 @@ gpcov generalMaternCov( const vec & phi, const mat & distSigned, int complexity 
 
   mat bessel_dfMinus2 = bessel_df - 2 * (df - 1) / x4bessel % bessel_dfMinus1;
   bessel_dfMinus2.diag().fill(datum::inf);
+  
+  mat bessel_dfMinus3 = bessel_dfMinus1 - 2 * (df - 2) / x4bessel % bessel_dfMinus2;
+  bessel_dfMinus3.diag().fill(datum::inf);
+  
+  mat bessel_dfPlus3 = bessel_dfPlus1 + 2 * (df + 2) / x4bessel % bessel_dfPlus2;
+  bessel_dfPlus3.diag().fill(datum::inf);
  
   mat Cpart1 = phi(0) * pow(2.0, 1-df) * exp(-lgamma(df)) * pow( x4bessel, df);
   out.C = Cpart1 % bessel_df;  
   out.C.diag().fill(phi(0));
   out.C.diag() += 1e-7;  // stabilizer
   
-  // cout << out.C << endl;
   if (complexity == 0) {
     return out;
   }
@@ -90,7 +95,6 @@ gpcov generalMaternCov( const vec & phi, const mat & distSigned, int complexity 
   out.dCdphiCube.slice(1).diag().fill(0);
   
   if (complexity == 1) {
-    // out.C.diag() += 1e-7;  // stabilizer
     return out;
   }
   
@@ -115,8 +119,20 @@ gpcov generalMaternCov( const vec & phi, const mat & distSigned, int complexity 
   out.dCprimedphiCube.slice(0) = out.Cprime/phi(0);
   out.dCprimedphiCube.slice(1) = dCprimedx4bessel % (-sqrt(2.0 * df) / pow(phi(1), 2) * distSigned);  // use signed dist
   out.dCprimedphiCube.slice(1) += out.Cprime / (-phi(1));
+  
   // out.dCdoubleprimedphiCube;
-  // out.C.diag() += 1e-7;  // stabilizer
+  out.dCdoubleprimedphiCube.set_size(out.C.n_rows, out.C.n_cols, 2);
+  out.dCdoubleprimedphiCube.slice(0) = out.Cdoubleprime/phi(0);
+  out.dCdoubleprimedphiCube.slice(1) = (
+    + df * (df - 1) * (df - 2) * pow(x4bessel, df - 3) % bessel_df
+    - 1.5 * df * (df - 1) * pow(x4bessel, df - 2) % (bessel_dfMinus1 + bessel_dfPlus1)
+    + 0.75 * df * pow(x4bessel, df - 1) % (bessel_dfMinus2 + 2*bessel_df + bessel_dfPlus2)
+    - 0.125 * pow(x4bessel, df) % (bessel_dfMinus3 + 3*bessel_dfMinus1 + 3*bessel_dfPlus1 + bessel_dfPlus3)
+  );
+  out.dCdoubleprimedphiCube.slice(1) %= phi(0) * pow(2, 1-df) * exp(-lgamma(df)) * 2 * df / pow(phi(1), 3) * x4bessel;
+  out.dCdoubleprimedphiCube.slice(1) += out.Cdoubleprime * -2 / phi(1);
+  out.dCdoubleprimedphiCube.slice(1).diag() = out.Cdoubleprime.diag() * -2 / phi(1);
+    
   return out;
 }
 
