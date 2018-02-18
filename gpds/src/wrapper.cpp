@@ -197,7 +197,7 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
   
   // lp tmp = tgt(initial);
   // cout << tmp.value << "\n" << tmp.gradient << endl;
-  std::function<lp(vec)> tgtTempered = [&tgt, &overallTemperature](vec xInput) -> lp {
+  std::function<lp(vec)> tgtTempered = [&tgt, &overallTemperature](const vec & xInput) -> lp {
     lp ret = tgt(xInput);
     ret.value /= overallTemperature;
     ret.gradient /= overallTemperature;

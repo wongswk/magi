@@ -119,12 +119,12 @@ testthat::test_that("xthetaphisigmallik derivatives", {
   phiTest <- cbind(pram.true$vphi, pram.true$rphi) * exp(rnorm(4))
   sigmaTest <- rep(pram.true$sigma * exp(rnorm(1)), 2)
   
-  out <- xthetaphisigmallikRcpp(xlatentTest,
-                                thetaTest,
-                                phiTest,
-                                sigmaTest,
-                                dataInputWithMissing,
-                                fn.sim$time)
+  out <<- xthetaphisigmallikRcpp(xlatentTest,
+                                 thetaTest,
+                                 phiTest,
+                                 sigmaTest,
+                                 dataInputWithMissing,
+                                 fn.sim$time)
   out$value
   
   delta <- 1e-5
@@ -220,6 +220,29 @@ testthat::test_that("xthetaphisigmallik derivatives", {
   testthat::expect_true(all(abs(x) < 5e-3)) # gradient is self-consistent
 })
 
+test_that("xthetaphisigma sampler can run", {
+  stepsize <- rep(0.01, length(out$grad))
+  xthetaphisigmaSample(xlatentTest,
+                       thetaTest,
+                       phiTest,
+                       sigmaTest,
+                       dataInputWithMissing,
+                       fn.sim$time,
+                       stepsize,
+                       "FN",
+                       20)
+  
+  stepsize <- rep(0.001, length(out$grad)-1)
+  xthetaphisigmaSample(xlatentTest,
+                       thetaTest,
+                       phiTest,
+                       sigmaTest[1],
+                       dataInputWithMissing,
+                       fn.sim$time,
+                       stepsize,
+                       "FN",
+                       200)
+})
 
 if(interactive()){
   # speed benchmark
