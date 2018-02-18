@@ -13,7 +13,7 @@ using namespace arma;
 lp xthetaphisigmallik( const mat & xlatent, 
                        const vec & theta, 
                        const mat & phi, 
-                       const vec & sigma, 
+                       const vec & sigmaInput, 
                        const mat & yobs, 
                        const vec & xtimes,
                        const OdeSystem & fOdeModel) {
@@ -29,10 +29,21 @@ lp xthetaphisigmallik( const mat & xlatent,
   
   vec xtheta = join_vert(vectorise(xlatent), theta);
   
+  vec sigma(phi.n_cols);
+  bool sigmaIsScaler = (sigmaInput.size() == 1);
+  if (sigmaIsScaler){
+    sigma.fill(as_scalar(sigmaInput));
+  }else if(sigmaInput.size() == phi.n_cols){
+    sigma = sigmaInput;
+  }else{
+    throw std::runtime_error("sigmaInput dimension not right");
+  }
+  
   lp numerator = xthetallik(xtheta, CovAllDimensions, sigma, yobs, fOdeModel, false, ones(2));
   
   const mat & fderiv = fOdeModel.fOde(theta, xlatent);
   mat phiGradient(phi.n_rows, phi.n_cols);
+  vec sigmaGradient(sigma.size());
   
   lp bigpost;
   for(unsigned int pDimEach = 0; pDimEach < yobs.n_cols; pDimEach++){
@@ -51,15 +62,22 @@ lp xthetaphisigmallik( const mat & xlatent,
     
     vec alpha = eigvec * (eta / eigval);
     mat facVtemp = alpha * alpha.t() - (eigvec.each_row() % (1.0 / eigval).t()) * eigvec.t();
-    // mat facVtemp = alpha * alpha.t() - inv( covThisDim.C);
-    vec dVdphi(covThisDim.dCdphiCube.n_slices);
-    for(unsigned int i=0; i < dVdphi.size(); i++){
+    
+    for(unsigned int i=0; i < covThisDim.dSigmadphiCube.n_slices; i++){
       phiGradient(i, pDimEach) = 0.5*accu(facVtemp % covThisDim.dSigmadphiCube.slice(i));
     }
+    
+    sigmaGradient(pDimEach) = sum(square(fitLevelError)) / pow(sigma(pDimEach), 3) - nobs / sigma(pDimEach);
   }
-  bigpost.gradient.set_size(numerator.gradient.size() + phiGradient.size() + 1);
+  
+  if(sigmaIsScaler){
+    bigpost.gradient.set_size(numerator.gradient.size() + phiGradient.size() + 1);
+    bigpost.gradient(bigpost.gradient.size()-1) = sum(sigmaGradient);
+  }else{
+    bigpost.gradient.set_size(numerator.gradient.size() + phiGradient.size() + sigma.size());
+    bigpost.gradient.subvec(numerator.gradient.size() + phiGradient.size(), bigpost.gradient.size()-1) = sigmaGradient;
+  }
   bigpost.gradient.subvec(0, numerator.gradient.size()-1) = numerator.gradient;
   bigpost.gradient.subvec(numerator.gradient.size(), numerator.gradient.size() + phiGradient.size()-1) = vectorise(phiGradient);
-  bigpost.gradient(bigpost.gradient.size()-1) = numerator.value;  // FIXME testing purpose
   return bigpost;
 }

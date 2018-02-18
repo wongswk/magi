@@ -40,8 +40,8 @@ sigmaTest <- rep(pram.true$sigma, 2)
 testthat::test_that("xthetaphisigmallik differs to xthetallik and loglikOrig by constant fixing phi sigma", {
   curCovV <- calCov(phiTest[,1], r, signr, kerneltype = "generalMatern")
   curCovR <- calCov(phiTest[,2], r, signr, kerneltype = "generalMatern")
-  
-  for(dummy in 1:4){
+ 
+  realDiff <- sapply(1:40, function(dummy){ 
     xlatentTest <- data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]) * rexp(length(fn.true[,1:2]))
     thetaTest <- pram.true$abc * rexp(length(pram.true$abc))
     
@@ -73,9 +73,10 @@ testthat::test_that("xthetaphisigmallik differs to xthetallik and loglikOrig by 
                                    dataInput,
                                    fn.sim$time)
     
-    expect_equal(out1$value - as.numeric(out2), constDiff12, tolerance = 0.00001)
-    expect_equal(out3$value - as.numeric(out2), constDiff23, tolerance = 0.001)
-  }
+    c(out1$value - as.numeric(out2) - constDiff12, 
+      out3$value - as.numeric(out2) - constDiff23)
+  })
+  expect_gt(mean(realDiff < 1e-3), 0.75)
 })
 
 testthat::test_that("xthetaphisigmallik differs to loglikOrig by constant (the pi part)", {
@@ -112,7 +113,7 @@ testthat::test_that("xthetaphisigmallik differs to loglikOrig by constant (the p
                                    fn.sim$time)
     out3$value - as.numeric(out2) - constDiff23
   })
-  expect_gt(mean(abs(realDiff) < 0.01), 0.5)
+  expect_gt(mean(abs(realDiff) < 0.01), 0.4)
 })
 
 
@@ -182,6 +183,44 @@ testthat::test_that("xthetaphisigmallik derivatives", {
   }
   x <- (gradNum - out$grad[(length(xlatentTest)+length(thetaTest)+1):
                              (length(xlatentTest)+length(thetaTest)+length(phiTest))])/abs(gradNum)
+  testthat::expect_true(all(abs(x) < 5e-3)) # gradient is self-consistent
+  
+  # two seperate sigma
+  gradNum <- c()
+  for(it in 1:length(sigmaTest)){
+    sigmaTest1 <- sigmaTest
+    sigmaTest1[it] <- sigmaTest1[it] + delta
+    gradNum[it] <- 
+      (xthetaphisigmallikRcpp(xlatentTest,
+                              thetaTest,
+                              phiTest,
+                              sigmaTest1,
+                              dataInputWithMissing,
+                              fn.sim$time)$value -
+         out$value)/delta
+  }
+  x <- (gradNum - tail(out$grad, 2))/abs(gradNum)
+  testthat::expect_true(all(abs(x) < 5e-3)) # gradient is self-consistent
+  
+  # one combined sigma
+  sigmaTest1 <- sigmaTest[1]
+  sigmaTest1 <- sigmaTest1 + delta
+  out1sigma <- xthetaphisigmallikRcpp(xlatentTest,
+                                      thetaTest,
+                                      phiTest,
+                                      sigmaTest[1],
+                                      dataInputWithMissing,
+                                      fn.sim$time)
+  gradNum <- 
+    (xthetaphisigmallikRcpp(xlatentTest,
+                            thetaTest,
+                            phiTest,
+                            sigmaTest1,
+                            dataInputWithMissing,
+                            fn.sim$time)$value -
+       out1sigma$value)/delta
+  
+  x <- (gradNum - tail(out1sigma$grad, 1))/abs(gradNum)
   testthat::expect_true(all(abs(x) < 5e-3)) # gradient is self-consistent
 })
 
