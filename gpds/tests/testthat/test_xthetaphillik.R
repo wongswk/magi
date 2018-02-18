@@ -47,25 +47,23 @@ testthat::test_that("xthetaphisigmallik differs to xthetallik and loglikOrig by 
     
     if(dummy %% 2 == 0){
       dataInput <- dataInputWithMissing
-      constDiff12 <- -29.84029
-      constDiff23 <- -45.94867
+      constDiff12 <- 16.10664
     }else{
       dataInput <- dataInputFullObs
-      constDiff12 <- -77.772002
-      constDiff23 <- -60.65
+      constDiff12 <- -17.12206
     }
     
     xthInit <- c(xlatentTest, thetaTest)
     
     out1 <- gpds::xthetallikC(dataInput, curCovV, curCovR, sigmaTest, xthInit)
-    out2 <- loglikOrig(xlatentTest,
-                       thetaTest,
-                       phiTest,
-                       sigmaTest[1],
-                       dataInput,
-                       r,
-                       signr,
-                       kerneltype = "generalMatern")
+    out2 <- loglikWithNormalizingConstants(xlatentTest,
+                                           thetaTest,
+                                           phiTest,
+                                           sigmaTest[1],
+                                           dataInput,
+                                           r,
+                                           signr,
+                                           kerneltype = "generalMatern")
     out3 <- xthetaphisigmallikRcpp(xlatentTest,
                                    thetaTest,
                                    phiTest,
@@ -74,9 +72,9 @@ testthat::test_that("xthetaphisigmallik differs to xthetallik and loglikOrig by 
                                    fn.sim$time)
     
     c(out1$value - as.numeric(out2) - constDiff12, 
-      out3$value - as.numeric(out2) - constDiff23)
+      out3$value - as.numeric(out2) )
   })
-  expect_gt(mean(realDiff < 1e-3), 0.75)
+  expect_gt(mean(realDiff < 1e-3), 0.95)
 })
 
 testthat::test_that("xthetaphisigmallik differs to loglikOrig by constant (the pi part)", {
@@ -89,29 +87,27 @@ testthat::test_that("xthetaphisigmallik differs to loglikOrig by constant (the p
     
     if(dummy %% 2 == 0){
       dataInput <- dataInputWithMissing
-      constDiff23 <- -45.94867
     }else{
       dataInput <- dataInputFullObs
-      constDiff23 <- -60.65
     }
     
     xthInit <- c(xlatentTest, thetaTest)
     
-    out2 <- loglikOrig(xlatentTest,
-                       thetaTest,
-                       phiTest,
-                       sigmaTest[1],
-                       dataInput,
-                       r,
-                       signr,
-                       kerneltype = "generalMatern")
+    out2 <- loglikWithNormalizingConstants(xlatentTest,
+                                           thetaTest,
+                                           phiTest,
+                                           sigmaTest[1],
+                                           dataInput,
+                                           r,
+                                           signr,
+                                           kerneltype = "generalMatern")
     out3 <- xthetaphisigmallikRcpp(xlatentTest,
                                    thetaTest,
                                    phiTest,
                                    sigmaTest,
                                    dataInput,
                                    fn.sim$time)
-    out3$value - as.numeric(out2) - constDiff23
+    out3$value - as.numeric(out2)
   })
   expect_gt(mean(abs(realDiff) < 0.01), 0.4)
 })
