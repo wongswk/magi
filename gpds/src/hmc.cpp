@@ -28,16 +28,16 @@ hmcstate basic_hmcC(const std::function<lp (vec)> & lpr,
                     const bool traj = false){
   // Check and process the arguments
   if(step.size() != initial.size())
-    throw "step and initial dimention note matched";
+    throw std::runtime_error("step and initial dimention note matched");
   if(nsteps <= 0)
-    throw "Invalid nsteps argument";
+    throw std::runtime_error("Invalid nsteps argument");
   if(lb.size() != initial.size()){
     if(lb.size() == 1){
       double lbval = lb(0);
       lb = vec(initial.size());
       lb.fill(lbval);
     }else{
-      throw "lb and initial dimention note matched";  
+      throw std::runtime_error("lb and initial dimention note matched");  
     }
   }
   if(ub.size() != initial.size()){
@@ -46,7 +46,7 @@ hmcstate basic_hmcC(const std::function<lp (vec)> & lpr,
       ub = vec(initial.size());
       ub.fill(ubval);
     }else{
-      throw "ub and initial dimention note matched";  
+      throw std::runtime_error("ub and initial dimention note matched");  
     }
   }
   
@@ -65,7 +65,7 @@ hmcstate basic_hmcC(const std::function<lp (vec)> & lpr,
   // Evaluate the log probability and gradient at the initial position
   lp lpx = lpr(initial);
   if(std::isnan(lpx.value)){
-    throw "hmc evaluates the log target density to be NaN at initial value";
+    throw std::runtime_error("hmc evaluates the log target density to be NaN at initial value");
   }
   // cout << "Finish Evaluate the log probability and gradient at the initial position" << endl;
   

@@ -154,7 +154,7 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
   }else if(sigmaInput.size() == yobs.n_cols){
     sigma = sigmaInput;
   }else{
-    throw "sigmaInput size not right";
+    throw std::runtime_error("sigmaInput size not right");
   }
   
   vector<gpcov> covAllDimensions(covList.size());
@@ -171,7 +171,7 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
   }else if(modelName == "HIV"){
     model = OdeSystem(HIVmodelODE, HIVmodelDx, HIVmodelDtheta, {-datum::inf, 0,0,0,0,0, -datum::inf,-datum::inf,-datum::inf}, ones(9)*datum::inf);   
   }else{
-    throw "modelName must be one of 'FN', 'Hes1', 'HIV'";
+    throw std::runtime_error("modelName must be one of 'FN', 'Hes1', 'HIV'");
   }
   
     
@@ -188,7 +188,7 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
     tgt = std::bind(xthetallikWithmuBand, std::placeholders::_1, 
                     covAllDimensions, sigma, yobs, model, true, priorTemperature);
   }else{
-    throw "loglikflag must be 'usual', 'withmean', 'band', or 'withmeanBand'";
+    throw std::runtime_error("loglikflag must be 'usual', 'withmean', 'band', or 'withmeanBand'");
   }
   vec lb = ones<vec>(initial.size()) * (-datum::inf);
   lb.subvec(yobs.size(), lb.size() - 1) = model.thetaLowerBound;
@@ -240,7 +240,7 @@ arma::cube parallel_temper_hmc_xtheta( const arma::mat & yobs,
   }else if(sigmaInput.size() == yobs.n_cols){
     sigma = sigmaInput;
   }else{
-    throw "sigmaInput size not right";
+    throw std::runtime_error("sigmaInput size not right");
   }
   
   vector<gpcov> covAllDimensions(2);
@@ -309,7 +309,7 @@ Rcpp::List xthetallikC(const arma::mat & yobs,
   }else if(sigmaInput.size() == yobs.n_cols){
     sigma = sigmaInput;
   }else{
-    throw "sigmaInput size not right";
+    throw std::runtime_error("sigmaInput size not right");
   }
   vector<gpcov> covAllDimensions(2);
   covAllDimensions[0] = cov_r2cpp(covVr);
@@ -338,7 +338,7 @@ Rcpp::List xthetallikWithmuBandC(const arma::mat & yobs,
   }else if(sigmaInput.size() == yobs.n_cols){
     sigma = sigmaInput;
   }else{
-    throw "sigmaInput size not right";
+    throw std::runtime_error("sigmaInput size not right");
   }
   vector<gpcov> covAllDimensions(2);
   covAllDimensions[0] = cov_r2cpp(covVr);

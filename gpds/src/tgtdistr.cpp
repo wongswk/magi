@@ -238,7 +238,7 @@ lp phisigllik( const vec & phisig,
   }else if(kernel == "generalMatern"){
     kernelCov = generalMaternCov;
   }else{
-    throw "kernel is not specified correctly";
+    throw std::runtime_error("kernel is not specified correctly");
   }
   
   lp ret;  
@@ -306,7 +306,7 @@ lp phisigloocvllik( const vec & phisig,
   }else if(kernel == "generalMatern"){
     kernelCov = generalMaternCov;
   }else{
-    throw "kernel is not specified correctly";
+    throw std::runtime_error("kernel is not specified correctly");
   }
   
   lp ret;  
@@ -370,7 +370,7 @@ lp phisigloocvmse( const vec & phisig,
   }else if(kernel == "generalMatern"){
     kernelCov = generalMaternCov;
   }else{
-    throw "kernel is not specified correctly";
+    throw std::runtime_error("kernel is not specified correctly");
   }
   
   lp ret;  
