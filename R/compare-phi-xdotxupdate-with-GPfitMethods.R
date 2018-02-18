@@ -272,6 +272,7 @@ save(phisigcompareMethods, configAll, updatePhisigcompareMethods,
      file=paste0(outDir, "phi and update phi - ",config$seed,".rda"))
 
 if(interactive()){
+  outDir <- "/Users/shihaoyang/Workspace/DynamicSys/results/2018-02-18/"
   rdafiles <- list.files(outDir)
   rdafiles <- rdafiles[grep("rda", rdafiles)]
   phisigcompareMethodsMerged <- list()
@@ -318,4 +319,8 @@ if(interactive()){
         ggplot2::labs(title=paste(method, "+", component)) + xlab("log phi2")
     }
   }
+  ml <- gridExtra::marrangeGrob(ggobjs, nrow=3, ncol=3,
+                                top="one-step update for Phi2")
+  ggsave(paste0(outDir, "contrast.pdf"), ml, width=10, height = 10)
+  
 }
