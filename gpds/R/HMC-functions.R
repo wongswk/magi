@@ -301,7 +301,7 @@ loglik <- function(x, theta, CovV, CovR, sigma, y, lambda=1)  {
   
   Vsm <- x[,1]
   Rsm <- x[,2]
-  n <- nrow(x)
+  n <- sum(is.finite(y[,1]))
   
   f <- fODE(theta, x)
   res <- matrix(nrow=2,ncol=3)
@@ -309,7 +309,7 @@ loglik <- function(x, theta, CovV, CovR, sigma, y, lambda=1)  {
   # V 
   #CovV <- calCov(phi[1:2])
   fr <- (f[,1] - CovV$mphi %*% Vsm)
-  res[1,] <- c( (-0.5 * sum((Vsm - y[,1])^2) / sigma^2 - n * log(sigma)) * lambda[1], 
+  res[1,] <- c( (-0.5 * sum((Vsm - y[,1])^2, na.rm = TRUE) / sigma^2 - n * log(sigma)) * lambda[1], 
                 (-0.5 * as.numeric(determinant(CovV$Kphi)$modulus) - 0.5 * t(fr) %*% solve(CovV$Kphi) %*% fr) * lambda[2],  
                 (-0.5 * as.numeric(determinant(CovV$C)$modulus) - 0.5 * t(Vsm) %*% CovV$Cinv %*% Vsm) * lambda[3])
   
@@ -317,7 +317,7 @@ loglik <- function(x, theta, CovV, CovR, sigma, y, lambda=1)  {
   # R
   #CovR <- calCov(phi[3:4])
   fr <- (f[,2] - CovR$mphi %*% Rsm)
-  res[2,] <- c( (-0.5 * sum((Rsm - y[,2])^2) / sigma^2 - n * log(sigma)) * lambda[1], 
+  res[2,] <- c( (-0.5 * sum((Rsm - y[,2])^2, na.rm = TRUE) / sigma^2 - n * log(sigma)) * lambda[1], 
                 (-0.5 * as.numeric(determinant(CovR$Kphi)$modulus) - 0.5 * t(fr) %*% solve(CovR$Kphi) %*% fr) * lambda[2],  
                 (-0.5 * as.numeric(determinant(CovR$C)$modulus) - 0.5 * t(Rsm) %*% CovR$Cinv %*% Rsm) * lambda[3])
   
