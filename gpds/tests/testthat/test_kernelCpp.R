@@ -25,6 +25,9 @@ testthat::test_that("check C, dCdphi for generalMatern",{
   expect_equal(egcovC$Cinv, egcovR$Cinv, check.attributes = FALSE)
   expect_equal(egcovC$mphi, egcovR$mphi, check.attributes = FALSE)
   expect_equal(egcovC$Kinv, egcovR$Kinv, check.attributes = FALSE, tolerance = 1e-5)
+ 
+  dim(egcovC$Sigma)
+  dim(egcovC$dSigmadphiCube)
   
   if(interactive()){
     mb <- microbenchmark::microbenchmark(

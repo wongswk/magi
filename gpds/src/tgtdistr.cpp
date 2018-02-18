@@ -142,8 +142,20 @@ gpcov generalMaternCov( const vec & phi, const mat & distSigned, int complexity 
   // out.Kinv
   out.Kinv = inv_sympd( out.Cdoubleprime - out.mphi * out.Cprime.t());
   
-  // block matrix inverse
-  
+  // block matrix
+  // TODO: for performance, I can define big matrix/cube container, and then
+  // define subview<double>
+  out.Sigma = join_vert(
+    join_horiz(out.C, out.Cprime.t()),
+    join_horiz(out.Cprime, out.Cdoubleprime)
+  );
+  out.dSigmadphiCube.set_size(out.Sigma.n_rows, out.Sigma.n_cols, 2);
+  for(unsigned int sliceIt = 0; sliceIt < 2; sliceIt++){
+    out.dSigmadphiCube.slice(sliceIt) = join_vert(
+      join_horiz(out.dCdphiCube.slice(sliceIt), out.dCprimedphiCube.slice(sliceIt).t()),
+      join_horiz(out.dCprimedphiCube.slice(sliceIt), out.dCdoubleprimedphiCube.slice(sliceIt))
+    );
+  }
   return out;
 }
 

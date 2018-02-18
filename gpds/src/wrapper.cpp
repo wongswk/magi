@@ -118,7 +118,9 @@ Rcpp::List cov_cpp2r(const gpcov & cov_v){
     Named("dCdoubleprimedphiCube")=cov_v.dCdoubleprimedphiCube,
     Named("Cinv")=cov_v.Cinv,
     Named("mphi")=cov_v.mphi,
-    Named("Kinv")=cov_v.Kinv
+    Named("Kinv")=cov_v.Kinv,
+    Named("Sigma")=cov_v.Sigma,
+    Named("dSigmadphiCube")=cov_v.dSigmadphiCube
   );
   return cov_r;
 }
