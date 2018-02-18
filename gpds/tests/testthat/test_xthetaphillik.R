@@ -51,6 +51,22 @@ expect_equal(out1$value - as.numeric(out2), -77.772002)
 out3 <- xthetaphisigmallikRcpp(data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]),
                                pram.true$abc,
                                cbind(pram.true$vphi, pram.true$rphi),
-                               pram.true$sigma,
+                               rep(pram.true$sigma, 2),
                                dataInput,
                                fn.sim$time)
+expect_equal(out3, out1, tolerance = 1e-6)
+
+
+if(interactive()){
+  # speed benchmark
+  mb <- microbenchmark::microbenchmark(
+  gpds::xthetallikC(dataInput, curCovV, curCovR, pram.true$sigma, xthInit),
+  xthetaphisigmallikRcpp(data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]),
+                         pram.true$abc,
+                         cbind(pram.true$vphi, pram.true$rphi),
+                         rep(pram.true$sigma, 2),
+                         dataInput,
+                         fn.sim$time)
+  )
+  print(mb)
+}
