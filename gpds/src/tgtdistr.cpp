@@ -132,7 +132,30 @@ gpcov generalMaternCov( const vec & phi, const mat & distSigned, int complexity 
   out.dCdoubleprimedphiCube.slice(1) %= phi(0) * pow(2, 1-df) * exp(-lgamma(df)) * 2 * df / pow(phi(1), 3) * x4bessel;
   out.dCdoubleprimedphiCube.slice(1) += out.Cdoubleprime * -2 / phi(1);
   out.dCdoubleprimedphiCube.slice(1).diag() = out.Cdoubleprime.diag() * -2 / phi(1);
-    
+  
+  // out.Cinv
+  out.Cinv = inv_sympd( out.C);
+  
+  // out.mphi
+  out.mphi = out.Cprime * out.Cinv;
+  
+  // out.Kinv
+  out.Kinv = inv_sympd( out.Cdoubleprime - out.mphi * out.Cprime.t());
+  
+  // block matrix
+  // TODO: for performance, I can define big matrix/cube container, and then
+  // define subview<double>
+  out.Sigma = join_vert(
+    join_horiz(out.C, out.Cprime.t()),
+    join_horiz(out.Cprime, out.Cdoubleprime)
+  );
+  out.dSigmadphiCube.set_size(out.Sigma.n_rows, out.Sigma.n_cols, 2);
+  for(unsigned int sliceIt = 0; sliceIt < 2; sliceIt++){
+    out.dSigmadphiCube.slice(sliceIt) = join_vert(
+      join_horiz(out.dCdphiCube.slice(sliceIt), out.dCprimedphiCube.slice(sliceIt).t()),
+      join_horiz(out.dCprimedphiCube.slice(sliceIt), out.dCdoubleprimedphiCube.slice(sliceIt))
+    );
+  }
   return out;
 }
 
