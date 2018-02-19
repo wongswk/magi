@@ -291,16 +291,17 @@ arma::cube parallel_temper_hmc_xtheta( const arma::mat & yobs,
   // return arma::zeros<cube>(1,1,1);
 }
 
+
 //' R wrapper for xthetallik
 //' @export
 // [[Rcpp::export]]
-Rcpp::List xthetallikC(const arma::mat & yobs, 
-                       const Rcpp::List & covVr, 
-                       const Rcpp::List & covRr, 
-                       const arma::vec & sigmaInput,
-                       const arma::vec & initial,
-                       const bool useBand = false,
-                       const Rcpp::NumericVector & priorTemperatureInput = 1.0){
+Rcpp::List xthetallikRcpp(const arma::mat & yobs, 
+                          const Rcpp::List & covAllDimInput,
+                          const arma::vec & sigmaInput,
+                          const arma::vec & initial,
+                          const std::string modelName = "FN",
+                          const bool useBand = false,
+                          const Rcpp::NumericVector & priorTemperatureInput = 1.0){
   const arma::vec priorTemperature = Rcpp::as<arma::vec>(priorTemperatureInput);
   
   vec sigma( yobs.n_cols);
@@ -311,11 +312,24 @@ Rcpp::List xthetallikC(const arma::mat & yobs,
   }else{
     throw std::runtime_error("sigmaInput size not right");
   }
-  vector<gpcov> covAllDimensions(2);
-  covAllDimensions[0] = cov_r2cpp(covVr);
-  covAllDimensions[1] = cov_r2cpp(covRr);
-  OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta, zeros(3), ones(3)*datum::inf);
-  lp ret = xthetallik(initial, covAllDimensions, sigma, yobs, fnmodel, useBand, priorTemperature);
+  
+  vector<gpcov> covAllDimensions(yobs.n_cols);
+  for(unsigned j = 0; j < yobs.n_cols; j++){
+    covAllDimensions[j] = cov_r2cpp(covAllDimInput[j]);
+  }
+  
+  OdeSystem model;
+  if(modelName == "FN"){
+    model = OdeSystem(fnmodelODE, fnmodelDx, fnmodelDtheta, zeros(3), ones(3)*datum::inf);
+  }else if(modelName == "Hes1"){
+    model = OdeSystem(hes1modelODE, hes1modelDx, hes1modelDtheta, zeros(7), ones(7)*datum::inf); 
+  }else if(modelName == "HIV"){
+    model = OdeSystem(HIVmodelODE, HIVmodelDx, HIVmodelDtheta, {-datum::inf, 0,0,0,0,0, -datum::inf,-datum::inf,-datum::inf}, ones(9)*datum::inf);   
+  }else{
+    throw std::runtime_error("modelName must be one of 'FN', 'Hes1', 'HIV'");
+  }
+  
+  lp ret = xthetallik(initial, covAllDimensions, sigma, yobs, model, useBand, priorTemperature);
   return List::create(Named("value")=ret.value,
                       Named("grad")=ret.gradient);
 }

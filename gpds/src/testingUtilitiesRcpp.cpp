@@ -272,3 +272,20 @@ Rcpp::List phisigllikHard2DC(const arma::vec & phisig,
                       Named("grad")=ret.gradient);
 }
 
+//' R wrapper for xthetallik
+//' @export
+// [[Rcpp::export]]
+Rcpp::List xthetallikC(const arma::mat & yobs, 
+                       const Rcpp::List & covVr, 
+                       const Rcpp::List & covRr, 
+                       const arma::vec & sigmaInput,
+                       const arma::vec & initial,
+                       const bool useBand = false,
+                       const Rcpp::NumericVector & priorTemperatureInput = 1.0){
+  
+  Rcpp::List covAllDim = List::create(Named("covVr")=covVr,
+                                      Named("covRr")=covRr);
+  
+  return xthetallikRcpp( yobs, covAllDim, sigmaInput, initial, "FN", useBand, priorTemperatureInput);
+}
+
