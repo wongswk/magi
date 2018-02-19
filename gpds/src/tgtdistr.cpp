@@ -134,13 +134,15 @@ gpcov generalMaternCov( const vec & phi, const mat & distSigned, int complexity 
   out.dCdoubleprimedphiCube.slice(1).diag() = out.Cdoubleprime.diag() * -2 / phi(1);
   
   // out.Cinv
-  out.Cinv = inv_sympd( out.C);
+  inv_sympd(out.Cinv, out.C);
   
   // out.mphi
   out.mphi = out.Cprime * out.Cinv;
   
   // out.Kinv
-  out.Kinv = inv_sympd( out.Cdoubleprime - out.mphi * out.Cprime.t());
+  out.Kphi = out.Cdoubleprime - out.mphi * out.Cprime.t();
+  out.Kphi.diag() += 1e-7;
+  inv_sympd(out.Kinv, out.Kphi);
   
   // block matrix
   // TODO: for performance, I can define big matrix/cube container, and then

@@ -146,7 +146,7 @@ Rcpp::List xthetaphisigmaSample( const arma::mat & xInitial,
   
   vec lb = ones<vec>(nparam) * (-datum::inf);
   lb.subvec(xInitial.size(), xInitial.size() + thetaInitial.size() - 1) = model.thetaLowerBound;
-  lb.subvec(xInitial.size() + thetaInitial.size(), lb.size() - 1).fill(0);
+  lb.subvec(xInitial.size() + thetaInitial.size(), lb.size() - 1).fill(1e-2);
   
   hmcstate post = basic_hmcC(tgt, initial, step, lb, {datum::inf}, nsteps, traj);
   
