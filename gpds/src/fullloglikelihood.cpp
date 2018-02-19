@@ -164,3 +164,38 @@ Rcpp::List xthetaphisigmaSample( const arma::mat & xInitial,
   }
   return ret;
 }
+
+
+//' R wrapper for xthetallik
+//' @export
+// [[Rcpp::export]]
+Rcpp::List xthetaphisigmallikRcpp( const arma::mat & xlatent, 
+                                   const arma::vec & theta, 
+                                   const arma::mat & phi, 
+                                   const arma::vec & sigma, 
+                                   const arma::mat & yobs, 
+                                   const arma::vec & xtimes,
+                                   const std::string modelName = "FN"){
+  
+  OdeSystem model;
+  if(modelName == "FN"){
+    model = OdeSystem(fnmodelODE, fnmodelDx, fnmodelDtheta, zeros(3), ones(3)*datum::inf);
+  }else if(modelName == "Hes1"){
+    model = OdeSystem(hes1modelODE, hes1modelDx, hes1modelDtheta, zeros(7), ones(7)*datum::inf); 
+  }else if(modelName == "HIV"){
+    model = OdeSystem(HIVmodelODE, HIVmodelDx, HIVmodelDtheta, {-datum::inf, 0,0,0,0,0, -datum::inf,-datum::inf,-datum::inf}, ones(9)*datum::inf);   
+  }else{
+    throw std::runtime_error("modelName must be one of 'FN', 'Hes1', 'HIV'");
+  }
+  
+  lp ret = xthetaphisigmallik(xlatent, 
+                              theta, 
+                              phi, 
+                              sigma, 
+                              yobs, 
+                              xtimes,
+                              model);
+  return Rcpp::List::create(Rcpp::Named("value")=ret.value,
+                            Rcpp::Named("grad")=ret.gradient);
+}
+

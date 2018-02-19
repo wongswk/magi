@@ -272,25 +272,3 @@ Rcpp::List phisigllikHard2DC(const arma::vec & phisig,
                       Named("grad")=ret.gradient);
 }
 
-//' R wrapper for xthetallik
-//' @export
-// [[Rcpp::export]]
-Rcpp::List xthetaphisigmallikRcpp( const arma::mat & xlatent, 
-                                   const arma::vec & theta, 
-                                   const arma::mat & phi, 
-                                   const arma::vec & sigma, 
-                                   const arma::mat & yobs, 
-                                   const arma::vec & xtimes){
-  
-  OdeSystem fnmodel(fnmodelODE, fnmodelDx, fnmodelDtheta, zeros(3), ones(3)*datum::inf);
-  
-  lp ret = xthetaphisigmallik(xlatent, 
-                              theta, 
-                              phi, 
-                              sigma, 
-                              yobs, 
-                              xtimes,
-                              fnmodel);
-  return List::create(Named("value")=ret.value,
-                      Named("grad")=ret.gradient);
-}
