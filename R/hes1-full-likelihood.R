@@ -236,34 +236,101 @@ xInit <- do.call(rbind, xInit)
 xInit <- xInit[order(xInit[,1]), ][, -1, drop=FALSE]
 matplot(xsim.obs$time, xInit, lty=3, col=4:6, add = TRUE, type="l", lwd=3)
 
-# update phi based on pilot ----------------------------------------------------
-yobsPilot <- data.matrix(xsim.obs[,-1])
-obsDimPilot <- dim(yobsPilot)
-xPilotId <- 1:length(yobsPilot)
-thetaPilotId <- (xPilotId[length(xPilotId)]+1):(xPilotId[length(xPilotId)]+length(pram.true$theta))
-phiPilotId <- (thetaPilotId[length(thetaPilotId)]+1):(thetaPilotId[length(thetaPilotId)]+length(pram.true$phi))
-sigmaPilotId <- (phiPilotId[length(phiPilotId)]+1):(phiPilotId[length(phiPilotId)]+length(pram.true$sigma))
-
-llikXthetaphisigmaPilot <- function(xthetaphisigma) {
-  xInitial <- matrix(xthetaphisigma[xPilotId], nrow=obsDimPilot[1], ncol=obsDimPilot[2])
-  thetaInitial <- xthetaphisigma[thetaPilotId]
-  phiInitial <- matrix(xthetaphisigma[phiPilotId], nrow=2)
-  sigmaInitial <- xthetaphisigma[sigmaPilotId]
-  xthetaphisigmallikRcpp(xInitial, thetaInitial, phiInitial, sigmaInitial,
-                         yobsPilot, xsim.obs$time, modelName = "Hes1")
+# optimize phi -----------------------------------------------------------------
+xsimInit <- xsim
+for(j in 1:3){
+  nanId <- which(is.na(xsimInit[,j+1]))
+  xsimInit[nanId,j+1] <- gpsmoothFuncList[[j]](xsimInit$time[nanId])
 }
-llikXthetaphisigmaPilot(c(xInit, thetaInit, curphi, cursigma))
-lbPilot <- rep(1e-3, sigmaPilotId[length(sigmaPilotId)])
+matplot(xsimInit$time, xsimInit[,-1], type="p", pch=2, add=TRUE)
 
-fn <- function(par) -llikXthetaphisigmaPilot( par )$value
-gr <- function(par) -as.vector(llikXthetaphisigmaPilot( par )$grad)
-marlikmap <- optim(c(xInit, thetaInit, curphi, cursigma), 
-                   fn, gr, method="L-BFGS-B", lower = lbPilot, control = list(maxit=1e4))
-xInit[] <- marlikmap$par[xPilotId]
-thetaInit[] <- marlikmap$par[thetaPilotId]
-curphi[] <- marlikmap$par[phiPilotId]
-cursigma[] <- marlikmap$par[sigmaPilotId]
-matplot(xsim.obs$time, xInit, lty=4, col=1:3, add = TRUE, type="l", lwd=3)
+llikXthetaphisigma(c(data.matrix(xsimInit[,-1]), thetaInit, curphi, cursigma))
+
+# ususal R optim
+fulloptim <- function(xInit, thetaInit, curphi, cursigma){
+  fn <- function(par) -llikXthetaphisigma( par )$value
+  gr <- function(par) -as.vector(llikXthetaphisigma( par )$grad)
+  marlikmap <- optim(c(xInit, thetaInit, curphi, cursigma), 
+                     fn, gr, method="L-BFGS-B", lower = 0.001, control = list(maxit=1e5))
+  
+  xInit[] <- marlikmap$par[xId]
+  thetaInit[] <- marlikmap$par[thetaId]
+  curphi[] <- marlikmap$par[phiId]
+  cursigma[] <- marlikmap$par[sigmaId]
+  list(xInit = xInit, 
+       thetaInit = thetaInit, 
+       curphi = curphi, 
+       cursigma = cursigma)
+}
+fullmle <- fulloptim(data.matrix(xsimInit[,-1]), thetaInit, curphi, cursigma)
+
+matplot(xsim$time, fullmle$xInit, lty=4, col=1:3, add = TRUE, type="p", lwd=3, pch=4)
+
+# R optim with iterative optimization
+phisigmaoptim <- function(xInit, thetaInit, curphi, cursigma){
+  fullInit <- c(xInit, thetaInit, curphi, cursigma)
+  fn <- function(par) {
+    fullInit[c(phiId, sigmaId)] <- par
+    -llikXthetaphisigma( fullInit )$value
+  }
+  gr <- function(par) {
+    fullInit[c(phiId, sigmaId)] <- par
+    -as.vector(llikXthetaphisigma( fullInit )$grad[c(phiId, sigmaId)])
+  }
+  marlikmap <- optim(c(curphi, cursigma), fn, gr, 
+                     method="L-BFGS-B", lower = 0.001, control = list(maxit=1e5))
+  curphi[] <- marlikmap$par[1:length(curphi)]
+  cursigma[] <- marlikmap$par[-(1:length(curphi))]
+  list(curphi = curphi,
+       cursigma = cursigma)
+}
+phisigmamle <- with(fullmle, phisigmaoptim(xInit, thetaInit, curphi, cursigma))
+fullmle[names(phisigmamle)] <- phisigmamle
+fullmle2 <- with(fullmle, fulloptim(xInit, thetaInit, curphi, cursigma)) #very expensive
+# consider use xthetallik instead
+
+matplot(xsim$time, fullmle2$xInit, col=1:3, add = TRUE, type="p", lwd=3, pch=5)
+
+
+fullInit <- c(xInit, thetaInit, curphi, cursigma)
+
+
+# stochastic gradient descend for optimization task
+initllikOld <- list()
+fullInit <- marlikmap$par
+
+learningRate <- rep(1e-4, length(fullInit))
+learningRate[xId] <- 0
+learningRate[thetaId] <- 0
+learningRate[phiId] <- 1e-4
+learningRate[sigmaId] <- 1e-5
+
+for(sgdIt in 1:1e6){
+  initllik <- llikXthetaphisigma(fullInit)
+  print(initllik$value - initllikOld$value)
+  (initllik$value - initllikOld$value)/abs(initllik$value)
+  initllikOld <- initllik
+  summary(initllik$grad[learningRate>0])
+  fullInit <- fullInit + initllik$grad*learningRate
+}
+
+xthetaphisigma <- fullInit
+xInitial <- matrix(xthetaphisigma[xId], nrow=obsDim[1], ncol=obsDim[2])
+thetaInitial <- xthetaphisigma[thetaId]
+phiInitial <- matrix(xthetaphisigma[phiId], nrow=2)
+sigmaInitial <- xthetaphisigma[sigmaId]
+
+matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=1)
+matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
+matplot(xsim$time, xInitial, type="p", col=1:(ncol(xsim)-1), pch=3, add = TRUE)
+
+
+
+# E-M like iterative optim -----------------------------------------------------
+# 1. conditional on phi-sigma, sample x-theta
+# 2. approximate E-step
+# 3. optim M-step
+
 
 
 
@@ -277,31 +344,6 @@ burnin <- as.integer(config$n.iter*config$burninRatio)
 fullInit <- c(unlist(lapply(xtrueFunc, function(f) f(xsim$time))), pram.true$theta)
 fullInit <- c(fullInit, curphi, cursigma)
 
-# stochastic gradient descend for optimization task
-initllikOld <- list()
-learningRate <- rep(1e-4, length(fullInit))
-learningRate[xId] <- 0
-learningRate[thetaId] <- 0
-learningRate[phiId] <- 1e-2
-learningRate[sigmaId] <- 1e-2
-
-for(sgdIt in 1:1e6){
-  initllik <- llikXthetaphisigma(fullInit)
-  print(initllik$value - initllikOld$value)
-  initllikOld <- initllik
-  summary(initllik$grad)
-  fullInit <- fullInit + initllik$grad*learningRate
-}
-
-xthetaphisigma <- fullInit
-xInitial <- matrix(xthetaphisigma[xId], nrow=obsDim[1], ncol=obsDim[2])
-thetaInitial <- xthetaphisigma[thetaId]
-phiInitial <- matrix(xthetaphisigma[phiId], nrow=2)
-sigmaInitial <- xthetaphisigma[sigmaId]
-
-matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=1)
-matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
-matplot(xsim$time, xInitial, type="p", col=1:(ncol(xsim)-1), pch=3, add = TRUE)
 
 # stepLowInit <- stepLowInit*config$stepSizeFactor
 config$n.iter <- 2
