@@ -284,45 +284,70 @@ phisigmaoptim <- function(xInit, thetaInit, curphi, cursigma){
   list(curphi = curphi,
        cursigma = cursigma)
 }
-phisigmamle <- with(fullmle, phisigmaoptim(xInit, thetaInit, curphi, cursigma))
-fullmle[names(phisigmamle)] <- phisigmamle
-fullmle2 <- with(fullmle, fulloptim(xInit, thetaInit, curphi, cursigma)) #very expensive
-# consider use xthetallik instead
 
-matplot(xsim$time, fullmle2$xInit, col=1:3, add = TRUE, type="p", lwd=3, pch=5)
-
-
-fullInit <- c(xInit, thetaInit, curphi, cursigma)
-
-
-# stochastic gradient descend for optimization task
-initllikOld <- list()
-fullInit <- marlikmap$par
-
-learningRate <- rep(1e-4, length(fullInit))
-learningRate[xId] <- 0
-learningRate[thetaId] <- 0
-learningRate[phiId] <- 1e-4
-learningRate[sigmaId] <- 1e-5
-
-for(sgdIt in 1:1e6){
-  initllik <- llikXthetaphisigma(fullInit)
-  print(initllik$value - initllikOld$value)
-  (initllik$value - initllikOld$value)/abs(initllik$value)
-  initllikOld <- initllik
-  summary(initllik$grad[learningRate>0])
-  fullInit <- fullInit + initllik$grad*learningRate
+xthetaoptim <- function(xInit, thetaInit, curphi, cursigma){
+  curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
+    covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize, 
+                      kerneltype=config$kernel)
+    covEach$mu[] <- mean(xsim.obs[,j+1])
+    covEach
+  })
+  fn <- function(par) {
+    -xthetallikRcpp( yobs, curCov, cursigma, par, "Hes1" )$value
+  }
+  gr <- function(par) {
+    -as.vector(xthetallikRcpp( yobs, curCov, cursigma, par, "Hes1" )$grad)
+  }
+  marlikmap <- optim(c(xInit, thetaInit), fn, gr, 
+                     method="L-BFGS-B", lower = 0.001, control = list(maxit=1e5))
+  xInit[] <- marlikmap$par[1:length(xInit)]
+  thetaInit[] <- marlikmap$par[-(1:length(xInit))]
+  list(xInit = xInit,
+       thetaInit = thetaInit)
 }
 
-xthetaphisigma <- fullInit
-xInitial <- matrix(xthetaphisigma[xId], nrow=obsDim[1], ncol=obsDim[2])
-thetaInitial <- xthetaphisigma[thetaId]
-phiInitial <- matrix(xthetaphisigma[phiId], nrow=2)
-sigmaInitial <- xthetaphisigma[sigmaId]
+phisigmamle <- with(fullmle, phisigmaoptim(xInit, thetaInit, curphi, cursigma))
+fullmle[names(phisigmamle)] <- phisigmamle
+xthetamle <- with(fullmle, xthetaoptim(xInit, thetaInit, curphi, cursigma)) # use xthetallik
 
-matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=1)
-matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
-matplot(xsim$time, xInitial, type="p", col=1:(ncol(xsim)-1), pch=3, add = TRUE)
+matplot(xsim$time, xthetamle$xInit, col=1:3, add = TRUE, type="p", lwd=3, pch=5)
+
+
+
+fullInit <- list(xInit=xthetamle$xInit, 
+                 thetaInit=xthetamle$thetaInit, 
+                 curphi=phisigmamle$curphi, 
+                 cursigma=phisigmamle$cursigma)
+
+
+# stochastic gradient descend for optimization task ----------------------------
+# initllikOld <- list()
+# fullInit <- marlikmap$par
+# 
+# learningRate <- rep(1e-4, length(fullInit))
+# learningRate[xId] <- 0
+# learningRate[thetaId] <- 0
+# learningRate[phiId] <- 1e-4
+# learningRate[sigmaId] <- 1e-5
+# 
+# for(sgdIt in 1:1e6){
+#   initllik <- llikXthetaphisigma(fullInit)
+#   print(initllik$value - initllikOld$value)
+#   (initllik$value - initllikOld$value)/abs(initllik$value)
+#   initllikOld <- initllik
+#   summary(initllik$grad[learningRate>0])
+#   fullInit <- fullInit + initllik$grad*learningRate
+# }
+# 
+# xthetaphisigma <- fullInit
+# xInitial <- matrix(xthetaphisigma[xId], nrow=obsDim[1], ncol=obsDim[2])
+# thetaInitial <- xthetaphisigma[thetaId]
+# phiInitial <- matrix(xthetaphisigma[phiId], nrow=2)
+# sigmaInitial <- xthetaphisigma[sigmaId]
+# 
+# matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=1)
+# matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
+# matplot(xsim$time, xInitial, type="p", col=1:(ncol(xsim)-1), pch=3, add = TRUE)
 
 
 
@@ -332,21 +357,57 @@ matplot(xsim$time, xInitial, type="p", col=1:(ncol(xsim)-1), pch=3, add = TRUE)
 # 3. optim M-step
 
 
+# x theta posterior sampler ----------------------------------------------------
+
+xthetaInit <- unlist(fullInit[c("xInit", "thetaInit")])
+stepLowInit <- rep(config$stepSize, length(xthetaInit))
+
+curphi <- fullInit$curphi
+cursigma <- fullInit$cursigma
+
+curCov <- lapply(1:(ncol(xsim)-1), function(j){
+  covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize, 
+                    kerneltype=config$kernel)
+  covEach$mu[] <- mean(xsim.obs[,j+1])
+  covEach
+})
+
+singleSampler <- function(xthetaValues, stepSize) 
+  xthetaSample(data.matrix(xsim[,-1]), curCov, cursigma, 
+               xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
+               priorTemperature = config$priorTemperature, modelName = "Hes1")
+chainSamplesOut <- chainSampler(config, xthetaInit, singleSampler, stepLowInit, verbose=TRUE)
 
 
 nall <- nrow(xsim)
 burnin <- as.integer(config$n.iter*config$burninRatio)
-# TODO: add back the pilot idea to solve initial moving to target area problem
-# or use tempered likelihood instead
 
 
+gpode <- list(theta=chainSamplesOut$xth[-(1:burnin), (length(data.matrix(xsim[,-1]))+1):(ncol(chainSamplesOut$xth))],
+              xsampled=array(chainSamplesOut$xth[-(1:burnin), 1:length(data.matrix(xsim[,-1]))], 
+                             dim=c(config$n.iter-burnin, nall, ncol(xsim)-1)),
+              lglik=chainSamplesOut$lliklist[-(1:burnin)],
+              sigma = cursigma,
+              phi = matrix(marlikmap$par[-length(marlikmap$par)], 2))
+gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
+  with(gpode, gpds:::hes1modelODE(theta[t,], xsampled[t,,])), simplify = "array")
+gpode$fode <- aperm(gpode$fode, c(3,1,2))
 
-fullInit <- c(unlist(lapply(xtrueFunc, function(f) f(xsim$time))), pram.true$theta)
-fullInit <- c(fullInit, curphi, cursigma)
+dotxtrue = gpds:::hes1modelODE(pram.true$theta, data.matrix(xtrue[,-1]))
+
+gpds:::plotPostSamplesFlex(
+  paste0(outDir, config$kernel,"-",config$seed,"-priorTempered.pdf"), 
+  xtrue, dotxtrue, xsim, gpode, pram.true, config)
+
+absCI <- apply(gpode$theta, 2, quantile, probs = c(0.025, 0.5, 0.975))
+absCI <- rbind(absCI, mean=colMeans(gpode$theta))
+absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$theta &  pram.true$theta < absCI["97.5%",]))
+
+saveRDS(absCI, paste0(
+  outDir,
+  config$loglikflag,"-priorTempered-",config$kernel,"-",config$seed,".rds"))
 
 
-# stepLowInit <- stepLowInit*config$stepSizeFactor
-config$n.iter <- 2
-# chain not moving at all
-chainSamplesOut <- chainSampler(config, fullInit, singleSampler, stepLowInit, verbose=TRUE)
-chainSamplesOut$xth
+muAllDim <- apply(gpode$xsampled, 2:3, mean)
+startTheta <- colMeans(gpode$theta)
+dotmuAllDim <- apply(gpode$fode, 2:3, mean) 
