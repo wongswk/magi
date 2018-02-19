@@ -125,6 +125,36 @@ curphiWithTruth  # doesn't work because over-smooth, phi2 is too large
 j <- 2
 curphi[,j]
 
+# TODO: start here, change all phillikwithxdotx to cpp full log lik
+# then use full log lik to sample
+
+curphiWithTruth <- matrix(NA, nrow = 2, ncol = 3)
+
+fn <- function(par) -xthetaphisigmallikRcpp( xtrueAtDiscretization, 
+                                             pram.true$theta,
+                                             matrix(par, nrow = 2),
+                                             pram.true$sigma,
+                                             data.matrix(xsim[,-1]),
+                                             xsim$time,
+                                             "Hes1")$value
+gr <- function(par) {
+  fullGrad <- -xthetaphisigmallikRcpp( xtrueAtDiscretization, 
+                                       pram.true$theta,
+                                       matrix(par, nrow = 2),
+                                       pram.true$sigma,
+                                       data.matrix(xsim[,-1]),
+                                       xsim$time,
+                                       "Hes1")$grad
+  fullGrad[(length(xtrueAtDiscretization)+length(pram.true$theta)+1):
+             (length(xtrueAtDiscretization)+length(pram.true$theta)+6)]
+}
+
+marlikmap <- optim(rep(100, 6), fn, gr, method="L-BFGS-B", lower = 0.0001,
+                   upper = c(Inf, Inf, Inf))
+curphiWithTruth[] <- marlikmap$par  
+curphiWithTruth  # doesn't work because over-smooth, phi2 is too large
+
+
 fn <- function(par) -phillikwithxdotx( par, xtrueAtDiscretization[,j], dotxNumerical[,j],
                                        r, signr, config$kernel)
 marlikmap <- optim(rep(1, 2), fn, method="L-BFGS-B", lower = 0.0001,
