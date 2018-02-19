@@ -12,16 +12,18 @@ config <- list(
   nobs = 11,
   noise = c(4,1,8)*0.2,
   kernel = "generalMatern",
-  seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+  seed = 222800493, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
   npostplot = 50,
   loglikflag = "withmeanBand",
   bandsize = 20,
   hmcSteps = 500,
-  n.iter = 2,
+  n.iter = 2000,
   burninRatio = 0.80,
-  stepSizeFactor = 1e-2,
+  stepSizeFactor = 1,
   filllevel = 3,
-  modelName = "hes1"
+  modelName = "Hes1",
+  pilotSize = 40,
+  pilotRatio = 1.0
 )
 
 
@@ -203,11 +205,75 @@ cursigma <- apply(cbind(cursigmaLoocvLlik, cursigmaLoocvMse, cursigmaMarginalLik
 curphi <- apply(abind::abind(curphiLoocvLlik, curphiLoocvMse, curphiMarginalLikelihood, along=3), 1:2, median)
 
 
+# partial observations for MCMC start value-------------------------------------
+gpsmoothFuncList <- list()
+for(j in 1:3){
+  ynew <- getMeanCurve(xsim.obs$time, xsim.obs[,j+1], xsim$time, 
+                       t(curphi[,j]), t(cursigma[j]), kerneltype=config$kernel)
+  gpsmoothFuncList[[j]] <- approxfun(xsim$time, ynew)
+  plot.function(gpsmoothFuncList[[j]], from = min(xsim$time), to = max(xsim$time),
+                lty = 2, col = j, add = TRUE)
+}
+
+groupMembership <- (1:nrow(xsim.obs)) %% ceiling(nrow(xsim.obs) / config$pilotSize)
+groupMembershipIndex <- tapply(1:nrow(xsim.obs), groupMembership, identity)
+
+config$stepSizeFactor <- 1e-5
+pilotResults <- lapply(groupMembershipIndex, gpds::runPilot, 
+                       xsim.obs = xsim.obs, 
+                       r.nobs = r.nobs, 
+                       signr.nobs = signr.nobs, 
+                       curphi = curphi,
+                       gpsmoothFuncList = gpsmoothFuncList, 
+                       thetaSize = length(pram.true$theta), 
+                       config = config)
+
+thetaInit <- lapply(pilotResults, function(result) result$theta)
+thetaInit <- Reduce('+', thetaInit)/length(thetaInit)
+xInit <- lapply(1:length(groupMembershipIndex), function(i) 
+  cbind(xsim.obs$time[groupMembershipIndex[[i]]], pilotResults[[i]]$x))
+xInit <- do.call(rbind, xInit)
+xInit <- xInit[order(xInit[,1]), ][, -1, drop=FALSE]
+matplot(xsim.obs$time, xInit, lty=3, col=4:6, add = TRUE, type="l", lwd=3)
+
+# update phi based on pilot ----------------------------------------------------
+yobsPilot <- data.matrix(xsim.obs[,-1])
+obsDimPilot <- dim(yobsPilot)
+xPilotId <- 1:length(yobsPilot)
+thetaPilotId <- (xPilotId[length(xPilotId)]+1):(xPilotId[length(xPilotId)]+length(pram.true$theta))
+phiPilotId <- (thetaPilotId[length(thetaPilotId)]+1):(thetaPilotId[length(thetaPilotId)]+length(pram.true$phi))
+sigmaPilotId <- (phiPilotId[length(phiPilotId)]+1):(phiPilotId[length(phiPilotId)]+length(pram.true$sigma))
+
+llikXthetaphisigmaPilot <- function(xthetaphisigma) {
+  xInitial <- matrix(xthetaphisigma[xPilotId], nrow=obsDimPilot[1], ncol=obsDimPilot[2])
+  thetaInitial <- xthetaphisigma[thetaPilotId]
+  phiInitial <- matrix(xthetaphisigma[phiPilotId], nrow=2)
+  sigmaInitial <- xthetaphisigma[sigmaPilotId]
+  xthetaphisigmallikRcpp(xInitial, thetaInitial, phiInitial, sigmaInitial,
+                         yobsPilot, xsim.obs$time, modelName = "Hes1")
+}
+llikXthetaphisigmaPilot(c(xInit, thetaInit, curphi, cursigma))
+lbPilot <- rep(1e-3, sigmaPilotId[length(sigmaPilotId)])
+
+fn <- function(par) -llikXthetaphisigmaPilot( par )$value
+gr <- function(par) -as.vector(llikXthetaphisigmaPilot( par )$grad)
+marlikmap <- optim(c(xInit, thetaInit, curphi, cursigma), 
+                   fn, gr, method="L-BFGS-B", lower = lbPilot, control = list(maxit=1e4))
+xInit[] <- marlikmap$par[xPilotId]
+thetaInit[] <- marlikmap$par[thetaPilotId]
+curphi[] <- marlikmap$par[phiPilotId]
+cursigma[] <- marlikmap$par[sigmaPilotId]
+matplot(xsim.obs$time, xInit, lty=4, col=1:3, add = TRUE, type="l", lwd=3)
+
+
+
 nall <- nrow(xsim)
 burnin <- as.integer(config$n.iter*config$burninRatio)
 # TODO: add back the pilot idea to solve initial moving to target area problem
 # or use tempered likelihood instead
-# xInit <- c(vInit, rInit, rep(1,3))
+
+
+
 fullInit <- c(unlist(lapply(xtrueFunc, function(f) f(xsim$time))), pram.true$theta)
 fullInit <- c(fullInit, curphi, cursigma)
 
