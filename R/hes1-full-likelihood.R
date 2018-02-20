@@ -113,9 +113,9 @@ cursigmaLoocvLlik <- cursigma
 curphiLoocvLlik <- curphi
 
 for(j in 1:(ncol(xsim)-1)){
-  fn <- function(par) -phisigloocvllikC( c(par, pram.true$sigma[j]) , data.matrix(xsim.obs[,1+j]), 
+  fn <- function(par) -phisigloocvmseC( c(par, pram.true$sigma[j]) , data.matrix(xsim.obs[,1+j]), 
                                          r.nobs, config$kernel)$value
-  gr <- function(par) -as.vector(phisigloocvllikC( c(par, pram.true$sigma[j]), data.matrix(xsim.obs[,1+j]), 
+  gr <- function(par) -as.vector(phisigloocvmseC( c(par, pram.true$sigma[j]), data.matrix(xsim.obs[,1+j]), 
                                                    r.nobs, config$kernel)$grad)[1:2]
   marlikmap <- optim(rep(100, 2), fn, gr, method="L-BFGS-B", lower = 0.0001,
                      upper = c(Inf, 60*4*2, Inf))
