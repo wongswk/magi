@@ -48,7 +48,7 @@ for(dummyIterator in 1:1e3){
   
   xtrue <- deSolve::ode(y = pram.true$x0, times = times, func = modelODE, parms = pram.true$theta)
   xtrue <- data.frame(xtrue)
-  matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=1)
+  if(dummyIterator < 4) matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=1)
   
   xtrueFunc <- lapply(2:ncol(xtrue), function(j)
     approxfun(xtrue[, "time"], xtrue[, j]))
@@ -61,9 +61,9 @@ for(dummyIterator in 1:1e3){
   }
   
   xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
-  matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
+  if(dummyIterator < 4) matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
   
-  matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
+  if(dummyIterator < 4) matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
   
   xsim <- insertNaN(xsim.obs,config$filllevel)
   
@@ -83,6 +83,7 @@ for(dummyIterator in 1:1e3){
   cursigma <- rep(NA, ncol(xsim)-1)
   curphi <- matrix(NA, 2, ncol(xsim)-1)
   
+  # MarginalLikelihood ---------------------------------------------------------
   for(j in 1:(ncol(xsim)-1)){
     fn <- function(par) -phisigllikC( par, data.matrix(xsim.obs[,1+j]), 
                                       r.nobs, config$kernel)$value
@@ -97,6 +98,7 @@ for(dummyIterator in 1:1e3){
   cursigmaLoocvMarginalLikelihood <- cursigma
   curphiMarginalLikelihood <- curphi
   
+  # LoocvLlik -------------------------------------------------------------------
   for(j in 1:(ncol(xsim)-1)){
     fn <- function(par) -phisigloocvllikC( par, data.matrix(xsim.obs[,1+j]), 
                                            r.nobs, config$kernel)$value
@@ -111,10 +113,11 @@ for(dummyIterator in 1:1e3){
   cursigmaLoocvLoocvLlik <- cursigma
   curphiLoocvLlik <- curphi
   
+  # LoocvMse -------------------------------------------------------------------
   for(j in 1:(ncol(xsim)-1)){
-    fn <- function(par) -phisigloocvllikC( c(par, pram.true$sigma[j]) , data.matrix(xsim.obs[,1+j]), 
+    fn <- function(par) -phisigloocvmseC( c(par, pram.true$sigma[j]) , data.matrix(xsim.obs[,1+j]), 
                                            r.nobs, config$kernel)$value
-    gr <- function(par) -as.vector(phisigloocvllikC( c(par, pram.true$sigma[j]), data.matrix(xsim.obs[,1+j]), 
+    gr <- function(par) -as.vector(phisigloocvmseC( c(par, pram.true$sigma[j]), data.matrix(xsim.obs[,1+j]), 
                                                      r.nobs, config$kernel)$grad)[1:2]
     marlikmap <- optim(rep(100, 2), fn, gr, method="L-BFGS-B", lower = 0.0001,
                        upper = c(Inf, 60*4*2, Inf))
@@ -125,6 +128,60 @@ for(dummyIterator in 1:1e3){
   cursigmaLoocvLoocvMse <- cursigma
   curphiLoocvMse <- curphi
   
+  # marllik+loocvllik+fftprior -------------------------------------------------
+  for(j in 1:(ncol(xsim)-1)){
+    priorFactor <- getFrequencyBasedPrior(xsim.obs[,1+j])
+    
+    fn <- function(par) {
+      marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
+      loocvlik <- phisigloocvllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
+      penalty <- dnorm(par[2], max(xsim.obs$time)*priorFactor["meanFactor"], 
+                       max(xsim.obs$time)*priorFactor["sdFactor"], log=TRUE)
+      -(marlik$value + loocvlik$value + penalty)
+    }
+    gr <- function(par) {
+      marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
+      loocvlik <- phisigloocvllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
+      grad <- -as.vector(marlik$grad + loocvlik$grad)
+      grad[2] <- grad[2] + (par[2] - priorFactor["meanFactor"]) / (max(xsim.obs$time)*priorFactor["sdFactor"])^2
+      grad
+    }
+    marlikmap <- optim(rep(100, 3), fn, gr, method="L-BFGS-B", lower = 0.0001,
+                       upper = c(Inf, 60*4*2, Inf))
+    
+    cursigma[j] <- marlikmap$par[3]
+    curphi[,j] <- marlikmap$par[1:2]
+  }
+  cursigmaMarllikLoocvllkFftprior <- cursigma
+  curphiMarllikLoocvllkFftprior <- curphi
+  
+  # marllik+fftprior -----------------------------------------------------------
+  for(j in 1:(ncol(xsim)-1)){
+    priorFactor <- getFrequencyBasedPrior(xsim.obs[,1+j])
+    
+    fn <- function(par) {
+      marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
+      penalty <- dnorm(par[2], max(xsim.obs$time)*priorFactor["meanFactor"], 
+                       max(xsim.obs$time)*priorFactor["sdFactor"], log=TRUE)
+      -(marlik$value + penalty)
+    }
+    gr <- function(par) {
+      marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
+      grad <- -as.vector(marlik$grad)
+      grad[2] <- grad[2] + (par[2] - priorFactor["meanFactor"]) / (max(xsim.obs$time)*priorFactor["sdFactor"])^2
+      grad
+    }
+    marlikmap <- optim(rep(100, 3), fn, gr, method="L-BFGS-B", lower = 0.0001,
+                       upper = c(Inf, 60*4*2, Inf))
+    
+    cursigma[j] <- marlikmap$par[3]
+    curphi[,j] <- marlikmap$par[1:2]
+  }
+  cursigmaMarllikFftprior <- cursigma
+  curphiMarllikFftprior <- curphi
+  
+  
+  
   cursigmaLoocvLoocvMse
   cursigmaLoocvLoocvLlik
   cursigmaLoocvMarginalLikelihood
@@ -134,13 +191,16 @@ for(dummyIterator in 1:1e3){
   curphiMarginalLikelihood
   
   phi2compareMethods[[dummyIterator]] <-
-    rbind(curphiLoocvMse[2,], curphiLoocvLlik[2,], curphiMarginalLikelihood[2,])
+    rbind(curphiLoocvMse[2,], curphiLoocvLlik[2,], curphiMarginalLikelihood[2,],
+          curphiMarllikLoocvllkFftprior[2,], curphiMarllikFftprior[2,])
   
   configAll[[dummyIterator]] <- config    
+  phi2compareMethods[[dummyIterator]]
 }
 
 phi2compareMethodsCube <- sapply(phi2compareMethods, identity, simplify = "array")
-dimnames(phi2compareMethodsCube)[[1]] <- c("phi2LoocvMse", "phi2LoocvLlik", "phi2MarginalLikelihood")
+dimnames(phi2compareMethodsCube)[[1]] <- c("phi2LoocvMse", "phi2LoocvLlik", "phi2MarginalLikelihood",
+                                           "marllik+loocvllik+fftprior", "marllik+fftprior")
 dimnames(phi2compareMethodsCube)[[2]] <- c("hes1P", "hes1M", "hes1H")
 
 
@@ -178,4 +238,5 @@ for(component in c("hes1P", "hes1M", "hes1H")){
 ggobjs
 ml <- gridExtra::marrangeGrob(ggobjs, nrow=3, ncol=1,
                               top="phi2")
-ggsave("phi2-compare-gpFitMethods.pdf", ml, width=8, height = 16)
+ggsave(paste0("phi2-compare-gpFitMethods-nobs",config$nobs,".pdf"), ml, width=8, height = 16)
+save.image(paste0("phi2-compare-gpFitMethods-nobs",config$nobs,".rda"))
