@@ -2,10 +2,10 @@
 library(gpds)
 if(!exists("config")){
   config <- list(
-    nobs = 11,
+    nobs = 51,
     noise = c(4,1,8)*0.2,
     kernel = "generalMatern",
-    seed = 606377638, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+    seed = 3657260, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 50,
     loglikflag = "withmeanBand",
     bandsize = 20,
@@ -13,17 +13,19 @@ if(!exists("config")){
     n.iter = 1e4,
     burninRatio = 0.50,
     stepSizeFactor = 1,
-    filllevel = 3,
+    filllevel = 1,
     modelName = "hes1"
   )
 }
 
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
 config$priorTemperature <- config$ndis / config$nobs
+# config$priorTemperature[2] <- 1e12
+
 if(grepl("/n/",getwd())){
   baseDir <- "/n/regal/kou_lab/shihaoyang/DynamicSys/results/" # tmp folder on cluster 
 }else{
-  baseDir <- "~/Workspace/DynamicSys/results/"  
+  baseDir <- "~/Workspace/DynamicSys/results/batch-output/"  
 }
 outDir <- with(config, paste0(baseDir, modelName, "-", loglikflag,"-", kernel,
                               "-nobs",nobs,"-noise", paste(round(noise,3), collapse = "_"),
