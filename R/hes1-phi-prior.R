@@ -2,7 +2,7 @@
 library(gpds)
 source("R/hes1-helper-functions.R")
 config <- list(
-  nobs = 26,
+  nobs = 11,
   noise = c(4,1,8)*0.2,
   kernel = "generalMatern",
   seed = 3657260, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
@@ -84,17 +84,20 @@ cursigma <- rep(NA, ncol(xsim)-1)
 curphi <- matrix(NA, 2, ncol(xsim)-1)
 
 for(j in 1:(ncol(xsim)-1)){
+  priorFactor <- getFrequencyBasedPrior(xsim.obs[,1+j])
+  
   fn <- function(par) {
     marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
     loocvlik <- phisigloocvllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-    penalty <- dnorm(par[2], max(xsim.obs$time)/2, max(xsim.obs$time)/6, log=TRUE)
-    -(marlik$value + loocvlik$value) # + penalty
+    penalty <- dnorm(par[2], max(xsim.obs$time)*priorFactor["meanFactor"], 
+                     max(xsim.obs$time)*priorFactor["sdFactor"], log=TRUE)
+    -(marlik$value + loocvlik$value + penalty)
   }
   gr <- function(par) {
     marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
     loocvlik <- phisigloocvllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
     grad <- -as.vector(marlik$grad + loocvlik$grad)
-    # grad[2] <- grad[2] + (par[2] - max(xsim.obs$time)/2) / (max(xsim.obs$time)/6)^2
+    grad[2] <- grad[2] + (par[2] - priorFactor["meanFactor"]) / (max(xsim.obs$time)*priorFactor["sdFactor"])^2
     grad
   }
   marlikmap <- optim(rep(100, 3), fn, gr, method="L-BFGS-B", lower = 0.0001,
@@ -164,6 +167,7 @@ points(xsim.obs$time, xsim.obs[,4], pch=20, col=3)
 plot(phi2candidates, phi2candidatesCheckedLoocvmse[2,], main="Loocvmse phi1")
 plot(phi2candidates, phi2candidatesCheckedLoocvmse[4,], main="Loocvmse sigma")
 dev.off()
+
 
 curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
   covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize, 
