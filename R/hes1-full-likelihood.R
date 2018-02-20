@@ -1,9 +1,3 @@
-if(interactive()){
-  maxit <- 500
-}else{
-  maxit <- 10
-}
-
 #### run with priorTempered phase 1 --------------------------------------------
 library(gpds)
 library(parallel)
@@ -12,7 +6,7 @@ config <- list(
   nobs = 11,
   noise = c(4,1,8)*0.2,
   kernel = "generalMatern",
-  seed = 222800493, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+  seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
   npostplot = 50,
   loglikflag = "withmeanBand",
   bandsize = 20,
@@ -200,12 +194,41 @@ rbind(curphiLoocvMse, cursigmaLoocvMse,
       curphiMarginalLikelihood, cursigmaMarginalLikelihood)
 
 
+
+
+
 singleSampler <- singleSamplerXthetaphisigma
 cursigma <- apply(cbind(cursigmaLoocvLlik, cursigmaLoocvMse, cursigmaMarginalLikelihood), 1, median)
 curphi <- apply(abind::abind(curphiLoocvLlik, curphiLoocvMse, curphiMarginalLikelihood, along=3), 1:2, median)
 
+cursigma <- rep(NA, ncol(xsim)-1)
+curphi <- matrix(NA, 2, ncol(xsim)-1)
 
-# partial observations for MCMC start value-------------------------------------
+for(j in 1:(ncol(xsim)-1)){
+  fn <- function(par) {
+    marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
+    loocvlik <- phisigloocvllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
+    penalty <- dnorm(par[2], max(xsim.obs$time)/2, max(xsim.obs$time)/6, log=TRUE)
+    -(marlik$value + loocvlik$value) # + penalty
+  }
+  gr <- function(par) {
+    marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
+    loocvlik <- phisigloocvllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
+    grad <- -as.vector(marlik$grad + loocvlik$grad)
+    # grad[2] <- grad[2] + (par[2] - max(xsim.obs$time)/2) / (max(xsim.obs$time)/6)^2
+    grad
+  }
+  marlikmap <- optim(rep(100, 3), fn, gr, method="L-BFGS-B", lower = 0.0001,
+                     upper = c(Inf, 60*4*2, Inf))
+  
+  cursigma[j] <- marlikmap$par[3]
+  curphi[,j] <- marlikmap$par[1:2]
+}
+
+cursigma
+curphi
+
+# gpsmooth function ------------------------------------------------------------
 gpsmoothFuncList <- list()
 for(j in 1:3){
   ynew <- getMeanCurve(xsim.obs$time, xsim.obs[,j+1], xsim$time, 
@@ -215,36 +238,52 @@ for(j in 1:3){
                 lty = 2, col = j, add = TRUE)
 }
 
-groupMembership <- (1:nrow(xsim.obs)) %% ceiling(nrow(xsim.obs) / config$pilotSize)
-groupMembershipIndex <- tapply(1:nrow(xsim.obs), groupMembership, identity)
+# set thetaInit by optim -------------------------------------------------------
+thetaoptim <- function(xInit, thetaInit, curphi, cursigma){
+  curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
+    covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize, 
+                      kerneltype=config$kernel)
+    covEach$mu[] <- mean(xsim.obs[,j+1])
+    covEach
+  })
+  fn <- function(par) {
+    -xthetallikRcpp( yobs, curCov, cursigma, c(xInit, par), "Hes1" )$value
+  }
+  gr <- function(par) {
+    -as.vector(xthetallikRcpp( yobs, curCov, cursigma, c(xInit, par), "Hes1" )$grad[-(1:length(xInit))])
+  }
+  marlikmap <- optim(c(thetaInit), fn, gr, 
+                     method="L-BFGS-B", lower = 0.001, control = list(maxit=1e5))
+  thetaInit[] <- marlikmap$par
+  list(thetaInit = thetaInit)
+}
 
-config$stepSizeFactor <- 1e-5
-pilotResults <- lapply(groupMembershipIndex, gpds::runPilot, 
-                       xsim.obs = xsim.obs, 
-                       r.nobs = r.nobs, 
-                       signr.nobs = signr.nobs, 
-                       curphi = curphi,
-                       gpsmoothFuncList = gpsmoothFuncList, 
-                       thetaSize = length(pram.true$theta), 
-                       config = config)
-
-thetaInit <- lapply(pilotResults, function(result) result$theta)
-thetaInit <- Reduce('+', thetaInit)/length(thetaInit)
-xInit <- lapply(1:length(groupMembershipIndex), function(i) 
-  cbind(xsim.obs$time[groupMembershipIndex[[i]]], pilotResults[[i]]$x))
-xInit <- do.call(rbind, xInit)
-xInit <- xInit[order(xInit[,1]), ][, -1, drop=FALSE]
-matplot(xsim.obs$time, xInit, lty=3, col=4:6, add = TRUE, type="l", lwd=3)
-
-# optimize phi -----------------------------------------------------------------
 xsimInit <- xsim
 for(j in 1:3){
   nanId <- which(is.na(xsimInit[,j+1]))
   xsimInit[nanId,j+1] <- gpsmoothFuncList[[j]](xsimInit$time[nanId])
 }
 matplot(xsimInit$time, xsimInit[,-1], type="p", pch=2, add=TRUE)
+xInit <- data.matrix(xsimInit[,-1])
 
-llikXthetaphisigma(c(data.matrix(xsimInit[,-1]), thetaInit, curphi, cursigma))
+thetaInit <- rep(1, length(pram.true$theta))
+thetamle <- thetaoptim(xInit, thetaInit, curphi, cursigma)
+thetaInit <- thetamle$thetaInit
+
+# visualization utilities ------------------------------------------------------
+plotXinit <- function(...){
+  xInitList <- list(...)
+  matplot(xsim.obs$time, xsim.obs[,-1], col=1:3, pch=20)
+  for(j in 1:length(xInitList)){
+    matplot(xsim$time, xInitList[[j]], col=1:3, add = TRUE, 
+            type="p", lwd=1, lty=2, pch=j)
+  }
+}
+
+
+# optimize phi -----------------------------------------------------------------
+
+llikXthetaphisigma(c(xInit, thetaInit, curphi, cursigma))
 
 # ususal R optim
 fulloptim <- function(xInit, thetaInit, curphi, cursigma){
@@ -262,9 +301,9 @@ fulloptim <- function(xInit, thetaInit, curphi, cursigma){
        curphi = curphi, 
        cursigma = cursigma)
 }
-fullmle <- fulloptim(data.matrix(xsimInit[,-1]), thetaInit, curphi, cursigma)
+# fullmle <- fulloptim(data.matrix(xsimInit[,-1]), thetaInit, curphi, cursigma)  # unstable, could take long
 
-matplot(xsim$time, fullmle$xInit, lty=4, col=1:3, add = TRUE, type="p", lwd=3, pch=4)
+# matplot(xsim$time, fullmle$xInit, lty=4, col=1:3, add = TRUE, type="p", lwd=3, pch=4)
 
 # R optim with iterative optimization
 phisigmaoptim <- function(xInit, thetaInit, curphi, cursigma){
@@ -285,7 +324,7 @@ phisigmaoptim <- function(xInit, thetaInit, curphi, cursigma){
        cursigma = cursigma)
 }
 
-xthetaoptim <- function(xInit, thetaInit, curphi, cursigma){
+xthetaoptim <- function(xInit, thetaInit, curphi, cursigma, priorTemperature = rep(1,2)){
   curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
     covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize, 
                       kerneltype=config$kernel)
@@ -293,10 +332,10 @@ xthetaoptim <- function(xInit, thetaInit, curphi, cursigma){
     covEach
   })
   fn <- function(par) {
-    -xthetallikRcpp( yobs, curCov, cursigma, par, "Hes1" )$value
+    -xthetallikRcpp( yobs, curCov, cursigma, par, "Hes1", priorTemperatureInput=priorTemperature )$value
   }
   gr <- function(par) {
-    -as.vector(xthetallikRcpp( yobs, curCov, cursigma, par, "Hes1" )$grad)
+    -as.vector(xthetallikRcpp( yobs, curCov, cursigma, par, "Hes1", priorTemperatureInput=priorTemperature )$grad)
   }
   marlikmap <- optim(c(xInit, thetaInit), fn, gr, 
                      method="L-BFGS-B", lower = 0.001, control = list(maxit=1e5))
@@ -306,18 +345,38 @@ xthetaoptim <- function(xInit, thetaInit, curphi, cursigma){
        thetaInit = thetaInit)
 }
 
-phisigmamle <- with(fullmle, phisigmaoptim(xInit, thetaInit, curphi, cursigma))
-fullmle[names(phisigmamle)] <- phisigmamle
-xthetamle <- with(fullmle, xthetaoptim(xInit, thetaInit, curphi, cursigma)) # use xthetallik
+fullInit <- list(xInit=xInit, 
+                 thetaInit=thetaInit, 
+                 curphi=curphi, 
+                 cursigma=cursigma)
 
+fullInit[-1]
+plotXinit(fullInit$xInit)
+
+heatUpBeta <- matrix(c(1, 1), nrow = 2, ncol = 3)
+priorTemperature <- c(1, 1e2)
+xthetamle <- with(fullInit, xthetaoptim(xInit, thetaInit, heatUpBeta*curphi, cursigma, priorTemperature))
+plotXinit(fullInit$xInit, xthetamle$xInit)
+
+fullInit[names(xthetamle)] <- xthetamle
+priorTemperature <- c(1, 1)
+xthetamle <- with(fullInit, xthetaoptim(xInit, thetaInit, heatUpBeta*curphi, cursigma, priorTemperature))
+plotXinit(fullInit$xInit, xthetamle$xInit)
+
+fullInit[names(xthetamle)] <- xthetamle
+thetamle <- with(fullInit, thetaoptim(xInit, thetaInit, curphi, cursigma))
+thetamle$thetaInit - fullInit$thetaInit
+
+phisigmamle <- with(fullInit, phisigmaoptim(xInit, thetaInit, curphi, cursigma))
+phisigmamle
+fullInit[names(phisigmamle)] <- phisigmamle
+
+
+phisigmamle
 matplot(xsim$time, xthetamle$xInit, col=1:3, add = TRUE, type="p", lwd=3, pch=5)
 
+llikXthetaphisigma(unlist(fullInit))
 
-
-fullInit <- list(xInit=xthetamle$xInit, 
-                 thetaInit=xthetamle$thetaInit, 
-                 curphi=phisigmamle$curphi, 
-                 cursigma=phisigmamle$cursigma)
 
 
 # stochastic gradient descend for optimization task ----------------------------
