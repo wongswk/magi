@@ -4,7 +4,7 @@ phi2compareMethods <- list()
 configAll <- list()
 for(dummyIterator in 1:1e3){
   config <- list(
-    nobs = 11,
+    nobs = 26,
     noise = c(4,1,8)*0.2,
     kernel = "generalMatern",
     seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
@@ -143,9 +143,10 @@ for(dummyIterator in 1:1e3){
       marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
       loocvlik <- phisigloocvllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
       grad <- -as.vector(marlik$grad + loocvlik$grad)
-      grad[2] <- grad[2] + (par[2] - priorFactor["meanFactor"]) / (max(xsim.obs$time)*priorFactor["sdFactor"])^2
+      grad[2] <- grad[2] + (par[2] - max(xsim.obs$time)*priorFactor["meanFactor"]) / (max(xsim.obs$time)*priorFactor["sdFactor"])^2
       grad
     }
+    testthat::expect_equal(gr(c(5,50,1))[2], (fn(c(5,50+1e-6,1)) - fn(c(5,50,1)))/1e-6, tolerance=1e-4)
     marlikmap <- optim(rep(100, 3), fn, gr, method="L-BFGS-B", lower = 0.0001,
                        upper = c(Inf, 60*4*2, Inf))
     
@@ -168,9 +169,10 @@ for(dummyIterator in 1:1e3){
     gr <- function(par) {
       marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
       grad <- -as.vector(marlik$grad)
-      grad[2] <- grad[2] + (par[2] - priorFactor["meanFactor"]) / (max(xsim.obs$time)*priorFactor["sdFactor"])^2
+      grad[2] <- grad[2] + (par[2] - max(xsim.obs$time)*priorFactor["meanFactor"]) / (max(xsim.obs$time)*priorFactor["sdFactor"])^2
       grad
     }
+    testthat::expect_equal(gr(c(5,50,1))[2], (fn(c(5,50+1e-6,1)) - fn(c(5,50,1)))/1e-6, tolerance=1e-4)
     marlikmap <- optim(rep(100, 3), fn, gr, method="L-BFGS-B", lower = 0.0001,
                        upper = c(Inf, 60*4*2, Inf))
     
@@ -240,3 +242,24 @@ ml <- gridExtra::marrangeGrob(ggobjs, nrow=3, ncol=1,
                               top="phi2")
 ggsave(paste0("phi2-compare-gpFitMethods-nobs",config$nobs,".pdf"), ml, width=8, height = 16)
 save.image(paste0("phi2-compare-gpFitMethods-nobs",config$nobs,".rda"))
+
+
+# analysis after saving the data -----------------------------------------------
+nobs <- 11
+load(paste0("../results/2018-02-21/phi2-compare-gpFitMethods-nobs",nobs,".rda"))
+ggobjs <- list()
+phi2method <- c("phi2MarginalLikelihood", "marllik+loocvllik+fftprior", "marllik+fftprior")
+for(component in c("hes1P", "hes1M", "hes1H")){
+  x <- data.frame(log(t(phi2compareMethodsCube[phi2method,component,])))
+  library(ggplot2);library(reshape2)
+  data <- melt(x)
+  ggobjs[[component]] <- 
+    ggplot(data,aes(x=value, fill=variable)) + geom_density(alpha=0.25) + 
+    ggplot2::labs(title=component) + xlab("log phi2")
+}
+ggobjs
+
+id <- which(phi2compareMethodsCube["marllik+fftprior","hes1P",]>80)
+id
+configAll[[id[1]]]
+phi2compareMethodsCube[,,id[1]]

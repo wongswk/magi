@@ -114,19 +114,19 @@ eval(phiAll3methodsExpr)
 
 
 phi2candidates <- exp(seq(0, 6, length=100))
-phi2candidatesCheckedMarllik <- sapply(phi2candidates, checkPhi2FitMarllik)
+phi2candidatesCheckedMarllik <- sapply(phi2candidates, checkPhi2FitMarllik, j=2)
 phi2candidatesCheckedMarllikFuncList <-
   apply(phi2candidatesCheckedMarllik, 2, function(phisig){
     getGPsmoothFunc(phisig[2:3], phisig[4], j=3, showplot = FALSE)  
   })
 
-phi2candidatesCheckedLoocvllik <- sapply(phi2candidates, checkPhi2FitLoocvllik)
+phi2candidatesCheckedLoocvllik <- sapply(phi2candidates, checkPhi2FitLoocvllik, j=2)
 phi2candidatesCheckedLoocvllikFuncList <-
   apply(phi2candidatesCheckedLoocvllik, 2, function(phisig){
     getGPsmoothFunc(phisig[2:3], phisig[4], j=3, showplot = FALSE)  
   })
 
-phi2candidatesCheckedLoocvmse <- sapply(phi2candidates, checkPhi2FitLoocvmse)
+phi2candidatesCheckedLoocvmse <- sapply(phi2candidates, checkPhi2FitLoocvmse, j=2)
 phi2candidatesCheckedLoocvmseFuncList <-
   apply(phi2candidatesCheckedLoocvmse, 2, function(phisig){
     getGPsmoothFunc(phisig[2:3], phisig[4], j=3, showplot = FALSE)  
