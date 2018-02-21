@@ -1,3 +1,6 @@
+#ifndef TGTDISTR_H
+#define TGTDISTR_H
+
 #include <cmath>
 #include <random>
 #include <vector>
@@ -28,3 +31,5 @@ lp xthetallikWithmuBand( const arma::vec & xtheta,
                          const OdeSystem & fOdeModel,
                          const bool useBand = true,
                          const arma::vec & priorTemperature = arma::ones(2));
+
+#endif
