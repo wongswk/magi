@@ -114,9 +114,9 @@ curphiLoocvLlik <- curphi
 
 for(j in 1:(ncol(xsim)-1)){
   fn <- function(par) -phisigloocvmseC( c(par, pram.true$sigma[j]) , data.matrix(xsim.obs[,1+j]), 
-                                         r.nobs, config$kernel)$value
+                                        r.nobs, config$kernel)$value
   gr <- function(par) -as.vector(phisigloocvmseC( c(par, pram.true$sigma[j]), data.matrix(xsim.obs[,1+j]), 
-                                                   r.nobs, config$kernel)$grad)[1:2]
+                                                  r.nobs, config$kernel)$grad)[1:2]
   marlikmap <- optim(rep(100, 2), fn, gr, method="L-BFGS-B", lower = 0.0001,
                      upper = c(Inf, 60*4*2, Inf))
   
@@ -125,6 +125,32 @@ for(j in 1:(ncol(xsim)-1)){
 }
 cursigmaLoocvMse <- cursigma
 curphiLoocvMse <- curphi
+
+# marllik+fftprior -----------------------------------------------------------
+for(j in 1:(ncol(xsim)-1)){
+  priorFactor <- getFrequencyBasedPrior(xsim.obs[,1+j])
+  
+  fn <- function(par) {
+    marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
+    penalty <- dnorm(par[2], max(xsim.obs$time)*priorFactor["meanFactor"], 
+                     max(xsim.obs$time)*priorFactor["sdFactor"], log=TRUE)
+    -(marlik$value + penalty)
+  }
+  gr <- function(par) {
+    marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
+    grad <- -as.vector(marlik$grad)
+    grad[2] <- grad[2] + (par[2] - max(xsim.obs$time)*priorFactor["meanFactor"]) / (max(xsim.obs$time)*priorFactor["sdFactor"])^2
+    grad
+  }
+  # testthat::expect_equal(gr(c(5,50,1))[2], (fn(c(5,50+1e-6,1)) - fn(c(5,50,1)))/1e-6, tolerance=1e-4)
+  marlikmap <- optim(rep(100, 3), fn, gr, method="L-BFGS-B", lower = 0.0001,
+                     upper = c(Inf, 60*4*2, Inf))
+  
+  cursigma[j] <- marlikmap$par[3]
+  curphi[,j] <- marlikmap$par[1:2]
+}
+cursigmaMarllikFftprior <- cursigma
+curphiMarllikFftprior <- curphi
 
 rm(cursigma, curphi)
 
@@ -148,19 +174,6 @@ curCovMarginalLikelihood <- lapply(1:(ncol(xsim.obs)-1), function(j){
   covEach
 })
 
-
-singleSamplerLoocvLlik <- function(xthetaValues, stepSize) 
-  xthetaSample(data.matrix(xsim[,-1]), curCovLoocvLlik, cursigmaLoocvLlik, 
-               xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
-               priorTemperature = config$priorTemperature, modelName = "Hes1")
-singleSamplerLoocvMse <- function(xthetaValues, stepSize) 
-  xthetaSample(data.matrix(xsim[,-1]), curCovLoocvMse, cursigmaLoocvMse, 
-               xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
-               priorTemperature = config$priorTemperature, modelName = "Hes1")
-singleSamplerMarginalLikelihood <- function(xthetaValues, stepSize) 
-  xthetaSample(data.matrix(xsim[,-1]), curCovMarginalLikelihood, cursigmaMarginalLikelihood, 
-               xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
-               priorTemperature = config$priorTemperature, modelName = "Hes1")
 
 yobs <- data.matrix(xsim[,-1])
 obsDim <- dim(yobs)
@@ -191,42 +204,26 @@ llikXthetaphisigma <- function(xthetaphisigma) {
 
 rbind(curphiLoocvMse, cursigmaLoocvMse, 
       curphiLoocvLlik, cursigmaLoocvLlik,
-      curphiMarginalLikelihood, cursigmaMarginalLikelihood)
+      curphiMarginalLikelihood, cursigmaMarginalLikelihood,
+      curphiMarllikFftprior, cursigmaMarllikFftprior)
 
 
 
+cursigma <- cursigmaMarllikFftprior
+curphi <- curphiMarllikFftprior
+curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
+  covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize, 
+                    kerneltype=config$kernel)
+  covEach$mu[] <- mean(xsim.obs[,j+1])
+  covEach
+})
+
+singleSamplerXthetasigma <- function(xthetaValues, stepSize) 
+  xthetasigmaSample(data.matrix(xsim[,-1]), curCov, cursigma, 
+                    xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
+                    priorTemperature = config$priorTemperature, modelName = "Hes1")
 
 
-singleSampler <- singleSamplerXthetaphisigma
-cursigma <- apply(cbind(cursigmaLoocvLlik, cursigmaLoocvMse, cursigmaMarginalLikelihood), 1, median)
-curphi <- apply(abind::abind(curphiLoocvLlik, curphiLoocvMse, curphiMarginalLikelihood, along=3), 1:2, median)
-
-cursigma <- rep(NA, ncol(xsim)-1)
-curphi <- matrix(NA, 2, ncol(xsim)-1)
-
-for(j in 1:(ncol(xsim)-1)){
-  fn <- function(par) {
-    marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-    loocvlik <- phisigloocvllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-    penalty <- dnorm(par[2], max(xsim.obs$time)/2, max(xsim.obs$time)/6, log=TRUE)
-    -(marlik$value + loocvlik$value) # + penalty
-  }
-  gr <- function(par) {
-    marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-    loocvlik <- phisigloocvllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-    grad <- -as.vector(marlik$grad + loocvlik$grad)
-    # grad[2] <- grad[2] + (par[2] - max(xsim.obs$time)/2) / (max(xsim.obs$time)/6)^2
-    grad
-  }
-  marlikmap <- optim(rep(100, 3), fn, gr, method="L-BFGS-B", lower = 0.0001,
-                     upper = c(Inf, 60*4*2, Inf))
-  
-  cursigma[j] <- marlikmap$par[3]
-  curphi[,j] <- marlikmap$par[1:2]
-}
-
-cursigma
-curphi
 
 # gpsmooth function ------------------------------------------------------------
 gpsmoothFuncList <- list()
@@ -344,6 +341,36 @@ xthetaoptim <- function(xInit, thetaInit, curphi, cursigma, priorTemperature = r
   list(xInit = xInit,
        thetaInit = thetaInit)
 }
+
+xthetasigmaoptim <- function(xInit, thetaInit, curphi, sigmaInit, priorTemperature = rep(1,2)){
+  curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
+    covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize, 
+                      kerneltype=config$kernel)
+    covEach$mu[] <- mean(xsim.obs[,j+1])
+    covEach
+  })
+  fn <- function(par) {
+    xthis <- matrix(par[xId], ncol=ncol(yobs))
+    thetathis <- par[thetaId]
+    sigmathis <- par[(max(thetaId)+1):length(par)]
+    -xthetasigmallikRcpp( xthis, thetathis, sigmathis, yobs, curCov, priorTemperature, FALSE, "Hes1" )$value
+  }
+  gr <- function(par) {
+    xthis <- matrix(par[xId], ncol=ncol(yobs))
+    thetathis <- par[thetaId]
+    sigmathis <- par[(max(thetaId)+1):length(par)]
+    -as.vector(xthetasigmallikRcpp( xthis, thetathis, sigmathis, yobs, curCov, priorTemperature, FALSE, "Hes1" )$grad)
+  }
+  marlikmap <- optim(c(xInit, thetaInit, sigmaInit), fn, gr, 
+                     method="L-BFGS-B", lower = 0.001, control = list(maxit=1e5))
+  xInit[] <- marlikmap$par[xId]
+  thetaInit[] <- marlikmap$par[thetaId]
+  sigmaInit[] <- marlikmap$par[(max(thetaId)+1):length(marlikmap$par)]
+  list(xInit = xInit,
+       thetaInit = thetaInit,
+       sigmaInit = sigmaInit)
+}
+
 
 fullInit <- list(xInit=xInit, 
                  thetaInit=thetaInit, 
