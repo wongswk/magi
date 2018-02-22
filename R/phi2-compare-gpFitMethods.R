@@ -1,5 +1,6 @@
 #### run with priorTempered phase 1 --------------------------------------------
 library(gpds)
+source("R/hes1-helper-functions.R")
 phi2compareMethods <- list()
 configAll <- list()
 nobs <- 11
@@ -81,173 +82,11 @@ mcresult <- parallel::mclapply(1:1000, function(dummyIterator){
   r2.nobs <- r.nobs^2
   signr.nobs <- -sign(foo)
   
-  cursigma <- rep(NA, ncol(xsim)-1)
-  curphi <- matrix(NA, 2, ncol(xsim)-1)
+  eval(phiAllMethodsExpr)
   
-  # MarginalLikelihood ---------------------------------------------------------
-  for(j in 1:(ncol(xsim)-1)){
-    fn <- function(par) -phisigllikC( par, data.matrix(xsim.obs[,1+j]), 
-                                      r.nobs, config$kernel)$value
-    gr <- function(par) -as.vector(phisigllikC( par, data.matrix(xsim.obs[,1+j]), 
-                                                r.nobs, config$kernel)$grad)
-    marlikmap <- optim(rep(100, 3), fn, gr, method="L-BFGS-B", lower = 0.0001,
-                       upper = c(Inf, 60*4*2, Inf))
-    
-    cursigma[j] <- marlikmap$par[3]
-    curphi[,j] <- marlikmap$par[1:2]
-  }
-  cursigmaLoocvMarginalLikelihood <- cursigma
-  curphiMarginalLikelihood <- curphi
-  
-  # LoocvLlik -------------------------------------------------------------------
-  for(j in 1:(ncol(xsim)-1)){
-    fn <- function(par) -phisigloocvllikC( par, data.matrix(xsim.obs[,1+j]), 
-                                           r.nobs, config$kernel)$value
-    gr <- function(par) -as.vector(phisigloocvllikC( par, data.matrix(xsim.obs[,1+j]), 
-                                                     r.nobs, config$kernel)$grad)
-    marlikmap <- optim(rep(100, 3), fn, gr, method="L-BFGS-B", lower = 0.0001,
-                       upper = c(Inf, 60*4*2, Inf))
-    
-    cursigma[j] <- marlikmap$par[3]
-    curphi[,j] <- marlikmap$par[1:2]
-  }
-  cursigmaLoocvLoocvLlik <- cursigma
-  curphiLoocvLlik <- curphi
-  
-  # LoocvMse -------------------------------------------------------------------
-  for(j in 1:(ncol(xsim)-1)){
-    fn <- function(par) -phisigloocvmseC( c(par, pram.true$sigma[j]) , data.matrix(xsim.obs[,1+j]), 
-                                          r.nobs, config$kernel)$value
-    gr <- function(par) -as.vector(phisigloocvmseC( c(par, pram.true$sigma[j]), data.matrix(xsim.obs[,1+j]), 
-                                                    r.nobs, config$kernel)$grad)[1:2]
-    marlikmap <- optim(rep(100, 2), fn, gr, method="L-BFGS-B", lower = 0.0001,
-                       upper = c(Inf, 60*4*2, Inf))
-    
-    cursigma[j] <- pram.true$sigma[j]
-    curphi[,j] <- marlikmap$par[1:2]
-  }
-  cursigmaLoocvLoocvMse <- cursigma
-  curphiLoocvMse <- curphi
-  
-  # marllik+loocvllik+fftprior -------------------------------------------------
-  for(j in 1:(ncol(xsim)-1)){
-    priorFactor <- getFrequencyBasedPrior(xsim.obs[,1+j])
-    
-    fn <- function(par) {
-      marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-      loocvlik <- phisigloocvllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-      penalty <- dnorm(par[2], max(xsim.obs$time)*priorFactor["meanFactor"], 
-                       max(xsim.obs$time)*priorFactor["sdFactor"], log=TRUE)
-      -((marlik$value + loocvlik$value)/2 + penalty)
-    }
-    gr <- function(par) {
-      marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-      loocvlik <- phisigloocvllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-      grad <- -as.vector(marlik$grad + loocvlik$grad)/2
-      grad[2] <- grad[2] + (par[2] - max(xsim.obs$time)*priorFactor["meanFactor"]) / (max(xsim.obs$time)*priorFactor["sdFactor"])^2
-      grad
-    }
-    # testthat::expect_equal(gr(c(5,50,1))[2], (fn(c(5,50+1e-6,1)) - fn(c(5,50,1)))/1e-6, tolerance=1e-4)
-    marlikmap <- optim(rep(100, 3), fn, gr, method="L-BFGS-B", lower = 0.0001,
-                       upper = c(Inf, 60*4*2, Inf))
-    
-    cursigma[j] <- marlikmap$par[3]
-    curphi[,j] <- marlikmap$par[1:2]
-  }
-  cursigmaMarllikLoocvllkFftprior <- cursigma
-  curphiMarllikLoocvllkFftprior <- curphi
-  
-  # marllik+fftprior -----------------------------------------------------------
-  for(j in 1:(ncol(xsim)-1)){
-    priorFactor <- getFrequencyBasedPrior(xsim.obs[,1+j])
-    
-    fn <- function(par) {
-      marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-      penalty <- dnorm(par[2], max(xsim.obs$time)*priorFactor["meanFactor"], 
-                       max(xsim.obs$time)*priorFactor["sdFactor"], log=TRUE)
-      -(marlik$value + penalty)
-    }
-    gr <- function(par) {
-      marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-      grad <- -as.vector(marlik$grad)
-      grad[2] <- grad[2] + (par[2] - max(xsim.obs$time)*priorFactor["meanFactor"]) / (max(xsim.obs$time)*priorFactor["sdFactor"])^2
-      grad
-    }
-    # testthat::expect_equal(gr(c(5,50,1))[2], (fn(c(5,50+1e-6,1)) - fn(c(5,50,1)))/1e-6, tolerance=1e-4)
-    marlikmap <- optim(rep(100, 3), fn, gr, method="L-BFGS-B", lower = 0.0001,
-                       upper = c(Inf, 60*4*2, Inf))
-    
-    cursigma[j] <- marlikmap$par[3]
-    curphi[,j] <- marlikmap$par[1:2]
-  }
-  cursigmaMarllikFftprior <- cursigma
-  curphiMarllikFftprior <- curphi
-  
-  # marllik+loocvllik+fftGamaprior -------------------------------------------------
-  for(j in 1:(ncol(xsim)-1)){
-    priorFactor <- getFrequencyBasedPrior(xsim.obs[,1+j])
-    
-    desiredMode <- priorFactor["meanFactor"]
-    betaRate <- uniroot(function(betaRate) pgamma(1, 1 + desiredMode*betaRate, betaRate)-0.95,
-                        c(1e-3, 1e3))$root
-    alphaRate <- 1 + desiredMode*betaRate
-    # plot.function(function(x) dgamma(x, alphaRate, betaRate/5), 0, 5, n=1e3)
-    fn <- function(par) {
-      marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-      loocvlik <- phisigloocvllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-      penalty <- dgamma(par[2], alphaRate, betaRate/max(xsim.obs$time), log=TRUE)
-      -((marlik$value + loocvlik$value)/2 + penalty)
-    }
-    gr <- function(par) {
-      marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-      loocvlik <- phisigloocvllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-      grad <- -as.vector(marlik$grad + loocvlik$grad)/2
-      grad[2] <- grad[2] - ((alphaRate-1)/par[2] - betaRate/max(xsim.obs$time))
-      grad
-    }
-    # testthat::expect_equal(gr(c(5,20,1))[2], (fn(c(5,20+1e-8,1)) - fn(c(5,20,1)))/1e-8, tolerance=1e-4)
-    marlikmap <- optim(rep(100, 3), fn, gr, method="L-BFGS-B", lower = 0.0001,
-                       upper = c(Inf, 60*4*2, Inf))
-    
-    cursigma[j] <- marlikmap$par[3]
-    curphi[,j] <- marlikmap$par[1:2]
-  }
-  cursigmaMarllikLoocvllkFftGammaprior <- cursigma
-  curphiMarllikLoocvllkFftGammaprior <- curphi
-  
-  # marllik+fftGammaprior -----------------------------------------------------------
-  for(j in 1:(ncol(xsim)-1)){
-    priorFactor <- getFrequencyBasedPrior(xsim.obs[,1+j])
-    
-    desiredMode <- priorFactor["meanFactor"]
-    betaRate <- uniroot(function(betaRate) pgamma(1, 1 + desiredMode*betaRate, betaRate)-0.95,
-                        c(1e-3, 1e3))$root
-    alphaRate <- 1 + desiredMode*betaRate
-    
-    fn <- function(par) {
-      marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-      penalty <- dgamma(par[2], alphaRate, betaRate/max(xsim.obs$time), log=TRUE)
-      -(marlik$value + penalty)
-    }
-    gr <- function(par) {
-      marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-      grad <- -as.vector(marlik$grad)
-      grad[2] <- grad[2] - ((alphaRate-1)/par[2] - betaRate/max(xsim.obs$time))
-      grad
-    }
-    # testthat::expect_equal(gr(c(5,50,1))[2], (fn(c(5,50+1e-6,1)) - fn(c(5,50,1)))/1e-6, tolerance=1e-4)
-    marlikmap <- optim(rep(100, 3), fn, gr, method="L-BFGS-B", lower = 0.0001,
-                       upper = c(Inf, 60*4*2, Inf))
-    
-    cursigma[j] <- marlikmap$par[3]
-    curphi[,j] <- marlikmap$par[1:2]
-  }
-  cursigmaMarllikFftGammaprior <- cursigma
-  curphiMarllikFftGammaprior <- curphi
-  
-  cursigmaLoocvLoocvMse
-  cursigmaLoocvLoocvLlik
-  cursigmaLoocvMarginalLikelihood
+  cursigmaLoocvMse
+  cursigmaLoocvLlik
+  cursigmaMarginalLikelihood
   
   curphiLoocvMse
   curphiLoocvLlik
