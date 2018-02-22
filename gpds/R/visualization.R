@@ -264,9 +264,15 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
     abline(v=quantile(gpode$theta[,i], c(0.025, 0.975)), col=3)  
   }
   
-  hist(gpode$sigma, main="sigma")
-  abline(v=param$sigma, col=2)
-  abline(v=quantile(gpode$sigma, c(0.025, 0.975)), col=3)
+  if(length(gpode$sigma) < length(gpode$lglik)){
+    gpode$sigma <- matrix(gpode$sigma, nrow=1)
+  }
+  for(sigmaIt in 1:ncol(gpode$sigma)){
+    hist(gpode$sigma[,sigmaIt], xlim=range(c(gpode$sigma[,sigmaIt], param$sigma[sigmaIt])),
+         main = paste("sigma for component", sigmaIt))
+    abline(v=param$sigma, col=2)
+    abline(v=quantile(gpode$sigma[,sigmaIt], c(0.025, 0.975)), col=3)
+  }
   
   layout(matrix(1:4,2,byrow = TRUE))
   for(i in 1:length(param$theta)){
