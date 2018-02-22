@@ -195,8 +195,42 @@ testthat::test_that("xthetasigmallik derivatives", {
   testthat::expect_true(all(abs(x) < 5e-3)) # gradient is self-consistent
 })
 
+testthat::test_that("xthetasigmallik with band approx or mean component", {
+  xlatentTest <- data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]) * rexp(length(fn.true[,1:2]))
+  thetaTest <- pram.true$abc * rexp(length(pram.true$abc))
+  
+  dataInput <- dataInputWithMissing
+  constDiff23 <- 34.08103
+  
+  xthInit <- c(xlatentTest, thetaTest)
+  
+  outlist <- list()
+  for(useMean in c(FALSE, TRUE))
+    for(useBand in c(FALSE, TRUE))
+      outlist <- c(outlist, list(
+        xthetasigmallikRcpp(xlatentTest,
+                            thetaTest,
+                            sigmaTest,
+                            dataInput,
+                            list(curCovV, curCovR),
+                            useBand = useBand,
+                            useMean = useMean)
+      ))
+  
+  expect_true(all(sapply(outlist, function(x) x$value) == outlist[[1]]$value))
+  expect_true(all(sapply(outlist, function(x) x$grad[,1]) == outlist[[1]]$grad[,1]))
+})
+
+
 test_that("xthetasigma sampler can run", {
   stepsize <- rep(0.01, length(c(xlatentTest, thetaTest, sigmaTest)))
+  xthetasigmaSample(dataInputWithMissing,
+                    list(curCovV, curCovR),
+                    sigmaTest,
+                    c(xlatentTest, thetaTest),
+                    stepsize,
+                    20,
+                    modelName = "FN")
   xthetasigmaSample(dataInputWithMissing,
                     list(curCovV, curCovR),
                     sigmaTest,
@@ -212,5 +246,31 @@ test_that("xthetasigma sampler can run", {
                     c(xlatentTest, thetaTest),
                     stepsize,
                     20,
+                    loglikflag = "withmeanBand",
                     modelName = "FN")
+})
+
+test_that("xthetasigma sampler can run for Hes1", {
+  xsim.obs <- data.frame( 
+    time = seq(0, 240, 24),
+    X1 = c(0.72, 4.03, 9.55, 6.52, 4.89, 2, 4.27, 7.53, 7.28, 5.25, 1.56), 
+    X2 = c(2.3, 2.4, 1.63, 0.97, 0.58, 1.65, 2.33, 1.54, 0.86, 0.26, 1.16), 
+    X3 = c(1.4, 3.41, 1.63, 0.11, 5.3, 13, 1.47, 4.66, -0.52, 2.92, 7.73)
+  )
+  xsim <- insertNaN(xsim.obs, 1)
+  xInit <- data.matrix(xsim[,-1])
+  xInit[] <- 0
+  thetaInit <- c(0.022, 0.3, 0.031, 0.028, 0.5, 20, 0.3)
+  sigmaInit <- c(0.8, 0.2, 1.6)
+  curphi <- structure(c(24.87, 55.75, 2.52, 60.64, 9.51, 82.61), .Dim = 2:3)
+  curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
+    covEach <- calCov(curphi[, j], abs(outer(xsim$time, xsim$time, '-')), -sign(outer(xsim$time, xsim$time, '-')), 
+                      bandsize=20, kerneltype="generalMatern")
+    covEach$mu[] <- mean(xsim.obs[,j+1])
+    covEach
+  })
+  stepSize <- rep(1e-4, length(xInit) + length(thetaInit) + length(sigmaInit))
+  xthetasigmaSample(data.matrix(xsim[,-1]), curCov, sigmaInit, c(xInit, thetaInit), 
+                    stepSize, 20, F, loglikflag = "withmeanBand",
+                    priorTemperature = 1, modelName = "Hes1")
 })

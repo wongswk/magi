@@ -24,11 +24,11 @@ lp xthetasigmallik( const mat & xlatent,
                     const bool useMean = false) {
   
   if(useMean){
-    vec xlatentShifted = xlatent;
+    mat xlatentShifted = xlatent;
     mat yobsShifted = yobs;
     mat muAllDimension(yobs.n_rows, yobs.n_cols);
     mat dotmuAllDimension(yobs.n_rows, yobs.n_cols);
-    
+
     for(unsigned int i = 0; i < yobs.n_cols; i++){
       xlatentShifted.col(i) -= CovAllDimensions[i].mu;
       yobsShifted.col(i) -= CovAllDimensions[i].mu;
@@ -37,7 +37,7 @@ lp xthetasigmallik( const mat & xlatent,
     }
     
     OdeSystem fOdeModelShifted = fOdeModel;
-    
+
     fOdeModelShifted.fOde = [&muAllDimension, &dotmuAllDimension, &fOdeModel]
     (const vec & theta, const mat & x) -> mat{
       return fOdeModel.fOde(theta, x+muAllDimension) - dotmuAllDimension;
@@ -52,7 +52,7 @@ lp xthetasigmallik( const mat & xlatent,
     (const vec & theta, const mat & x) -> cube{ 
       return fOdeModel.fOdeDtheta(theta, x+muAllDimension);
     };
-    
+
     return xthetasigmallik(xlatentShifted, theta, sigmaInput, yobsShifted, CovAllDimensions, 
                            fOdeModelShifted, priorTemperatureInput, useBand, false); 
   }
@@ -195,6 +195,7 @@ Rcpp::List xthetasigmallikRcpp( const arma::mat & xlatent,
                                 const Rcpp::List & covAllDimInput,
                                 const Rcpp::NumericVector & priorTemperatureInput = 1.0,
                                 const bool useBand = false,
+                                const bool useMean = false,
                                 const std::string modelName = "FN"){
   
   OdeSystem model;
@@ -222,7 +223,8 @@ Rcpp::List xthetasigmallikRcpp( const arma::mat & xlatent,
                            covAllDimensions,
                            model,
                            priorTemperature,
-                           useBand);
+                           useBand,
+                           useMean);
   
   return Rcpp::List::create(Rcpp::Named("value")=ret.value,
                             Rcpp::Named("grad")=ret.gradient);
