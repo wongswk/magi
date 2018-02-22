@@ -368,7 +368,7 @@ xthetasigmaoptim <- function(xInit, thetaInit, curphi, sigmaInit, priorTemperatu
   sigmaInit[] <- marlikmap$par[(max(thetaId)+1):length(marlikmap$par)]
   list(xInit = xInit,
        thetaInit = thetaInit,
-       sigmaInit = sigmaInit)
+       cursigma = sigmaInit)
 }
 
 
@@ -377,32 +377,43 @@ fullInit <- list(xInit=xInit,
                  curphi=curphi, 
                  cursigma=cursigma)
 
-fullInit[-1]
-plotXinit(fullInit$xInit)
-
-heatUpBeta <- matrix(c(1, 1), nrow = 2, ncol = 3)
-priorTemperature <- c(1, 1e2)
-xthetamle <- with(fullInit, xthetaoptim(xInit, thetaInit, heatUpBeta*curphi, cursigma, priorTemperature))
-plotXinit(fullInit$xInit, xthetamle$xInit)
-
-fullInit[names(xthetamle)] <- xthetamle
-priorTemperature <- c(1, 1)
-xthetamle <- with(fullInit, xthetaoptim(xInit, thetaInit, heatUpBeta*curphi, cursigma, priorTemperature))
-plotXinit(fullInit$xInit, xthetamle$xInit)
-
-fullInit[names(xthetamle)] <- xthetamle
-thetamle <- with(fullInit, thetaoptim(xInit, thetaInit, curphi, cursigma))
-thetamle$thetaInit - fullInit$thetaInit
-
-phisigmamle <- with(fullInit, phisigmaoptim(xInit, thetaInit, curphi, cursigma))
-phisigmamle
-fullInit[names(phisigmamle)] <- phisigmamle
-
-
-phisigmamle
-matplot(xsim$time, xthetamle$xInit, col=1:3, add = TRUE, type="p", lwd=3, pch=5)
-
-llikXthetaphisigma(unlist(fullInit))
+oldfullllik <- llikXthetaphisigma(unlist(fullInit))$value
+for(optimIt in 1:3){
+  cat(rep("=", 40), "\n")
+  print(fullInit[-1])
+  plotXinit(fullInit$xInit)
+  
+  heatUpBeta <- matrix(c(1, 1), nrow = 2, ncol = 3)
+  priorTemperature <- c(1e12, 1)
+  xthetasigmamle <- with(fullInit, xthetasigmaoptim(xInit, thetaInit, heatUpBeta*curphi, cursigma, priorTemperature))
+  plotXinit(fullInit$xInit, xthetasigmamle$xInit)
+  # with extreme high temerature for K part, xthetasigma reduces to GP fitting
+  # optimization doesn't work, but we can try parallel tempering
+  priorTemperature <- c(400, 1)
+  xthetasigmamle <- with(fullInit, xthetasigmaoptim(xInit, thetaInit, heatUpBeta*curphi, cursigma, priorTemperature))
+  plotXinit(fullInit$xInit, xthetasigmamle$xInit)
+  xthetasigmamle[-1]
+  
+  fullInit[names(xthetasigmamle)] <- xthetasigmamle
+  priorTemperature <- c(1, 1)
+  xthetamle <- with(fullInit, xthetaoptim(xInit, thetaInit, curphi, cursigma, priorTemperature))
+  xthetasigmamle <- with(fullInit, xthetasigmaoptim(xInit, thetaInit, curphi, cursigma, priorTemperature))
+  plotXinit(fullInit$xInit, xthetamle$xInit, xthetasigmamle$xInit)
+  xthetasigmamle[-1]
+  
+  fullInit[names(xthetasigmamle)] <- xthetasigmamle
+  
+  plotXinit(fullInit$xInit)
+  fullInit$cursigma
+  phisigmamle <- with(fullInit, phisigmaoptim(xInit, thetaInit, curphi, cursigma))
+  phisigmamle
+  fullInit[names(phisigmamle)] <- phisigmamle
+  
+  if(abs(llikXthetaphisigma(unlist(fullInit))$value - oldfullllik) < 200){
+    break
+  }
+}
+# optimization alone too easy to stuck in local mode. have to use something like E-M
 
 
 
