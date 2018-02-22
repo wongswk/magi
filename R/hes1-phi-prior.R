@@ -80,53 +80,23 @@ r.nobs <- abs(foo)
 r2.nobs <- r.nobs^2
 signr.nobs <- -sign(foo)
 
-cursigma <- rep(NA, ncol(xsim)-1)
-curphi <- matrix(NA, 2, ncol(xsim)-1)
-
-for(j in 1:(ncol(xsim)-1)){
-  priorFactor <- getFrequencyBasedPrior(xsim.obs[,1+j])
-  
-  fn <- function(par) {
-    marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-    loocvlik <- phisigloocvllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-    penalty <- dnorm(par[2], max(xsim.obs$time)*priorFactor["meanFactor"], 
-                     max(xsim.obs$time)*priorFactor["sdFactor"], log=TRUE)
-    -(marlik$value + loocvlik$value + penalty)
-  }
-  gr <- function(par) {
-    marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-    loocvlik <- phisigloocvllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-    grad <- -as.vector(marlik$grad + loocvlik$grad)
-    grad[2] <- grad[2] + (par[2] - priorFactor["meanFactor"]) / (max(xsim.obs$time)*priorFactor["sdFactor"])^2
-    grad
-  }
-  marlikmap <- optim(rep(100, 3), fn, gr, method="L-BFGS-B", lower = 0.0001,
-                     upper = c(Inf, 60*4*2, Inf))
-  
-  cursigma[j] <- marlikmap$par[3]
-  curphi[,j] <- marlikmap$par[1:2]
-}
-
-cursigma
-curphi
-
-eval(phiAll3methodsExpr)
+eval(phiAllMethodsExpr)
 
 
 phi2candidates <- exp(seq(0, 6, length=100))
-phi2candidatesCheckedMarllik <- sapply(phi2candidates, checkPhi2FitMarllik, j=2)
+phi2candidatesCheckedMarllik <- sapply(phi2candidates, checkPhi2FitMarllik, j=3)
 phi2candidatesCheckedMarllikFuncList <-
   apply(phi2candidatesCheckedMarllik, 2, function(phisig){
     getGPsmoothFunc(phisig[2:3], phisig[4], j=3, showplot = FALSE)  
   })
 
-phi2candidatesCheckedLoocvllik <- sapply(phi2candidates, checkPhi2FitLoocvllik, j=2)
+phi2candidatesCheckedLoocvllik <- sapply(phi2candidates, checkPhi2FitLoocvllik, j=3)
 phi2candidatesCheckedLoocvllikFuncList <-
   apply(phi2candidatesCheckedLoocvllik, 2, function(phisig){
     getGPsmoothFunc(phisig[2:3], phisig[4], j=3, showplot = FALSE)  
   })
 
-phi2candidatesCheckedLoocvmse <- sapply(phi2candidates, checkPhi2FitLoocvmse, j=2)
+phi2candidatesCheckedLoocvmse <- sapply(phi2candidates, checkPhi2FitLoocvmse, j=3)
 phi2candidatesCheckedLoocvmseFuncList <-
   apply(phi2candidatesCheckedLoocvmse, 2, function(phisig){
     getGPsmoothFunc(phisig[2:3], phisig[4], j=3, showplot = FALSE)  
@@ -168,63 +138,3 @@ plot(phi2candidates, phi2candidatesCheckedLoocvmse[2,], main="Loocvmse phi1")
 plot(phi2candidates, phi2candidatesCheckedLoocvmse[4,], main="Loocvmse sigma")
 dev.off()
 
-
-curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
-  covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize, 
-                    kerneltype=config$kernel)
-  covEach$mu[] <- mean(xsim.obs[,j+1])
-  covEach
-})
-
-nall <- nrow(xsim)
-burnin <- as.integer(config$n.iter*config$burninRatio)
-
-xInit <- c(unlist(lapply(xtrueFunc, function(f) f(xsim$time))), pram.true$theta)
-stepLowInit <- rep(0.000035, (ncol(xsim)-1)*nall+length(pram.true$theta))
-stepLowInit <- stepLowInit*config$stepSizeFactor
-
-# TODO: add back the pilot idea to solve initial moving to target area problem
-# or use tempered likelihood instead
-# xInit <- c(vInit, rInit, rep(1,3))
-
-singleSampler <- function(xthetaValues, stepSize) 
-  xthetaSample(data.matrix(xsim[,-1]), curCov, cursigma, 
-               xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
-               priorTemperature = config$priorTemperature, modelName = "Hes1")
-chainSamplesOut <- chainSampler(config, xInit, singleSampler, stepLowInit, verbose=TRUE)
-
-
-gpode <- list(theta=chainSamplesOut$xth[-(1:burnin), (length(data.matrix(xsim[,-1]))+1):(ncol(chainSamplesOut$xth))],
-              xsampled=array(chainSamplesOut$xth[-(1:burnin), 1:length(data.matrix(xsim[,-1]))], 
-                             dim=c(config$n.iter-burnin, nall, ncol(xsim)-1)),
-              lglik=chainSamplesOut$lliklist[-(1:burnin)],
-              sigma = cursigma,
-              phi = matrix(marlikmap$par[-length(marlikmap$par)], 2))
-gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
-  with(gpode, gpds:::hes1modelODE(theta[t,], xsampled[t,,])), simplify = "array")
-gpode$fode <- aperm(gpode$fode, c(3,1,2))
-
-dotxtrue = gpds:::hes1modelODE(pram.true$theta, data.matrix(xtrue[,-1]))
-
-configWithPhiSig <- config
-configWithPhiSig$sigma <- paste(round(cursigma, 3), collapse = "; ")
-philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = "; "))
-names(philist) <- paste0("phi", 1:length(philist))
-configWithPhiSig <- c(configWithPhiSig, philist)
-
-gpds:::plotPostSamplesFlex(
-  paste0(outDir, config$kernel,"-",config$seed,"-priorTempered.pdf"), 
-  xtrue, dotxtrue, xsim, gpode, pram.true, configWithPhiSig)
-
-absCI <- apply(gpode$theta, 2, quantile, probs = c(0.025, 0.5, 0.975))
-absCI <- rbind(absCI, mean=colMeans(gpode$theta))
-absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$theta &  pram.true$theta < absCI["97.5%",]))
-
-saveRDS(absCI, paste0(
-  outDir,
-  config$loglikflag,"-priorTempered-",config$kernel,"-",config$seed,".rds"))
-
-
-muAllDim <- apply(gpode$xsampled, 2:3, mean)
-startTheta <- colMeans(gpode$theta)
-dotmuAllDim <- apply(gpode$fode, 2:3, mean) 
