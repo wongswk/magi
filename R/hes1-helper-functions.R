@@ -164,6 +164,7 @@ phiAllMethodsExpr <- quote({
   }
   cursigmaMarllikFftGammaprior <- cursigma
   curphiMarllikFftGammaprior <- curphi
+  rm(cursigma, curphi)
 })
 
 # profile likelihoood for phi2 ---------------------------------------------------

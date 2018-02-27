@@ -25,7 +25,8 @@ config <- list(
   burninRatio = 0.2,
   stepSizeFactor = 0.1,
   filllevel = filllevel.candidates[apply(indicatorArray, 3, any)],
-  modelName = "hes1"
+  modelName = "Hes1",
+  startAtTruth = TRUE
 )
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
 # config$hmcSteps = max(1, config$ndis/100)*200
