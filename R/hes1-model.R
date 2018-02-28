@@ -4,7 +4,7 @@ source("R/hes1-helper-functions.R")
 # set up configuration if not already exist ------------------------------------
 if(!exists("config")){
   config <- list(
-    nobs = 11,
+    nobs = 26,
     noise = c(4,1,8)*0.2,
     kernel = "generalMatern",
     seed = 3657260, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
@@ -17,7 +17,9 @@ if(!exists("config")){
     stepSizeFactor = 1,
     filllevel = 3,
     modelName = "Hes1",
-    startAtTruth = TRUE
+    startXAtTruth = FALSE,
+    startThetaAtTruth = FALSE,
+    startSigmaAtTruth = TRUE
   )
 }
 
@@ -109,27 +111,33 @@ cursigma
 yobs <- data.matrix(xsim[,-1])
 
 
-if(config$startAtTruth){
-  xInit <- sapply(xtrueFunc, function(f) f(xsim$time))
-  thetaInit <- pram.true$theta
-  sigmaInit <- pram.true$sigma
-}else{
-  xsimInit <- xsim
-  for(j in 1:3){
-    nanId <- which(is.na(xsimInit[,j+1]))
-    xsimInit[nanId,j+1] <- gpsmoothFuncList[[j]](xsimInit$time[nanId])
-  }
-  matplot(xsimInit$time, xsimInit[,-1], type="p", pch=2, add=TRUE)
-  xInit <- data.matrix(xsimInit[,-1])
-  
-  thetaInit <- rep(1, length(pram.true$theta))
-  thetamle <- thetaoptim(xInit, thetaInit, curphi, cursigma)
-  thetaInit <- thetamle$thetaInit
-  sigmaInit <- cursigma
+xsimInit <- xsim
+for(j in 1:3){
+  nanId <- which(is.na(xsimInit[,j+1]))
+  xsimInit[nanId,j+1] <- gpsmoothFuncList[[j]](xsimInit$time[nanId])
 }
+matplot(xsimInit$time, xsimInit[,-1], type="p", pch=2, add=TRUE)
+xInit <- data.matrix(xsimInit[,-1])
+
+thetaInit <- rep(1, length(pram.true$theta))
+thetamle <- thetaoptim(xInit, thetaInit, curphi, cursigma)
+thetaInit <- thetamle$thetaInit
+sigmaInit <- cursigma
+
+if(config$startXAtTruth){
+  xInit <- sapply(xtrueFunc, function(f) f(xsim$time))  
+}
+if(config$startThetaAtTruth){
+  thetaInit <- pram.true$theta  
+}
+if(config$startSigmaAtTruth){
+  sigmaInit <- pram.true$sigma  
+}
+
 xthetasigmaInit <- c(xInit, thetaInit, sigmaInit)
 stepLowInit <- rep(0.000035, length(xthetasigmaInit))
 stepLowInit <- stepLowInit*config$stepSizeFactor
+
 
 # HMC sampler for x, theta, sigma ----------------------------------------------
 xId <- 1:length(xInit)
@@ -140,6 +148,7 @@ xthetasigamSingleSampler <- function(xthetasigma, stepSize)
   xthetasigmaSample(yobs, curCov, xthetasigma[sigmaId], xthetasigma[c(xId, thetaId)], 
                     stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
                     priorTemperature = config$priorTemperature, modelName = config$modelName)
+# stepLowInit[sigmaId] <- 0
 chainSamplesOut <- chainSampler(config, xthetasigmaInit, xthetasigamSingleSampler, stepLowInit, verbose=TRUE)
 
 burnin <- as.integer(config$n.iter*config$burninRatio)

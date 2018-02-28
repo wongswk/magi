@@ -235,7 +235,7 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
   pdf(filename, width = 8, height = 8)
   
   if(all(c("gridExtra","gridBase") %in% rownames(installed.packages()))){
-    infoPerRow <- 7
+    infoPerRow <- 6
     npanel <- ceiling(ncol(infoTab)/infoPerRow)
     tbls <- lapply(1:npanel, function(i){
       gridExtra::tableGrob(infoTab[,((i-1)*infoPerRow+1):min(ncol(infoTab), i*infoPerRow)]) 
