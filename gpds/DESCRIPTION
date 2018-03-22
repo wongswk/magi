@@ -13,7 +13,8 @@ Imports:
     RcppArmadillo (>= 0.7.960.1.2),
     gridExtra,
     gridBase,
-    grid
+    grid,
+    deSolve
 LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 6.0.1
 Suggests: 
