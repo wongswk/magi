@@ -12,7 +12,7 @@ if(!exists("config")){
     loglikflag = "withmeanBand",
     bandsize = 20,
     hmcSteps = 500,
-    n.iter = 1e5,
+    n.iter = 3e4,
     burninRatio = 0.80,
     stepSizeFactor = 1,
     filllevel = 1,
@@ -150,7 +150,10 @@ sigmaId <- (phiId[length(phiId)]+1):(phiId[length(phiId)]+length(pram.true$sigma
 obsDim <- dim(data.matrix(xsim[,-1]))
 
 cursigma <- pram.true$sigma
-x3thetaphi3Init <- x3thetaphi3sgd(xInit, thetaInit, curphi, cursigma, maxit=1e3, learningRate=1e-3)
+x3thetaphi3Init <- x3thetaphi3sgd(xInit, thetaInit, curphi, cursigma, maxit=1e4, learningRate=1e-8)
+xInit <- x3thetaphi3Init$xInit
+curphi <- x3thetaphi3Init$curphi
+thetaInit <- x3thetaphi3Init$thetaInit
 # fullvecInit <- fulloptim(xInit, thetaInit, curphi, cursigma)
 
 llikXthetaphisigma(c(xInit, thetaInit, curphi, cursigma))$value
@@ -177,7 +180,7 @@ stepLowInit <- stepLowInit[1:length(c(xInit, thetaInit))]
 
 xsim.obs$X3 <- NaN
 xsim$X3 <- NaN
-rm(yobs)
+yobs[,3] <- NaN
 
 singleSampler <- function(xthetaValues, stepSize) 
   xthetaSample(data.matrix(xsim[,-1]), curCov, cursigma, 
@@ -191,7 +194,10 @@ gpode <- list(theta=chainSamplesOut$xth[-(1:burnin), (length(data.matrix(xsim[,-
                              dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
               lglik=chainSamplesOut$lliklist[-(1:burnin)],
               sigma = cursigma,
-              phi = matrix(marlikmap$par[-length(marlikmap$par)], 2))
+              phi = curphi)
+sampleId <- dim(gpode$xsampled)[1]
+print(llikXthetaphisigma(c(gpode$xsampled[sampleId,,], gpode$theta[sampleId, ],
+                           curphi, cursigma))$value)
 gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
   with(gpode, gpds:::hes1modelODE(theta[t,], xsampled[t,,])), simplify = "array")
 gpode$fode <- aperm(gpode$fode, c(3,1,2))

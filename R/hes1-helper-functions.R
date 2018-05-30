@@ -371,7 +371,7 @@ llikXthetaphisigma <- function(xthetaphisigma) {
                          yobs, xsim$time, modelName = "Hes1")
 }
 
-x3thetaphi3sgd <- function(xInit, thetaInit, curphi, cursigma, maxit=1e4, learningRateInput=1e-8){
+x3thetaphi3sgd <- function(xInit, thetaInit, curphi, cursigma, maxit=1e3, learningRate=1e-8){
   fullInit <- c(xInit, thetaInit, curphi, cursigma)
   
   x3Id <- (length(xInit[, -3]) + 1):length(xInit)
@@ -390,15 +390,22 @@ x3thetaphi3sgd <- function(xInit, thetaInit, curphi, cursigma, maxit=1e4, learni
     fgv <- fg(par)
     if(fgv$fn - fn.last > abs(fn.last) * 0.10){
       par <- par.last
-      learningRateInput = learningRateInput / 10
+      learningRate = learningRate / 10
       next
     }
+    if(i %% 1000 == 1){
+      xInit[, 3] <- par[1:length(x3Id)]
+      thetaInit <- par[(length(x3Id)+1):(length(x3Id)+length(thetaId))]
+      curphi[, 3] <- tail(par, length(phi3Id))
+      
+      phi3list <- phi3optim(xInit, thetaInit, curphi, cursigma)
+      curphi <- phi3list$curphi
+      par[(length(par) - length(phi3Id) + 1):length(par)] <- curphi[, 3]
+    }
     if(i %% 100 == 0){
-      learningRateInput = learningRateInput * 10
+      learningRate = learningRate * 10
     }
     grValue <- fgv$gr
-    learningRate <- 0.001 * max(abs(tail(par, length(phi3Id)) / tail(grValue, length(phi3Id))))
-    learningRate <- min(learningRate, learningRateInput)
     if(learningRate < 1e-20){
       break
     }
@@ -417,4 +424,65 @@ x3thetaphi3sgd <- function(xInit, thetaInit, curphi, cursigma, maxit=1e4, learni
   list(xInit = xInit,
        thetaInit = thetaInit,
        curphi = curphi)
+}
+
+phi3optim <- function(xInit, thetaInit, curphi, cursigma){
+  fullInit <- c(xInit, thetaInit, curphi, cursigma)
+  x3Id <- (length(xInit[, -3]) + 1):length(xInit)
+  thetaId <- (max(x3Id)+1):(max(x3Id)+length(thetaInit))
+  phi3Id <- (max(thetaId) + length(curphi[,-3]) + 1):(max(thetaId) + length(curphi))
+  
+  fn <- function(par) {
+    fullInit[c(phi3Id)] <- par
+    -llikXthetaphisigma( fullInit )$value
+  }
+  gr <- function(par) {
+    fullInit[c(phi3Id)] <- par
+    -as.vector(llikXthetaphisigma( fullInit )$grad[c(phi3Id)])
+  }
+  marlikmap <- optim(curphi[, 3], fn, gr, 
+                     method="L-BFGS-B", lower = 0.001, control = list(maxit=1e5))
+  curphi[, 3] <- marlikmap$par
+  list(curphi = curphi)
+}
+
+fullsgd <- function(xInit, thetaInit, curphi, cursigma, maxit=1e4, learningRate=1e-8){
+  fg <- function(par) {
+    llik <- llikXthetaphisigma( par )
+    list(fn=-llik$value, gr=-as.vector(llik$grad))
+  }
+  par <- c(xInit, thetaInit, curphi, cursigma)
+  fn.last <- fg(par)$fn
+  par.last <- par
+  for (i in 1:maxit){
+    fgv <- fg(par)
+    if(fgv$fn - fn.last > abs(fn.last) * 0.10){
+      par <- par.last
+      learningRate = learningRate / 10
+      next
+    }
+    if(i %% 100 == 0){
+      learningRate = learningRate * 10
+    }
+    grValue <- fgv$gr
+    if(learningRate < 1e-20){
+      break
+    }
+    par.last <- par
+    fn.last <- fgv$fn
+    par <- par - learningRate * grValue
+    par <- pmax(par, 0.001)
+    cat("------ ", fgv$fn)
+    print(learningRate)
+    print(round(par[(length(x3Id)+1):(length(x3Id)+length(thetaId))], 3))
+    print(tail(par, length(phi3Id)))
+  }
+  xInit[] <- par[xId]
+  thetaInit[] <- par[thetaId]
+  curphi[] <- par[phiId]
+  cursigma[] <- par[sigmaId]
+  list(xInit = xInit, 
+       thetaInit = thetaInit, 
+       curphi = curphi, 
+       cursigma = cursigma)
 }
