@@ -4,8 +4,8 @@ source("R/hes1-helper-functions.R")
 # set up configuration if not already exist ------------------------------------
 if(!exists("config")){
   config <- list(
-    nobs = 26,
-    noise = c(4,1,8)*0.2,
+    nobs = 17,
+    noise = c(0.8,0.4,1),
     kernel = "generalMatern",
     seed = 3657260, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 50,
@@ -15,7 +15,7 @@ if(!exists("config")){
     n.iter = 1e4,
     burninRatio = 0.50,
     stepSizeFactor = 1,
-    filllevel = 3,
+    filllevel = 1,
     modelName = "Hes1",
     startXAtTruth = FALSE,
     startThetaAtTruth = FALSE,
