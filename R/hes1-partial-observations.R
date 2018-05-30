@@ -182,6 +182,25 @@ singleSampler <- function(xthetaValues, stepSize)
                priorTemperature = config$priorTemperature, modelName = "Hes1")
 chainSamplesOut <- chainSampler(config, c(xInit, thetaInit), singleSampler, stepLowInit, verbose=TRUE)
 
+## Check sum of square error using numerical solver
+which.max(chainSamplesOut$lliklist[-1])
+ttheta <- chainSamplesOut$xth[which.max(chainSamplesOut$lliklist[-1])+1, (length(data.matrix(xsim[,-1]))+1):(ncol(chainSamplesOut$xth))]
+tx0 <- array(chainSamplesOut$xth[which.max(chainSamplesOut$lliklist[-1])+1, 1:length(data.matrix(xsim[,-1]))],dim=c(nrow(xsim), ncol(xsim)-1))[1,]
+txobs <- array(chainSamplesOut$xth[which.max(chainSamplesOut$lliklist[-1])+1, 1:length(data.matrix(xsim[,-1]))],dim=c(nrow(xsim), ncol(xsim)-1))[tvec.full %in% tvec.nobs,]
+
+xtrue2 <- deSolve::ode(y = tx0, times = times, func = modelODE, parms = ttheta)
+
+matplot(xtrue[, "time"], xtrue2[, -1], type="l", lty=1)
+matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=2, add=T)
+matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
+xtrue.obs <- xtrue[xtrue[,"time"] %in% xsim.obs$time,-1]
+
+sum((xtrue.obs[,1:2] - xsim.obs[,2:3])^2)
+sum((txobs[,1:2] - xsim.obs[,2:3])^2)
+apply((xtrue.obs[,1:2] - xsim.obs[,2:3])^2,2,sum)
+apply((txobs[,1:2] - xsim.obs[,2:3])^2,2,sum)
+#### end SSE check
+
 burnin <- as.integer(config$n.iter*config$burninRatio)
 gpode <- list(theta=chainSamplesOut$xth[-(1:burnin), (length(data.matrix(xsim[,-1]))+1):(ncol(chainSamplesOut$xth))],
               xsampled=array(chainSamplesOut$xth[-(1:burnin), 1:length(data.matrix(xsim[,-1]))], 
