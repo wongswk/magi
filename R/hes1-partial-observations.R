@@ -7,7 +7,7 @@ if(!exists("config")){
     nobs = 17,
     noise = c(0.8,0.4,0.1),
     kernel = "generalMatern",
-    seed = 36560, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+    seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 50,
     loglikflag = "withmeanBand",
     bandsize = 20,
@@ -182,7 +182,7 @@ singleSampler <- function(xthetaValues, stepSize)
                priorTemperature = config$priorTemperature, modelName = "Hes1")
 chainSamplesOut <- chainSampler(config, c(xInit, thetaInit), singleSampler, stepLowInit, verbose=TRUE)
 
-## Check sum of square error using numerical solver
+## Check sum of square error using numerical solver ------------------------------------
 which.max(chainSamplesOut$lliklist[-1])
 ttheta <- chainSamplesOut$xth[which.max(chainSamplesOut$lliklist[-1])+1, (length(data.matrix(xsim[,-1]))+1):(ncol(chainSamplesOut$xth))]
 tx0 <- array(chainSamplesOut$xth[which.max(chainSamplesOut$lliklist[-1])+1, 1:length(data.matrix(xsim[,-1]))],dim=c(nrow(xsim), ncol(xsim)-1))[1,]
@@ -194,11 +194,19 @@ matplot(xtrue[, "time"], xtrue2[, -1], type="l", lty=1)
 matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=2, add=T)
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
 xtrue.obs <- xtrue[xtrue[,"time"] %in% xsim.obs$time,-1]
+xsampler.obs <- xtrue2[xtrue2[,"time"] %in% xsim.obs$time,-1]
 
-sum((xtrue.obs[,1:2] - xsim.obs[,2:3])^2)
-sum((txobs[,1:2] - xsim.obs[,2:3])^2)
-apply((xtrue.obs[,1:2] - xsim.obs[,2:3])^2,2,sum)
-apply((txobs[,1:2] - xsim.obs[,2:3])^2,2,sum)
+rmseTrue <- sqrt(apply((xtrue.obs[,1:2] - xsim.obs[,2:3])^2,2,mean))
+rmseWholeGpode <- sqrt(apply((txobs[,1:2] - xsim.obs[,2:3])^2,2, mean))
+rmseOdeGpode <- sqrt(apply((xsampler.obs[,1:2] - xsim.obs[,2:3])^2,2,mean))
+
+rmselist <- list(
+  rmseTrue = paste0(round(rmseTrue, 3), collapse = "; "),
+  rmseWholeGpode = paste0(round(rmseWholeGpode, 3), collapse = "; "),
+  rmseOdeGpode = paste0(round(rmseOdeGpode, 3), collapse = "; ")
+)
+names(philist) <- paste0("phi", 1:length(philist))
+
 #### end SSE check
 
 burnin <- as.integer(config$n.iter*config$burninRatio)
@@ -222,6 +230,7 @@ configWithPhiSig$sigma <- paste(round(cursigma, 3), collapse = "; ")
 philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = "; "))
 names(philist) <- paste0("phi", 1:length(philist))
 configWithPhiSig <- c(configWithPhiSig, philist)
+configWithPhiSig <- c(configWithPhiSig, rmselist)
 
 gpds:::plotPostSamplesFlex(
   paste0(outDir, config$kernel,"-",config$seed,"-priorTemperedPhase1-trueSigma.pdf"), 
