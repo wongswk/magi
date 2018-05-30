@@ -150,7 +150,7 @@ sigmaId <- (phiId[length(phiId)]+1):(phiId[length(phiId)]+length(pram.true$sigma
 obsDim <- dim(data.matrix(xsim[,-1]))
 
 cursigma <- pram.true$sigma
-x3thetaphi3Init <- x3thetaphi3sgd(xInit, thetaInit, curphi, cursigma, maxit=1e4, learningRate=1e-8)
+x3thetaphi3Init <- x3thetaphi3sgd(xInit, thetaInit, curphi, cursigma, maxit=1000, learningRate=1e-8)
 xInit <- x3thetaphi3Init$xInit
 curphi <- x3thetaphi3Init$curphi
 thetaInit <- x3thetaphi3Init$thetaInit
@@ -158,17 +158,11 @@ thetaInit <- x3thetaphi3Init$thetaInit
 
 llikXthetaphisigma(c(xInit, thetaInit, curphi, cursigma))$value
 llikXthetaphisigma(c(x3thetaphi3Init$xInit, x3thetaphi3Init$thetaInit, x3thetaphi3Init$curphi, cursigma))$value
-fullvec <- c(data.matrix(xtrue[xtrue$time %in% xsim$time, -1]), 
-             pram.true$theta, pram.true$phi, pram.true$sigma)
-llikXthetaphisigma(fullvec)$value
-
 
 # fixing sigma at true value; HMC sampler for x, theta -------------------------
 cursigma <- pram.true$sigma
 curphi
 
-curphi[2, 3] <- 20
-curphi[1, 3] <- 10
 curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
   covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize,
                     kerneltype=config$kernel)
