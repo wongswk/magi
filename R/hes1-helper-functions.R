@@ -371,7 +371,7 @@ llikXthetaphisigma <- function(xthetaphisigma) {
                          yobs, xsim$time, modelName = "Hes1")
 }
 
-x3thetaphi3sgd <- function(xInit, thetaInit, curphi, cursigma, maxit=1e4, learningRateInput=1e-15){
+x3thetaphi3sgd <- function(xInit, thetaInit, curphi, cursigma, maxit=1e4, learningRateInput=1e-8){
   fullInit <- c(xInit, thetaInit, curphi, cursigma)
   
   x3Id <- (length(xInit[, -3]) + 1):length(xInit)
@@ -384,14 +384,26 @@ x3thetaphi3sgd <- function(xInit, thetaInit, curphi, cursigma, maxit=1e4, learni
     list(fn=-llik$value, gr=-as.vector(llik$grad[c(x3Id, thetaId, phi3Id)]))
   }
   par <- c(xInit[, 3], thetaInit, curphi[, 3])
+  fn.last <- fg(par)$fn
+  par.last <- par
   for (i in 1:maxit){
     fgv <- fg(par)
+    if(fgv$fn - fn.last > abs(fn.last) * 0.10){
+      par <- par.last
+      learningRateInput = learningRateInput / 10
+      next
+    }
+    if(i %% 100 == 0){
+      learningRateInput = learningRateInput * 10
+    }
     grValue <- fgv$gr
     learningRate <- 0.001 * max(abs(tail(par, length(phi3Id)) / tail(grValue, length(phi3Id))))
     learningRate <- min(learningRate, learningRateInput)
     if(learningRate < 1e-20){
       break
     }
+    par.last <- par
+    fn.last <- fgv$fn
     par <- par - learningRate * grValue
     par <- pmax(par, 0.001)
     cat("------ ", fgv$fn)
