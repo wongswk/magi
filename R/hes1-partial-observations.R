@@ -12,8 +12,8 @@ if(!exists("config")){
     loglikflag = "withmeanBand",
     bandsize = 20,
     hmcSteps = 500,
-    n.iter = 1e4,
-    burninRatio = 0.50,
+    n.iter = 1e5,
+    burninRatio = 0.80,
     stepSizeFactor = 1,
     filllevel = 1,
     modelName = "Hes1",
@@ -65,7 +65,6 @@ set.seed(config$seed)
 for(j in 1:(ncol(xsim)-1)){
   xsim[,1+j] <- xsim[,1+j]+rnorm(nrow(xsim), sd=config$noise[j])  
 }
-
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
 
@@ -89,6 +88,8 @@ r2.nobs <- r.nobs^2
 signr.nobs <- -sign(foo)
 
 # GPsmoothing: marllik+fftNormalprior for phi-sigma ----------------------------
+xsim.obs$X3 <- (xsim.obs$X2 + xsim.obs$X1)/2
+xsim$X3 <- (xsim$X2 + xsim$X1)/2
 eval(phiAllMethodsExpr)
 cursigma <- cursigmaMarllikFftprior
 curphi <- curphiMarllikFftprior
@@ -112,12 +113,12 @@ cursigma
 # MCMC starting value ----------------------------------------------------------
 yobs <- data.matrix(xsim[,-1])
 
-
 xsimInit <- xsim
 for(j in 1:3){
   nanId <- which(is.na(xsimInit[,j+1]))
   xsimInit[nanId,j+1] <- gpsmoothFuncList[[j]](xsimInit$time[nanId])
 }
+xsimInit$X3 <- (xsimInit$X2 + xsimInit$X1)/2
 matplot(xsimInit$time, xsimInit[,-1], type="p", pch=2, add=TRUE)
 xInit <- data.matrix(xsimInit[,-1])
 
@@ -144,7 +145,20 @@ stepLowInit <- stepLowInit*config$stepSizeFactor
 cursigma <- pram.true$sigma
 curphi
 
+curphi[2, 3] <- 20
+curphi[1, 3] <- 10
+curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
+  covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize,
+                    kerneltype=config$kernel)
+  covEach$mu[] <- mean(xsim.obs[,j+1])
+  covEach
+})
+
 stepLowInit <- stepLowInit[1:length(c(xInit, thetaInit))]
+
+xsim.obs$X3 <- NaN
+xsim$X3 <- NaN
+rm(yobs)
 
 singleSampler <- function(xthetaValues, stepSize) 
   xthetaSample(data.matrix(xsim[,-1]), curCov, cursigma, 
