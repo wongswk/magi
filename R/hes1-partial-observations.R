@@ -7,18 +7,18 @@ if(!exists("config")){
     nobs = 17,
     noise = c(0.8,0.4,0.1),
     kernel = "generalMatern",
-    seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+    seed = 1365546660, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 50,
     loglikflag = "withmeanBand",
     bandsize = 20,
     hmcSteps = 500,
     n.iter = 3e4,
-    burninRatio = 0.80,
+    burninRatio = 0.20,
     stepSizeFactor = 1,
-    filllevel = 1,
+    filllevel = 2,
     modelName = "Hes1",
-    startXAtTruth = FALSE,
-    startThetaAtTruth = FALSE,
+    startXAtTruth = TRUE,
+    startThetaAtTruth = TRUE,
     startSigmaAtTruth = TRUE
   )
 }
@@ -187,10 +187,10 @@ singleSampler <- function(xthetaValues, stepSize)
 chainSamplesOut <- chainSampler(config, c(xInit, thetaInit), singleSampler, stepLowInit, verbose=TRUE)
 
 ## Check sum of square error using numerical solver ------------------------------------
-which.max(chainSamplesOut$lliklist[-1])
-ttheta <- chainSamplesOut$xth[which.max(chainSamplesOut$lliklist[-1])+1, (length(data.matrix(xsim[,-1]))+1):(ncol(chainSamplesOut$xth))]
-tx0 <- array(chainSamplesOut$xth[which.max(chainSamplesOut$lliklist[-1])+1, 1:length(data.matrix(xsim[,-1]))],dim=c(nrow(xsim), ncol(xsim)-1))[1,]
-txobs <- array(chainSamplesOut$xth[which.max(chainSamplesOut$lliklist[-1])+1, 1:length(data.matrix(xsim[,-1]))],dim=c(nrow(xsim), ncol(xsim)-1))[tvec.full %in% tvec.nobs,]
+mapId <- which.max(chainSamplesOut$lliklist[-(1:burnin)]) + burnin
+ttheta <- chainSamplesOut$xth[mapId, (length(data.matrix(xsim[,-1]))+1):(ncol(chainSamplesOut$xth))]
+tx0 <- array(chainSamplesOut$xth[mapId, 1:length(data.matrix(xsim[,-1]))],dim=c(nrow(xsim), ncol(xsim)-1))[1,]
+txobs <- array(chainSamplesOut$xth[mapId, 1:length(data.matrix(xsim[,-1]))],dim=c(nrow(xsim), ncol(xsim)-1))[tvec.full %in% tvec.nobs,]
 
 xtrue2 <- deSolve::ode(y = tx0, times = times, func = modelODE, parms = ttheta)
 
