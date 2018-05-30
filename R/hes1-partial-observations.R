@@ -65,6 +65,7 @@ set.seed(config$seed)
 for(j in 1:(ncol(xsim)-1)){
   xsim[,1+j] <- xsim[,1+j]+rnorm(nrow(xsim), sd=config$noise[j])  
 }
+xsim$X3 <- NaN
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
 
@@ -140,6 +141,24 @@ if(config$startSigmaAtTruth){
 xthetasigmaInit <- c(xInit, thetaInit, sigmaInit)
 stepLowInit <- rep(0.000035, length(xthetasigmaInit))
 stepLowInit <- stepLowInit*config$stepSizeFactor
+
+# optim for x3, theta, phi3 ----------------------------------------------------
+xId <- 1:length(data.matrix(xsim[,-1]))
+thetaId <- (xId[length(xId)]+1):(xId[length(xId)]+length(pram.true$theta))
+phiId <- (thetaId[length(thetaId)]+1):(thetaId[length(thetaId)]+length(pram.true$phi))
+sigmaId <- (phiId[length(phiId)]+1):(phiId[length(phiId)]+length(pram.true$sigma))
+obsDim <- dim(data.matrix(xsim[,-1]))
+
+cursigma <- pram.true$sigma
+x3thetaphi3Init <- x3thetaphi3sgd(xInit, thetaInit, curphi, cursigma, maxit=1e3, learningRate=1e-3)
+# fullvecInit <- fulloptim(xInit, thetaInit, curphi, cursigma)
+
+llikXthetaphisigma(c(xInit, thetaInit, curphi, cursigma))$value
+llikXthetaphisigma(c(x3thetaphi3Init$xInit, x3thetaphi3Init$thetaInit, x3thetaphi3Init$curphi, cursigma))$value
+fullvec <- c(data.matrix(xtrue[xtrue$time %in% xsim$time, -1]), 
+             pram.true$theta, pram.true$phi, pram.true$sigma)
+llikXthetaphisigma(fullvec)$value
+
 
 # fixing sigma at true value; HMC sampler for x, theta -------------------------
 cursigma <- pram.true$sigma

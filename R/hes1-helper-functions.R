@@ -336,3 +336,66 @@ xthetasigmaoptim <- function(xInit, thetaInit, curphi, sigmaInit, priorTemperatu
        thetaInit = thetaInit,
        cursigma = sigmaInit)
 }
+
+x3thetaphi3optim <- function(xInit, thetaInit, curphi, cursigma){
+  fullInit <- c(xInit, thetaInit, curphi, cursigma)
+  
+  x3Id <- (length(xInit[, -3]) + 1):length(xInit)
+  thetaId <- (max(x3Id)+1):(max(x3Id)+length(thetaInit))
+  phi3Id <- (max(thetaId) + length(curphi[,-3]) + 1):(max(thetaId) + length(curphi))
+  
+  fn <- function(par) {
+    fullInit[c(x3Id, thetaId, phi3Id)] <- par
+    -llikXthetaphisigma( fullInit )$value
+  }
+  gr <- function(par) {
+    fullInit[c(x3Id, thetaId, phi3Id)] <- par
+    -as.vector(llikXthetaphisigma( fullInit )$grad[c(x3Id, thetaId, phi3Id)])
+  }
+  marlikmap <- optim(c(xInit[, 3], thetaInit, curphi[, 3]), fn, gr, 
+                     method="L-BFGS-B", lower = 0.001, control = list(maxit=1e5))
+  xInit[, 3] <- marlikmap$par[1:length(x3Id)]
+  thetaInit <- marlikmap$par[(length(x3Id)+1):(length(x3Id)+length(thetaId))]
+  curphi[, 3] <- tail(marlikmap$par, length(phi3Id))
+  list(xInit = xInit,
+       thetaInit = thetaInit,
+       curphi = curphi)
+}
+
+llikXthetaphisigma <- function(xthetaphisigma) {
+  xInitial <- matrix(xthetaphisigma[xId], nrow=obsDim[1], ncol=obsDim[2])
+  thetaInitial <- xthetaphisigma[thetaId]
+  phiInitial <- matrix(xthetaphisigma[phiId], nrow=2)
+  sigmaInitial <- xthetaphisigma[sigmaId]
+  xthetaphisigmallikRcpp(xInitial, thetaInitial, phiInitial, sigmaInitial,
+                         yobs, xsim$time, modelName = "Hes1")
+}
+
+x3thetaphi3sgd <- function(xInit, thetaInit, curphi, cursigma, maxit=1e4, learningRate=1e-4){
+  fullInit <- c(xInit, thetaInit, curphi, cursigma)
+  
+  x3Id <- (length(xInit[, -3]) + 1):length(xInit)
+  thetaId <- (max(x3Id)+1):(max(x3Id)+length(thetaInit))
+  phi3Id <- (max(thetaId) + length(curphi[,-3]) + 1):(max(thetaId) + length(curphi))
+  
+  fn <- function(par) {
+    fullInit[c(x3Id, thetaId, phi3Id)] <- par
+    -llikXthetaphisigma( fullInit )$value
+  }
+  gr <- function(par) {
+    fullInit[c(x3Id, thetaId, phi3Id)] <- par
+    -as.vector(llikXthetaphisigma( fullInit )$grad[c(x3Id, thetaId, phi3Id)])
+  }
+  par <- c(xInit[, 3], thetaInit, curphi[, 3])
+  for (i in 1:maxit){
+    grValue <- gr(par)
+    par <- par - learningRate * grValue
+    par <- pmax(par, 0.001)
+  }
+  xInit[, 3] <- par[1:length(x3Id)]
+  thetaInit <- par[(length(x3Id)+1):(length(x3Id)+length(thetaId))]
+  curphi[, 3] <- tail(par, length(phi3Id))
+  list(xInit = xInit,
+       thetaInit = thetaInit,
+       curphi = curphi)
+}
