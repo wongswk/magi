@@ -40,7 +40,7 @@ system(paste("mkdir -p", outDir))
 
 pram.true <- list(
   theta = c(0.022, 0.3, 0.031, 0.028, 0.5, 20, 0.3),
-  x0 = c(0.5, 2, 1),
+  x0 = c(1.438575, 2.037488, 17.90385),
   phi = c(122.4027613, 41.8511396,  
           56.5612956, 91.4189948,
           164.3556832, 11.9474091),
@@ -198,7 +198,7 @@ singleSampler <- function(xthetaValues, stepSize)
                priorTemperature = config$priorTemperature, modelName = "Hes1")
 chainSamplesOut <- chainSampler(config, c(xInit, thetaInit), singleSampler, stepLowInit, verbose=TRUE)
 
-
+burnin <- as.integer(config$n.iter*config$burninRatio)
 gpode <- list(theta=chainSamplesOut$xth[-(1:burnin), (length(data.matrix(xsim[,-1]))+1):(ncol(chainSamplesOut$xth))],
               xsampled=array(chainSamplesOut$xth[-(1:burnin), 1:length(data.matrix(xsim[,-1]))], 
                              dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
