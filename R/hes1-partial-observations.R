@@ -128,12 +128,6 @@ thetamle <- thetaoptim(xInit, thetaInit, curphi, cursigma)
 thetaInit <- thetamle$thetaInit
 sigmaInit <- cursigma
 
-if(config$startXAtTruth){
-  xInit <- sapply(xtrueFunc, function(f) f(xsim$time))  
-}
-if(config$startThetaAtTruth){
-  thetaInit <- pram.true$theta  
-}
 if(config$startSigmaAtTruth){
   sigmaInit <- pram.true$sigma  
 }
@@ -160,6 +154,16 @@ llikXthetaphisigma(c(xInit, thetaInit, curphi, cursigma))$value
 llikXthetaphisigma(c(x3thetaphi3Init$xInit, x3thetaphi3Init$thetaInit, x3thetaphi3Init$curphi, cursigma))$value
 
 # fixing sigma at true value; HMC sampler for x, theta -------------------------
+if(config$startXAtTruth){
+  xInit <- sapply(xtrueFunc, function(f) f(xsim$time))  
+}
+if(config$startThetaAtTruth){
+  thetaInit <- pram.true$theta  
+}
+if(config$startSigmaAtTruth){
+  sigmaInit <- pram.true$sigma  
+}
+
 cursigma <- pram.true$sigma
 curphi
 
@@ -205,7 +209,6 @@ rmselist <- list(
   rmseWholeGpode = paste0(round(rmseWholeGpode, 3), collapse = "; "),
   rmseOdeGpode = paste0(round(rmseOdeGpode, 3), collapse = "; ")
 )
-names(philist) <- paste0("phi", 1:length(philist))
 
 #### end SSE check
 
