@@ -17,15 +17,15 @@ if(!exists("config")){
     stepSizeFactor = 1,
     filllevel = 1,
     modelName = "Hes1",
-    startXAtTruth = TRUE,
-    startThetaAtTruth = TRUE,
+    startXAtTruth = FALSE,
+    startThetaAtTruth = FALSE,
     startSigmaAtTruth = TRUE
   )
 }
 
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
 config$priorTemperature <- config$ndis / config$nobs
-# config$priorTemperature[2] <- 1e12
+config$priorTemperature[2] <- config$priorTemperature[1] * 4
 
 # initialize global parameters, true x, simulated x ----------------------------
 if(grepl("/n/",getwd())){
@@ -236,7 +236,7 @@ configWithPhiSig <- c(configWithPhiSig, philist)
 configWithPhiSig <- c(configWithPhiSig, rmselist)
 
 gpds:::plotPostSamplesFlex(
-  paste0(outDir, config$kernel,"-",config$seed,"-priorTemperedPhase1-trueSigma.pdf"), 
+  paste0(outDir, config$kernel,"-",config$seed,"-",date(),"-priorTemperedPhase1-trueSigma.pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, configWithPhiSig)
 
 absCI <- apply(gpode$theta, 2, quantile, probs = c(0.025, 0.5, 0.975))
@@ -251,6 +251,7 @@ saveRDS(absCI, paste0(
 config$filllevel <- 2
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
 config$priorTemperature <- config$ndis / config$nobs
+config$priorTemperature[2] <- config$priorTemperature[1] * 9
 xsim <- insertNaN(xsim.obs,config$filllevel)
 tvec.full <- xsim$time
 foo <- outer(tvec.full, t(tvec.full),'-')[,1,]
@@ -299,7 +300,8 @@ singleSampler <- function(xthetaValues, stepSize)
                priorTemperature = config$priorTemperature, modelName = "Hes1")
 chainSamplesOut <- chainSampler(config, c(xInit, thetaInit), singleSampler, stepLowInit, verbose=TRUE)
 
-## Check sum of square error using numerical solver
+## Check sum of square error using numerical solver ------------------------------------
+burnin <- as.integer(config$n.iter*config$burninRatio)
 mapId <- which.max(chainSamplesOut$lliklist[-(1:burnin)]) + burnin
 ttheta <- chainSamplesOut$xth[mapId, (length(data.matrix(xsim[,-1]))+1):(ncol(chainSamplesOut$xth))]
 tx0 <- array(chainSamplesOut$xth[mapId, 1:length(data.matrix(xsim[,-1]))],dim=c(nrow(xsim), ncol(xsim)-1))[1,]
@@ -308,10 +310,12 @@ txobs <- array(chainSamplesOut$xth[mapId, 1:length(data.matrix(xsim[,-1]))],dim=
 xtrue2 <- deSolve::ode(y = tx0, times = times, func = modelODE, parms = ttheta)
 
 matplot(xtrue[, "time"], xtrue2[, -1], type="l", lty=1)
-matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=2, add=T)
+matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=3, add=T)
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
 xtrue.obs <- xtrue[xtrue[,"time"] %in% xsim.obs$time,-1]
 xsampler.obs <- xtrue2[xtrue2[,"time"] %in% xsim.obs$time,-1]
+
+odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 
 rmseTrue <- sqrt(apply((xtrue.obs[,1:2] - xsim.obs[,2:3])^2,2,mean))
 rmseWholeGpode <- sqrt(apply((txobs[,1:2] - xsim.obs[,2:3])^2,2, mean))
@@ -349,5 +353,5 @@ configWithPhiSig <- c(configWithPhiSig, philist)
 configWithPhiSig <- c(configWithPhiSig, rmselist)
 
 gpds:::plotPostSamplesFlex(
-  paste0(outDir, config$kernel,"-",config$seed,"-priorTemperedPhase1-trueSigma.pdf"), 
-  xtrue, dotxtrue, xsim, gpode, pram.true, configWithPhiSig)
+  paste0(outDir, config$kernel,"-",config$seed,"-",date(),"-priorTemperedPhase1-trueSigma.pdf"), 
+  xtrue, dotxtrue, xsim, gpode, pram.true, configWithPhiSig, odemodel)
