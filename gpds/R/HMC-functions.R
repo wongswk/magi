@@ -26,7 +26,7 @@ calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerne
   ret$dotmu <- rep(0, nrow(ret$C))
   ret$C <- ret$C + noiseInjection * diag( nrow(rInput))
   
-  if(complexity==0){
+  if(complexity %in% c(0,1)){
     return(ret)
   }
   
@@ -610,17 +610,14 @@ getMeanCurve <- function(x, y, x.new, phi.mat, sigma.mat, kerneltype="matern", d
     sigma <- sigma.mat[it]
     phi <- phi.mat[it,]
     
-    if(deriv){
-      covObj <- calCov(phi, r, signr, bandsize = 20, complexity = 2, kerneltype=kerneltype)  
-    }else{
-      covObj <- calCov(phi, r, signr, complexity = 0, kerneltype=kerneltype)  
-    }
+    covObj <- calCov(phi, r, signr, complexity = as.numeric(deriv), kerneltype=kerneltype)  
     C <- covObj$C
-    mphi <- covObj$mphi
-    
+
     diag(C)[-(1:length(x.new))] <- diag(C)[-(1:length(x.new))]+sigma^2
     y.new[it, ] <- C[1:length(x.new),-(1:length(x.new))]%*%solve(C[-(1:length(x.new)),-(1:length(x.new))], y)
-    dy.new[it, ] <- covObj$mphi[1:length(x.new), 1:length(x.new)] %*% y.new[it, ]
+    if(deriv){
+      dy.new[it, ] <- covObj$Cprime[1:length(x.new), 1:length(x.new)] %*% solve(covObj$C[1:length(x.new), 1:length(x.new)], y.new[it, ])
+    }
   }
   
   if(deriv){

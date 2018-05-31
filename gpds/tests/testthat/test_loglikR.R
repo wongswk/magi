@@ -105,6 +105,20 @@ testthat::test_that("getMeanCurve runs without error and is correct", {
                                 t(marlikmap$par[3:4]), sigma.mat=matrix(cursigma)))
   testthat::expect_equal(sum(startVR), 16.6934654159305, tolerance = 1e-5)
 })
+
+testthat::test_that("getMeanCurve deriv is correct", {
+  delta <- 0.1
+  timeDense <- seq(0, 20, delta)
+  ydy <- getMeanCurve(fn.sim$time, fn.sim$Vtrue, timeDense, 
+               t(marlikmap$par[1:2]), sigma.mat=matrix(cursigma), 
+               kerneltype = "generalMatern", deriv = TRUE)
+  y <- ydy[[1]]
+  dy <- ydy[[2]]
+  dyNum <- (y[-(1:2)] - y[-(length(y) - 0:1)]) / (2*delta)
+  dy <- dy[c(-1, -length(dy))]
+  testthat::expect_equal(dyNum, dy, tolerance = 0.1)
+})
+
 startVR <- t(startVR)
 
 testthat::test_that("loglikOrig and loglik runs without error and is correct", {
