@@ -228,6 +228,34 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
   if(is.null(npostplot)) {
     npostplot <- 20
   }
+  if(!is.null(odemodel)){
+    mapId <- which.max(gpode$lglik)
+    ttheta <- gpode$theta[mapId,]
+    tx0 <- gpode$xsampled[mapId,1,]
+    xtrueMAP <- deSolve::ode(y = tx0, times = odemodel$times, func = odemodel$modelODE, parms = ttheta)
+
+    ttheta <- colMeans(gpode$theta)
+    tx0 <- colMeans(gpode$xsampled[,1,])
+    txobs <- apply(gpode$xsampled, 2:3, mean)
+    xtruePM <- deSolve::ode(y = tx0, times = odemodel$times, func = odemodel$modelODE, parms = ttheta)
+    
+    xtrue.obs <- xtrue[xtrue[,"time"] %in% xsim$time,-1]
+    xtrueMAP.obs <- xtrueMAP[xtrueMAP[,"time"] %in% xsim$time,-1]
+    xtruePM.obs <- xtruePM[xtruePM[,"time"] %in% xsim$time,-1]
+    
+    rmseTrue <- sqrt(apply((xtrue.obs - xsim[,-1])^2, 2, mean, na.rm=TRUE))
+    rmseWholeGpode <- sqrt(apply((txobs - xsim[,-1])^2, 2, mean, na.rm=TRUE))
+    rmseOdeMAP <- sqrt(apply((xtrueMAP.obs - xsim[,-1])^2, 2, mean, na.rm=TRUE))
+    rmseOdePM <- sqrt(apply((xtruePM.obs - xsim[,-1])^2, 2, mean, na.rm=TRUE))
+    
+    rmselist <- list(
+      true = paste0(round(rmseTrue, 3), collapse = "; "),
+      wholeGpode = paste0(round(rmseWholeGpode, 3), collapse = "; "),
+      odeMAP = paste0(round(rmseOdeMAP, 3), collapse = "; "),
+      odePM = paste0(round(rmseOdePM, 3), collapse = "; ")
+    )
+    config$rmse <- rmselist
+  }
   id.max <- which.max(gpode$lglik)
   config$noise <- paste(round(config$noise, 3), collapse = "; ")
   infoTab <- as.data.frame(config)
@@ -298,17 +326,12 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
   
   if(!is.null(odemodel)){
     layout(1)
-    mapId <- which.max(gpode$lglik)
-    ttheta <- gpode$theta[mapId,]
-    tx0 <- gpode$xsampled[mapId,1,]
-    
-    xtrue2 <- deSolve::ode(y = tx0, times = odemodel$times, func = odemodel$modelODE, parms = ttheta)
-    
-    matplot(odemodel$xtrue[, "time"], xtrue2[, -1], type="l", lty=1)
-    matplot(odemodel$xtrue[, "time"], odemodel$xtrue[, -1], type="l", lty=3, add=TRUE)
+    matplot(odemodel$xtrue[, "time"], odemodel$xtrue[, -1], type="l", lty=1, add=FALSE)
+    matplot(odemodel$xtrue[, "time"], xtrueMAP[, -1], type="l", lty=3, add=TRUE)
+    matplot(odemodel$xtrue[, "time"], xtruePM[, -1], type="l", lty=2, add=TRUE)
     matplot(xsim$time, xsim[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
+    legend("topleft", lty=c(1,3,2), legend=c("true", "MAP", "PosteriorMean"))
   }
-
   dev.off()
 }
 
