@@ -223,7 +223,7 @@ plotPostSamples <- function(filename, fn.true, fn.sim, gpode, init, config){
 #' @importFrom grid pushViewport
 #'
 #' @export
-plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, config){
+plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, config, odemodel=NULL){
   npostplot <- config$npostplot
   if(is.null(npostplot)) {
     npostplot <- 20
@@ -296,6 +296,19 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
     lines(xsim$time, gpode$fode[id.max,,j], col="grey")
   }
   
+  if(!is.null(odemodel)){
+    layout(1)
+    mapId <- which.max(gpode$lglik)
+    ttheta <- gpode$theta[mapId,]
+    tx0 <- gpode$xsampled[mapId,1,]
+    
+    xtrue2 <- deSolve::ode(y = tx0, times = odemodel$times, func = odemodel$modelODE, parms = ttheta)
+    
+    matplot(odemodel$xtrue[, "time"], xtrue2[, -1], type="l", lty=1)
+    matplot(odemodel$xtrue[, "time"], odemodel$xtrue[, -1], type="l", lty=3, add=TRUE)
+    matplot(xsim$time, xsim[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
+  }
+
   dev.off()
 }
 
