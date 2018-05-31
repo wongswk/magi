@@ -236,7 +236,6 @@ configWithPhiSig$sigma <- paste(round(cursigma, 3), collapse = "; ")
 philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = "; "))
 names(philist) <- paste0("phi", 1:length(philist))
 configWithPhiSig <- c(configWithPhiSig, philist)
-configWithPhiSig <- c(configWithPhiSig, rmselist)
 
 gpds:::plotPostSamplesFlex(
   paste0(outDir, config$kernel,"-",config$seed,"-",date(),"-priorTemperedPhase1-trueSigma.pdf"), 
