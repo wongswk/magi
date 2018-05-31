@@ -228,6 +228,7 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
   if(is.null(npostplot)) {
     npostplot <- 20
   }
+  xpostmean <- apply(gpode$xsampled, 2:3, mean)
   if(!is.null(odemodel)){
     mapId <- which.max(gpode$lglik)
     ttheta <- gpode$theta[mapId,]
@@ -236,7 +237,6 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
 
     ttheta <- colMeans(gpode$theta)
     tx0 <- colMeans(gpode$xsampled[,1,])
-    txobs <- apply(gpode$xsampled, 2:3, mean)
     xtruePM <- deSolve::ode(y = tx0, times = odemodel$times, func = odemodel$modelODE, parms = ttheta)
     
     xtrue.obs <- xtrue[xtrue[,"time"] %in% xsim$time,-1]
@@ -244,7 +244,7 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
     xtruePM.obs <- xtruePM[xtruePM[,"time"] %in% xsim$time,-1]
     
     rmseTrue <- sqrt(apply((xtrue.obs - xsim[,-1])^2, 2, mean, na.rm=TRUE))
-    rmseWholeGpode <- sqrt(apply((txobs - xsim[,-1])^2, 2, mean, na.rm=TRUE))
+    rmseWholeGpode <- sqrt(apply((xpostmean - xsim[,-1])^2, 2, mean, na.rm=TRUE))
     rmseOdeMAP <- sqrt(apply((xtrueMAP.obs - xsim[,-1])^2, 2, mean, na.rm=TRUE))
     rmseOdePM <- sqrt(apply((xtruePM.obs - xsim[,-1])^2, 2, mean, na.rm=TRUE))
     
@@ -322,6 +322,8 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
     lines(xsim$time, gpode$xsampled[id.max,,j], col="skyblue")
     points(xsim$time, gpode$fode[id.max,,j], col="grey", pch=20)
     lines(xsim$time, gpode$fode[id.max,,j], col="grey")
+    lines(xsim$time, xpostmean[,j], type="b", col="green")
+    legend("topleft", c("MAP", "Post-Mean"), col=c("skyblue", "green"), lty=1)
   }
   
   if(!is.null(odemodel)){
