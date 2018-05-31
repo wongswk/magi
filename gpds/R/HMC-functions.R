@@ -594,7 +594,7 @@ mat2band <- function(a, bandsize) {
 #' the x theta sampler
 #' 
 #' @export
-getMeanCurve <- function(x, y, x.new, phi.mat, sigma.mat, kerneltype="matern"){
+getMeanCurve <- function(x, y, x.new, phi.mat, sigma.mat, kerneltype="matern", deriv=FALSE){
   tvec <- c(x.new,x)
   
   foo <- outer(tvec, t(tvec),'-')[,1,]
@@ -603,15 +603,31 @@ getMeanCurve <- function(x, y, x.new, phi.mat, sigma.mat, kerneltype="matern"){
   
   signr <- -sign(foo)
   
-  t(sapply(1:nrow(phi.mat), function(it){
+  y.new <- matrix(NA, nrow(phi.mat), length(x.new))
+  dy.new <- matrix(NA, nrow(phi.mat), length(x.new))
+  
+  for(it in 1:nrow(phi.mat)){
     sigma <- sigma.mat[it]
     phi <- phi.mat[it,]
     
-    C <- calCov(phi, r, signr, complexity = 0, kerneltype)$C
+    if(deriv){
+      covObj <- calCov(phi, r, signr, bandsize = 20, complexity = 2, kerneltype=kerneltype)  
+    }else{
+      covObj <- calCov(phi, r, signr, complexity = 0, kerneltype=kerneltype)  
+    }
+    C <- covObj$C
+    mphi <- covObj$mphi
     
     diag(C)[-(1:length(x.new))] <- diag(C)[-(1:length(x.new))]+sigma^2
-    C[1:length(x.new),-(1:length(x.new))]%*%solve(C[-(1:length(x.new)),-(1:length(x.new))], y)
-  }))
+    y.new[it, ] <- C[1:length(x.new),-(1:length(x.new))]%*%solve(C[-(1:length(x.new)),-(1:length(x.new))], y)
+    dy.new[it, ] <- covObj$mphi[1:length(x.new), 1:length(x.new)] %*% y.new[it, ]
+  }
+  
+  if(deriv){
+    return(list(y.new, dy.new))
+  }else{
+    return(y.new)  
+  }
 }
 
 #' insert nan in simulated data for explicit control of discretization
