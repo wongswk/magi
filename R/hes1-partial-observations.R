@@ -19,7 +19,8 @@ if(!exists("config")){
     modelName = "Hes1",
     startXAtTruth = FALSE,
     startThetaAtTruth = FALSE,
-    startSigmaAtTruth = TRUE
+    startSigmaAtTruth = TRUE,
+    useGPmean = TRUE
   )
 }
 
@@ -173,6 +174,17 @@ curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
   covEach$mu[] <- mean(xsim.obs[,j+1])
   covEach
 })
+
+if(config$useGPmean){
+  # missing component do not set mu curve
+  for(j in 1:2){
+    ydy <- getMeanCurve(xsim.obs$time, xsim.obs[,j+1], xsim$time, 
+                        t(curphi[,j]), t(cursigma[j]), 
+                        kerneltype=config$kernel, deriv = TRUE)
+    curCov[[j]]$mu <- as.vector(ydy[[1]])
+    curCov[[j]]$dotmu <- as.vector(ydy[[2]])
+  }
+}
 
 stepLowInit <- stepLowInit[1:length(c(xInit, thetaInit))]
 
