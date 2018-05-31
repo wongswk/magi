@@ -283,6 +283,11 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
     matplot(xsim$time, t(gpode$xsampled[id.plot,,j]), col="skyblue",add=TRUE, type="l",lty=1)
     matplot(xsim$time, t(gpode$fode[id.plot,,j]), col="grey",add=TRUE, type="p",lty=1, pch=20)
     matplot(xsim$time, t(gpode$fode[id.plot,,j]), col="grey",add=TRUE, type="l",lty=1)
+    
+    if(!is.null(odemodel) && !is.null(odemodel$curCov)){
+      lines(xsim$time, odemodel$curCov[[j]]$mu, col="forestgreen", lwd=2)
+      lines(xsim$time, odemodel$curCov[[j]]$dotmu, col="darkgreen", lwd=2)
+    }
   }
   
   layout(matrix(1:4,2,byrow = TRUE))
