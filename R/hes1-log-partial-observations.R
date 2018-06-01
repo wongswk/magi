@@ -5,20 +5,20 @@ source("R/hes1-helper-functions.R")
 if(!exists("config")){
   config <- list(
     nobs = 33,
-    noise = c(0.8,0.4,0.1),
+    noise = c(0.15,0.15,0.1),
     kernel = "generalMatern",
     seed = 1365546660, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 50,
     loglikflag = "withmeanBand",
     bandsize = 20,
     hmcSteps = 500,
-    n.iter = 1e4,
-    burninRatio = 0.20,
+    n.iter = 3e4,
+    burninRatio = 0.80,
     stepSizeFactor = 1,
     filllevel = 0,
     modelName = "Hes1-log",
-    startXAtTruth = TRUE,
-    startThetaAtTruth = TRUE,
+    startXAtTruth = FALSE,
+    startThetaAtTruth = FALSE,
     startSigmaAtTruth = TRUE,
     useGPmean = TRUE,
     forseTrueMean = FALSE,
@@ -28,8 +28,8 @@ if(!exists("config")){
 
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
 config$priorTemperature <- config$ndis / config$nobs
-config$priorTemperature[2] <- config$priorTemperature[1]
-config$priorTemperature <- 1
+# config$priorTemperature[2] <- config$priorTemperature[1]
+# config$priorTemperature <- 1
 
 # initialize global parameters, true x, simulated x ----------------------------
 if(grepl("/n/",getwd())){
