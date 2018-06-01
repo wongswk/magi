@@ -22,7 +22,8 @@ if(!exists("config")){
     startSigmaAtTruth = TRUE,
     useGPmean = TRUE,
     forseTrueMean = FALSE,
-    useGPphi1 = FALSE
+    useGPphi1 = FALSE,
+    async = TRUE
   )
 }
 
@@ -71,16 +72,21 @@ for(j in 1:(ncol(xsim)-1)){
 }
 xsim$X3 <- NaN
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
+if(config$async){
+  xsim.obs$X1[seq(2,nrow(xsim.obs),by=2)] <- NaN
+  xsim.obs$X2[seq(1,nrow(xsim.obs),by=2)] <- NaN
+}
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
 
-matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
-
 xsim <- insertNaN(xsim.obs,config$filllevel)
+xsim.obs <- xsim.obs[-nrow(xsim.obs), ]
+
+matplot(xsim$time, xsim[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
+xsim.obs$X2 <- c(xsim.obs$X2[-1], NA)
+xsim.obs <- xsim.obs[is.finite(xsim.obs$X1),]
 
 tvec.full <- xsim$time
 tvec.nobs <- xsim.obs$time
-
-
 
 foo <- outer(tvec.full, t(tvec.full),'-')[,1,]
 r <- abs(foo)
@@ -227,33 +233,8 @@ singleSampler <- function(xthetaValues, stepSize)
 chainSamplesOut <- chainSampler(config, c(xInit, thetaInit), singleSampler, stepLowInit, verbose=TRUE)
 
 ## Check sum of square error using numerical solver ------------------------------------
-burnin <- as.integer(config$n.iter*config$burninRatio)
-mapId <- which.max(chainSamplesOut$lliklist[-(1:burnin)]) + burnin
-ttheta <- chainSamplesOut$xth[mapId, (length(data.matrix(xsim[,-1]))+1):(ncol(chainSamplesOut$xth))]
-tx0 <- array(chainSamplesOut$xth[mapId, 1:length(data.matrix(xsim[,-1]))],dim=c(nrow(xsim), ncol(xsim)-1))[1,]
-txobs <- array(chainSamplesOut$xth[mapId, 1:length(data.matrix(xsim[,-1]))],dim=c(nrow(xsim), ncol(xsim)-1))[tvec.full %in% tvec.nobs,]
-
-xtrue2 <- deSolve::ode(y = tx0, times = times, func = modelODE, parms = ttheta)
-
-matplot(xtrue[, "time"], xtrue2[, -1], type="l", lty=1)
-matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=3, add=T)
-matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
-xtrue.obs <- xtrue[xtrue[,"time"] %in% xsim.obs$time,-1]
-xsampler.obs <- xtrue2[xtrue2[,"time"] %in% xsim.obs$time,-1]
-
 odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue, curCov=curCov)
 
-rmseTrue <- sqrt(apply((xtrue.obs[,1:2] - xsim.obs[,2:3])^2,2,mean))
-rmseWholeGpode <- sqrt(apply((txobs[,1:2] - xsim.obs[,2:3])^2,2, mean))
-rmseOdeGpode <- sqrt(apply((xsampler.obs[,1:2] - xsim.obs[,2:3])^2,2,mean))
-
-rmselist <- list(
-  rmseTrue = paste0(round(rmseTrue, 3), collapse = "; "),
-  rmseWholeGpode = paste0(round(rmseWholeGpode, 3), collapse = "; "),
-  rmseOdeGpode = paste0(round(rmseOdeGpode, 3), collapse = "; ")
-)
-
-#### end SSE check
 
 burnin <- as.integer(config$n.iter*config$burninRatio)
 gpode <- list(theta=chainSamplesOut$xth[-(1:burnin), (length(data.matrix(xsim[,-1]))+1):(ncol(chainSamplesOut$xth))],
