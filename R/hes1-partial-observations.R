@@ -17,16 +17,19 @@ if(!exists("config")){
     stepSizeFactor = 1,
     filllevel = 1,
     modelName = "Hes1",
-    startXAtTruth = FALSE,
-    startThetaAtTruth = FALSE,
+    startXAtTruth = TRUE,
+    startThetaAtTruth = TRUE,
     startSigmaAtTruth = TRUE,
-    useGPmean = TRUE
+    useGPmean = TRUE,
+    forseTrueMean = FALSE,
+    useGPphi1 = FALSE
   )
 }
 
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
 config$priorTemperature <- config$ndis / config$nobs
-config$priorTemperature[2] <- config$priorTemperature[1] * 9
+config$priorTemperature[2] <- config$priorTemperature[1]
+config$priorTemperature <- 1
 
 # initialize global parameters, true x, simulated x ----------------------------
 if(grepl("/n/",getwd())){
@@ -186,11 +189,35 @@ if(config$useGPmean){
   }
 }
 
+if(config$forseTrueMean){
+  dotxtrue = gpds:::hes1modelODE(pram.true$theta, data.matrix(xtrue[,-1]))
+  dotxtrue.atsim <- dotxtrue[xtrue[,"time"] %in% xsim$time,]
+  xtrue.atsim <- xtrue[xtrue[,"time"] %in% xsim$time,-1]
+  for(j in 1:3){
+    curCov[[j]]$mu <- xtrue.atsim[, j]
+    curCov[[j]]$dotmu <- dotxtrue.atsim[, j]
+  }
+}
+
 stepLowInit <- stepLowInit[1:length(c(xInit, thetaInit))]
 
 xsim.obs$X3 <- NaN
 xsim$X3 <- NaN
 yobs[,3] <- NaN
+
+if(config$useGPphi1){
+  curphi[1, 1] <- mean((curCov[[1]]$mu - xsim[,2])^2, na.rm=TRUE)
+  curphi[1, 2] <- mean((curCov[[2]]$mu - xsim[,3])^2, na.rm=TRUE)
+  
+  curCov2 <- lapply(1:(ncol(xsim.obs)-1), function(j){
+    covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize,
+                      kerneltype=config$kernel)
+    covEach$mu <- curCov[[j]]$mu
+    covEach$dotmu <- curCov[[j]]$dotmu
+    covEach
+  })
+  curCov <- curCov2
+}
 
 singleSampler <- function(xthetaValues, stepSize) 
   xthetaSample(data.matrix(xsim[,-1]), curCov, cursigma, 
@@ -213,7 +240,7 @@ matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, ad
 xtrue.obs <- xtrue[xtrue[,"time"] %in% xsim.obs$time,-1]
 xsampler.obs <- xtrue2[xtrue2[,"time"] %in% xsim.obs$time,-1]
 
-odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
+odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue, curCov=curCov)
 
 rmseTrue <- sqrt(apply((xtrue.obs[,1:2] - xsim.obs[,2:3])^2,2,mean))
 rmseWholeGpode <- sqrt(apply((txobs[,1:2] - xsim.obs[,2:3])^2,2, mean))
