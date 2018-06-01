@@ -103,6 +103,66 @@ arma::cube hes1modelDtheta(const arma::vec & theta, const arma::mat & x) {
 }
 
 // [[Rcpp::export]]
+arma::mat hes1logmodelODE(const arma::vec & theta, const arma::mat & x) {
+  const vec & P = arma::exp(x.col(0));
+  const vec & M = arma::exp(x.col(1));
+  const vec & H = arma::exp(x.col(2)); 
+  
+  mat PMHdt(x.n_rows, x.n_cols);
+  PMHdt.col(0) = -theta(0)*H + theta(1)*M/P - theta(2);
+  PMHdt.col(1) = -theta(3) + theta(4)/(1+square(P))/M;
+  PMHdt.col(2) = -theta(0)*P + theta(5)/(1+square(P))/H - theta(6);
+  
+  return PMHdt;
+}
+
+// [[Rcpp::export]]
+arma::cube hes1logmodelDx(const arma::vec & theta, const arma::mat & x) {
+  cube resultDx(x.n_rows, x.n_cols, x.n_cols, fill::zeros);
+  
+  const vec & P = x.col(0);
+  const vec & M = x.col(1); 
+  const vec & H = x.col(2); 
+  
+  const vec & expMminusP = exp(M-P);
+  const vec & dP = -pow(1+exp(2*P), -2)%exp(2*P)*2;
+  
+  resultDx.slice(0).col(0) = -theta(1)*expMminusP;
+  resultDx.slice(0).col(1) = theta(1)*expMminusP;
+  resultDx.slice(0).col(2) = -theta(0)*exp(H);
+  
+  resultDx.slice(1).col(0) = theta(4)*exp(-M)%dP;
+  resultDx.slice(1).col(1) = -theta(4)*exp(-M)/(1+exp(2*P));
+  
+  resultDx.slice(2).col(0) = -theta(0)*exp(P) + theta(5)*exp(-H)%dP;
+  resultDx.slice(2).col(2) = -theta(5)*exp(-H)/(1+exp(2*P));
+  
+  return resultDx;
+}
+
+// [[Rcpp::export]]
+arma::cube hes1logmodelDtheta(const arma::vec & theta, const arma::mat & x) {
+  cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
+  
+  const vec & P = x.col(0);
+  const vec & M = x.col(1);
+  const vec & H = x.col(2); 
+  
+  resultDtheta.slice(0).col(0) = -exp(H);
+  resultDtheta.slice(0).col(1) = exp(M-P);
+  resultDtheta.slice(0).col(2).fill(-1);
+  
+  resultDtheta.slice(1).col(3).fill(-1);
+  resultDtheta.slice(1).col(4) = exp(-M)/(1+exp(2*P));
+  
+  resultDtheta.slice(2).col(0) = -exp(P);
+  resultDtheta.slice(2).col(5) = exp(-H)/(1+exp(2*P));
+  resultDtheta.slice(2).col(6).fill(-1);
+  
+  return resultDtheta;
+}
+
+// [[Rcpp::export]]
 arma::mat HIVmodelODE(const arma::vec & theta, const arma::mat & x) {
   const vec & T = exp(x.col(0));
   const vec & Tm = exp(x.col(1));
