@@ -106,7 +106,7 @@ Rcpp::List xthetaphisigmaSample( const arma::mat & xInitial,
   }else if(modelName == "HIV"){
     model = OdeSystem(HIVmodelODE, HIVmodelDx, HIVmodelDtheta, {-datum::inf, 0,0,0,0,0, -datum::inf,-datum::inf,-datum::inf}, ones(9)*datum::inf);   
   }else{
-    throw std::runtime_error("modelName must be one of 'FN', 'Hes1', 'HIV'");
+    throw std::runtime_error("modelName must be one of 'FN', 'Hes1', 'Hes1-log', 'HIV'");
   }
   
   std::function<lp(vec)> tgt;
@@ -185,7 +185,7 @@ Rcpp::List xthetaphisigmallikRcpp( const arma::mat & xlatent,
   }else if(modelName == "HIV"){
     model = OdeSystem(HIVmodelODE, HIVmodelDx, HIVmodelDtheta, {-datum::inf, 0,0,0,0,0, -datum::inf,-datum::inf,-datum::inf}, ones(9)*datum::inf);   
   }else{
-    throw std::runtime_error("modelName must be one of 'FN', 'Hes1', 'HIV'");
+    throw std::runtime_error("modelName must be one of 'FN', 'Hes1', 'Hes1-log', 'HIV'");
   }
   
   lp ret = xthetaphisigmallik(xlatent, 

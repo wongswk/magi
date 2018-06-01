@@ -168,10 +168,12 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
     model = OdeSystem(fnmodelODE, fnmodelDx, fnmodelDtheta, zeros(3), ones(3)*datum::inf);
   }else if(modelName == "Hes1"){
     model = OdeSystem(hes1modelODE, hes1modelDx, hes1modelDtheta, zeros(7), ones(7)*datum::inf); 
+  }else if(modelName == "Hes1-log"){
+    model = OdeSystem(hes1logmodelODE, hes1logmodelDx, hes1logmodelDtheta, zeros(7), ones(7)*datum::inf); 
   }else if(modelName == "HIV"){
     model = OdeSystem(HIVmodelODE, HIVmodelDx, HIVmodelDtheta, {-datum::inf, 0,0,0,0,0, -datum::inf,-datum::inf,-datum::inf}, ones(9)*datum::inf);   
   }else{
-    throw std::runtime_error("modelName must be one of 'FN', 'Hes1', 'HIV'");
+    throw std::runtime_error("modelName must be one of 'FN', 'Hes1', 'Hes1-log', 'HIV'");
   }
   
     
@@ -323,10 +325,12 @@ Rcpp::List xthetallikRcpp(const arma::mat & yobs,
     model = OdeSystem(fnmodelODE, fnmodelDx, fnmodelDtheta, zeros(3), ones(3)*datum::inf);
   }else if(modelName == "Hes1"){
     model = OdeSystem(hes1modelODE, hes1modelDx, hes1modelDtheta, zeros(7), ones(7)*datum::inf); 
+  }else if(modelName == "Hes1-log"){
+    model = OdeSystem(hes1logmodelODE, hes1logmodelDx, hes1logmodelDtheta, zeros(7), ones(7)*datum::inf); 
   }else if(modelName == "HIV"){
     model = OdeSystem(HIVmodelODE, HIVmodelDx, HIVmodelDtheta, {-datum::inf, 0,0,0,0,0, -datum::inf,-datum::inf,-datum::inf}, ones(9)*datum::inf);   
   }else{
-    throw std::runtime_error("modelName must be one of 'FN', 'Hes1', 'HIV'");
+    throw std::runtime_error("modelName must be one of 'FN', 'Hes1', 'Hes1-log', 'HIV'");
   }
   
   lp ret = xthetallik(initial, covAllDimensions, sigma, yobs, model, useBand, priorTemperature);
