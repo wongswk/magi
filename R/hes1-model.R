@@ -4,8 +4,8 @@ source("R/hes1-helper-functions.R")
 # set up configuration if not already exist ------------------------------------
 if(!exists("config")){
   config <- list(
-    nobs = 17,
-    noise = c(0.8,0.4,0.1),
+    nobs = 33,
+    noise = c(0.8,0.4,1.0),
     kernel = "generalMatern",
     seed = 1365546660, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 50,
@@ -15,7 +15,7 @@ if(!exists("config")){
     n.iter = 2e4,
     burninRatio = 0.80,
     stepSizeFactor = 1,
-    filllevel = 1,
+    filllevel = 0,
     modelName = "Hes1",
     startXAtTruth = FALSE,
     startThetaAtTruth = FALSE,
@@ -262,145 +262,4 @@ saveRDS(absCI, paste0(
   config$loglikflag,"-priorTemperedPhase1-trueSigma-",config$kernel,"-",config$seed,".rds"))
 
 
-# run with priorTempered phase 2 -------------------------------------------
-
-cursigma <- colMeans((data.matrix(xsim[,-1])-muAllDim)^2, na.rm = TRUE)
-cursigma <- sqrt(cursigma)
-
-updatePhi <- curphi
-
-for(j in 1:(ncol(xsim)-1)){
-  updatePhiJ <- 
-    sapply(as.integer(seq(1, nrow(gpode$xsampled), length=5)), function(postId){
-      fn <- function(par) -phillikwithxdotx( par, gpode$xsampled[postId,,j], gpode$fode[postId,,j],
-                                             r, signr, config$kernel)
-      marlikmap <- optim(rep(10, 2), fn, method="L-BFGS-B", lower = 0.0001,
-                         upper = c(Inf, 60*4*2, Inf), hessian = TRUE)
-      marlikmap$par  
-    })
-  updatePhi[,j] <- apply(updatePhiJ, 1, median)
-}
-updatePhi
-curphi
-# curphi <- updatePhi
-
-curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
-  covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize, 
-                    kerneltype=config$kernel)
-  covEach$mu[] <- mean(xsim.obs[,j+1])
-  covEach
-})
-
-for(j in 1:ncol(muAllDim)){
-  curCov[[j]]$mu <- muAllDim[,j]
-  curCov[[j]]$dotmu <- dotmuAllDim[,j]
-}
-
-# refit phi idea doesn't help convergence
-# curphi <- matrix(NA, 2, ncol(xsim)-1)
-# for(j in 1:(ncol(xsim)-1)){
-#   fn <- function(par) -phisigllikC( c(par, cursigma[j]), muAllDim[,j,drop=FALSE],
-#                                     r, config$kernel)$value
-#   gr <- function(par) -as.vector(phisigllikC( c(par, cursigma[j]), muAllDim[,j,drop=FALSE],
-#                                               r, config$kernel)$grad)[1:2]
-#   marlikmap <- optim(rep(1, 2), fn, gr, method="L-BFGS-B", lower = 0.0001,
-#                      upper = c(Inf, 60*4*2))
-#   curphi[,j] <- marlikmap$par
-# }
-# curphi
-
-
-xInit <- c(muAllDim, startTheta)
-stepLowInit <- chainSamplesOut$stepLow
-
-singleSampler <- function(xthetaValues, stepSize) 
-  xthetaSample(data.matrix(xsim[,-1]), curCov, cursigma, 
-               xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
-               priorTemperature = config$priorTemperature, modelName = "Hes1")
-chainSamplesOut <- chainSampler(config, xInit, singleSampler, stepLowInit, verbose=TRUE)
-
-
-gpode <- list(theta=chainSamplesOut$xth[-(1:burnin), (length(data.matrix(xsim[,-1]))+1):(ncol(chainSamplesOut$xth))],
-              xsampled=array(chainSamplesOut$xth[-(1:burnin), 1:length(data.matrix(xsim[,-1]))], 
-                             dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
-              lglik=chainSamplesOut$lliklist[-(1:burnin)],
-              sigma = cursigma,
-              phi = matrix(marlikmap$par[-length(marlikmap$par)], 2))
-gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
-  with(gpode, gpds:::hes1modelODE(theta[t,], xsampled[t,,])), simplify = "array")
-gpode$fode <- aperm(gpode$fode, c(3,1,2))
-
-dotxtrue = gpds:::hes1modelODE(pram.true$theta, data.matrix(xtrue[,-1]))
-
-configWithPhiSig <- config
-configWithPhiSig$sigma <- paste(round(cursigma, 3), collapse = "; ")
-philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = "; "))
-names(philist) <- paste0("phi", 1:length(philist))
-configWithPhiSig <- c(configWithPhiSig, philist)
-
-gpds:::plotPostSamplesFlex(
-  paste0(outDir, config$kernel,"-",config$seed,"-priorTemperedPhase2.pdf"), 
-  xtrue, dotxtrue, xsim, gpode, pram.true, configWithPhiSig)
-
-absCI <- apply(gpode$theta, 2, quantile, probs = c(0.025, 0.5, 0.975))
-absCI <- rbind(absCI, mean=colMeans(gpode$theta))
-absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$theta &  pram.true$theta < absCI["97.5%",]))
-
-saveRDS(absCI, paste0(
-  outDir,
-  config$loglikflag,"-priorTemperedPhase2-",config$kernel,"-",config$seed,".rds"))
-
-#### last run with true mean --------------------------------------------------
-
-muAllDim <- sapply(xtrueFunc, function(f) f(xsim$time))  # pretend these are the means
-dotmuAllDim <- gpds:::hes1modelODE(pram.true$theta, muAllDim) # pretend these are the means for derivatives
-
-for(j in 1:ncol(muAllDim)){
-  curCov[[j]]$mu <- muAllDim[,j]
-  curCov[[j]]$dotmu <- dotmuAllDim[,j]
-}
-
-cursigma <- colMeans((data.matrix(xsim[,-1])-muAllDim)^2, na.rm = TRUE)
-cursigma <- sqrt(cursigma)
-
-
-xInit <- c(muAllDim, pram.true$theta)
-stepLowInit <- chainSamplesOut$stepLow
-
-singleSampler <- function(xthetaValues, stepSize) 
-  xthetaSample(data.matrix(xsim[,-1]), curCov, cursigma, 
-               xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
-               priorTemperature = config$priorTemperature, modelName = "Hes1")
-chainSamplesOut <- chainSampler(config, xInit, singleSampler, stepLowInit, verbose=TRUE)
-
-
-gpode <- list(theta=chainSamplesOut$xth[-(1:burnin), (length(data.matrix(xsim[,-1]))+1):(ncol(chainSamplesOut$xth))],
-              xsampled=array(chainSamplesOut$xth[-(1:burnin), 1:length(data.matrix(xsim[,-1]))], 
-                             dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
-              lglik=chainSamplesOut$lliklist[-(1:burnin)],
-              sigma = cursigma,
-              phi = matrix(marlikmap$par[-length(marlikmap$par)], 2))
-gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
-  with(gpode, gpds:::hes1modelODE(theta[t,], xsampled[t,,])), simplify = "array")
-gpode$fode <- aperm(gpode$fode, c(3,1,2))
-
-dotxtrue = gpds:::hes1modelODE(pram.true$theta, data.matrix(xtrue[,-1]))
-
-configWithPhiSig <- config
-configWithPhiSig$sigma <- paste(round(cursigma, 3), collapse = "; ")
-philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = "; "))
-names(philist) <- paste0("phi", 1:length(philist))
-configWithPhiSig <- c(configWithPhiSig, philist)
-
-gpds:::plotPostSamplesFlex(
-  paste0(outDir, config$kernel,"-",config$seed,"-trueMu.pdf"), 
-  xtrue, dotxtrue, xsim, gpode, pram.true, configWithPhiSig)
-
-absCI <- apply(gpode$theta, 2, quantile, probs = c(0.025, 0.5, 0.975))
-absCI <- rbind(absCI, mean=colMeans(gpode$theta))
-absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$theta &  pram.true$theta < absCI["97.5%",]))
-
-saveRDS(absCI, paste0(
-  outDir,
-  config$loglikflag,"-trueMu-",config$kernel,"-",config$seed,".rds"))
 
