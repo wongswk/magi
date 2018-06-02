@@ -278,6 +278,9 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
     do.call(gridExtra::grid.arrange, c(tbls, nrow=length(tbls)))
   }
   
+  matplot(xtrue$time, xtrue[,-1], type="l", lty=1)
+  matplot(xsim$time, xsim[,-1], type="p", pch=20, add=TRUE)
+  
   id.plot <- seq(1,nrow(gpode$theta),length=npostplot)
   id.plot <- unique(as.integer(id.plot))
   id.plot <- unique(c(id.max, id.plot))

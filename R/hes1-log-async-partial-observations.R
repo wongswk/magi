@@ -270,3 +270,39 @@ absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$theta &  pram.true$
 #   outDir,
 #   config$loglikflag,"-priorTemperedPhase1-trueSigma-",config$kernel,"-",config$seed,"-",date(),".rds"))
 
+pdf(paste0(outDir, config$kernel,"-",config$seed,"-",date(),"-priorTemperedPhase1-trueSigma-addon.pdf"), 
+    width = 8, height = 8)
+layout(matrix(1:4, 2))
+matplot(xtrue$time, exp(xtrue[,-1]), type="l", lty=1, main="raw data")
+matplot(xsim$time, exp(xsim[,-1]), type="p", pch=20, add=TRUE)
+
+npostplot=50
+id.plot <- seq(1,nrow(gpode$theta),length=npostplot)
+id.plot <- unique(as.integer(id.plot))
+
+for(j in 1:(ncol(xsim)-1)){
+  matplot(xtrue$time, cbind(exp(xtrue[,j+1]), exp(xtrue[,j+1])*dotxtrue[,j]), type="l", lty=1, col=c(2,1),
+          ylab=paste0("component-",j), main="full posterior")
+  mtext(paste("component", c("P", "M", "H")[j]))
+  points(xsim$time, exp(xsim[,j+1]), col=2)
+  matplot(xsim$time, exp(t(gpode$xsampled[id.plot,,j])), col="skyblue",add=TRUE, type="b",lty=1, pch=20)
+  matplot(xsim$time, exp(t(gpode$xsampled[id.plot,,j]))*t(gpode$fode[id.plot,,j]), col="grey",add=TRUE, type="b",lty=1, pch=20)
+  
+  if(!is.null(odemodel) && !is.null(odemodel$curCov)){
+    lines(xsim$time, exp(odemodel$curCov[[j]]$mu), col="forestgreen", lwd=2)
+    lines(xsim$time, exp(odemodel$curCov[[j]]$mu)*odemodel$curCov[[j]]$dotmu, col="darkgreen", lwd=2)
+  }
+}
+
+layout(matrix(1:(2*length(pram.true$theta)),ncol=2,byrow = TRUE))
+par(mar=c(2,1,1.5,1))
+for(i in 1:length(pram.true$theta)){
+  hist(gpode$theta[,i], main=letters[i], xlab=NA, ylab=NA)
+  abline(v=pram.true$theta[i], col=2)
+  abline(v=quantile(gpode$theta[,i], c(0.025, 0.975)), col=3)  
+  plot.ts(gpode$theta[,i], main=letters[i], xlab=NA, ylab=NA)
+  abline(h=pram.true$theta[i], col=2)
+  abline(h=quantile(gpode$theta[,i], c(0.025, 0.975)), col=3)  
+}
+
+dev.off()
