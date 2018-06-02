@@ -13,7 +13,7 @@ if(!exists("config")){
     bandsize = 20,
     hmcSteps = 500,
     n.iter = 2e4,
-    burninRatio = 0.80,
+    burninRatio = 0.50,
     stepSizeFactor = 1,
     filllevel = 0,
     modelName = "Hes1-log",
@@ -34,6 +34,7 @@ config$priorTemperature <- config$ndis / config$nobs
 # initialize global parameters, true x, simulated x ----------------------------
 if(grepl("/n/",getwd())){
   baseDir <- "/n/regal/kou_lab/shihaoyang/DynamicSys/results/" # tmp folder on cluster 
+  config$seed <- (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9 # random seed on cluster
 }else{
   baseDir <- "~/Workspace/DynamicSys/results/batch-output/"  
 }
@@ -250,7 +251,7 @@ names(philist) <- paste0("phi", 1:length(philist))
 configWithPhiSig <- c(configWithPhiSig, philist)
 
 gpds:::plotPostSamplesFlex(
-  paste0(outDir, config$kernel,"-",config$seed,"-",date(),"-priorTemperedPhase1-trueSigma.pdf"), 
+  paste0(outDir, config$kernel,"-",config$seed,"-",date(),"-hes1-log-fully-observed-trueSigma.pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, configWithPhiSig, odemodel)
 
 absCI <- apply(gpode$theta, 2, quantile, probs = c(0.025, 0.5, 0.975))
@@ -259,10 +260,13 @@ absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$theta &  pram.true$
 
 saveRDS(absCI, paste0(
   outDir,
-  config$loglikflag,"-priorTemperedPhase1-trueSigma-",config$kernel,"-",config$seed,".rds"))
+  config$loglikflag,"-hes1-log-fully-observed-trueSigma-",config$kernel,"-",config$seed,".rds"))
+save.image(paste0(
+  outDir,
+  config$loglikflag,"-hes1-log-fully-observed-trueSigma-",config$kernel,"-",config$seed,".rda"))
 
 
-pdf(paste0(outDir, config$kernel,"-",config$seed,"-",date(),"-priorTemperedPhase1-trueSigma-addon.pdf"), 
+pdf(paste0(outDir, config$kernel,"-",config$seed,"-",date(),"-hes1-log-fully-observed-trueSigma-addon.pdf"), 
     width = 8, height = 8)
 layout(matrix(1:4, 2))
 matplot(xtrue$time, exp(xtrue[,-1]), type="l", lty=1, main="raw data")
