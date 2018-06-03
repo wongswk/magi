@@ -10,3 +10,5 @@
 
 Rscript R/hes1-log-model.R ${SLURM_ARRAY_TASK_ID}
 Rscript R/hes1-log-async-partial-observations.R ${SLURM_ARRAY_TASK_ID}
+Rscript R/hes1-model.R ${SLURM_ARRAY_TASK_ID}
+Rscript R/hes1-async-partial-observations.R ${SLURM_ARRAY_TASK_ID}
