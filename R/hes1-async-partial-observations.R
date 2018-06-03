@@ -12,7 +12,7 @@ if(!exists("config")){
     loglikflag = "withmeanBand",
     bandsize = 20,
     hmcSteps = 500,
-    n.iter = 2e4,
+    n.iter = 3e4,
     burninRatio = 0.50,
     stepSizeFactor = 1,
     filllevel = 0,
@@ -22,7 +22,8 @@ if(!exists("config")){
     startSigmaAtTruth = TRUE,
     useGPmean = TRUE,
     forseTrueMean = FALSE,
-    useGPphi1 = FALSE
+    useGPphi1 = FALSE,
+    async = TRUE
   )
 }
 
@@ -70,13 +71,20 @@ set.seed(config$seed)
 for(j in 1:(ncol(xsim)-1)){
   xsim[,1+j] <- xsim[,1+j]+rnorm(nrow(xsim), sd=config$noise[j])  
 }
-
+xsim$X3 <- NaN
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
+if(config$async){
+  xsim.obs$X1[seq(2,nrow(xsim.obs),by=2)] <- NaN
+  xsim.obs$X2[seq(1,nrow(xsim.obs),by=2)] <- NaN
+}
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
 
-matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
-
 xsim <- insertNaN(xsim.obs,config$filllevel)
+xsim.obs <- xsim.obs[-nrow(xsim.obs), ]
+
+matplot(xsim$time, xsim[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
+xsim.obs$X2 <- c(xsim.obs$X2[-1], NA)
+xsim.obs <- xsim.obs[is.finite(xsim.obs$X1),]
 
 tvec.full <- xsim$time
 tvec.nobs <- xsim.obs$time
@@ -92,12 +100,11 @@ r2.nobs <- r.nobs^2
 signr.nobs <- -sign(foo)
 
 # GPsmoothing: marllik+fftNormalprior for phi-sigma ----------------------------
+xsim.obs$X3 <- (xsim.obs$X2 + xsim.obs$X1)/2
+xsim$X3 <- (xsim$X2 + xsim$X1)/2
 eval(phiAllMethodsExpr)
 cursigma <- cursigmaMarllikFftprior
 curphi <- curphiMarllikFftprior
-
-cursigma <- pram.true$sigma
-curphi <- getPhiMarllikFftpriorKnownSigma(cursigma)
 
 curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
   covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize, 
@@ -118,12 +125,12 @@ cursigma
 # MCMC starting value ----------------------------------------------------------
 yobs <- data.matrix(xsim[,-1])
 
-
 xsimInit <- xsim
 for(j in 1:3){
   nanId <- which(is.na(xsimInit[,j+1]))
   xsimInit[nanId,j+1] <- gpsmoothFuncList[[j]](xsimInit$time[nanId])
 }
+xsimInit$X3 <- (xsimInit$X2 + xsimInit$X1)/2
 matplot(xsimInit$time, xsimInit[,-1], type="p", pch=2, add=TRUE)
 xInit <- data.matrix(xsimInit[,-1])
 
@@ -132,6 +139,32 @@ thetamle <- thetaoptim(xInit, thetaInit, curphi, cursigma)
 thetaInit <- thetamle$thetaInit
 sigmaInit <- cursigma
 
+if(config$startSigmaAtTruth){
+  sigmaInit <- pram.true$sigma  
+}
+
+xthetasigmaInit <- c(xInit, thetaInit, sigmaInit)
+stepLowInit <- rep(0.000035, length(xthetasigmaInit))
+stepLowInit <- stepLowInit*config$stepSizeFactor
+
+# optim for x3, theta, phi3 ----------------------------------------------------
+xId <- 1:length(data.matrix(xsim[,-1]))
+thetaId <- (xId[length(xId)]+1):(xId[length(xId)]+length(pram.true$theta))
+phiId <- (thetaId[length(thetaId)]+1):(thetaId[length(thetaId)]+length(pram.true$phi))
+sigmaId <- (phiId[length(phiId)]+1):(phiId[length(phiId)]+length(pram.true$sigma))
+obsDim <- dim(data.matrix(xsim[,-1]))
+
+cursigma <- pram.true$sigma
+x3thetaphi3Init <- x3thetaphi3sgd(xInit, thetaInit, curphi, cursigma, maxit=1000, learningRate=1e-8)
+xInit <- x3thetaphi3Init$xInit
+curphi <- x3thetaphi3Init$curphi
+thetaInit <- x3thetaphi3Init$thetaInit
+# fullvecInit <- fulloptim(xInit, thetaInit, curphi, cursigma)
+
+llikXthetaphisigma(c(xInit, thetaInit, curphi, cursigma))$value
+llikXthetaphisigma(c(x3thetaphi3Init$xInit, x3thetaphi3Init$thetaInit, x3thetaphi3Init$curphi, cursigma))$value
+
+# fixing sigma at true value; HMC sampler for x, theta -------------------------
 if(config$startXAtTruth){
   xInit <- sapply(xtrueFunc, function(f) f(xsim$time))  
 }
@@ -142,13 +175,8 @@ if(config$startSigmaAtTruth){
   sigmaInit <- pram.true$sigma  
 }
 
-xthetasigmaInit <- c(xInit, thetaInit, sigmaInit)
-stepLowInit <- rep(0.000035, length(xthetasigmaInit))
-stepLowInit <- stepLowInit*config$stepSizeFactor
-
-# fixing sigma at true value; HMC sampler for x, theta -------------------------
-
 cursigma <- pram.true$sigma
+curphi
 
 curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
   covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize,
@@ -158,7 +186,8 @@ curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
 })
 
 if(config$useGPmean){
-  for(j in 1:3){
+  # missing component do not set mu curve
+  for(j in 1:2){
     ydy <- getMeanCurve(xsim.obs$time, xsim.obs[,j+1], xsim$time, 
                         t(curphi[,j]), t(cursigma[j]), 
                         kerneltype=config$kernel, deriv = TRUE)
@@ -179,10 +208,13 @@ if(config$forseTrueMean){
 
 stepLowInit <- stepLowInit[1:length(c(xInit, thetaInit))]
 
+xsim.obs$X3 <- NaN
+xsim$X3 <- NaN
+yobs[,3] <- NaN
+
 if(config$useGPphi1){
   curphi[1, 1] <- mean((curCov[[1]]$mu - xsim[,2])^2, na.rm=TRUE)
   curphi[1, 2] <- mean((curCov[[2]]$mu - xsim[,3])^2, na.rm=TRUE)
-  curphi[1, 3] <- mean((curCov[[3]]$mu - xsim[,4])^2, na.rm=TRUE)
   
   curCov2 <- lapply(1:(ncol(xsim.obs)-1), function(j){
     covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize,
@@ -202,33 +234,8 @@ singleSampler <- function(xthetaValues, stepSize)
 chainSamplesOut <- chainSampler(config, c(xInit, thetaInit), singleSampler, stepLowInit, verbose=TRUE)
 
 ## Check sum of square error using numerical solver ------------------------------------
-burnin <- as.integer(config$n.iter*config$burninRatio)
-mapId <- which.max(chainSamplesOut$lliklist[-(1:burnin)]) + burnin
-ttheta <- chainSamplesOut$xth[mapId, (length(data.matrix(xsim[,-1]))+1):(ncol(chainSamplesOut$xth))]
-tx0 <- array(chainSamplesOut$xth[mapId, 1:length(data.matrix(xsim[,-1]))],dim=c(nrow(xsim), ncol(xsim)-1))[1,]
-txobs <- array(chainSamplesOut$xth[mapId, 1:length(data.matrix(xsim[,-1]))],dim=c(nrow(xsim), ncol(xsim)-1))[tvec.full %in% tvec.nobs,]
-
-xtrue2 <- deSolve::ode(y = tx0, times = times, func = modelODE, parms = ttheta)
-
-matplot(xtrue[, "time"], xtrue2[, -1], type="l", lty=1)
-matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=3, add=T)
-matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
-xtrue.obs <- xtrue[xtrue[,"time"] %in% xsim.obs$time,-1]
-xsampler.obs <- xtrue2[xtrue2[,"time"] %in% xsim.obs$time,-1]
-
 odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue, curCov=curCov)
 
-rmseTrue <- sqrt(apply((xtrue.obs[,1:2] - xsim.obs[,2:3])^2,2,mean))
-rmseWholeGpode <- sqrt(apply((txobs[,1:2] - xsim.obs[,2:3])^2,2, mean))
-rmseOdeGpode <- sqrt(apply((xsampler.obs[,1:2] - xsim.obs[,2:3])^2,2,mean))
-
-rmselist <- list(
-  rmseTrue = paste0(round(rmseTrue, 3), collapse = "; "),
-  rmseWholeGpode = paste0(round(rmseWholeGpode, 3), collapse = "; "),
-  rmseOdeGpode = paste0(round(rmseOdeGpode, 3), collapse = "; ")
-)
-
-#### end SSE check
 
 burnin <- as.integer(config$n.iter*config$burninRatio)
 gpode <- list(theta=chainSamplesOut$xth[-(1:burnin), (length(data.matrix(xsim[,-1]))+1):(ncol(chainSamplesOut$xth))],
@@ -238,6 +245,8 @@ gpode <- list(theta=chainSamplesOut$xth[-(1:burnin), (length(data.matrix(xsim[,-
               sigma = cursigma,
               phi = curphi)
 sampleId <- dim(gpode$xsampled)[1]
+print(llikXthetaphisigma(c(gpode$xsampled[sampleId,,], gpode$theta[sampleId, ],
+                           curphi, cursigma))$value)
 gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
   with(gpode, gpds:::hes1modelODE(theta[t,], xsampled[t,,])), simplify = "array")
 gpode$fode <- aperm(gpode$fode, c(3,1,2))
@@ -251,7 +260,7 @@ names(philist) <- paste0("phi", 1:length(philist))
 configWithPhiSig <- c(configWithPhiSig, philist)
 
 gpds:::plotPostSamplesFlex(
-  paste0(outDir, config$kernel,"-",config$seed,"-",date(),"-hes1-fully-observed-trueSigma.pdf"), 
+  paste0(outDir, config$kernel,"-",config$seed,"-",date(),"-hes1-async-partial-observed-trueSigma.pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, configWithPhiSig, odemodel)
 
 absCI <- apply(gpode$theta, 2, quantile, probs = c(0.025, 0.5, 0.975))
@@ -260,12 +269,14 @@ absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$theta &  pram.true$
 
 saveRDS(absCI, paste0(
   outDir,
-  config$loglikflag,"-hes1-fully-observed-trueSigma-",config$kernel,"-",config$seed,".rds"))
+  config$loglikflag,"-hes1-async-partial-observed-trueSigma-",config$kernel,"-",config$seed,"-",date(),".rds"))
+
 save.image(paste0(
   outDir,
-  config$loglikflag,"-hes1-fully-observed-trueSigma-",config$kernel,"-",config$seed,".rda"))
+  config$loglikflag,"-hes1-async-partial-observed-trueSigma-",config$kernel,"-",config$seed,".rda"))
 
-pdf(paste0(outDir, config$kernel,"-",config$seed,"-",date(),"-hes1-fully-observed-trueSigma-addon.pdf"), 
+
+pdf(paste0(outDir, config$kernel,"-",config$seed,"-",date(),"-hes1-async-partial-observed-trueSigma-addon.pdf"), 
     width = 8, height = 8)
 layout(matrix(1:4, 2))
 matplot(xtrue$time, xtrue[,-1], type="l", lty=1, main="raw data")
