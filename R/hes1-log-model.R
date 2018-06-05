@@ -22,7 +22,8 @@ if(!exists("config")){
     startSigmaAtTruth = TRUE,
     useGPmean = TRUE,
     forseTrueMean = FALSE,
-    useGPphi1 = FALSE
+    useGPphi1 = FALSE,
+    phase2 = FALSE
   )
 }
 
@@ -304,6 +305,7 @@ for(i in 1:length(pram.true$theta)){
 dev.off()
 
 # phase 2 ----------------------------------------------------------------------
+if(config$phase2){
 muAllDim <- apply(gpode$xsampled, 2:3, mean)
 dotmuAllDim <- apply(gpode$fode, 2:3, mean) 
 
@@ -420,3 +422,4 @@ for(i in 1:length(pram.true$theta)){
 }
 
 dev.off()
+}
