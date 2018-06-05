@@ -312,3 +312,121 @@ for(i in 1:length(pram.true$theta)){
 }
 
 dev.off()
+
+# phase 2 ----------------------------------------------------------------------
+muAllDim <- apply(gpode$xsampled, 2:3, mean)
+dotmuAllDim <- apply(gpode$fode, 2:3, mean) 
+
+for(j in 1:ncol(muAllDim)){
+  curCov[[j]]$mu <- muAllDim[,j]
+  curCov[[j]]$dotmu <- dotmuAllDim[,j]
+}
+
+xInit <- muAllDim
+thetaInit <- colMeans(gpode$theta)
+stepLowInit <- chainSamplesOut$stepLow
+config$burninRatio <- 0.5
+config$phase2 <- TRUE
+
+singleSampler <- function(xthetaValues, stepSize) 
+  xthetaSample(data.matrix(xsim[,-1]), curCov, cursigma, 
+               xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
+               priorTemperature = config$priorTemperature, modelName = "Hes1-log")
+chainSamplesOut <- chainSampler(config, c(xInit, thetaInit), singleSampler, stepLowInit, verbose=TRUE)
+
+odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue, curCov=curCov)
+
+burnin <- as.integer(config$n.iter*config$burninRatio)
+gpode <- list(theta=chainSamplesOut$xth[-(1:burnin), (length(data.matrix(xsim[,-1]))+1):(ncol(chainSamplesOut$xth))],
+              xsampled=array(chainSamplesOut$xth[-(1:burnin), 1:length(data.matrix(xsim[,-1]))], 
+                             dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
+              lglik=chainSamplesOut$lliklist[-(1:burnin)],
+              sigma = cursigma,
+              phi = curphi)
+sampleId <- dim(gpode$xsampled)[1]
+gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
+  with(gpode, gpds:::hes1logmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
+gpode$fode <- aperm(gpode$fode, c(3,1,2))
+
+dotxtrue = gpds:::hes1logmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
+
+configWithPhiSig <- config
+configWithPhiSig$sigma <- paste(round(cursigma, 3), collapse = "; ")
+philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = "; "))
+names(philist) <- paste0("phi", 1:length(philist))
+configWithPhiSig <- c(configWithPhiSig, philist)
+
+gpds:::plotPostSamplesFlex(
+  paste0(outDir, config$kernel,"-",config$seed,"-",date(),"-hes1-log-async-partial-observed-trueSigma-phase2.pdf"), 
+  xtrue, dotxtrue, xsim, gpode, pram.true, configWithPhiSig, odemodel)
+
+absCI <- apply(gpode$theta, 2, quantile, probs = c(0.025, 0.5, 0.975))
+absCI <- rbind(absCI, mean=colMeans(gpode$theta))
+absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$theta &  pram.true$theta < absCI["97.5%",]))
+
+saveRDS(absCI, paste0(
+  outDir,
+  config$loglikflag,"-hes1-log-async-partial-observed-trueSigma-phase2-",config$kernel,"-",config$seed,".rds"))
+save.image(paste0(
+  outDir,
+  config$loglikflag,"-hes1-log-async-partial-observed-trueSigma-phase2-",config$kernel,"-",config$seed,".rda"))
+
+pdf(paste0(outDir, config$kernel,"-",config$seed,"-",date(),"-hes1-log-async-partial-observed-trueSigma-phase2-addon.pdf"), 
+    width = 8, height = 8)
+
+layout(matrix(1:4, 2))
+matplot(xtrue$time, exp(xtrue[,-1]), type="l", lty=1, main="raw data")
+matplot(xsim$time, exp(xsim[,-1]), type="p", pch=20, add=TRUE)
+
+npostplot=50
+id.plot <- seq(1,nrow(gpode$theta),length=npostplot)
+id.plot <- unique(as.integer(id.plot))
+
+for(j in 1:(ncol(xsim)-1)){
+  matplot(xtrue$time, cbind(exp(xtrue[,j+1]), exp(xtrue[,j+1])*dotxtrue[,j]), type="l", lty=1, col=c(2,1),
+          ylab=paste0("component-",j), main="full posterior")
+  mtext(paste("original component", c("P", "M", "H")[j]))
+  points(xsim$time, exp(xsim[,j+1]), col=2)
+  matplot(xsim$time, exp(t(gpode$xsampled[id.plot,,j])), col="skyblue",add=TRUE, type="b",lty=1, pch=20)
+  matplot(xsim$time, exp(t(gpode$xsampled[id.plot,,j]))*t(gpode$fode[id.plot,,j]), col="grey",add=TRUE, type="b",lty=1, pch=20)
+  
+  if(!is.null(odemodel) && !is.null(odemodel$curCov)){
+    lines(xsim$time, exp(odemodel$curCov[[j]]$mu), col="forestgreen", lwd=2)
+    lines(xsim$time, exp(odemodel$curCov[[j]]$mu)*odemodel$curCov[[j]]$dotmu, col="darkgreen", lwd=2)
+  }
+}
+
+layout(matrix(1:4, 2))
+matplot(xtrue$time, xtrue[,-1], type="l", lty=1, main="raw data")
+matplot(xsim$time, xsim[,-1], type="p", pch=20, add=TRUE)
+
+npostplot=50
+id.plot <- seq(1,nrow(gpode$theta),length=npostplot)
+id.plot <- unique(as.integer(id.plot))
+
+for(j in 1:(ncol(xsim)-1)){
+  matplot(xtrue$time, cbind(xtrue[,j+1], dotxtrue[,j]), type="l", lty=1, col=c(2,1),
+          ylab=paste0("component-",j), main="full posterior")
+  mtext(paste("log component", c("P", "M", "H")[j]))
+  points(xsim$time, xsim[,j+1], col=2)
+  matplot(xsim$time, t(gpode$xsampled[id.plot,,j]), col="skyblue",add=TRUE, type="b",lty=1, pch=20)
+  matplot(xsim$time, t(gpode$fode[id.plot,,j]), col="grey",add=TRUE, type="b",lty=1, pch=20)
+  
+  if(!is.null(odemodel) && !is.null(odemodel$curCov)){
+    lines(xsim$time, odemodel$curCov[[j]]$mu, col="forestgreen", lwd=2)
+    lines(xsim$time, odemodel$curCov[[j]]$dotmu, col="darkgreen", lwd=2)
+  }
+}
+
+layout(matrix(1:(2*length(pram.true$theta)),ncol=2,byrow = TRUE))
+par(mar=c(2,1,1.5,1))
+for(i in 1:length(pram.true$theta)){
+  hist(gpode$theta[,i], main=letters[i], xlab=NA, ylab=NA)
+  abline(v=pram.true$theta[i], col=2)
+  abline(v=quantile(gpode$theta[,i], c(0.025, 0.975)), col=3)  
+  plot.ts(gpode$theta[,i], main=letters[i], xlab=NA, ylab=NA)
+  abline(h=pram.true$theta[i], col=2)
+  abline(h=quantile(gpode$theta[,i], c(0.025, 0.975)), col=3)  
+}
+
+dev.off()
