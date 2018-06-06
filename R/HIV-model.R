@@ -5,14 +5,14 @@ source("R/HIV-helper-functions.R")
 #if(!exists("config")){
   config <- list(
     nobs = 11,
-    noise = rep(0.1,4),
+    noise = rep(0.5,4),
     kernel = "generalMatern",
     seed = 396033147,
     npostplot = 50,
     loglikflag = "withmeanBand",
     bandsize = 20,
     hmcSteps = 200,
-    n.iter = 100000,
+    n.iter = 40000,
     burninRatio = 0.5,
     stepSizeFactor = 0.1,
     filllevel = 1,
