@@ -29,9 +29,10 @@ if(!exists("config")){
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
 if(config$temperPrior){
   config$priorTemperature <- config$ndis / config$nobs  
+}else{
+  config$priorTemperature <- 1
 }
 # config$priorTemperature[2] <- config$priorTemperature[1]
-# config$priorTemperature <- 1
 
 # initialize global parameters, true x, simulated x ----------------------------
 if(grepl("/n/",getwd())){
