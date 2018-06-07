@@ -239,9 +239,11 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
     tx0 <- colMeans(gpode$xsampled[,1,])
     xtruePM <- deSolve::ode(y = tx0, times = odemodel$times, func = odemodel$modelODE, parms = ttheta)
     
-    xtrue.obs <- xtrue[xtrue[,"time"] %in% xsim$time,-1]
-    xtrueMAP.obs <- xtrueMAP[xtrueMAP[,"time"] %in% xsim$time,-1]
-    xtruePM.obs <- xtruePM[xtruePM[,"time"] %in% xsim$time,-1]
+    rowId <- sapply(xsim$time, function(x) which(abs(x-xtrue[,"time"]) < 1e-6))
+    xtrue.obs <- xtrue[rowId,-1]
+    rowId <- sapply(xsim$time, function(x) which(abs(x-odemodel$times) < 1e-6))
+    xtrueMAP.obs <- xtrueMAP[rowId,-1]
+    xtruePM.obs <- xtruePM[rowId,-1]
     
     xtrueSamples <- parallel::mclapply(1:16, function(dummy){
       mapId <- sample(1:length(gpode$lglik), 1)
