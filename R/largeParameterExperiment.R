@@ -2,7 +2,7 @@ library(gpds)
 
 nobs.candidates <- c(5, 11, 26, 51, 101, 201, 401)
 noise.candidates <- c(0.01, 0.1, 0.2, 0.5, 1.0, 2)
-filllevel.candidates <- 0:4
+filllevel.candidates <- 0:6
 temperPrior.candidates <- c(TRUE, FALSE)
 
 indicatorArray <- array(FALSE, dim=c(length(temperPrior.candidates), 
