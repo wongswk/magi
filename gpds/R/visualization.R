@@ -230,32 +230,34 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
   }
   xpostmean <- apply(gpode$xsampled, 2:3, mean)
   if(!is.null(odemodel)){
+    times <- sort(unique(round(c(odemodel$times, xsim$time, xtrue[,"time"]), 7)))
+    xdesolveTRUE <- deSolve::ode(y = param$x0, times = times, func = odemodel$modelODE, parms = param$theta)
+    
     mapId <- which.max(gpode$lglik)
     ttheta <- gpode$theta[mapId,]
     tx0 <- gpode$xsampled[mapId,1,]
-    xtrueMAP <- deSolve::ode(y = tx0, times = odemodel$times, func = odemodel$modelODE, parms = ttheta)
-
+    xdesolveMAP <- deSolve::ode(y = tx0, times = times, func = odemodel$modelODE, parms = ttheta)
+    
     ttheta <- colMeans(gpode$theta)
     tx0 <- colMeans(gpode$xsampled[,1,])
-    xtruePM <- deSolve::ode(y = tx0, times = odemodel$times, func = odemodel$modelODE, parms = ttheta)
+    xdesolvePM <- deSolve::ode(y = tx0, times = times, func = odemodel$modelODE, parms = ttheta)
     
-    rowId <- sapply(xsim$time, function(x) which(abs(x-xtrue[,"time"]) < 1e-6))
-    xtrue.obs <- xtrue[rowId,-1]
-    rowId <- sapply(xsim$time, function(x) which(abs(x-odemodel$times) < 1e-6))
-    xtrueMAP.obs <- xtrueMAP[rowId,-1]
-    xtruePM.obs <- xtruePM[rowId,-1]
+    rowId <- sapply(xsim$time, function(x) which(abs(x-times) < 1e-6))
+    xdesolveTRUE.obs <- xdesolveTRUE[rowId,-1]
+    xdesolveMAP.obs <- xdesolveMAP[rowId,-1]
+    xdesolvePM.obs <- xdesolvePM[rowId,-1]
     
-    xtrueSamples <- parallel::mclapply(1:16, function(dummy){
+    xdesolveSamples <- parallel::mclapply(1:16, function(dummy){
       mapId <- sample(1:length(gpode$lglik), 1)
       ttheta <- gpode$theta[mapId,]
       tx0 <- gpode$xsampled[mapId,1,]
       deSolve::ode(y = tx0, times = odemodel$times, func = odemodel$modelODE, parms = ttheta)
     }, mc.cores = 8)
     
-    rmseTrue <- sqrt(apply((xtrue.obs - xsim[,-1])^2, 2, mean, na.rm=TRUE))
+    rmseTrue <- sqrt(apply((xdesolveTRUE.obs - xsim[,-1])^2, 2, mean, na.rm=TRUE))
     rmseWholeGpode <- sqrt(apply((xpostmean - xsim[,-1])^2, 2, mean, na.rm=TRUE))
-    rmseOdeMAP <- sqrt(apply((xtrueMAP.obs - xsim[,-1])^2, 2, mean, na.rm=TRUE))
-    rmseOdePM <- sqrt(apply((xtruePM.obs - xsim[,-1])^2, 2, mean, na.rm=TRUE))
+    rmseOdeMAP <- sqrt(apply((xdesolveMAP.obs - xsim[,-1])^2, 2, mean, na.rm=TRUE))
+    rmseOdePM <- sqrt(apply((xdesolvePM.obs - xsim[,-1])^2, 2, mean, na.rm=TRUE))
     
     rmselist <- list(
       true = paste0(round(rmseTrue, 3), collapse = "; "),
@@ -286,7 +288,7 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
   id.plot <- seq(1,nrow(gpode$theta),length=npostplot)
   id.plot <- unique(as.integer(id.plot))
   id.plot <- unique(c(id.max, id.plot))
- 
+  
   for(j in 1:(ncol(xsim)-1)){
     matplot(xtrue$time, cbind(xtrue[,j+1], dotxtrue[,j]), type="l", lty=1, col=c(2,1),
             ylab=paste0("component-",j), main="full posterior")
@@ -346,11 +348,11 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
   if(!is.null(odemodel)){
     layout(1)
     matplot(odemodel$xtrue[, "time"], odemodel$xtrue[, -1], type="l", lty=1, add=FALSE, lwd=3)
-    for(xtrueSampleEach in xtrueSamples){
-      matplot(odemodel$xtrue[, "time"], xtrueSampleEach[, -1], type="l", lty=4, add=TRUE)
+    for(xdesolveSampleEach in xdesolveSamples){
+      matplot(xdesolveSampleEach[, "time"], xdesolveSampleEach[, -1], type="l", lty=4, add=TRUE)
     }
-    matplot(odemodel$xtrue[, "time"], xtrueMAP[, -1], type="l", lty=3, add=TRUE, lwd=2)
-    matplot(odemodel$xtrue[, "time"], xtruePM[, -1], type="l", lty=2, add=TRUE, lwd=2)
+    matplot(xdesolveMAP[, "time"], xdesolveMAP[, -1], type="l", lty=3, add=TRUE, lwd=2)
+    matplot(xdesolvePM[, "time"], xdesolvePM[, -1], type="l", lty=2, add=TRUE, lwd=2)
     matplot(xsim$time, xsim[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
     legend("topleft", lty=c(1,3,2), legend=c("true", "MAP", "PosteriorMean"))
   }
