@@ -16,32 +16,21 @@ shinyServer(function(input, output, session) {
     physicalSystem <- input$physicalSystem
     
     if(physicalSystem == "FitzHugh-Nagumo (FN) Model"){
-      load("data/largeExperimentSummary.rda", envir = .GlobalEnv)
-      assign("maternDf.candidates", c(2.01, 2.5), envir = .GlobalEnv)
-      assign("phaseType.candidates", c("phase1", "phase2", "trueMu", "priorTempered", "priorTemperedPhase2"), envir = .GlobalEnv)
-    }else if(physicalSystem == "Oscillatory expression of the Hes1"){
-      load("data/hes1-largeExperimentSummary.rda", envir = .GlobalEnv)
-      assign("maternDf.candidates", 2.01, envir = .GlobalEnv)
-      assign("kernel.candidates", "generalMatern", envir = .GlobalEnv)
-      assign("phaseType.candidates", c("trueMu", "priorTempered", "priorTemperedPhase2"), envir = .GlobalEnv)
-      noise.candidates <- sapply(noise.candidates, function(noi) paste(round(noi * c(4, 1, 8), 3), collapse = "_"))
-      assign("noise.candidates", noise.candidates, envir = .GlobalEnv)
-    }else if(physicalSystem == "HIV model"){
-      load("data/HIV-largeExperimentSummary.rda", envir = .GlobalEnv)
-      assign("maternDf.candidates", 2.01, envir = .GlobalEnv)
-      assign("kernel.candidates", "generalMatern", envir = .GlobalEnv)
-      assign("phaseType.candidates", c("trueMu", "priorTempered", "priorTemperedPhase2"), envir = .GlobalEnv)
+      load("data/FN-largeExperimentSummary.rda", envir = .GlobalEnv)
+      assign("temperPrior.candidates", c(TRUE, FALSE), envir = .GlobalEnv)
+      assign("phaseType.candidates", c("phase1", "phase2"), envir = .GlobalEnv)
+    }else {
+      stop("only FN system")
     }
     
     updateSelectInput(session, "nobs", choices=nobs.candidates, selected=nobs.candidates[4])
-    updateSelectInput(session, "maternDf", choices=maternDf.candidates, selected=maternDf.candidates[1])
+    updateSelectInput(session, "temperPrior", choices=temperPrior.candidates, selected=temperPrior.candidates[1])
     updateSelectInput(session, "noise", choices=noise.candidates, selected=noise.candidates[2])
-    updateSelectInput(session, "phaseType", choices=phaseType.candidates, selected="priorTemperedPhase2")
+    updateSelectInput(session, "phaseType", choices=phaseType.candidates, selected=phaseType.candidates[1])
   })
   # total performance
   performTable <- reactive({
-    
-    outTab <- organizeOutput(maternDf = input$maternDf, 
+    outTab <- organizeOutput(temperPrior = input$temperPrior, 
                              noise = input$noise, 
                              nobs = input$nobs)
     
@@ -56,6 +45,7 @@ shinyServer(function(input, output, session) {
       outEachTab
     })
     outTabCoveragePrint <- do.call(rbind, outTabCoveragePrint)
+    print("data.frame(outTabCoveragePrint)")
     data.frame(outTabCoveragePrint)
   })
   output$performTable <- DT::renderDataTable({
@@ -65,31 +55,35 @@ shinyServer(function(input, output, session) {
   
   
   repSizeTable <- reactive({
-    outTab <- organizeOutput(maternDf = input$maternDf, 
+    outTab <- organizeOutput(temperPrior = input$temperPrior, 
                              noise = input$noise, 
                              nobs = input$nobs)
     baseInfoTab <- data.frame(outTab$repetitionSize)
     
-    if(input$maternDf == 2.01){
-      kernelType = "generalMatern"
-    }else if(input$maternDf == 2.5){
-      kernelType = "matern"
-    }else{
-      stop("invalid kernel df")
-    }
-    pdfBaseLink <- "35.227.57.42/results"
+    
+    kernelType = "generalMatern"
+    
+    pdfBaseLink <- "/Users/shihaoyang/Workspace/DynamicSys/results/n/regal/kou_lab/shihaoyang/DynamicSys/results"
     if(input$physicalSystem=="FitzHugh-Nagumo (FN) Model"){
-      folderPrefix <- ""
+      folderPrefix <- "FN-"
     }else if(input$physicalSystem=="Oscillatory expression of the Hes1"){
       folderPrefix <- "hes1-"
     }else if(input$physicalSystem=="HIV model"){
       folderPrefix <- "HIV-"
     }
-    subDir <- paste0(folderPrefix, "withmeanBand-", kernelType, "-nobs", input$nobs, "-noise", input$noise)
+    subDir <- paste0(folderPrefix, 
+                     "withmeanBand-", kernelType, 
+                     "-nobs", input$nobs, 
+                     "-noise", input$noise, "_", input$noise)
     ndis <- substr(rownames(baseInfoTab), 12, nchar(rownames(baseInfoTab)))
     subDir <- paste0(subDir, "-ndis", ndis)
+    if(input$temperPrior){
+      subDir <- paste0(subDir, "-temperPrior")
+    }else{
+      subDir <- paste0(subDir, "-unitHeatPrior")
+    }
     subDir <- file.path(pdfBaseLink, subDir)
-    urls <- paste0("http://", subDir)
+    urls <- paste0("file://", subDir)
     refs <- paste0("<a href='",  urls, "' target='_blank'>pdf visualization ndis-",ndis,"</a>")
     baseInfoTab$visualizations <- refs
     baseInfoTab

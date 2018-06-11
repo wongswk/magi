@@ -6,7 +6,7 @@ files2zip <- c()
 
 for(outDir in allDirs){
   allf <- list.files(outDir)
-  allf <- head(sort(allf[grep("pdf", allf)]), 9)
+  allf <- head(sort(allf[grep("pdf", allf)]), 6)
   
   files2zip <- c(files2zip, file.path(outDir, allf))
 }
