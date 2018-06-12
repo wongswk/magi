@@ -63,7 +63,7 @@ shinyServer(function(input, output, session) {
     
     kernelType = "generalMatern"
     
-    pdfBaseLink <- "/Users/shihaoyang/Workspace/DynamicSys/results/n/regal/kou_lab/shihaoyang/DynamicSys/results"
+    pdfBaseLink <- "35.237.17.250/results/"
     if(input$physicalSystem=="FitzHugh-Nagumo (FN) Model"){
       folderPrefix <- "FN-"
     }else if(input$physicalSystem=="Oscillatory expression of the Hes1"){
@@ -83,7 +83,7 @@ shinyServer(function(input, output, session) {
       subDir <- paste0(subDir, "-unitHeatPrior")
     }
     subDir <- file.path(pdfBaseLink, subDir)
-    urls <- paste0("file://", subDir)
+    urls <- paste0("http://", subDir)
     refs <- paste0("<a href='",  urls, "' target='_blank'>pdf visualization ndis-",ndis,"</a>")
     baseInfoTab$visualizations <- refs
     baseInfoTab
