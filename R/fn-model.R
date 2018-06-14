@@ -105,16 +105,19 @@ for(j in 1:(ncol(xsim)-1)){
     marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
     penalty <- dnorm(par[2], max(xsim.obs$time)*priorFactor["meanFactor"], 
                      max(xsim.obs$time)*priorFactor["sdFactor"], log=TRUE)
+    penalty <- 0
     -(marlik$value + penalty)
   }
   gr <- function(par) {
     marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
     grad <- -as.vector(marlik$grad)
-    grad[2] <- grad[2] + (par[2] - max(xsim.obs$time)*priorFactor["meanFactor"]) / (max(xsim.obs$time)*priorFactor["sdFactor"])^2
+    penalty <- (par[2] - max(xsim.obs$time)*priorFactor["meanFactor"]) / (max(xsim.obs$time)*priorFactor["sdFactor"])^2
+    penalty <- 0
+    grad[2] <- grad[2] + penalty
     grad
   }
   testthat::expect_equal(gr(c(5,50,1))[2], (fn(c(5,50+1e-6,1)) - fn(c(5,50,1)))/1e-6, tolerance=1e-3)
-  marlikmap <- optim(rep(100, 3), fn, gr, method="L-BFGS-B", lower = 0.0001,
+  marlikmap <- optim(rep(1, 3), fn, gr, method="L-BFGS-B", lower = 0.0001,
                      upper = c(Inf, 60*4*2, Inf))
   
   cursigma[j] <- marlikmap$par[3]
