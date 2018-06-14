@@ -8,4 +8,4 @@
 #SBATCH -o /n/regal/kou_lab/shihaoyang/dynamic_sys/DynamicSystem%a.out # Standard output
 #SBATCH -e /n/regal/kou_lab/shihaoyang/dynamic_sys/DynamicSystem%a.err # Standard error
 
-Rscript R/largeParameterExperiment.R 67
+Rscript R/largeParameterExperiment.R 66

@@ -101,24 +101,32 @@ curphi <- matrix(NA, 2, ncol(xsim)-1)
 for(j in 1:(ncol(xsim)-1)){
   priorFactor <- getFrequencyBasedPrior(xsim.obs[,1+j])
   
+  desiredMode <- priorFactor["meanFactor"]
+  betaRate <- uniroot(function(betaRate) pgamma(1, 1 + desiredMode*betaRate, betaRate)-0.95,
+                      c(1e-3, 1e3))$root
+  alphaRate <- 1 + desiredMode*betaRate
+  
   fn <- function(par) {
     marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
     penalty <- dnorm(par[2], max(xsim.obs$time)*priorFactor["meanFactor"], 
                      max(xsim.obs$time)*priorFactor["sdFactor"], log=TRUE)
-    penalty <- 0
+    # penalty <- dgamma(par[2], alphaRate, betaRate/max(xsim.obs$time), log=TRUE)
+    # penalty <- 0
     -(marlik$value + penalty)
   }
   gr <- function(par) {
     marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
     grad <- -as.vector(marlik$grad)
     penalty <- (par[2] - max(xsim.obs$time)*priorFactor["meanFactor"]) / (max(xsim.obs$time)*priorFactor["sdFactor"])^2
-    penalty <- 0
+    # penalty <- ((alphaRate-1)/par[2] - betaRate/max(xsim.obs$time))
+    # penalty <- 0
     grad[2] <- grad[2] + penalty
     grad
   }
   testthat::expect_equal(gr(c(5,50,1))[2], (fn(c(5,50+1e-6,1)) - fn(c(5,50,1)))/1e-6, tolerance=1e-3)
-  marlikmap <- optim(rep(1, 3), fn, gr, method="L-BFGS-B", lower = 0.0001,
-                     upper = c(Inf, 60*4*2, Inf))
+  marlikmap <- optim(c(sd(xsim.obs[,1+j])/2, max(xsim.obs$time)/2, sd(xsim.obs[,1+j])/2), 
+                     fn, gr, method="L-BFGS-B", lower = 0.0001,
+                     upper = c(Inf, Inf, Inf))
   
   cursigma[j] <- marlikmap$par[3]
   curphi[,j] <- marlikmap$par[1:2]
