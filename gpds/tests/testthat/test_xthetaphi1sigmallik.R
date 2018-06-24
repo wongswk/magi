@@ -119,6 +119,133 @@ testthat::test_that("xthetaphi1sigmallik reduces to xthetasigmallik, even with t
 })
 
 
+testthat::test_that("xthetaphi1sigmallik derivatives, withmean useBand", {
+  xlatentTest <- data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]) * rexp(length(fn.true[,1:2]))
+  thetaTest <- pram.true$abc * rexp(length(pram.true$abc))
+  sigmaTest <- rep(pram.true$sigma * exp(rnorm(1)), 2)
+  phi1Test <- c(pram.true$vphi[1], pram.true$rphi[1]) * exp(rnorm(2))
+  
+  nophi1Cov[[1]]$mu <- curCovV$mu <- sin(1:nrow(fn.sim))
+  nophi1Cov[[1]]$dotmu <- curCovV$dotmu <- cos(1:nrow(fn.sim))
+  nophi1Cov[[2]]$mu <- curCovR$mu <- cos(1:nrow(fn.sim))
+  nophi1Cov[[2]]$dotmu <- curCovR$dotmu <- -sin(1:nrow(fn.sim))
+  
+  out <<- xthetaphi1sigmallikRcpp(xlatentTest,
+                                  thetaTest,
+                                  phi1Test,
+                                  sigmaTest,
+                                  dataInput,
+                                  nophi1Cov,
+                                  useMean = TRUE,
+                                  useBand = TRUE)
+  
+  delta <- 1e-6
+  
+  # xlatent
+  gradNum <- c()
+  for(it in 1:length(xlatentTest)){
+    xlatentTest1 <- xlatentTest
+    xlatentTest1[it] <- xlatentTest1[it] + delta
+    gradNum[it] <- 
+      (xthetaphi1sigmallikRcpp(xlatentTest1,
+                               thetaTest,
+                               phi1Test,
+                               sigmaTest,
+                               dataInput,
+                               nophi1Cov,
+                               useMean = TRUE,
+                               useBand = TRUE)$value -
+         out$value)/delta
+  }
+  x <- (gradNum - out$grad[1:length(xlatentTest)])/abs(gradNum)
+  testthat::expect_true(all(abs(x) < 5e-3)) # gradient is self-consistent
+  
+  # theta
+  gradNum <- c()
+  for(it in 1:length(thetaTest)){
+    thetaTest1 <- thetaTest
+    thetaTest1[it] <- thetaTest1[it] + delta
+    gradNum[it] <- 
+      (xthetaphi1sigmallikRcpp(xlatentTest,
+                               thetaTest1,
+                               phi1Test,
+                               sigmaTest,
+                               dataInput,
+                               nophi1Cov,
+                               useMean = TRUE,
+                               useBand = TRUE)$value -
+         out$value)/delta
+  }
+  x <- (gradNum - out$grad[(length(xlatentTest)+1):(length(xlatentTest)+length(thetaTest))])/abs(gradNum)
+  testthat::expect_true(all(abs(x) < 5e-3)) # gradient is self-consistent
+  
+  # phi1
+  gradNum <- c()
+  for(it in 1:length(phi1Test)){
+    phi1Test1 <- phi1Test
+    phi1Test1[it] <- phi1Test1[it] + delta
+    gradNum[it] <- 
+      (xthetaphi1sigmallikRcpp(xlatentTest,
+                               thetaTest,
+                               phi1Test1,
+                               sigmaTest,
+                               dataInput,
+                               nophi1Cov,
+                               useMean = TRUE,
+                               useBand = TRUE)$value -
+         out$value)/delta
+  }
+  x <- (gradNum - out$grad[(length(xlatentTest)+length(thetaTest)+1):(length(xlatentTest)+length(thetaTest)+length(phi1Test))])/abs(gradNum)
+  testthat::expect_true(all(abs(x) < 5e-3)) # gradient is self-consistent
+  
+  
+  # two seperate sigma
+  gradNum <- c()
+  for(it in 1:length(sigmaTest)){
+    sigmaTest1 <- sigmaTest
+    sigmaTest1[it] <- sigmaTest1[it] + delta
+    gradNum[it] <- 
+      (xthetaphi1sigmallikRcpp(xlatentTest,
+                               thetaTest,
+                               phi1Test,
+                               sigmaTest1,
+                               dataInput,
+                               nophi1Cov,
+                               useMean = TRUE,
+                               useBand = TRUE)$value -
+         out$value)/delta
+  }
+  x <- (gradNum - tail(out$grad, 2))/abs(gradNum)
+  testthat::expect_true(all(abs(x) < 5e-3)) # gradient is self-consistent
+  
+  # one combined sigma
+  sigmaTest1 <- sigmaTest[1]
+  sigmaTest1 <- sigmaTest1 + delta
+  out1sigma <-xthetaphi1sigmallikRcpp(xlatentTest,
+                                      thetaTest,
+                                      phi1Test,
+                                      sigmaTest[1],
+                                      dataInput,
+                                      nophi1Cov,
+                                      useMean = TRUE,
+                                      useBand = TRUE)
+  
+  gradNum <- 
+    (xthetaphi1sigmallikRcpp(xlatentTest,
+                             thetaTest,
+                             phi1Test,
+                             sigmaTest1,
+                             dataInput,
+                             nophi1Cov,
+                             useMean = TRUE,
+                             useBand = TRUE)$value -
+       out1sigma$value)/delta
+  
+  x <- (gradNum - tail(out1sigma$grad, 1))/abs(gradNum)
+  testthat::expect_true(all(abs(x) < 5e-3)) # gradient is self-consistent
+})
+
+
 testthat::test_that("xthetaphi1sigmallik derivatives", {
   xlatentTest <- data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]) * rexp(length(fn.true[,1:2]))
   thetaTest <- pram.true$abc * rexp(length(pram.true$abc))
@@ -225,6 +352,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives", {
   x <- (gradNum - tail(out1sigma$grad, 1))/abs(gradNum)
   testthat::expect_true(all(abs(x) < 5e-3)) # gradient is self-consistent
 })
+
 
 # test_that("xthetasigma sampler can run", {
 #   stepsize <- rep(0.01, length(c(xlatentTest, thetaTest, sigmaTest)))
