@@ -52,18 +52,93 @@ testthat::test_that("xthetaphi1sigmallik reduces to xthetasigmallik", {
   
   xthInit <- c(xlatentTest, thetaTest)
   
-  out3 <- xthetasigmallikRcpp(xlatentTest,
-                              thetaTest,
-                              sigmaTest,
-                              dataInput,
-                              list(curCovV, curCovR))
+  phi1Test <- c(pram.true$vphi[1], pram.true$rphi[1])
+  
+  for(useBand in c(FALSE, TRUE))
+    for(useMean in c(FALSE, TRUE))
+      realDiff <- sapply(1:4, function(dummy){ 
+        xlatentTest <- data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]) * rexp(length(fn.true[,1:2]))
+        thetaTest <- pram.true$abc * rexp(length(pram.true$abc))
+        
+        
+        if(dummy %% 2 == 0){
+          dataInput <- dataInputWithMissing
+        }else{
+          dataInput <- dataInputFullObs
+        }
+        constDiff23 <- 6.95679764561623
+        out3 <- xthetasigmallikRcpp(xlatentTest,
+                                    thetaTest,
+                                    sigmaTest,
+                                    dataInput,
+                                    list(curCovV, curCovR),
+                                    useBand = useBand,
+                                    useMean = useMean)
+        out0 <- xthetaphi1sigmallikRcpp(xlatentTest,
+                                        thetaTest,
+                                        phi1Test,
+                                        sigmaTest,
+                                        dataInput,
+                                        nophi1Cov,
+                                        useBand = useBand,
+                                        useMean = useMean)
+        expect_equal(out3$value - out0$value, constDiff23, tolerance=1e-1)
+        
+        expect_equal(out3$grad[1:length(xlatentTest)], 
+                     out0$grad[1:length(xlatentTest)],
+                     tolerance=1e-5)
+        expect_equal(out3$grad[(length(xlatentTest)+1):(length(xlatentTest)+length(thetaTest))], 
+                     out0$grad[(length(xlatentTest)+1):(length(xlatentTest)+length(thetaTest))],
+                     tolerance=1e-5)
+        expect_equal(as.numeric(tail(out3$grad, length(sigmaTest))), 
+                     as.numeric(tail(out0$grad, length(sigmaTest))))
+      })
+})
+
+testthat::test_that("xthetaphi1sigmallik compare to full xthetaphisigmallik", {
+  priorTemperature = rexp(2)
+  nophi1Cov[[1]]$mu <- curCovV$mu <- sin(1:nrow(fn.sim))
+  nophi1Cov[[1]]$dotmu <- curCovV$dotmu <- cos(1:nrow(fn.sim))
+  nophi1Cov[[2]]$mu <- curCovR$mu <- cos(1:nrow(fn.sim))
+  nophi1Cov[[2]]$dotmu <- curCovR$dotmu <- -sin(1:nrow(fn.sim))
+  
+  curCovV <- calCov(phiTest[,1], r, signr, kerneltype = "generalMatern")
+  curCovR <- calCov(phiTest[,2], r, signr, kerneltype = "generalMatern")
+  
+  
+  xlatentTest <- data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]) * rexp(length(fn.true[,1:2]))
+  thetaTest <- pram.true$abc * rexp(length(pram.true$abc))
+  
+  if(rnorm(1) > 0){
+    dataInput <- dataInputWithMissing
+    constDiff12 <- -27.12676
+  }else{
+    dataInput <- dataInputFullObs
+    constDiff12 <- -41.82729
+  }
+  
+  xthInit <- c(xlatentTest, thetaTest)
+  
+  xlatentTest <- data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]) * rexp(length(fn.true[,1:2]))
+  thetaTest <- pram.true$abc * rexp(length(pram.true$abc))
+  phi1Test <- c(pram.true$vphi[1], pram.true$rphi[1]) * exp(rnorm(2))
+  
+  xthInit <- c(xlatentTest, thetaTest)
+  
+  out3 <- xthetaphisigmallikRcpp(xlatentTest,
+                                 thetaTest,
+                                 phiTest,
+                                 sigmaTest,
+                                 dataInput,
+                                 fn.sim$time)
+  phi1Test <- phiTest[1,]
   out0 <- xthetaphi1sigmallikRcpp(xlatentTest,
                                   thetaTest,
                                   phi1Test,
                                   sigmaTest,
                                   dataInput,
                                   nophi1Cov)
-  expect_equal(out3$value / out0$value, 1, tolerance=1e-5)
+  expect_equal(out3$value - out0$value, constDiff12, tolerance=1e-2)
   expect_equal(out3$grad[1:length(xlatentTest)], 
                out0$grad[1:length(xlatentTest)],
                tolerance=1e-5)
@@ -72,50 +147,9 @@ testthat::test_that("xthetaphi1sigmallik reduces to xthetasigmallik", {
                tolerance=1e-5)
   expect_equal(as.numeric(tail(out3$grad, length(sigmaTest))), 
                as.numeric(tail(out0$grad, length(sigmaTest))))
-})
-
-testthat::test_that("xthetaphi1sigmallik reduces to xthetasigmallik, even with temperature and mean", {
-  priorTemperature = rexp(2)
-  nophi1Cov[[1]]$mu <- curCovV$mu <- sin(1:nrow(fn.sim))
-  nophi1Cov[[1]]$dotmu <- curCovV$dotmu <- cos(1:nrow(fn.sim))
-  nophi1Cov[[2]]$mu <- curCovR$mu <- cos(1:nrow(fn.sim))
-  nophi1Cov[[2]]$dotmu <- curCovR$dotmu <- -sin(1:nrow(fn.sim))
-  
-  for(useMean in c(FALSE, TRUE)){
-    for(useBand in c(FALSE, TRUE)){
-      xlatentTest <- data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]) * rexp(length(fn.true[,1:2]))
-      thetaTest <- pram.true$abc * rexp(length(pram.true$abc))
-      
-      xthInit <- c(xlatentTest, thetaTest)
-      
-      out3 <- xthetasigmallikRcpp(xlatentTest,
-                                  thetaTest,
-                                  sigmaTest,
-                                  dataInput,
-                                  list(curCovV, curCovR),
-                                  priorTemperatureInput = priorTemperature,
-                                  useBand=useBand,
-                                  useMean=useMean)
-      out0 <- xthetaphi1sigmallikRcpp(xlatentTest,
-                                      thetaTest,
-                                      phi1Test,
-                                      sigmaTest,
-                                      dataInput,
-                                      nophi1Cov,
-                                      priorTemperatureInput = priorTemperature,
-                                      useBand=useBand,
-                                      useMean=useMean)
-      expect_equal(out3$value / out0$value, 1, tolerance=1e-5)
-      expect_equal(out3$grad[1:length(xlatentTest)], 
-                   out0$grad[1:length(xlatentTest)],
-                   tolerance=1e-5)
-      expect_equal(out3$grad[(length(xlatentTest)+1):(length(xlatentTest)+length(thetaTest))], 
-                   out0$grad[(length(xlatentTest)+1):(length(xlatentTest)+length(thetaTest))],
-                   tolerance=1e-5)
-      expect_equal(as.numeric(tail(out3$grad, length(sigmaTest))), 
-                   as.numeric(tail(out0$grad, length(sigmaTest))))
-    }
-  }
+  expect_equal(out3$grad[(length(xlatentTest)+length(thetaTest)+1):(length(xlatentTest)+length(thetaTest)+length(phiTest))][c(1,3)], 
+               out0$grad[(length(xlatentTest)+length(thetaTest)+1):(length(xlatentTest)+length(thetaTest)+length(phi1Test))],
+               tolerance=1e-5)
 })
 
 

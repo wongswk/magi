@@ -142,6 +142,12 @@ lp xthetaphi1sigmallik( const mat & xlatent,
   // cout << "lglik component = \n" << res << endl;
   
   ret.value = accu(res);
+  ret.value -= xlatent.n_rows * accu(log(phi1));
+  
+  // for(unsigned int pDimEach = 0; pDimEach < yobs.n_cols; pDimEach++){
+  //   const gpcov & covThisDim = CovAllDimensions[pDimEach];
+  //   ret.value += -xlatent.n_rows*log(2.0*datum::pi) - 0.5*covThisDim.logCdet - 0.5*covThisDim.logKdet;
+  // }
   
   // cout << "lglik = " << ret.value << endl;
   
@@ -184,7 +190,7 @@ lp xthetaphi1sigmallik( const mat & xlatent,
   ret.gradient.subvec(0, n*pdimension-1) -= vectorise(fitLevelError);
   
   ret.gradient.subvec(eachDimensionC2.n_rows, eachDimensionC2.n_rows + phi1.size() - 1) = 
-    (-res.col(1) / phi1) + (-res.col(2) / phi1);
+    (-res.col(1) / phi1) + (-res.col(2) / phi1) - xlatent.n_rows / phi1;
   
   return ret;
 }
