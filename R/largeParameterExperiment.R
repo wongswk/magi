@@ -34,6 +34,7 @@ config <- list(
   useGPmean = TRUE,
   forseTrueMean = FALSE,
   phase2 = TRUE,
+  phase3 = TRUE,
   temperPrior = temperPrior.candidates[apply(indicatorArray, 1, any)]
 )
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
