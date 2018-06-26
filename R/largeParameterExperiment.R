@@ -32,11 +32,11 @@ config <- list(
   startThetaAtTruth = FALSE,
   startSigmaAtTruth = FALSE,
   useGPmean = TRUE,
-  forseTrueMean = FALSE,
+  forseTrueMean = TRUE,
   phase2 = FALSE,
   phase3 = FALSE,
   temperPrior = temperPrior.candidates[apply(indicatorArray, 1, any)],
-  max.epoch = 15,
+  max.epoch = 0,
   epoch_method = c("mean", "median", "deSolve", "f_x_bar")[4]
 )
 config$ndis <- (config$nobs-1)*2^config$filllevel+1

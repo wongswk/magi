@@ -25,7 +25,7 @@ if(!exists("config")){
     temperPrior = TRUE,
     phase3 = FALSE,
     max.epoch = 10,
-    epoch_method = c("mean", "median", "deSolve")[3]
+    epoch_method = c("mean", "median", "deSolve", "f_x_bar")[4]
   )
 }
 
@@ -397,8 +397,9 @@ if(config$phase3){
 # epoch ----------------------------------------------------------------------------------
 config$burninRatio <- 0.2
 config$n.iter <- 5000
-
-for(epoch in 4:config$max.epoch){
+epoch_sequence <- 3:config$max.epoch
+epoch_sequence <- epoch_sequence[epoch_sequence > 3]
+for(epoch in epoch_sequence){
   if(config$epoch_method == "mean"){
     muAllDim <- apply(gpode$xsampled, 2:3, mean)
     dotmuAllDim <- apply(gpode$fode, 2:3, mean) 
