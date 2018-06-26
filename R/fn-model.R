@@ -213,6 +213,15 @@ xthetasigmaInit <- c(xInit, thetaInit, sigmaInit)
 stepLowInit <- rep(0.000035, length(xthetasigmaInit))
 stepLowInit <- stepLowInit*config$stepSizeFactor
 
+if(config$forseTrueMean){
+  dotxtrue = gpds:::fnmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
+  dotxtrue.atsim <- dotxtrue[round(xtrue[,"time"],3) %in% round(xsim$time,3),]
+  xtrue.atsim <- xtrue[round(xtrue[,"time"],3) %in% round(xsim$time,3),-1]
+  for(j in 1:2){
+    curCov[[j]]$mu <- xtrue.atsim[, j]
+    curCov[[j]]$dotmu <- dotxtrue.atsim[, j]
+  }
+}
 
 # HMC sampler for x, theta, sigma ----------------------------------------------
 xId <- 1:length(xInit)
