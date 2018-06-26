@@ -304,6 +304,23 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
     }
   }
   
+  layout(1:2)
+  for(j in 1:(ncol(xsim)-1)){
+    matplot(xtrue$time, cbind(xtrue[,j+1] - approx(xsim$time, odemodel$curCov[[j]]$mu, xtrue$time)$y, 
+                              dotxtrue[,j] - approx(xsim$time, odemodel$curCov[[j]]$dotmu, xtrue$time)$y), 
+            type="l", lty=1, col=c(2,1), ylab=paste0("component-",j), main="full posterior")
+    points(xsim$time, xsim[,j+1] - odemodel$curCov[[j]]$mu, col=2)
+    matplot(xsim$time, t(gpode$xsampled[id.plot,,j]) - odemodel$curCov[[j]]$mu, col="skyblue",add=TRUE, type="p",lty=1, pch=20)
+    matplot(xsim$time, t(gpode$xsampled[id.plot,,j]) - odemodel$curCov[[j]]$mu, col="skyblue",add=TRUE, type="l",lty=1)
+    
+    matplot(xtrue$time, cbind(xtrue[,j+1] - approx(xsim$time, odemodel$curCov[[j]]$mu, xtrue$time)$y, 
+                              dotxtrue[,j] - approx(xsim$time, odemodel$curCov[[j]]$dotmu, xtrue$time)$y), 
+            type="l", lty=1, col=c(2,1), ylab=paste0("component-",j), main="full posterior")
+    matplot(xsim$time, t(gpode$fode[id.plot,,j]) - odemodel$curCov[[j]]$dotmu, col="grey",add=TRUE, type="p",lty=1, pch=20)
+    matplot(xsim$time, t(gpode$fode[id.plot,,j]) - odemodel$curCov[[j]]$dotmu, col="grey",add=TRUE, type="l",lty=1)
+    
+  }
+  
   layout(matrix(1:4,2,byrow = TRUE))
   for(i in 1:length(param$theta)){
     hist(gpode$theta[,i], main=letters[i])
@@ -333,6 +350,7 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
   hist(gpode$lglik)
   
   layout(1)
+  xpostmedian <- apply(gpode$xsampled, 2:3, median)
   for(j in 1:(ncol(xsim)-1)){
     matplot(xtrue$time, cbind(xtrue[,j+1], dotxtrue[,j]), type="l", lty=1, col=c(2,1),
             ylab=paste0("component-",j), main="maximum a posterior")
@@ -342,7 +360,8 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
     points(xsim$time, gpode$fode[id.max,,j], col="grey", pch=20)
     lines(xsim$time, gpode$fode[id.max,,j], col="grey")
     lines(xsim$time, xpostmean[,j], type="b", col="green")
-    legend("topleft", c("MAP", "Post-Mean"), col=c("skyblue", "green"), lty=1)
+    lines(xsim$time, xpostmedian[,j], type="b", col="brown")
+    legend("topleft", c("MAP", "Post-Mean", "Post-Median"), col=c("skyblue", "green", "brown"), lty=1)
   }
   
   if(!is.null(odemodel)){
