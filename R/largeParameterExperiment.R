@@ -11,7 +11,7 @@ indicatorArray <- array(FALSE, dim=c(length(temperPrior.candidates),
                                      length(filllevel.candidates) ))
 arg <- commandArgs(trailingOnly = TRUE)
 arg <- as.numeric(arg) %% length(indicatorArray) + 1
-
+arg <- 67
 indicatorArray[arg] <- TRUE
 
 config <- list(
@@ -23,16 +23,16 @@ config <- list(
   loglikflag = "withmeanBand",
   bandsize = 20,
   hmcSteps = 500,
-  n.iter = 1e4,
-  burninRatio = 0.50,
+  n.iter = 5000,
+  burninRatio = 0.20,
   stepSizeFactor = 1,
   filllevel = filllevel.candidates[apply(indicatorArray, 4, any)],
   modelName = "FN",
-  startXAtTruth = FALSE,
-  startThetaAtTruth = FALSE,
-  startSigmaAtTruth = FALSE,
+  startXAtTruth = TRUE,
+  startThetaAtTruth = TRUE,
+  startSigmaAtTruth = TRUE,
   useGPmean = TRUE,
-  forseTrueMean = FALSE,
+  forseTrueMean = TRUE,
   phase2 = FALSE,
   phase3 = FALSE,
   temperPrior = temperPrior.candidates[apply(indicatorArray, 1, any)],
