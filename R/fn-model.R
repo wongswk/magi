@@ -11,7 +11,7 @@ if(!exists("config")){
     loglikflag = "withmeanBand",
     bandsize = 20,
     hmcSteps = 500,
-    n.iter = 2e4,
+    n.iter = 1e4,
     burninRatio = 0.50,
     stepSizeFactor = 1,
     filllevel = 2,
@@ -23,7 +23,9 @@ if(!exists("config")){
     forseTrueMean = FALSE,
     phase2 = FALSE,
     temperPrior = TRUE,
-    phase3 = TRUE
+    phase3 = FALSE,
+    max.epoch = 10,
+    epoch_method = c("mean", "median", "deSolve")[3]
   )
 }
 
@@ -256,6 +258,10 @@ saveRDS(absCI, paste0(
   outDir,
   config$loglikflag,"-priorTempered-phase1-",config$kernel,"-",config$seed,".rds"))
 
+save.image(paste0(
+  outDir,
+  config$loglikflag,"-priorTempered-phase",1,"-",config$kernel,"-",config$seed,".rda"))
+
 
 # phase 2 ----------------------------------------------------------------------
 if(config$phase2){
@@ -311,6 +317,11 @@ if(config$phase2){
   saveRDS(absCI, paste0(
     outDir,
     config$loglikflag,"-priorTempered-phase2-",config$kernel,"-",config$seed,".rds"))
+  
+  save.image(paste0(
+    outDir,
+    config$loglikflag,"-priorTempered-phase",2,"-",config$kernel,"-",config$seed,".rda"))
+  
 }
 
 # phase 3 ----------------------------------------------------------------------
@@ -367,4 +378,83 @@ if(config$phase3){
   saveRDS(absCI, paste0(
     outDir,
     config$loglikflag,"-priorTempered-phase3-",config$kernel,"-",config$seed,".rds"))
+  
+  save.image(paste0(
+    outDir,
+    config$loglikflag,"-priorTempered-phase",3,"-",config$kernel,"-",config$seed,".rda"))
+  
+}
+
+# epoch ----------------------------------------------------------------------------------
+config$burninRatio <- 0.2
+config$n.iter <- 5000
+
+for(epoch in 4:config$max.epoch){
+  if(config$epoch_method == "mean"){
+    muAllDim <- apply(gpode$xsampled, 2:3, mean)
+    dotmuAllDim <- apply(gpode$fode, 2:3, mean) 
+  }else if(config$epoch_method == "median"){
+    muAllDim <- apply(gpode$xsampled, 2:3, median)
+    dotmuAllDim <- apply(gpode$fode, 2:3, median) 
+  }else if(config$epoch_method == "deSolve"){
+    thetaInit <- apply(gpode$theta, 2, mean)
+    x0Init <- apply(gpode$xsampled, 2:3, mean)[1,]
+    
+    ttheta <- colMeans(gpode$theta)
+    tx0 <- colMeans(gpode$xsampled[,1,])
+    xdesolvePM <- deSolve::ode(y = tx0, times = xsim$time, func = modelODE, parms = ttheta)
+    muAllDim <- as.matrix(xdesolvePM[,-1])
+    dotmuAllDim <- gpds:::fnmodelODE(ttheta, muAllDim)
+  }
+  
+  for(j in 1:ncol(muAllDim)){
+    curCov[[j]]$mu <- muAllDim[,j]
+    curCov[[j]]$dotmu <- dotmuAllDim[,j]
+  }
+  
+  xInit <- muAllDim
+  thetaInit <- apply(gpode$theta, 2, mean)
+  stepLowInit <- chainSamplesOut$stepLow
+  
+  xthetasigamSingleSampler <- function(xthetasigma, stepSize) 
+    xthetasigmaSample(yobs, curCov, xthetasigma[sigmaId], xthetasigma[c(xId, thetaId)], 
+                      stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
+                      priorTemperature = config$priorTemperature, modelName = config$modelName)
+  # stepLowInit[sigmaId] <- 0
+  chainSamplesOut <- chainSampler(config, xthetasigmaInit, xthetasigamSingleSampler, stepLowInit, verbose=TRUE)
+  
+  burnin <- as.integer(config$n.iter*config$burninRatio)
+  gpode <- list(theta=chainSamplesOut$xth[-(1:burnin), thetaId],
+                xsampled=array(chainSamplesOut$xth[-(1:burnin), xId], 
+                               dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
+                lglik=chainSamplesOut$lliklist[-(1:burnin)],
+                sigma = chainSamplesOut$xth[-(1:burnin), sigmaId, drop=FALSE],
+                phi = curphi)
+  gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
+    with(gpode, gpds:::fnmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
+  gpode$fode <- aperm(gpode$fode, c(3,1,2))
+  
+  dotxtrue = gpds:::fnmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
+  
+  configWithPhiSig <- config
+  philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = "; "))
+  names(philist) <- paste0("phi", 1:length(philist))
+  configWithPhiSig <- c(configWithPhiSig, philist)
+  
+  odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue, curCov=curCov)
+  
+  gpds:::plotPostSamplesFlex(
+    paste0(outDir, config$kernel,"-",config$seed,"-priorTempered-phase",epoch,".pdf"), 
+    xtrue, dotxtrue, xsim, gpode, pram.true, configWithPhiSig, odemodel)
+  
+  absCI <- apply(gpode$theta, 2, quantile, probs = c(0.025, 0.5, 0.975))
+  absCI <- rbind(absCI, mean=colMeans(gpode$theta))
+  absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$theta &  pram.true$theta < absCI["97.5%",]))
+  
+  saveRDS(absCI, paste0(
+    outDir,
+    config$loglikflag,"-priorTempered-phase",epoch,"-",config$kernel,"-",config$seed,".rds"))
+  save.image(paste0(
+    outDir,
+    config$loglikflag,"-priorTempered-phase",epoch,"-",config$kernel,"-",config$seed,".rda"))
 }

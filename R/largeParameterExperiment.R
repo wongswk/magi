@@ -23,7 +23,7 @@ config <- list(
   loglikflag = "withmeanBand",
   bandsize = 20,
   hmcSteps = 500,
-  n.iter = 2e4,
+  n.iter = 1e4,
   burninRatio = 0.50,
   stepSizeFactor = 1,
   filllevel = filllevel.candidates[apply(indicatorArray, 4, any)],
@@ -33,9 +33,11 @@ config <- list(
   startSigmaAtTruth = FALSE,
   useGPmean = TRUE,
   forseTrueMean = FALSE,
-  phase2 = TRUE,
-  phase3 = TRUE,
-  temperPrior = temperPrior.candidates[apply(indicatorArray, 1, any)]
+  phase2 = FALSE,
+  phase3 = FALSE,
+  temperPrior = temperPrior.candidates[apply(indicatorArray, 1, any)],
+  max.epoch = 15,
+  epoch_method = c("mean", "median", "deSolve")[3]
 )
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
 
