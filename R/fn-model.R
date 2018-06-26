@@ -402,6 +402,10 @@ for(epoch in 4:config$max.epoch){
   if(config$epoch_method == "mean"){
     muAllDim <- apply(gpode$xsampled, 2:3, mean)
     dotmuAllDim <- apply(gpode$fode, 2:3, mean) 
+  }else if(config$epoch_method == "f_x_bar"){
+    muAllDim <- apply(gpode$xsampled, 2:3, mean)
+    thetaInit <- apply(gpode$theta, 2, mean)
+    dotmuAllDim <- gpds:::fnmodelODE(thetaInit, muAllDim)
   }else if(config$epoch_method == "median"){
     muAllDim <- apply(gpode$xsampled, 2:3, median)
     dotmuAllDim <- apply(gpode$fode, 2:3, median) 
