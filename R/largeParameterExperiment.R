@@ -37,7 +37,7 @@ config <- list(
   phase3 = FALSE,
   temperPrior = temperPrior.candidates[apply(indicatorArray, 1, any)],
   max.epoch = 15,
-  epoch_method = c("mean", "median", "deSolve")[3]
+  epoch_method = c("mean", "median", "deSolve", "f_x_bar")[4]
 )
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
 
