@@ -302,6 +302,9 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
       lines(xsim$time, odemodel$curCov[[j]]$mu, col="forestgreen", lwd=2)
       lines(xsim$time, odemodel$curCov[[j]]$dotmu, col="darkgreen", lwd=2)
     }
+    
+    matplot(xtrue$time, cbind(xtrue[,j+1], dotxtrue[,j]), type="l", lty=1, col=c(2,1),
+            ylab=paste0("component-",j), main="full posterior", add=TRUE)
   }
   
   layout(1:2)
@@ -319,6 +322,9 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
     matplot(xsim$time, t(gpode$fode[id.plot,,j]) - odemodel$curCov[[j]]$dotmu, col="grey",add=TRUE, type="p",lty=1, pch=20)
     matplot(xsim$time, t(gpode$fode[id.plot,,j]) - odemodel$curCov[[j]]$dotmu, col="grey",add=TRUE, type="l",lty=1)
     
+    matplot(xtrue$time, cbind(xtrue[,j+1] - approx(xsim$time, odemodel$curCov[[j]]$mu, xtrue$time)$y, 
+                              dotxtrue[,j] - approx(xsim$time, odemodel$curCov[[j]]$dotmu, xtrue$time)$y), 
+            type="l", lty=1, col=c(2,1), ylab=paste0("component-",j), main="full posterior", add=TRUE)
   }
   
   layout(matrix(1:4,2,byrow = TRUE))

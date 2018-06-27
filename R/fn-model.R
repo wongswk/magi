@@ -25,7 +25,7 @@ if(!exists("config")){
     temperPrior = TRUE,
     phase3 = FALSE,
     max.epoch = 10,
-    epoch_method = c("mean", "median", "deSolve")[3]
+    epoch_method = c("mean", "median", "deSolve", "f_x_bar")[4]
   )
 }
 
@@ -228,6 +228,11 @@ xId <- 1:length(xInit)
 thetaId <- (max(xId)+1):(max(xId)+length(thetaInit))
 sigmaId <- (max(thetaId)+1):(max(thetaId)+length(sigmaInit))
 
+score_llik <- xthetasigmallikRcpp(
+  sapply(xtrueFunc, function(f) f(xsim$time)), theta = pram.true$theta, sigma = pram.true$sigma,
+  yobs=yobs, curCov, config$priorTemperature, useBand = TRUE, useMean = TRUE, modelName = config$modelName
+)
+
 xthetasigamSingleSampler <- function(xthetasigma, stepSize) 
   xthetasigmaSample(yobs, curCov, xthetasigma[sigmaId], xthetasigma[c(xId, thetaId)], 
                     stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
@@ -252,6 +257,7 @@ configWithPhiSig <- config
 philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = "; "))
 names(philist) <- paste0("phi", 1:length(philist))
 configWithPhiSig <- c(configWithPhiSig, philist)
+configWithPhiSig$score_llik <- score_llik
 
 odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue, curCov=curCov)
 
@@ -397,8 +403,9 @@ if(config$phase3){
 # epoch ----------------------------------------------------------------------------------
 config$burninRatio <- 0.2
 config$n.iter <- 5000
-
-for(epoch in 4:config$max.epoch){
+epoch_sequence <- 3:config$max.epoch
+epoch_sequence <- epoch_sequence[epoch_sequence > 3]
+for(epoch in epoch_sequence){
   if(config$epoch_method == "mean"){
     muAllDim <- apply(gpode$xsampled, 2:3, mean)
     dotmuAllDim <- apply(gpode$fode, 2:3, mean) 
