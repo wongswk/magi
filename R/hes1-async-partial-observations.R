@@ -12,7 +12,7 @@ if(!exists("config")){
     loglikflag = "withmeanBand",
     bandsize = 20,
     hmcSteps = 500,
-    n.iter = 3e4,
+    n.iter = 2e4,
     burninRatio = 0.50,
     stepSizeFactor = 1,
     filllevel = 0,
