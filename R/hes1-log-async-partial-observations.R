@@ -25,7 +25,7 @@ if(!exists("config")){
     useGPphi1 = FALSE,
     async = TRUE,
     max.epoch = 12,
-    epoch_method = c("mean", "median", "deSolve", "f_x_bar")[3],
+    epoch_method = c("mean", "median", "deSolve", "f_x_bar")[1],
     phase2 = FALSE
   )
 }
