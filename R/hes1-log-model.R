@@ -23,6 +23,8 @@ if(!exists("config")){
     useGPmean = TRUE,
     forseTrueMean = FALSE,
     useGPphi1 = FALSE,
+    max.epoch = 12,
+    epoch_method = c("mean", "median", "deSolve", "f_x_bar")[3],
     phase2 = FALSE
   )
 }
@@ -422,4 +424,84 @@ for(i in 1:length(pram.true$theta)){
 }
 
 dev.off()
+}
+
+# epoch ----------------------------------------------------------------------------------
+config$burninRatio <- 0.2
+config$n.iter <- 5000
+epoch_sequence <- 3:config$max.epoch
+epoch_sequence <- epoch_sequence[epoch_sequence > 3]
+thismodelODE <- gpds:::hes1logmodelODE
+
+for(epoch in epoch_sequence){
+  if(config$epoch_method == "mean"){
+    muAllDim <- apply(gpode$xsampled, 2:3, mean)
+    dotmuAllDim <- apply(gpode$fode, 2:3, mean) 
+  }else if(config$epoch_method == "f_x_bar"){
+    muAllDim <- apply(gpode$xsampled, 2:3, mean)
+    thetaInit <- apply(gpode$theta, 2, mean)
+    dotmuAllDim <- thismodelODE(thetaInit, muAllDim)
+  }else if(config$epoch_method == "median"){
+    muAllDim <- apply(gpode$xsampled, 2:3, median)
+    dotmuAllDim <- apply(gpode$fode, 2:3, median) 
+  }else if(config$epoch_method == "deSolve"){
+    ttheta <- colMeans(gpode$theta)
+    tx0 <- colMeans(gpode$xsampled[,1,])
+    xdesolvePM <- deSolve::ode(y = tx0, times = xsim$time, func = modelODE, parms = ttheta)
+    muAllDim <- as.matrix(xdesolvePM[,-1])
+    dotmuAllDim <- thismodelODE(ttheta, muAllDim)
+  }
+  
+  for(j in 1:ncol(muAllDim)){
+    curCov[[j]]$mu <- muAllDim[,j]
+    curCov[[j]]$dotmu <- dotmuAllDim[,j]
+  }
+  
+  xInit <- muAllDim
+  thetaInit <- apply(gpode$theta, 2, mean)
+  stepLowInit <- chainSamplesOut$stepLow
+  
+  singleSampler <- function(xthetaValues, stepSize) 
+    xthetaSample(data.matrix(xsim[,-1]), curCov, cursigma, 
+                 xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
+                 priorTemperature = config$priorTemperature, modelName = "Hes1-log")
+  chainSamplesOut <- chainSampler(config, c(xInit, thetaInit), singleSampler, stepLowInit, verbose=TRUE)
+  
+  odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue, curCov=curCov)
+  
+  burnin <- as.integer(config$n.iter*config$burninRatio)
+  gpode <- list(theta=chainSamplesOut$xth[-(1:burnin), (length(data.matrix(xsim[,-1]))+1):(ncol(chainSamplesOut$xth))],
+                xsampled=array(chainSamplesOut$xth[-(1:burnin), 1:length(data.matrix(xsim[,-1]))], 
+                               dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
+                lglik=chainSamplesOut$lliklist[-(1:burnin)],
+                sigma = cursigma,
+                phi = curphi)
+  sampleId <- dim(gpode$xsampled)[1]
+  gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
+    with(gpode, gpds:::hes1logmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
+  gpode$fode <- aperm(gpode$fode, c(3,1,2))
+  
+  dotxtrue = gpds:::hes1logmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
+  
+  configWithPhiSig <- config
+  configWithPhiSig$sigma <- paste(round(cursigma, 3), collapse = "; ")
+  philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = "; "))
+  names(philist) <- paste0("phi", 1:length(philist))
+  configWithPhiSig <- c(configWithPhiSig, philist)
+  
+  gpds:::plotPostSamplesFlex(
+    paste0(outDir, config$kernel,"-",config$seed,"-",date(),"-hes1-log-fully-observed-trueSigma-phase",epoch,".pdf"), 
+    xtrue, dotxtrue, xsim, gpode, pram.true, configWithPhiSig, odemodel)
+  
+  absCI <- apply(gpode$theta, 2, quantile, probs = c(0.025, 0.5, 0.975))
+  absCI <- rbind(absCI, mean=colMeans(gpode$theta))
+  absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$theta &  pram.true$theta < absCI["97.5%",]))
+  
+  saveRDS(absCI, paste0(
+    outDir,
+    config$loglikflag,"-hes1-log-fully-observed-trueSigma-phase",epoch,"-",config$kernel,"-",config$seed,".rds"))
+  save.image(paste0(
+    outDir,
+    config$loglikflag,"-hes1-log-fully-observed-trueSigma-phase",epoch,"-",config$kernel,"-",config$seed,".rda"))
+  
 }
