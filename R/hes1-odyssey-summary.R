@@ -13,7 +13,18 @@ ci <- sapply(allf, function(f) readRDS(file.path(outDir, f)), simplify = "array"
 label <- dimnames(ci)[[3]]
 label <- strsplit(label, "-generalMatern-")
 label <- sapply(label, function(x) x[1])
-label <- unique(label)
+
+resultSummary <- sapply(tapply(1:length(label), label, function(id) apply(ci[,,id], 1:2, mean)),
+                               identity, simplify = "array")
+sizeSummary <- table(label)
+
+label_numeric <- gsub(".*-phase([0-9]+).*", "\\1", names(sizeSummary))
+label_numeric <- as.numeric(label_numeric)
+label_numeric[is.na(label_numeric)] <- 1
+
+sizeSummary[order(label_numeric)]
+resultSummary[,,order(label_numeric)]
+
 
 output <- round(t(apply(ci, 1:2, mean)), 4)
 rownames(output) <- letters[1:7]
