@@ -24,7 +24,7 @@ if(!exists("config")){
     forseTrueMean = FALSE,
     useGPphi1 = FALSE,
     max.epoch = 12,
-    epoch_method = c("mean", "median", "deSolve", "f_x_bar")[1],
+    epoch_method = c("mean", "median", "deSolve", "f_x_bar")[4],
     phase2 = FALSE
   )
 }
