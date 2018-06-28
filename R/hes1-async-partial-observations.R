@@ -5,7 +5,7 @@ source("R/hes1-helper-functions.R")
 if(!exists("config")){
   config <- list(
     nobs = 33,
-    noise = c(0.8,0.4,1.0),
+    noise = c(0.8,0.4,1.5),
     kernel = "generalMatern",
     seed = 1365546660, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 50,
