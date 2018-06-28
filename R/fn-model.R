@@ -371,6 +371,17 @@ if(config$phase3){
   gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
     with(gpode, gpds:::fnmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
   gpode$fode <- aperm(gpode$fode, c(3,1,2))
+
+  gpode$mxode <- sapply(1:ncol(yobs), function(j) 
+    curCov[[j]]$mphi %*% (t(gpode$xsampled[,,j]) - curCov[[j]]$mu) + curCov[[j]]$dotmu, 
+    simplify = "array")
+  gpode$mxode <- aperm(gpode$mxode, c(2,1,3))
+  gpode$odeErr <- gpode$fode - gpode$mxode
+  postmeanOdeErr <- apply(gpode$odeErr, 2:3, mean)
+  matplot(postmeanOdeErr, lty=1, type="l")
+  for(j in 1:ncol(yobs))
+    plot(xsim$time, cumsum(postmeanOdeErr[,j]), lty=1, type="l")
+  matplot(gpode$odeErr[nrow(gpode$odeErr)-1,,], lty=1, type="l")
   
   dotxtrue = gpds:::fnmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
   
@@ -405,6 +416,7 @@ config$n.iter <- 5000
 epoch_sequence <- 3:config$max.epoch
 epoch_sequence <- epoch_sequence[epoch_sequence > 3]
 for(epoch in epoch_sequence){
+  config$epoch <- epoch
   if(config$epoch_method == "mean"){
     muAllDim <- apply(gpode$xsampled, 2:3, mean)
     dotmuAllDim <- apply(gpode$fode, 2:3, mean) 
@@ -477,3 +489,4 @@ for(epoch in epoch_sequence){
     outDir,
     config$loglikflag,"-priorTempered-phase",epoch,"-",config$kernel,"-",config$seed,".rda"))
 }
+
