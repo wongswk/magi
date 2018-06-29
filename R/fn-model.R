@@ -3,10 +3,10 @@ library(gpds)
 # set up configuration if not already exist ------------------------------------
 if(!exists("config")){
   config <- list(
-    nobs = 26,
-    noise = c(0.1, 0.1),
+    nobs = 201,
+    noise = c(0.5, 0.5),
     kernel = "generalMatern",
-    seed = 1365546660, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+    seed = 125455454, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 50,
     loglikflag = "withmeanBand",
     bandsize = 20,
@@ -14,7 +14,7 @@ if(!exists("config")){
     n.iter = 5000,
     burninRatio = 0.20,
     stepSizeFactor = 1,
-    filllevel = 2,
+    filllevel = 0,
     modelName = "FN",
     startXAtTruth = TRUE,
     startThetaAtTruth = TRUE,
@@ -416,6 +416,7 @@ config$n.iter <- 5000
 epoch_sequence <- 3:config$max.epoch
 epoch_sequence <- epoch_sequence[epoch_sequence > 3]
 for(epoch in epoch_sequence){
+  config$priorTemperature <- config$priorTemperature / 2
   config$epoch <- epoch
   if(config$epoch_method == "mean"){
     muAllDim <- apply(gpode$xsampled, 2:3, mean)
@@ -446,6 +447,15 @@ for(epoch in epoch_sequence){
   xInit <- muAllDim
   thetaInit <- apply(gpode$theta, 2, mean)
   stepLowInit <- chainSamplesOut$stepLow
+  
+  if(config$forseTrueMean){
+    xtrue.atsim <- sapply(xtrueFunc, function(f) f(xsim$time))
+    dotxtrue.atsim <- gpds:::fnmodelODE(pram.true$theta, xtrue.atsim)
+    for(j in 1:2){
+      curCov[[j]]$mu <- xtrue.atsim[, j]
+      curCov[[j]]$dotmu <- dotxtrue.atsim[, j]
+    }
+  }
   
   xthetasigamSingleSampler <- function(xthetasigma, stepSize) 
     xthetasigmaSample(yobs, curCov, xthetasigma[sigmaId], xthetasigma[c(xId, thetaId)], 
