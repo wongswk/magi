@@ -309,22 +309,23 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
   
   layout(1:2)
   for(j in 1:(ncol(xsim)-1)){
-    matplot(xtrue$time, cbind(xtrue[,j+1] - approx(xsim$time, odemodel$curCov[[j]]$mu, xtrue$time)$y, 
-                              dotxtrue[,j] - approx(xsim$time, odemodel$curCov[[j]]$dotmu, xtrue$time)$y), 
-            type="l", lty=1, col=c(2,1), ylab=paste0("component-",j), main="full posterior")
-    points(xsim$time, xsim[,j+1] - odemodel$curCov[[j]]$mu, col=2)
+    if(!is.null(odemodel) && !is.null(odemodel$gpsmoothFuncList) && !is.null(odemodel$gpderivFuncList)){
+      xdotxtrueMinusMu <- cbind(xtrue[,j+1] - odemodel$gpsmoothFuncList[[j]](xtrue$time), 
+                                dotxtrue[,j] - odemodel$gpderivFuncList[[j]](xtrue$time))
+    }else{
+      xdotxtrueMinusMu <- cbind(xtrue[,j+1] - approx(xsim$time, odemodel$curCov[[j]]$mu, xtrue$time)$y, 
+                                dotxtrue[,j] - approx(xsim$time, odemodel$curCov[[j]]$dotmu, xtrue$time)$y)
+    }
+    matplot(xsim$time, t(gpode$xsampled[id.plot,,j]) - odemodel$curCov[[j]]$mu, col="skyblue", type="l",lty=1,
+            ylab=paste0("component-",j), main="full posterior")
     matplot(xsim$time, t(gpode$xsampled[id.plot,,j]) - odemodel$curCov[[j]]$mu, col="skyblue",add=TRUE, type="p",lty=1, pch=20)
-    matplot(xsim$time, t(gpode$xsampled[id.plot,,j]) - odemodel$curCov[[j]]$mu, col="skyblue",add=TRUE, type="l",lty=1)
+    points(xsim$time, xsim[,j+1] - odemodel$curCov[[j]]$mu, col=2)
+    matplot(xtrue$time, xdotxtrueMinusMu, add=TRUE, type="l", lty=1, col=c(2,1))
     
-    matplot(xtrue$time, cbind(xtrue[,j+1] - approx(xsim$time, odemodel$curCov[[j]]$mu, xtrue$time)$y, 
-                              dotxtrue[,j] - approx(xsim$time, odemodel$curCov[[j]]$dotmu, xtrue$time)$y), 
-            type="l", lty=1, col=c(2,1), ylab=paste0("component-",j), main="full posterior")
+    matplot(xsim$time, t(gpode$fode[id.plot,,j]) - odemodel$curCov[[j]]$dotmu, col="grey", type="l",lty=1,
+            ylab=paste0("component-",j), main="full posterior")
     matplot(xsim$time, t(gpode$fode[id.plot,,j]) - odemodel$curCov[[j]]$dotmu, col="grey",add=TRUE, type="p",lty=1, pch=20)
-    matplot(xsim$time, t(gpode$fode[id.plot,,j]) - odemodel$curCov[[j]]$dotmu, col="grey",add=TRUE, type="l",lty=1)
-    
-    matplot(xtrue$time, cbind(xtrue[,j+1] - approx(xsim$time, odemodel$curCov[[j]]$mu, xtrue$time)$y, 
-                              dotxtrue[,j] - approx(xsim$time, odemodel$curCov[[j]]$dotmu, xtrue$time)$y), 
-            type="l", lty=1, col=c(2,1), ylab=paste0("component-",j), main="full posterior", add=TRUE)
+    matplot(xtrue$time, xdotxtrueMinusMu, add=TRUE, type="l", lty=1, col=c(2,1))
   }
   
   layout(matrix(1:4,2,byrow = TRUE))
