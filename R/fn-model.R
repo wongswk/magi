@@ -12,7 +12,7 @@ if(!exists("config")){
     bandsize = 20,
     hmcSteps = 500,
     n.iter = 5000,
-    burninRatio = 0.20,
+    burninRatio = 0.10,
     stepSizeFactor = 1,
     filllevel = 0,
     modelName = "FN",
@@ -35,6 +35,7 @@ if(config$temperPrior){
 }else{
   config$priorTemperature <- 1
 }
+config$priorTemperature <- c(1, 1e5)
 
 # initialize global parameters, true x, simulated x ----------------------------
 if(grepl("/n/",getwd())){
@@ -155,10 +156,12 @@ if(config$useGPmean){
 }
 
 gpsmoothFuncList <- list()
+gpderivFuncList <- list()
 for(j in 1:(ncol(xsim)-1)){
-  ynew <- getMeanCurve(xsim.obs$time, xsim.obs[,j+1], xsim$time, 
-                       t(curphi[,j]), t(cursigma[j]), kerneltype=config$kernel)
-  gpsmoothFuncList[[j]] <- approxfun(xsim$time, ynew)
+  ynew <- getMeanCurve(xsim.obs$time, xsim.obs[,j+1], xtrue$time, 
+                       t(curphi[,j]), t(cursigma[j]), kerneltype=config$kernel, deriv = TRUE)
+  gpsmoothFuncList[[j]] <- approxfun(xtrue$time, ynew[[1]])
+  gpderivFuncList[[j]] <- approxfun(xtrue$time, ynew[[2]])
   plot.function(gpsmoothFuncList[[j]], from = min(xsim$time), to = max(xsim$time),
                 lty = 2, col = j, add = TRUE)
 }
@@ -220,6 +223,10 @@ if(config$forseTrueMean){
     curCov[[j]]$mu <- xtrue.atsim[, j]
     curCov[[j]]$dotmu <- dotxtrue.atsim[, j]
   }
+  gpsmoothFuncList <- xtrueFunc
+  dotxtrue <- gpds:::fnmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
+  gpderivFuncList <- lapply(1:ncol(dotxtrue), function(j)
+    approxfun(xtrue[, "time"], dotxtrue[, j]))
 }
 
 # HMC sampler for x, theta, sigma ----------------------------------------------
@@ -232,11 +239,15 @@ score_llik <- xthetasigmallikRcpp(
   yobs=yobs, curCov, config$priorTemperature, useBand = TRUE, useMean = TRUE, modelName = config$modelName
 )
 
+yobs <- xtrue.atsim
+xsim[, -1] <- xtrue.atsim
+xsim.obs[, -1] <- xtrue.atsim
+
 xthetasigamSingleSampler <- function(xthetasigma, stepSize) 
   xthetasigmaSample(yobs, curCov, xthetasigma[sigmaId], xthetasigma[c(xId, thetaId)], 
                     stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
                     priorTemperature = config$priorTemperature, modelName = config$modelName)
-# stepLowInit[sigmaId] <- 0
+stepLowInit[sigmaId] <- 0
 chainSamplesOut <- chainSampler(config, xthetasigmaInit, xthetasigamSingleSampler, stepLowInit, verbose=TRUE)
 
 burnin <- as.integer(config$n.iter*config$burninRatio)
@@ -258,7 +269,8 @@ names(philist) <- paste0("phi", 1:length(philist))
 configWithPhiSig <- c(configWithPhiSig, philist)
 configWithPhiSig$score_llik <- score_llik$value
 
-odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue, curCov=curCov)
+odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue, curCov=curCov, 
+                 gpsmoothFuncList=gpsmoothFuncList, gpderivFuncList=gpderivFuncList)
 
 gpds:::plotPostSamplesFlex(
   paste0(outDir, config$kernel,"-",config$seed,"-priorTempered-phase1.pdf"), 
@@ -318,7 +330,8 @@ if(config$phase2){
   names(philist) <- paste0("phi", 1:length(philist))
   configWithPhiSig <- c(configWithPhiSig, philist)
   
-  odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue, curCov=curCov)
+  odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue, curCov=curCov, 
+                   gpsmoothFuncList=gpsmoothFuncList, gpderivFuncList=gpderivFuncList)
   
   gpds:::plotPostSamplesFlex(
     paste0(outDir, config$kernel,"-",config$seed,"-priorTempered-phase2.pdf"), 
@@ -377,6 +390,8 @@ if(config$phase3){
     simplify = "array")
   gpode$mxode <- aperm(gpode$mxode, c(2,1,3))
   gpode$odeErr <- gpode$fode - gpode$mxode
+  matplot(apply(gpode$fode, 2:3, mean), type="l")
+  matplot(apply(gpode$mxode, 2:3, mean), type="l", add=TRUE, col=3:4)
   postmeanOdeErr <- apply(gpode$odeErr, 2:3, mean)
   matplot(postmeanOdeErr, lty=1, type="l")
   for(j in 1:ncol(yobs))
