@@ -145,6 +145,64 @@ curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
   covEach
 })
 
+get_other_cov <- function(kernel){
+  config$kernel <- kernel
+  
+  cursigma <- rep(NA, ncol(xsim)-1)
+  curphi <- matrix(NA, 2, ncol(xsim)-1)
+  
+  for(j in 1:(ncol(xsim)-1)){
+    priorFactor <- getFrequencyBasedPrior(xsim.obs[,1+j])
+    
+    desiredMode <- priorFactor["meanFactor"]
+    betaRate <- uniroot(function(betaRate) pgamma(1, 1 + desiredMode*betaRate, betaRate)-0.95,
+                        c(1e-3, 1e3))$root
+    alphaRate <- 1 + desiredMode*betaRate
+    
+    fn <- function(par) {
+      marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
+      penalty <- dnorm(par[2], max(xsim.obs$time)*priorFactor["meanFactor"], 
+                       max(xsim.obs$time)*priorFactor["sdFactor"], log=TRUE)
+      # penalty <- dgamma(par[2], alphaRate, betaRate/max(xsim.obs$time), log=TRUE)
+      # penalty <- 0
+      -(marlik$value + penalty)
+    }
+    gr <- function(par) {
+      marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
+      grad <- -as.vector(marlik$grad)
+      penalty <- (par[2] - max(xsim.obs$time)*priorFactor["meanFactor"]) / (max(xsim.obs$time)*priorFactor["sdFactor"])^2
+      # penalty <- ((alphaRate-1)/par[2] - betaRate/max(xsim.obs$time))
+      # penalty <- 0
+      grad[2] <- grad[2] + penalty
+      grad
+    }
+    testthat::expect_equal(gr(c(5,50,1))[2], (fn(c(5,50+1e-6,1)) - fn(c(5,50,1)))/1e-6, tolerance=1e-3)
+    marlikmap <- optim(c(sd(xsim.obs[,1+j])/2, max(xsim.obs$time)/2, sd(xsim.obs[,1+j])/2), 
+                       fn, gr, method="L-BFGS-B", lower = 0.0001,
+                       upper = c(Inf, Inf, Inf))
+    
+    cursigma[j] <- marlikmap$par[3]
+    curphi[,j] <- marlikmap$par[1:2]
+  }
+  
+  curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
+    covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize, 
+                      kerneltype=config$kernel)
+    # covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize,
+    #                   kerneltype=config$kernel, noiseInjection = 0.008 * (j==1) + 0.0001 * (j==2))
+    covEach$mu[] <- mean(xsim.obs[,j+1])
+    covEach
+  })
+  curCov
+}
+
+otherCov <- get_other_cov("rbf")
+for(j in 1:(ncol(xsim)-1)){
+  curCov[[j]]$mphi <- otherCov[[j]]$mphi
+  curCov[[j]]$mphiBand <- otherCov[[j]]$mphiBand
+  curCov[[j]]$mphiLeftHalf <- otherCov[[j]]$mphiLeftHalf
+}
+
 if(config$useGPmean){
   for(j in 1:(ncol(xsim)-1)){
     ydy <- getMeanCurve(xsim.obs$time, xsim.obs[,j+1], xsim$time, 
@@ -288,230 +346,7 @@ save.image(paste0(
   outDir,
   config$loglikflag,"-priorTempered-phase",1,"-",config$kernel,"-",config$seed,".rda"))
 
-
-# phase 2 ----------------------------------------------------------------------
-if(config$phase2){
-  muAllDim <- apply(gpode$xsampled, 2:3, mean)
-  dotmuAllDim <- apply(gpode$fode, 2:3, mean) 
-  
-  for(j in 1:ncol(muAllDim)){
-    curCov[[j]]$mu <- muAllDim[,j]
-    curCov[[j]]$dotmu <- dotmuAllDim[,j]
-  }
-  
-  xInit <- muAllDim
-  thetaInit <- colMeans(gpode$theta)
-  stepLowInit <- chainSamplesOut$stepLow
-  config$burninRatio <- 0.5
-  config$phase2 <- TRUE
-  
-  xthetasigamSingleSampler <- function(xthetasigma, stepSize) 
-    xthetasigmaSample(yobs, curCov, xthetasigma[sigmaId], xthetasigma[c(xId, thetaId)], 
-                      stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
-                      priorTemperature = config$priorTemperature, modelName = config$modelName)
-  # stepLowInit[sigmaId] <- 0
-  chainSamplesOut <- chainSampler(config, xthetasigmaInit, xthetasigamSingleSampler, stepLowInit, verbose=TRUE)
-  
-  burnin <- as.integer(config$n.iter*config$burninRatio)
-  gpode <- list(theta=chainSamplesOut$xth[-(1:burnin), thetaId],
-                xsampled=array(chainSamplesOut$xth[-(1:burnin), xId], 
-                               dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
-                lglik=chainSamplesOut$lliklist[-(1:burnin)],
-                sigma = chainSamplesOut$xth[-(1:burnin), sigmaId, drop=FALSE],
-                phi = curphi)
-  gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
-    with(gpode, gpds:::fnmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
-  gpode$fode <- aperm(gpode$fode, c(3,1,2))
-  
-  dotxtrue = gpds:::fnmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
-  
-  configWithPhiSig <- config
-  philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = "; "))
-  names(philist) <- paste0("phi", 1:length(philist))
-  configWithPhiSig <- c(configWithPhiSig, philist)
-  
-  odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue, curCov=curCov, 
-                   gpsmoothFuncList=gpsmoothFuncList, gpderivFuncList=gpderivFuncList)
-  
-  gpds:::plotPostSamplesFlex(
-    paste0(outDir, config$kernel,"-",config$seed,"-priorTempered-phase2.pdf"), 
-    xtrue, dotxtrue, xsim, gpode, pram.true, configWithPhiSig, odemodel)
-  
-  absCI <- apply(gpode$theta, 2, quantile, probs = c(0.025, 0.5, 0.975))
-  absCI <- rbind(absCI, mean=colMeans(gpode$theta))
-  absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$theta &  pram.true$theta < absCI["97.5%",]))
-  
-  saveRDS(absCI, paste0(
-    outDir,
-    config$loglikflag,"-priorTempered-phase2-",config$kernel,"-",config$seed,".rds"))
-  
-  save.image(paste0(
-    outDir,
-    config$loglikflag,"-priorTempered-phase",2,"-",config$kernel,"-",config$seed,".rda"))
-  
-}
-
-# phase 3 ----------------------------------------------------------------------
-if(config$phase3){
-  muAllDim <- apply(gpode$xsampled, 2:3, mean)
-  dotmuAllDim <- apply(gpode$fode, 2:3, mean) 
-  
-  for(j in 1:ncol(muAllDim)){
-    curCov[[j]]$mu <- muAllDim[,j]
-    curCov[[j]]$dotmu <- dotmuAllDim[,j]
-  }
-  
-  xInit <- muAllDim
-  thetaInit <- colMeans(gpode$theta)
-  stepLowInit <- chainSamplesOut$stepLow
-  config$burninRatio <- 0.5
-  config$phase3 <- TRUE
-  
-  xthetasigamSingleSampler <- function(xthetasigma, stepSize) 
-    xthetasigmaSample(yobs, curCov, xthetasigma[sigmaId], xthetasigma[c(xId, thetaId)], 
-                      stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
-                      priorTemperature = config$priorTemperature, modelName = config$modelName)
-  # stepLowInit[sigmaId] <- 0
-  chainSamplesOut <- chainSampler(config, xthetasigmaInit, xthetasigamSingleSampler, stepLowInit, verbose=TRUE)
-  
-  burnin <- as.integer(config$n.iter*config$burninRatio)
-  gpode <- list(theta=chainSamplesOut$xth[-(1:burnin), thetaId],
-                xsampled=array(chainSamplesOut$xth[-(1:burnin), xId], 
-                               dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
-                lglik=chainSamplesOut$lliklist[-(1:burnin)],
-                sigma = chainSamplesOut$xth[-(1:burnin), sigmaId, drop=FALSE],
-                phi = curphi)
-  gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
-    with(gpode, gpds:::fnmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
-  gpode$fode <- aperm(gpode$fode, c(3,1,2))
-
-  gpode$mxode <- sapply(1:ncol(yobs), function(j) 
-    curCov[[j]]$mphi %*% (t(gpode$xsampled[,,j]) - curCov[[j]]$mu) + curCov[[j]]$dotmu, 
-    simplify = "array")
-  gpode$mxode <- aperm(gpode$mxode, c(2,1,3))
-  gpode$odeErr <- gpode$fode - gpode$mxode
-  matplot(apply(gpode$fode, 2:3, mean), type="l")
-  matplot(apply(gpode$mxode, 2:3, mean), type="l", add=TRUE, col=3:4)
-  postmeanOdeErr <- apply(gpode$odeErr, 2:3, mean)
-  matplot(postmeanOdeErr, lty=1, type="l")
-  for(j in 1:ncol(yobs))
-    plot(xsim$time, cumsum(postmeanOdeErr[,j]), lty=1, type="l")
-  matplot(gpode$odeErr[nrow(gpode$odeErr)-1,,], lty=1, type="l")
-  
-  dotxtrue = gpds:::fnmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
-  
-  configWithPhiSig <- config
-  philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = "; "))
-  names(philist) <- paste0("phi", 1:length(philist))
-  configWithPhiSig <- c(configWithPhiSig, philist)
-  
-  odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue, curCov=curCov)
-  
-  gpds:::plotPostSamplesFlex(
-    paste0(outDir, config$kernel,"-",config$seed,"-priorTempered-phase3.pdf"), 
-    xtrue, dotxtrue, xsim, gpode, pram.true, configWithPhiSig, odemodel)
-  
-  absCI <- apply(gpode$theta, 2, quantile, probs = c(0.025, 0.5, 0.975))
-  absCI <- rbind(absCI, mean=colMeans(gpode$theta))
-  absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$theta &  pram.true$theta < absCI["97.5%",]))
-  
-  saveRDS(absCI, paste0(
-    outDir,
-    config$loglikflag,"-priorTempered-phase3-",config$kernel,"-",config$seed,".rds"))
-  
-  save.image(paste0(
-    outDir,
-    config$loglikflag,"-priorTempered-phase",3,"-",config$kernel,"-",config$seed,".rda"))
-  
-}
-
-# epoch ----------------------------------------------------------------------------------
-config$burninRatio <- 0.2
-config$n.iter <- 5000
-epoch_sequence <- 3:config$max.epoch
-epoch_sequence <- epoch_sequence[epoch_sequence > 3]
-for(epoch in epoch_sequence){
-  config$priorTemperature <- config$priorTemperature / 2
-  config$epoch <- epoch
-  if(config$epoch_method == "mean"){
-    muAllDim <- apply(gpode$xsampled, 2:3, mean)
-    dotmuAllDim <- apply(gpode$fode, 2:3, mean) 
-  }else if(config$epoch_method == "f_x_bar"){
-    muAllDim <- apply(gpode$xsampled, 2:3, mean)
-    thetaInit <- apply(gpode$theta, 2, mean)
-    dotmuAllDim <- gpds:::fnmodelODE(thetaInit, muAllDim)
-  }else if(config$epoch_method == "median"){
-    muAllDim <- apply(gpode$xsampled, 2:3, median)
-    dotmuAllDim <- apply(gpode$fode, 2:3, median) 
-  }else if(config$epoch_method == "deSolve"){
-    thetaInit <- apply(gpode$theta, 2, mean)
-    x0Init <- apply(gpode$xsampled, 2:3, mean)[1,]
-    
-    ttheta <- colMeans(gpode$theta)
-    tx0 <- colMeans(gpode$xsampled[,1,])
-    xdesolvePM <- deSolve::ode(y = tx0, times = xsim$time, func = modelODE, parms = ttheta)
-    muAllDim <- as.matrix(xdesolvePM[,-1])
-    dotmuAllDim <- gpds:::fnmodelODE(ttheta, muAllDim)
-  }
-  
-  for(j in 1:ncol(muAllDim)){
-    curCov[[j]]$mu <- muAllDim[,j]
-    curCov[[j]]$dotmu <- dotmuAllDim[,j]
-  }
-  
-  xInit <- muAllDim
-  thetaInit <- apply(gpode$theta, 2, mean)
-  stepLowInit <- chainSamplesOut$stepLow
-  
-  if(config$forseTrueMean){
-    xtrue.atsim <- sapply(xtrueFunc, function(f) f(xsim$time))
-    dotxtrue.atsim <- gpds:::fnmodelODE(pram.true$theta, xtrue.atsim)
-    for(j in 1:2){
-      curCov[[j]]$mu <- xtrue.atsim[, j]
-      curCov[[j]]$dotmu <- dotxtrue.atsim[, j]
-    }
-  }
-  
-  xthetasigamSingleSampler <- function(xthetasigma, stepSize) 
-    xthetasigmaSample(yobs, curCov, xthetasigma[sigmaId], xthetasigma[c(xId, thetaId)], 
-                      stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
-                      priorTemperature = config$priorTemperature, modelName = config$modelName)
-  # stepLowInit[sigmaId] <- 0
-  chainSamplesOut <- chainSampler(config, xthetasigmaInit, xthetasigamSingleSampler, stepLowInit, verbose=TRUE)
-  
-  burnin <- as.integer(config$n.iter*config$burninRatio)
-  gpode <- list(theta=chainSamplesOut$xth[-(1:burnin), thetaId],
-                xsampled=array(chainSamplesOut$xth[-(1:burnin), xId], 
-                               dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
-                lglik=chainSamplesOut$lliklist[-(1:burnin)],
-                sigma = chainSamplesOut$xth[-(1:burnin), sigmaId, drop=FALSE],
-                phi = curphi)
-  gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
-    with(gpode, gpds:::fnmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
-  gpode$fode <- aperm(gpode$fode, c(3,1,2))
-  
-  dotxtrue = gpds:::fnmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
-  
-  configWithPhiSig <- config
-  philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = "; "))
-  names(philist) <- paste0("phi", 1:length(philist))
-  configWithPhiSig <- c(configWithPhiSig, philist)
-  
-  odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue, curCov=curCov)
-  
-  gpds:::plotPostSamplesFlex(
-    paste0(outDir, config$kernel,"-",config$seed,"-priorTempered-phase",epoch,".pdf"), 
-    xtrue, dotxtrue, xsim, gpode, pram.true, configWithPhiSig, odemodel)
-  
-  absCI <- apply(gpode$theta, 2, quantile, probs = c(0.025, 0.5, 0.975))
-  absCI <- rbind(absCI, mean=colMeans(gpode$theta))
-  absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$theta &  pram.true$theta < absCI["97.5%",]))
-  
-  saveRDS(absCI, paste0(
-    outDir,
-    config$loglikflag,"-priorTempered-phase",epoch,"-",config$kernel,"-",config$seed,".rds"))
-  save.image(paste0(
-    outDir,
-    config$loglikflag,"-priorTempered-phase",epoch,"-",config$kernel,"-",config$seed,".rda"))
-}
-
+stopifnot(sum(abs(curCov[[1]]$Kphi)) == sum(abs(diag(curCov[[1]]$Kphi))))
+stopifnot(sum(abs(curCov[[1]]$Kinv)) == sum(abs(diag(curCov[[1]]$Kinv))))
+stopifnot(sum(abs(curCov[[2]]$Kphi)) == sum(abs(diag(curCov[[2]]$Kphi))))
+stopifnot(sum(abs(curCov[[2]]$Kinv)) == sum(abs(diag(curCov[[2]]$Kinv))))
