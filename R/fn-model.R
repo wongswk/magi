@@ -171,6 +171,14 @@ get_other_cov <- function(kernel){
       curCovNew[[j]]$mphiLeftHalf <- NULL
     }
     return(curCovNew)
+  }else if(kernel=="zero"){
+    curCovNew <- curCov
+    for(j in 1:length(curCovNew)){
+      curCovNew[[j]]$mphi[] <- 0
+      curCovNew[[j]]$mphiBand[] <- 0
+      curCovNew[[j]]$mphiLeftHalf[] <- 0
+    }
+    return(curCovNew)
   }
   config$kernel <- kernel
   
