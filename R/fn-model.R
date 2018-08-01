@@ -147,6 +147,31 @@ curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
 })
 
 get_other_cov <- function(kernel){
+  if(kernel=="finiteDifference"){
+    diffMat <- matrix(0, nrow=nrow(xsim), ncol=nrow(xsim))
+    for(i in 1:nrow(xsim)){
+      if(i==1){
+        diffMat[i,1] <- -1
+        diffMat[i,2] <- 1
+        diffMat[i,] <- diffMat[i,] / (xsim$time[2] - xsim$time[1])
+      }else if(i==nrow(xsim)){
+        diffMat[i,nrow(xsim)] <- 1
+        diffMat[i,nrow(xsim)-1] <- -1
+        diffMat[i,] <- diffMat[i,] / (xsim$time[nrow(xsim)] - xsim$time[nrow(xsim)-1])
+      }else{
+        diffMat[i,i-1] <- -1
+        diffMat[i,i+1] <- 1
+        diffMat[i,] <- diffMat[i,] / (xsim$time[i+1] - xsim$time[i-1])
+      }
+    }
+    curCovNew <- curCov
+    for(j in 1:length(curCovNew)){
+      curCovNew[[j]]$mphi <- diffMat
+      curCovNew[[j]]$mphiBand <- mat2band(diffMat, curCovNew[[j]]$bandsize)
+      curCovNew[[j]]$mphiLeftHalf <- NULL
+    }
+    return(curCovNew)
+  }
   config$kernel <- kernel
   
   cursigma <- rep(NA, ncol(xsim)-1)
@@ -364,3 +389,17 @@ absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$theta &  pram.true$
 saveRDS(absCI, paste0(filename,"_",config$seed,".rds"))
 
 save.image(paste0(filename,"_",config$seed,".rda"))
+
+# mphi-issue explained ------------------------------------------------------------
+pdf(paste0(filename,"_",config$seed,"-mphi-bias-visualized.pdf"))
+layout(1:2)
+for(j in 1:length(curCov)){
+  plot(xsim$time, dotxtrue.atsim[,j], type="l")
+  lines(xsim$time, curCov[[j]]$mphi %*% xtrue.atsim[,j], col=2)
+  legend("top", c("dotX true", "M %*% xtrue"), lty=1, col=c(1,2))
+  title(paste("component", j))
+  plot(xsim$time, curCov[[j]]$mphi %*% xtrue.atsim[,j] - dotxtrue.atsim[,j], type="l")
+  title("difference")
+}
+dev.off()
+
