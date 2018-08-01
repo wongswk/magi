@@ -6,12 +6,17 @@ if(!exists("config")){
     nobs = 201,
     noise = c(0.5, 0.5),
     kernel = "generalMatern",
+    mphiType = "generalMatern",
+    forceDiagKphi = TRUE,
+    forseTrueMean = TRUE,
+    forsePhase8Mean = FALSE,
+    priorTemperature = c(1, 1e5),
     seed = 125455454, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 50,
     loglikflag = "withmeanBand",
     bandsize = 20,
     hmcSteps = 500,
-    n.iter = 5000,
+    n.iter = 2500,
     burninRatio = 0.10,
     stepSizeFactor = 1,
     filllevel = 0,
@@ -20,7 +25,6 @@ if(!exists("config")){
     startThetaAtTruth = TRUE,
     startSigmaAtTruth = TRUE,
     useGPmean = TRUE,
-    forseTrueMean = TRUE,
     phase2 = FALSE,
     temperPrior = TRUE,
     phase3 = FALSE,
@@ -30,13 +34,10 @@ if(!exists("config")){
 }
 
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
-if(config$temperPrior){
-  config$priorTemperature <- config$ndis / config$nobs  
-}else{
-  config$priorTemperature <- 1
-}
-config$priorTemperature <- c(1, 1e5)
 
+if(config$forsePhase8Mean && config$forseTrueMean){
+  stop("both forsePhase8Mean and forseTrueMean are TRUE")
+}
 # initialize global parameters, true x, simulated x ----------------------------
 if(grepl("/n/",getwd())){
   baseDir <- "/n/regal/kou_lab/shihaoyang/DynamicSys/results/" # tmp folder on cluster 
@@ -140,7 +141,7 @@ curphi
 
 curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
   covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize, 
-                    kerneltype=config$kernel)
+                    kerneltype=config$kernel, forceDiagKphi=config$forceDiagKphi)
   covEach$mu[] <- mean(xsim.obs[,j+1])
   covEach
 })
@@ -196,7 +197,7 @@ get_other_cov <- function(kernel){
   curCov
 }
 
-otherCov <- get_other_cov("rbf")
+otherCov <- get_other_cov(config$mphiType)
 for(j in 1:(ncol(xsim)-1)){
   curCov[[j]]$mphi <- otherCov[[j]]$mphi
   curCov[[j]]$mphiBand <- otherCov[[j]]$mphiBand
@@ -274,9 +275,9 @@ xthetasigmaInit <- c(xInit, thetaInit, sigmaInit)
 stepLowInit <- rep(0.000035, length(xthetasigmaInit))
 stepLowInit <- stepLowInit*config$stepSizeFactor
 
+xtrue.atsim <- sapply(xtrueFunc, function(f) f(xsim$time))
+dotxtrue.atsim <- gpds:::fnmodelODE(pram.true$theta, xtrue.atsim)
 if(config$forseTrueMean){
-  xtrue.atsim <- sapply(xtrueFunc, function(f) f(xsim$time))
-  dotxtrue.atsim <- gpds:::fnmodelODE(pram.true$theta, xtrue.atsim)
   for(j in 1:2){
     curCov[[j]]$mu <- xtrue.atsim[, j]
     curCov[[j]]$dotmu <- dotxtrue.atsim[, j]
@@ -285,6 +286,21 @@ if(config$forseTrueMean){
   dotxtrue <- gpds:::fnmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
   gpderivFuncList <- lapply(1:ncol(dotxtrue), function(j)
     approxfun(xtrue[, "time"], dotxtrue[, j]))
+}
+
+if(config$forsePhase8Mean){
+  phase8 <- readRDS("/Users/shihaoyang/Workspace/DynamicSys/results/batch-output/FN-withmeanBand-generalMatern-nobs201-noise0.5_0.5-ndis201-temperPrior/phase8-mu.rds")
+  curCov[[1]]$mu = phase8[[1]]$mu
+  curCov[[1]]$dotmu = phase8[[1]]$dotmu
+  curCov[[2]]$mu = phase8[[2]]$mu
+  curCov[[2]]$dotmu = phase8[[2]]$dotmu
+}
+
+if(config$forceDiagKphi){
+  stopifnot(sum(abs(curCov[[1]]$Kphi)) == sum(abs(diag(curCov[[1]]$Kphi))))
+  stopifnot(sum(abs(curCov[[1]]$Kinv)) == sum(abs(diag(curCov[[1]]$Kinv))))
+  stopifnot(sum(abs(curCov[[2]]$Kphi)) == sum(abs(diag(curCov[[2]]$Kphi))))
+  stopifnot(sum(abs(curCov[[2]]$Kinv)) == sum(abs(diag(curCov[[2]]$Kinv))))
 }
 
 # HMC sampler for x, theta, sigma ----------------------------------------------
@@ -330,23 +346,21 @@ configWithPhiSig$score_llik <- score_llik$value
 odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue, curCov=curCov, 
                  gpsmoothFuncList=gpsmoothFuncList, gpderivFuncList=gpderivFuncList)
 
+filename <- paste0(outDir, 
+                   "mphi-",config$mphiType,"_",
+                   "diagKphi",config$forceDiagKphi,"_",
+                   "trueMean",config$forseTrueMean,"_",
+                   "phase8Mean",config$forsePhase8Mean,"_",
+                   "temperature-xCx-",config$priorTemperature[2])
+
 gpds:::plotPostSamplesFlex(
-  paste0(outDir, config$kernel,"-",config$seed,"-priorTempered-phase1.pdf"), 
+  paste0(filename,"_",config$seed,".pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, configWithPhiSig, odemodel)
 
 absCI <- apply(gpode$theta, 2, quantile, probs = c(0.025, 0.5, 0.975))
 absCI <- rbind(absCI, mean=colMeans(gpode$theta))
 absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$theta &  pram.true$theta < absCI["97.5%",]))
 
-saveRDS(absCI, paste0(
-  outDir,
-  config$loglikflag,"-priorTempered-phase1-",config$kernel,"-",config$seed,".rds"))
+saveRDS(absCI, paste0(filename,"_",config$seed,".rds"))
 
-save.image(paste0(
-  outDir,
-  config$loglikflag,"-priorTempered-phase",1,"-",config$kernel,"-",config$seed,".rda"))
-
-stopifnot(sum(abs(curCov[[1]]$Kphi)) == sum(abs(diag(curCov[[1]]$Kphi))))
-stopifnot(sum(abs(curCov[[1]]$Kinv)) == sum(abs(diag(curCov[[1]]$Kinv))))
-stopifnot(sum(abs(curCov[[2]]$Kphi)) == sum(abs(diag(curCov[[2]]$Kphi))))
-stopifnot(sum(abs(curCov[[2]]$Kinv)) == sum(abs(diag(curCov[[2]]$Kinv))))
+save.image(paste0(filename,"_",config$seed,".rda"))

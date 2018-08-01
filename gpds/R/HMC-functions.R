@@ -5,7 +5,7 @@
 #' 
 #' @export
 calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerneltype="matern",
-                   noiseInjection = 1e-7) {
+                   noiseInjection = 1e-7, forceDiagKphi = FALSE) {
   if(kerneltype=="matern"){
     ret <- calCovMatern(phi, rInput, signrInput, complexity)
   }else if(kerneltype=="rbf"){
@@ -43,7 +43,9 @@ calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerne
     mphi <-  Cprime %*% Cinv
     Kright <- sqrt(Ceigen1over) * t(CeigenVec) %*% t(Cprime)
     Kphi <- Cdoubleprime - t(Kright)%*%Kright  + noiseInjection * diag( nrow(rInput))
-    Kphi <- mean(diag(Kphi)) * diag(nrow(Kphi))
+    if(forceDiagKphi){
+      Kphi <- mean(diag(Kphi)) * diag(nrow(Kphi))  
+    }
     Kdecomp <- eigen(Kphi)
     Keigen1over <- 1/Kdecomp$values
     KeigenVec <- Kdecomp$vectors
