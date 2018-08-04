@@ -38,8 +38,10 @@ model {
       m_vtrue[i] = (vtrue[N] - vtrue[N-1]) / (time[N] - time[N-1]);
       m_rtrue[i] = (rtrue[N] - rtrue[N-1]) / (time[N] - time[N-1]);
     }else{
-      m_vtrue[i] = (vtrue[i+1] - vtrue[i-1]) / (time[i+1] - time[i-1]);
-      m_rtrue[i] = (rtrue[i+1] - rtrue[i-1]) / (time[i+1] - time[i-1]);
+      // m_vtrue[i] = (vtrue[i+1] - vtrue[i-1]) / (time[i+1] - time[i-1]);
+      // m_rtrue[i] = (rtrue[i+1] - rtrue[i-1]) / (time[i+1] - time[i-1]);
+      m_vtrue[i] = (vtrue[i+1] - vtrue[i]) / (time[i+1] - time[i]);
+      m_rtrue[i] = (rtrue[i+1] - rtrue[i]) / (time[i+1] - time[i]);
     }
   }
   
