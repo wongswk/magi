@@ -176,10 +176,12 @@ save.image(paste0(filename, "-stan.rda"))
 # likelihood move away from mode ------------------------------------------------
 gpsmooth <- stan(file="stan/m-finiteDifference.stan",
                  data=list(
-                   N=nrow(xsim),
+                   n_discret=nrow(xsim),
+                   n_obs=nrow(xsim),
                    vobs=xsim$X1,
                    robs=xsim$X2,
                    time=xsim$time,
+                   obs_index=1:nrow(xsim),
                    sigma_obs=stanConfig$sigma_obs,
                    sigma_xdot=stanConfig$sigma_xdot
                  ),
