@@ -3,19 +3,24 @@ library(rstan)
 options(mc.cores = parallel::detectCores())
 
 # simulation set up ------------------------------------------------------------
-config <- list(
-  nobs = 201,
-  noise = c(0.5, 0.5),
-  seed = 125455454, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
-  npostplot = 50,
-  filllevel = 1,
-  modelName = "FN"
-)
+if(!exists("config")){
+  config <- list(
+    nobs = 201,
+    noise = c(0.001, 0.001),
+    seed = 125455454, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+    npostplot = 50,
+    filllevel = 0,
+    modelName = "FN"
+  )
+}
 
-stanConfig <- list(
-  sigma_obs=0.5,
-  sigma_xdot=0.1
-)
+if(!exists("stanConfig")){
+  stanConfig <- list(
+    sigma_obs=0.5,
+    sigma_xdot=0.1,
+    finiteDifferenceType=1
+  )
+}
 
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
 
@@ -31,7 +36,8 @@ system(paste("mkdir -p", outDir))
 filename <- paste0(outDir, 
                    "noise-",paste(config$noise, collapse = ";"),"_",
                    "nobs-",config$nobs,"_",
-                   "filllevel",config$filllevel,"_",
+                   "filllevel-",config$filllevel,"_",
+                   "finiteDifferenceType-",stanConfig$finiteDifferenceType,"_",
                    "seed",config$seed)
 
 pram.true <- list(
@@ -94,9 +100,11 @@ gpsmooth <- stan(file="stan/m-finiteDifference.stan",
                    time=xsim$time,
                    obs_index=obs_index,
                    sigma_obs=stanConfig$sigma_obs,
-                   sigma_xdot=stanConfig$sigma_xdot
+                   sigma_xdot=stanConfig$sigma_xdot,
+                   finiteDifferenceType=stanConfig$finiteDifferenceType
                  ),
-                 iter=1000, chains=7, init=rep(list(init), 7), warmup = 100)
+                 iter=1000, chains=7, init=rep(list(init), 7), warmup = 300, 
+                 control = list(max_treedepth = 15))
 
 gpsmooth_ss <- extract(gpsmooth, permuted=TRUE)
 
@@ -123,9 +131,10 @@ gpsmooth <- stan(file="stan/m-finiteDifference.stan",
                    time=xsim$time,
                    obs_index=obs_index,
                    sigma_obs=stanConfig$sigma_obs,
-                   sigma_xdot=stanConfig$sigma_xdot
+                   sigma_xdot=stanConfig$sigma_xdot,
+                   finiteDifferenceType=stanConfig$finiteDifferenceType
                  ),
-                 iter=200, chains=1, init=rep(list(init), 1), warmup = 1)
+                 iter=100, chains=1, init=rep(list(init), 1), warmup = 0)
 
 gpsmooth_ss <- extract(gpsmooth, permuted=TRUE)
 

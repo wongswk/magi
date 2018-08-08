@@ -13,6 +13,7 @@ data {
   int obs_index[n_obs];
   real sigma_obs;
   real sigma_xdot;
+  int finiteDifferenceType;
 }
 
 parameters {
@@ -43,10 +44,13 @@ model {
       m_vtrue[i] = (vtrue[n_discret] - vtrue[n_discret-1]) / (time[n_discret] - time[n_discret-1]);
       m_rtrue[i] = (rtrue[n_discret] - rtrue[n_discret-1]) / (time[n_discret] - time[n_discret-1]);
     }else{
-      // m_vtrue[i] = (vtrue[i+1] - vtrue[i-1]) / (time[i+1] - time[i-1]);
-      // m_rtrue[i] = (rtrue[i+1] - rtrue[i-1]) / (time[i+1] - time[i-1]);
-      m_vtrue[i] = (vtrue[i+1] - vtrue[i]) / (time[i+1] - time[i]);
-      m_rtrue[i] = (rtrue[i+1] - rtrue[i]) / (time[i+1] - time[i]);
+      if(finiteDifferenceType == 0){
+        m_vtrue[i] = (vtrue[i+1] - vtrue[i-1]) / (time[i+1] - time[i-1]);
+        m_rtrue[i] = (rtrue[i+1] - rtrue[i-1]) / (time[i+1] - time[i-1]);
+      }else if(finiteDifferenceType == 1){
+        m_vtrue[i] = (vtrue[i+1] - vtrue[i]) / (time[i+1] - time[i]);
+        m_rtrue[i] = (rtrue[i+1] - rtrue[i]) / (time[i+1] - time[i]);
+      }
     }
   }
   
