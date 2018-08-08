@@ -26,7 +26,7 @@ config$ndis <- (config$nobs-1)*2^config$filllevel+1
 
 if(grepl("/n/",getwd())){
   baseDir <- "/n/regal/kou_lab/shihaoyang/DynamicSys/results/" # tmp folder on cluster 
-  config$seed <- (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9 # random seed on cluster
+  # config$seed <- (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9 # random seed on cluster
 }else{
   baseDir <- "~/Workspace/DynamicSys/results/batch-output/"  
 }
@@ -34,10 +34,10 @@ if(grepl("/n/",getwd())){
 outDir <- with(config, paste0(baseDir,"stan/"))
 system(paste("mkdir -p", outDir))
 filename <- paste0(outDir, 
-                   "noise-",paste(config$noise, collapse = ";"),"_",
                    "nobs-",config$nobs,"_",
                    "filllevel-",config$filllevel,"_",
                    "finiteDifferenceType-",stanConfig$finiteDifferenceType,"_",
+                   "noise-",paste(config$noise, collapse = ";"),"_",
                    "seed",config$seed)
 
 pram.true <- list(
@@ -120,6 +120,8 @@ stanode$fode <- aperm(stanode$fode, c(3,1,2))
 gpds:::plotPostSamplesFlex(
   paste0(filename, "_m-finisteDifference-stan.pdf"), 
   xtrue, dotxtrue, xsim, stanode, pram.true, config)
+
+save.image(paste0(filename, "_m-finisteDifference-stan.rda"))
 
 # likelihood move away from mode ------------------------------------------------
 gpsmooth <- stan(file="stan/m-finiteDifference.stan",

@@ -13,10 +13,14 @@ arg <- commandArgs(trailingOnly = TRUE)
 arg <- as.numeric(arg) %% length(indicatorArray) + 1
 indicatorArray[arg] <- TRUE
 
+seed <- (which(apply(indicatorArray, 1, any)) * 1 +
+           which(apply(indicatorArray, 2, any)) * 10 +
+           which(apply(indicatorArray, 3, any)) * 100)
+  
 config <- list(
   nobs = nobs.candidates[apply(indicatorArray, 3, any)],
   noise = rep(noise.candidates[apply(indicatorArray, 2, any)], 2),
-  seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+  seed = seed,
   npostplot = 50,
   filllevel = filllevel.candidates[apply(indicatorArray, 4, any)],
   modelName = "FN"
