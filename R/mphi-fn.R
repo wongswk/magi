@@ -31,6 +31,10 @@ config <- list(
 )
 source("R/fn-model.R")
 
+pdf("general-matern-m-heat.pdf")
+image(curCov[[1]]$mphi, col = colorRampPalette(c("dodgerblue3", "white", "firebrick3"))(n = 101))
+dev.off()
+
 # remove force $K$ to be identity matrix from 1 --------------------------------------------------------
 rm(list=ls())
 config <- list(
