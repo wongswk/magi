@@ -648,3 +648,109 @@ insertNaN <- function(mydata, level){
   newdata <- newdata[order(newdata$time),]
   return(insertNaN(newdata, level-1))
 }
+
+#' get mphi in the same format of calCov return values
+#' 
+#' @export
+getCovMphi <- function(kernel, xsim, xsim.obs){
+  if(kernel=="finiteDifference2h"){
+    diffMat <- matrix(0, nrow=nrow(xsim), ncol=nrow(xsim))
+    for(i in 1:nrow(xsim)){
+      if(i==1){
+        diffMat[i,1] <- -1
+        diffMat[i,2] <- 1
+        diffMat[i,] <- diffMat[i,] / (xsim$time[2] - xsim$time[1])
+      }else if(i==nrow(xsim)){
+        diffMat[i,nrow(xsim)] <- 1
+        diffMat[i,nrow(xsim)-1] <- -1
+        diffMat[i,] <- diffMat[i,] / (xsim$time[nrow(xsim)] - xsim$time[nrow(xsim)-1])
+      }else{
+        diffMat[i,i-1] <- -1
+        diffMat[i,i+1] <- 1
+        diffMat[i,] <- diffMat[i,] / (xsim$time[i+1] - xsim$time[i-1])
+      }
+    }
+    curCovNew <- rep(list(list()), 2)
+    for(j in 1:length(curCovNew)){
+      curCovNew[[j]]$mphi <- diffMat
+      curCovNew[[j]]$mphiBand <- mat2band(diffMat, bandsize=nrow(xsim))
+      curCovNew[[j]]$mphiLeftHalf <- NULL
+    }
+    return(curCovNew)
+  }else if(kernel=="finiteDifference1h"){
+    diffMat <- matrix(0, nrow=nrow(xsim), ncol=nrow(xsim))
+    for(i in 1:nrow(xsim)){
+      if(i==1){
+        diffMat[i,1] <- -1
+        diffMat[i,2] <- 1
+        diffMat[i,] <- diffMat[i,] / (xsim$time[2] - xsim$time[1])
+      }else if(i==nrow(xsim)){
+        diffMat[i,nrow(xsim)] <- 1
+        diffMat[i,nrow(xsim)-1] <- -1
+        diffMat[i,] <- diffMat[i,] / (xsim$time[nrow(xsim)] - xsim$time[nrow(xsim)-1])
+      }else{
+        diffMat[i,i] <- -1
+        diffMat[i,i+1] <- 1
+        diffMat[i,] <- diffMat[i,] / (xsim$time[i+1] - xsim$time[i])
+      }
+    }
+    curCovNew <- rep(list(list()), 2)
+    for(j in 1:length(curCovNew)){
+      curCovNew[[j]]$mphi <- diffMat
+      curCovNew[[j]]$mphiBand <- mat2band(diffMat, bandsize=20)
+      curCovNew[[j]]$mphiLeftHalf <- NULL
+    }
+    return(curCovNew)
+  }else if(kernel=="zero"){
+    curCovNew <- rep(list(list()), 2)
+    for(j in 1:length(curCovNew)){
+      curCovNew[[j]]$mphi[] <- 0
+      curCovNew[[j]]$mphiBand[] <- 0
+      curCovNew[[j]]$mphiLeftHalf[] <- 0
+    }
+    return(curCovNew)
+  }
+  
+  r.nobs <- as.matrix(dist(xsim.obs$time))
+  
+  cursigma <- rep(NA, ncol(xsim)-1)
+  curphi <- matrix(NA, 2, ncol(xsim)-1)
+  
+  for(j in 1:(ncol(xsim)-1)){
+    priorFactor <- getFrequencyBasedPrior(xsim.obs[,1+j])
+    
+    desiredMode <- priorFactor["meanFactor"]
+    betaRate <- uniroot(function(betaRate) pgamma(1, 1 + desiredMode*betaRate, betaRate)-0.95,
+                        c(1e-3, 1e3))$root
+    alphaRate <- 1 + desiredMode*betaRate
+    
+    fn <- function(par) {
+      marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, kernel)
+      penalty <- dnorm(par[2], max(xsim.obs$time)*priorFactor["meanFactor"], 
+                       max(xsim.obs$time)*priorFactor["sdFactor"], log=TRUE)
+      -(marlik$value + penalty)
+    }
+    gr <- function(par) {
+      marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, kernel)
+      grad <- -as.vector(marlik$grad)
+      penalty <- (par[2] - max(xsim.obs$time)*priorFactor["meanFactor"]) / (max(xsim.obs$time)*priorFactor["sdFactor"])^2
+      grad[2] <- grad[2] + penalty
+      grad
+    }
+    testthat::expect_equal(gr(c(5,50,1))[2], (fn(c(5,50+1e-6,1)) - fn(c(5,50,1)))/1e-6, tolerance=1e-3)
+    marlikmap <- optim(c(sd(xsim.obs[,1+j])/2, max(xsim.obs$time)/2, sd(xsim.obs[,1+j])/2), 
+                       fn, gr, method="L-BFGS-B", lower = 0.0001,
+                       upper = c(Inf, Inf, Inf))
+    
+    cursigma[j] <- marlikmap$par[3]
+    curphi[,j] <- marlikmap$par[1:2]
+  }
+  
+  foo <- outer(xsim$time, t(xsim$time),'-')[,1,]
+  curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
+    covEach <- calCov(curphi[, j], abs(foo), -sign(foo), kerneltype=kernel)
+    covEach$mu[] <- mean(xsim.obs[,j+1])
+    covEach
+  })
+  curCov
+}

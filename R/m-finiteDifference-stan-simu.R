@@ -10,15 +10,15 @@ if(!exists("config")){
     seed = 125455454, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 50,
     filllevel = 0,
-    modelName = "FN"
+    modelName = "FN",
+    kernel = "finiteDifference2h"
   )
 }
 
 if(!exists("stanConfig")){
   stanConfig <- list(
     sigma_obs=0.5,
-    sigma_xdot=0.1,
-    finiteDifferenceType=1
+    sigma_xdot=0.1
   )
 }
 
