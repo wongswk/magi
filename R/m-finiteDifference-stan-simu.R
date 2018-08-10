@@ -5,11 +5,11 @@ options(mc.cores = parallel::detectCores())
 # simulation set up ------------------------------------------------------------
 if(!exists("config")){
   config <- list(
-    nobs = 201,
+    nobs = 101,
     noise = c(0.001, 0.001),
     seed = 125455454, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 50,
-    filllevel = 0,
+    filllevel = 1,
     modelName = "FN",
     kernel = "finiteDifference2h"
   )
@@ -36,7 +36,7 @@ system(paste("mkdir -p", outDir))
 filename <- paste0(outDir, 
                    "nobs-",config$nobs,"_",
                    "filllevel-",config$filllevel,"_",
-                   "finiteDifferenceType-",stanConfig$finiteDifferenceType,"_",
+                   config$kernel,"_",
                    "noise-",paste(config$noise, collapse = ";"),"_",
                    "seed",config$seed)
 
@@ -81,8 +81,6 @@ dotxtrue.atsim <- gpds:::fnmodelODE(pram.true$theta, xtrue.atsim)
 
 dotxtrue = gpds:::fnmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
-
-# STAN sampling using finite difference ----------------------------------------
 init <- list(
   abc = pram.true$theta,
   vtrue = xtrue.atsim[,1],
@@ -91,7 +89,18 @@ init <- list(
 
 config$stanConfig <- stanConfig
 
-gpsmooth <- stan(file="stan/m-finiteDifference.stan",
+curCov <- getCovMphi(config$kernel, xsim, xsim.obs)
+
+pdf(paste0(filename, "_m-visualize.pdf"))
+image(curCov[[1]]$mphi, col = colorRampPalette(c("dodgerblue3", "white", "firebrick3"))(n = 101),
+      main="m-matrix for component V")
+image(curCov[[1]]$mphi, col = colorRampPalette(c("dodgerblue3", "white", "firebrick3"))(n = 101),
+      main="m-matrix for component R")
+dev.off()
+
+# STAN sampling using finite difference ----------------------------------------
+
+gpsmooth <- stan(file="stan/m-only.stan",
                  data=list(
                    n_discret=nrow(xsim),
                    n_obs=nrow(xsim.obs),
@@ -101,7 +110,8 @@ gpsmooth <- stan(file="stan/m-finiteDifference.stan",
                    obs_index=obs_index,
                    sigma_obs=stanConfig$sigma_obs,
                    sigma_xdot=stanConfig$sigma_xdot,
-                   finiteDifferenceType=stanConfig$finiteDifferenceType
+                   mphi_v=curCov[[1]]$mphi,
+                   mphi_r=curCov[[2]]$mphi
                  ),
                  iter=1000, chains=7, init=rep(list(init), 7), warmup = 300, 
                  control = list(max_treedepth = 15))
@@ -118,13 +128,13 @@ stanode$fode <- aperm(stanode$fode, c(3,1,2))
 
 
 gpds:::plotPostSamplesFlex(
-  paste0(filename, "_m-finisteDifference-stan.pdf"), 
+  paste0(filename, "_m-stan.pdf"), 
   xtrue, dotxtrue, xsim, stanode, pram.true, config)
 
-save.image(paste0(filename, "_m-finisteDifference-stan.rda"))
+save.image(paste0(filename, "_m-stan.rda"))
 
 # likelihood move away from mode ------------------------------------------------
-gpsmooth <- stan(file="stan/m-finiteDifference.stan",
+gpsmooth <- stan(file="stan/m-only.stan",
                  data=list(
                    n_discret=nrow(xsim),
                    n_obs=nrow(xsim.obs),
@@ -134,7 +144,8 @@ gpsmooth <- stan(file="stan/m-finiteDifference.stan",
                    obs_index=obs_index,
                    sigma_obs=stanConfig$sigma_obs,
                    sigma_xdot=stanConfig$sigma_xdot,
-                   finiteDifferenceType=stanConfig$finiteDifferenceType
+                   mphi_v=curCov[[1]]$mphi,
+                   mphi_r=curCov[[2]]$mphi
                  ),
                  iter=100, chains=1, init=rep(list(init), 1), warmup = 0)
 
@@ -149,5 +160,5 @@ stanode$fode <- sapply(1:length(stanode$lglik), function(t)
 stanode$fode <- aperm(stanode$fode, c(3,1,2))
 
 gpds:::plotPostSamplesFlex(
-  paste0(filename, "_m-finisteDifference-likelihoodmove-stan.pdf"), 
+  paste0(filename, "_m-likelihoodmove-stan.pdf"), 
   xtrue, dotxtrue, xsim, stanode, pram.true, config)

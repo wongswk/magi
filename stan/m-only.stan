@@ -13,7 +13,8 @@ data {
   int obs_index[n_obs];
   real sigma_obs;
   real sigma_xdot;
-  int finiteDifferenceType;
+  matrix[n_discret, n_discret] mphi_r;
+  matrix[n_discret, n_discret] mphi_v;
 }
 
 parameters {
@@ -36,23 +37,10 @@ model {
   for (i in 1:n_discret){
     dvobs[i] = abc[3] * (vtrue[i] - pow(vtrue[i],3)/3.0 + rtrue[i]);  
     drobs[i] = -1.0/abc[3] * (vtrue[i] - abc[1] + abc[2]*rtrue[i]);
-    
-    if(i == 1){
-      m_vtrue[i] = (vtrue[2] - vtrue[1]) / (time[2] - time[1]);
-      m_rtrue[i] = (rtrue[2] - rtrue[1]) / (time[2] - time[1]);
-    }else if(i == n_discret){
-      m_vtrue[i] = (vtrue[n_discret] - vtrue[n_discret-1]) / (time[n_discret] - time[n_discret-1]);
-      m_rtrue[i] = (rtrue[n_discret] - rtrue[n_discret-1]) / (time[n_discret] - time[n_discret-1]);
-    }else{
-      if(finiteDifferenceType == 0){
-        m_vtrue[i] = (vtrue[i+1] - vtrue[i-1]) / (time[i+1] - time[i-1]);
-        m_rtrue[i] = (rtrue[i+1] - rtrue[i-1]) / (time[i+1] - time[i-1]);
-      }else if(finiteDifferenceType == 1){
-        m_vtrue[i] = (vtrue[i+1] - vtrue[i]) / (time[i+1] - time[i]);
-        m_rtrue[i] = (rtrue[i+1] - rtrue[i]) / (time[i+1] - time[i]);
-      }
-    }
   }
+  
+  m_rtrue = mphi_r * rtrue;
+  m_vtrue = mphi_v * vtrue;
   
   for (i in 1:n_obs){
     rtrue_at_obs[i] = rtrue[obs_index[i]];
