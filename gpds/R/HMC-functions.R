@@ -697,16 +697,16 @@ getCovMphi <- function(kernel, xsim, xsim.obs){
     curCovNew <- rep(list(list()), 2)
     for(j in 1:length(curCovNew)){
       curCovNew[[j]]$mphi <- diffMat
-      curCovNew[[j]]$mphiBand <- mat2band(diffMat, bandsize=20)
+      curCovNew[[j]]$mphiBand <- mat2band(diffMat, bandsize=nrow(xsim))
       curCovNew[[j]]$mphiLeftHalf <- NULL
     }
     return(curCovNew)
   }else if(kernel=="zero"){
     curCovNew <- rep(list(list()), 2)
     for(j in 1:length(curCovNew)){
-      curCovNew[[j]]$mphi[] <- 0
-      curCovNew[[j]]$mphiBand[] <- 0
-      curCovNew[[j]]$mphiLeftHalf[] <- 0
+      curCovNew[[j]]$mphi <- matrix(0, nrow(xsim), nrow(xsim))
+      curCovNew[[j]]$mphiBand <- mat2band(matrix(0, nrow(xsim), nrow(xsim)), bandsize=nrow(xsim))
+      curCovNew[[j]]$mphiLeftHalf <- NULL
     }
     return(curCovNew)
   }
