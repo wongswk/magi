@@ -463,46 +463,44 @@ xthetallik <- function(x, theta, CovV, CovR, sigma, y, grad = F, lambda = 1)  {
 #' 
 #' @export
 phisigllik <- function(phisig, y, rInput, signrInput, grad = F, kerneltype="matern"){
-  n <- nrow(y)
-  sigma <- tail(phisig,1)
-  phiVR <- head(phisig, length(phisig)-1)
-  res <- c(0,0)
+  n <- NROW(y)
+  y <- as.matrix(y)  
   
-  # V 
-  CovV <- calCov(head(phiVR, length(phiVR)/2), rInput, signrInput, kerneltype=kerneltype)
-  Kv <- CovV$C+diag(sigma^2, nrow = n)
-  Kv.l <- t(chol(Kv))
-  Kv.l.inv <- solve(Kv.l)
-  veta <- Kv.l.inv %*% y[,1]
-  res[1] <- -n/2*log(2*pi) - sum(log(diag(Kv.l))) - 0.5*sum(veta^2)
-  # R
-  CovR <- calCov(tail(phiVR, length(phiVR)/2), rInput, signrInput, kerneltype=kerneltype)
-  Kr <- CovR$C+diag(sigma^2, nrow = n)
-  Kr.l <- t(chol(Kr))
-  Kr.l.inv <- solve(Kr.l)
-  reta <- Kr.l.inv %*% y[,2]
-  res[2] <- -n/2*log(2*pi) - sum(log(diag(Kr.l))) - 0.5*sum(reta^2)
+  sigma <- tail(phisig,1)
+  phiVR <- matrix(head(phisig, length(phisig)-1), ncol=ncol(y))
+  res <- rep(0, ncol(y))
+  
+  CovV <- list()
+  Kv <- list()
+  Kv.l <- list()
+  Kv.l.inv <- list()
+  veta <- list()
+  
+  for(j in 1:ncol(y)){
+    # V 
+    CovV[[j]] <- calCov(phiVR[,j], rInput, signrInput, kerneltype=kerneltype)
+    Kv[[j]] <- CovV[[j]]$C+diag(sigma^2, nrow = n)
+    Kv.l[[j]] <- t(chol(Kv[[j]]))
+    Kv.l.inv[[j]] <- solve(Kv.l[[j]])
+    veta[[j]] <- Kv.l.inv[[j]] %*% y[,j]
+    res[j] <- -n/2*log(2*pi) - sum(log(diag(Kv.l[[j]]))) - 0.5*sum(veta[[j]]^2)
+  }
   ret <- sum(res)
   attr(ret,"components") <- res
   
   if(grad) {
-    # V contrib
-    Kv.inv <- t(Kv.l.inv)%*%Kv.l.inv
-    alphaV <- t(Kv.l.inv)%*%veta
-    facVtemp <- alphaV%*%t(alphaV) - Kv.inv
-    dVdsig <- sigma*sum(diag(facVtemp))
-    dVdphiAll <- apply(CovV$dCdphiCube, 3, function(dCdphiEach)
-      sum(facVtemp*dCdphiEach)/2)
-    
-    # R contrib
-    Kr.inv <- t(Kr.l.inv)%*%Kr.l.inv
-    alphaR <- t(Kr.l.inv)%*%reta
-    facRtemp <- alphaR%*%t(alphaR) - Kr.inv
-    dRdsig <- sigma*sum(diag(facRtemp))
-    dRdphiAll <- apply(CovR$dCdphiCube, 3, function(dCdphiEach)
-      sum(facRtemp*dCdphiEach)/2)
-    
-    attr(ret,"grad") <- c(dVdphiAll, dRdphiAll, dVdsig+dRdsig)
+    dVdphiAll <- list()
+    dVdsig <- list()
+    for(j in 1:ncol(y)){
+      # V contrib
+      Kv.inv <- t(Kv.l.inv[[j]])%*%Kv.l.inv[[j]]
+      alphaV <- t(Kv.l.inv[[j]])%*%veta[[j]]
+      facVtemp <- alphaV%*%t(alphaV) - Kv.inv
+      dVdsig[[j]] <- sigma*sum(diag(facVtemp))
+      dVdphiAll[[j]] <- apply(CovV[[j]]$dCdphiCube, 3, function(dCdphiEach)
+        sum(facVtemp*dCdphiEach)/2)
+    }
+    attr(ret,"grad") <- c(unlist(dVdphiAll), Reduce('+', dVdsig))
   }
   return(ret)
 }
@@ -711,7 +709,9 @@ getCovMphi <- function(kernel, xsim, xsim.obs){
     return(curCovNew)
   }
   
-  r.nobs <- as.matrix(dist(xsim.obs$time))
+  foo.nobs <- outer(xsim.obs$time, t(xsim.obs$time),'-')[,1,]
+  r.nobs <- abs(foo.nobs)
+  signr.nobs <- -sign(foo.nobs)
   
   cursigma <- rep(NA, ncol(xsim)-1)
   curphi <- matrix(NA, 2, ncol(xsim)-1)
@@ -725,14 +725,14 @@ getCovMphi <- function(kernel, xsim, xsim.obs){
     alphaRate <- 1 + desiredMode*betaRate
     
     fn <- function(par) {
-      marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, kernel)
+      marlik <- phisigllik( par, data.matrix(xsim.obs[,1+j]), r.nobs, signr.nobs, grad=FALSE, kerneltype = kernel)
       penalty <- dnorm(par[2], max(xsim.obs$time)*priorFactor["meanFactor"], 
                        max(xsim.obs$time)*priorFactor["sdFactor"], log=TRUE)
-      -(marlik$value + penalty)
+      -(as.numeric(marlik) + penalty)
     }
     gr <- function(par) {
-      marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, kernel)
-      grad <- -as.vector(marlik$grad)
+      marlik <- phisigllik( par, data.matrix(xsim.obs[,1+j]), r.nobs, signr.nobs, grad=TRUE, kerneltype = kernel)
+      grad <- -as.vector(attr(marlik, "grad"))
       penalty <- (par[2] - max(xsim.obs$time)*priorFactor["meanFactor"]) / (max(xsim.obs$time)*priorFactor["sdFactor"])^2
       grad[2] <- grad[2] + penalty
       grad
