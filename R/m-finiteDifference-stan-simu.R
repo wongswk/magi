@@ -11,7 +11,7 @@ if(!exists("config")){
     npostplot = 50,
     filllevel = 1,
     modelName = "FN",
-    kernel = "finiteDifference2h"
+    kernel = "finiteDifference1h"
   )
 }
 
@@ -37,7 +37,7 @@ filename <- paste0(outDir,
                    "nobs-",config$nobs,"_",
                    "filllevel-",config$filllevel,"_",
                    config$kernel,"_",
-                   "noise-",paste(config$noise, collapse = ";"),"_",
+                   "noise-",paste(config$noise, collapse = "-"),"_",
                    "seed",config$seed)
 
 pram.true <- list(
@@ -162,3 +162,22 @@ stanode$fode <- aperm(stanode$fode, c(3,1,2))
 gpds:::plotPostSamplesFlex(
   paste0(filename, "_m-likelihoodmove-stan.pdf"), 
   xtrue, dotxtrue, xsim, stanode, pram.true, config)
+
+system(paste0("pdftk ",
+              filename, "_m-likelihoodmove-stan.pdf ",
+              " cat 8 output ",
+              filename, "_m-likelihoodtrue-stan.pdf "
+))
+
+system(paste0("pdftk ", filename, "_m-stan.pdf ", 
+              filename, "_m-likelihoodtrue-stan.pdf ",
+              filename, "_m-visualize.pdf ",
+              " cat output ",
+              filename, "_m-comb.pdf"
+              ))
+
+system(paste0("rm ", filename, "_m-stan.pdf ", 
+              filename, "_m-likelihoodtrue-stan.pdf ",
+              filename, "_m-visualize.pdf ",
+              filename, "_m-likelihoodmove-stan.pdf "
+))
