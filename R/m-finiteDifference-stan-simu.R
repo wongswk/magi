@@ -11,7 +11,7 @@ if(!exists("config")){
     npostplot = 50,
     filllevel = 1,
     modelName = "FN",
-    kernel = "finiteDifference1h"
+    kernel = "generalMatern-4.5"
   )
 }
 

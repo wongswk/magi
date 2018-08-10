@@ -18,6 +18,9 @@ calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerne
     ret <- calCovGeneralMatern(phi, rInput, signrInput, complexity)
   }else if(kerneltype=="rationalQuadratic"){
     ret <- calCovRationalQuadratic(phi, rInput, signrInput, complexity)
+  }else if(grepl("^generalMatern-([0-9.]+)$", kerneltype)){
+    df = gsub("^generalMatern-([0-9.]+)$", "\\1", kerneltype)
+    ret <- calCovGeneralMatern(phi, rInput, signrInput, complexity, df=as.numeric(df))
   }else{
     stop("kerneltype not specified correctly")
   }
