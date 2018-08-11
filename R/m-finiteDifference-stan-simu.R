@@ -175,9 +175,3 @@ system(paste0("pdftk ", filename, "_m-stan.pdf ",
               " cat output ",
               filename, "_m-comb.pdf"
               ))
-
-system(paste0("rm ", filename, "_m-stan.pdf ", 
-              filename, "_m-likelihoodtrue-stan.pdf ",
-              filename, "_m-visualize.pdf ",
-              filename, "_m-likelihoodmove-stan.pdf "
-))

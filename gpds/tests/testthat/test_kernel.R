@@ -36,6 +36,20 @@ for(kerneltype in c("compact1","rbf","matern","periodicMatern","generalMatern",
                            tolerance = 0.001, scale=max(egcov2$Cdoubleprime[-1,1]))
   })
   
+  testthat::test_that("check Cprime and Cdoubleprime", {
+    xtime <- seq(0,4,0.05)
+    delta <- mean(diff(xtime))
+    egcov2 <- calCov(c(1,1), 
+                     as.matrix(dist(xtime)),
+                     -sign(outer(xtime,xtime,'-')),
+                     kerneltype = kerneltype)
+    
+    plot(xtime, egcov2$C[,1], type="l", main=paste0(kerneltype, " C"))
+    plot(xtime, egcov2$Cprime[,1], type="l", main=paste0(kerneltype, " C'"))
+    plot(xtime, egcov2$Cdoubleprime[,1], type="l", main=paste0(kerneltype, " C''"))
+    
+  })
+  
   testthat::test_that("check dCdphi", {
     xtime <- seq(0,2,0.1)
     testpintPhi <- head(phitrue[[kerneltype]], length(phitrue[[kerneltype]])/2)
