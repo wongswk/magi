@@ -558,3 +558,38 @@ plot.post.samples <- function(filename, fn.true, fn.sim, gpode, init, npostplot 
   plotPostSamples(filename, fn.true, fn.sim, gpode, init, gpconfig)
   warning("plot.post.samples will be deprecated, please use plotPostSamples instead.\nTrying to avoid '.' in function names")
 }
+
+#' Heatmap plot of correlation matrix
+#'
+#' @return a graph on the default plot window
+#'
+#' @export
+heatmap_cor <- function(cor_heat, lim=NULL){
+  cor_heat_plot <- cor_heat
+  if(is.null(lim)){
+    lim <- max(abs(cor_heat))
+  }
+  cor_heat_plot[which(cor_heat_plot > lim)] <- lim
+  cor_heat_plot[which(cor_heat_plot < -lim)] <- -lim
+  n_col <- 201
+  col.rng.id <- round(1+200*(lim+range(cor_heat_plot, na.rm = TRUE))/(2*lim))
+  
+  layout(matrix(1:2), heights=c(1,8))
+  
+  n_col <- 201
+  col.rng <- colorRampPalette(c("dodgerblue3", "white", "firebrick3"))(n = 201)
+  par(mar = c(0.8,3.1,1.5,3.1))
+  image(x=1:length(col.rng), z=matrix(seq(-lim, lim, length=length(col.rng)), ncol=1), col=col.rng,
+        xlab=NA, ylab=NA, yaxt='n', xaxt='n')
+  axis(1, at=seq(1, n_col, length=3),line=-1,cex.axis=0.75,
+       labels=c(paste("<", round(-lim, 6)), 0, paste(">", round(lim, 6))),
+       lwd.ticks=0, lwd=0)
+  axis(3, at=seq(1, n_col, length=3),line=-1,cex.axis=0.75,
+       labels=paste(c("Negative", "Zero", "Positive"), "value"),
+       lwd.ticks=0, lwd=0)
+  
+  par(mar = c(4.1,4.1,1.1,2.1))
+  image(x=1:ncol(cor_heat_plot), y=1:nrow(cor_heat_plot),
+        z=t(cor_heat_plot)[,nrow(cor_heat):1], col=col.rng[col.rng.id[1]:col.rng.id[2]],
+        xlab=NA, ylab=NA, yaxt='n', xaxt='n')
+}

@@ -11,14 +11,13 @@ if(!exists("config")){
     npostplot = 50,
     filllevel = 1,
     modelName = "FN",
-    kernel = "generalMatern-4.5"
+    kernel = "generalMatern-3.5"
   )
 }
 
 if(!exists("stanConfig")){
   stanConfig <- list(
-    sigma_obs=0.5,
-    sigma_xdot=0.1
+    sigma_obs=0.5
   )
 }
 
@@ -92,10 +91,14 @@ config$stanConfig <- stanConfig
 curCov <- getCovMphi(config$kernel, xsim, xsim.obs)
 
 pdf(paste0(filename, "_m-visualize.pdf"))
-image(curCov[[1]]$mphi, col = colorRampPalette(c("dodgerblue3", "white", "firebrick3"))(n = 101),
-      main="m-matrix for component V")
-image(curCov[[1]]$mphi, col = colorRampPalette(c("dodgerblue3", "white", "firebrick3"))(n = 101),
-      main="m-matrix for component R")
+heatmap_cor(curCov[[1]]$mphi)
+title("m-matrix for component V")
+heatmap_cor(curCov[[2]]$mphi)
+title("m-matrix for component R")
+heatmap_cor(curCov[[1]]$Kphi, 0.01^2)
+title("K-matrix for component V")
+heatmap_cor(curCov[[2]]$Kphi, 0.01^2)
+title("K-matrix for component R")
 dev.off()
 
 # STAN sampling using finite difference ----------------------------------------
@@ -109,7 +112,8 @@ gpsmooth <- stan(file="stan/m-only.stan",
                    time=xsim$time,
                    obs_index=obs_index,
                    sigma_obs=stanConfig$sigma_obs,
-                   sigma_xdot=stanConfig$sigma_xdot,
+                   Kphi_v=curCov[[1]]$Kphi,
+                   Kphi_r=curCov[[2]]$Kphi,
                    mphi_v=curCov[[1]]$mphi,
                    mphi_r=curCov[[2]]$mphi
                  ),
@@ -144,6 +148,8 @@ gpsmooth <- stan(file="stan/m-only.stan",
                    obs_index=obs_index,
                    sigma_obs=stanConfig$sigma_obs,
                    sigma_xdot=stanConfig$sigma_xdot,
+                   Kphi_v=curCov[[1]]$Kphi,
+                   Kphi_r=curCov[[2]]$Kphi,
                    mphi_v=curCov[[1]]$mphi,
                    mphi_r=curCov[[2]]$mphi
                  ),

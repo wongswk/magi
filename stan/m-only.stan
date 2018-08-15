@@ -15,6 +15,8 @@ data {
   real sigma_xdot;
   matrix[n_discret, n_discret] mphi_r;
   matrix[n_discret, n_discret] mphi_v;
+  matrix[n_discret, n_discret] Kphi_r;
+  matrix[n_discret, n_discret] Kphi_v;
 }
 
 parameters {
@@ -54,6 +56,6 @@ model {
   robs ~ normal(rtrue_at_obs, sigma_obs);
   vobs ~ normal(vtrue_at_obs, sigma_obs);
   
-  drobs ~ normal(m_rtrue, sigma_xdot);
-  dvobs ~ normal(m_vtrue, sigma_xdot);
+  drobs ~ multi_normal(m_rphi_rtrue, Kphi_r);
+  dvobs ~ multi_normal(m_vphi_vtrue, Kphi_v);
 }
