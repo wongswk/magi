@@ -17,7 +17,8 @@ if(!exists("config")){
 
 if(!exists("stanConfig")){
   stanConfig <- list(
-    sigma_obs=0.5
+    sigma_obs=0.5,
+    sigma_xdot=0.1
   )
 }
 
@@ -90,6 +91,11 @@ init <- list(
 config$stanConfig <- stanConfig
 
 curCov <- getCovMphi(config$kernel, xsim, xsim.obs)
+if(config$kernel %in% c("finiteDifference1h", "finiteDifference2h")){
+  for(j in 1:2){
+    curCov[[j]]$Kphi <- diag(stanConfig$sigma_xdot^2, nrow=nrow(xsim), ncol=nrow(xsim))
+  }
+}
 
 pdf(paste0(filename, "_m-visualize.pdf"))
 heatmap_cor(curCov[[1]]$mphi)
