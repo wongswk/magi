@@ -8,16 +8,13 @@ kernel.candidates <- c("generalMatern-2.01", "generalMatern-2.05", "rbf",
 kernel.maternDf <- paste0("generalMatern-", round(seq(2.1, 4.5, 0.1), 2))
 kernel.candidates <- c(kernel.candidates, kernel.maternDf)
 
-
-arg <- commandArgs(trailingOnly = TRUE)
-arg <- as.numeric(arg) %% length(indicatorArray) + 1
-indicatorArray[arg] <- TRUE
-
 indicatorArray <- array(FALSE, dim=c(length(kernel.candidates), 
                                      length(noise.candidates), 
                                      length(nobs.candidates),
                                      length(filllevel.candidates) ))
 
+arg <- commandArgs(trailingOnly = TRUE)
+arg <- as.numeric(arg) %% length(indicatorArray) + 1
 indicatorArray[arg] <- TRUE
 
 seed <- (which(apply(indicatorArray, 2, any)) * 10 +
