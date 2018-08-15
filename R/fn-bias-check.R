@@ -3,12 +3,13 @@ library(gpds)
 # set up configuration if not already exist ------------------------------------
 if(!exists("config")){
   config <- list(
-    nobs = 201,
-    noise = c(0.001, 0.001),
-    kernel = "generalMatern",
+    nobs = 101,
+    noise = c(0.5, 0.5),
+    overrideNoise = TRUE,
+    kernel = "generalMatern-2.1",
     forceDiagKphi = FALSE,
-    forseMean = c("gpsmooth", "truth", "phase8", "zero")[2],
-    priorTemperature = c(1, 1e5),
+    forceMean = c("gpsmooth", "truth", "phase8", "zero")[2],
+    priorTemperature = c(1, 1e6),
     seed = 125455454,
     npostplot = 50,
     loglikflag = "withmeanBand",
@@ -17,7 +18,7 @@ if(!exists("config")){
     n.iter = 2500,
     burninRatio = 0.10,
     stepSizeFactor = 1,
-    filllevel = 0,
+    filllevel = 1,
     modelName = "FN",
     startXAtTruth = TRUE,
     startThetaAtTruth = TRUE,
@@ -29,13 +30,10 @@ config$ndis <- (config$nobs-1)*2^config$filllevel+1
 # initialize global parameters, true x, simulated x ----------------------------
 if(grepl("/n/",getwd())){
   baseDir <- "/n/regal/kou_lab/shihaoyang/DynamicSys/results/" # tmp folder on cluster 
-  config$seed <- (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9 # random seed on cluster
 }else{
   baseDir <- "~/Workspace/DynamicSys/results/batch-output/"  
 }
-outDir <- with(config, paste0(baseDir, modelName, "-", loglikflag,"-", kernel,
-                              "-nobs",nobs,"-noise", paste(round(noise,3), collapse = "_"),
-                              "-ndis",ndis,"-",ifelse(config$temperPrior, "temperPrior", "unitHeatPrior"),"/"))
+outDir <- paste0(baseDir, "fn-bias/")
 system(paste("mkdir -p", outDir))
 
 pram.true <- list(
@@ -87,153 +85,11 @@ r2.nobs <- r.nobs^2
 signr.nobs <- -sign(foo)
 
 # GPsmoothing: marllik+fftNormalprior for phi-sigma ----------------------------
-cursigma <- rep(NA, ncol(xsim)-1)
-curphi <- matrix(NA, 2, ncol(xsim)-1)
-
-for(j in 1:(ncol(xsim)-1)){
-  priorFactor <- getFrequencyBasedPrior(xsim.obs[,1+j])
-  
-  desiredMode <- priorFactor["meanFactor"]
-  betaRate <- uniroot(function(betaRate) pgamma(1, 1 + desiredMode*betaRate, betaRate)-0.95,
-                      c(1e-3, 1e3))$root
-  alphaRate <- 1 + desiredMode*betaRate
-  
-  fn <- function(par) {
-    marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-    penalty <- dnorm(par[2], max(xsim.obs$time)*priorFactor["meanFactor"], 
-                     max(xsim.obs$time)*priorFactor["sdFactor"], log=TRUE)
-    # penalty <- dgamma(par[2], alphaRate, betaRate/max(xsim.obs$time), log=TRUE)
-    # penalty <- 0
-    -(marlik$value + penalty)
-  }
-  gr <- function(par) {
-    marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-    grad <- -as.vector(marlik$grad)
-    penalty <- (par[2] - max(xsim.obs$time)*priorFactor["meanFactor"]) / (max(xsim.obs$time)*priorFactor["sdFactor"])^2
-    # penalty <- ((alphaRate-1)/par[2] - betaRate/max(xsim.obs$time))
-    # penalty <- 0
-    grad[2] <- grad[2] + penalty
-    grad
-  }
-  testthat::expect_equal(gr(c(5,50,1))[2], (fn(c(5,50+1e-6,1)) - fn(c(5,50,1)))/1e-6, tolerance=1e-3)
-  marlikmap <- optim(c(sd(xsim.obs[,1+j])/2, max(xsim.obs$time)/2, sd(xsim.obs[,1+j])/2), 
-                     fn, gr, method="L-BFGS-B", lower = 0.0001,
-                     upper = c(Inf, Inf, Inf))
-  
-  cursigma[j] <- marlikmap$par[3]
-  curphi[,j] <- marlikmap$par[1:2]
-}
-
-cursigma
-curphi
-
-curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
-  covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize, 
-                    kerneltype=config$kernel, forceDiagKphi=config$forceDiagKphi)
-  covEach$mu[] <- mean(xsim.obs[,j+1])
-  covEach
-})
-
-get_other_cov <- function(kernel){
-  if(kernel=="finiteDifference"){
-    diffMat <- matrix(0, nrow=nrow(xsim), ncol=nrow(xsim))
-    for(i in 1:nrow(xsim)){
-      if(i==1){
-        diffMat[i,1] <- -1
-        diffMat[i,2] <- 1
-        diffMat[i,] <- diffMat[i,] / (xsim$time[2] - xsim$time[1])
-      }else if(i==nrow(xsim)){
-        diffMat[i,nrow(xsim)] <- 1
-        diffMat[i,nrow(xsim)-1] <- -1
-        diffMat[i,] <- diffMat[i,] / (xsim$time[nrow(xsim)] - xsim$time[nrow(xsim)-1])
-      }else{
-        diffMat[i,i-1] <- -1
-        diffMat[i,i+1] <- 1
-        diffMat[i,] <- diffMat[i,] / (xsim$time[i+1] - xsim$time[i-1])
-      }
-    }
-    curCovNew <- curCov
-    for(j in 1:length(curCovNew)){
-      curCovNew[[j]]$mphi <- diffMat
-      curCovNew[[j]]$mphiBand <- mat2band(diffMat, curCovNew[[j]]$bandsize)
-      curCovNew[[j]]$mphiLeftHalf <- NULL
-    }
-    return(curCovNew)
-  }else if(kernel=="zero"){
-    curCovNew <- curCov
-    for(j in 1:length(curCovNew)){
-      curCovNew[[j]]$mphi[] <- 0
-      curCovNew[[j]]$mphiBand[] <- 0
-      curCovNew[[j]]$mphiLeftHalf[] <- 0
-    }
-    return(curCovNew)
-  }
-  config$kernel <- kernel
-  
-  cursigma <- rep(NA, ncol(xsim)-1)
-  curphi <- matrix(NA, 2, ncol(xsim)-1)
-  
-  for(j in 1:(ncol(xsim)-1)){
-    priorFactor <- getFrequencyBasedPrior(xsim.obs[,1+j])
-    
-    desiredMode <- priorFactor["meanFactor"]
-    betaRate <- uniroot(function(betaRate) pgamma(1, 1 + desiredMode*betaRate, betaRate)-0.95,
-                        c(1e-3, 1e3))$root
-    alphaRate <- 1 + desiredMode*betaRate
-    
-    fn <- function(par) {
-      marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-      penalty <- dnorm(par[2], max(xsim.obs$time)*priorFactor["meanFactor"], 
-                       max(xsim.obs$time)*priorFactor["sdFactor"], log=TRUE)
-      # penalty <- dgamma(par[2], alphaRate, betaRate/max(xsim.obs$time), log=TRUE)
-      # penalty <- 0
-      -(marlik$value + penalty)
-    }
-    gr <- function(par) {
-      marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
-      grad <- -as.vector(marlik$grad)
-      penalty <- (par[2] - max(xsim.obs$time)*priorFactor["meanFactor"]) / (max(xsim.obs$time)*priorFactor["sdFactor"])^2
-      # penalty <- ((alphaRate-1)/par[2] - betaRate/max(xsim.obs$time))
-      # penalty <- 0
-      grad[2] <- grad[2] + penalty
-      grad
-    }
-    testthat::expect_equal(gr(c(5,50,1))[2], (fn(c(5,50+1e-6,1)) - fn(c(5,50,1)))/1e-6, tolerance=1e-3)
-    marlikmap <- optim(c(sd(xsim.obs[,1+j])/2, max(xsim.obs$time)/2, sd(xsim.obs[,1+j])/2), 
-                       fn, gr, method="L-BFGS-B", lower = 0.0001,
-                       upper = c(Inf, Inf, Inf))
-    
-    cursigma[j] <- marlikmap$par[3]
-    curphi[,j] <- marlikmap$par[1:2]
-  }
-  
-  curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
-    covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize, 
-                      kerneltype=config$kernel)
-    # covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize,
-    #                   kerneltype=config$kernel, noiseInjection = 0.008 * (j==1) + 0.0001 * (j==2))
-    covEach$mu[] <- mean(xsim.obs[,j+1])
-    covEach
-  })
-  curCov
-}
-
-otherCov <- get_other_cov(config$mphiType)
-for(j in 1:(ncol(xsim)-1)){
-  curCov[[j]]$mphi <- otherCov[[j]]$mphi
-  curCov[[j]]$mphiBand <- otherCov[[j]]$mphiBand
-  curCov[[j]]$mphiLeftHalf <- otherCov[[j]]$mphiLeftHalf
-}
-
-if(config$useGPmean){
-  for(j in 1:(ncol(xsim)-1)){
-    ydy <- getMeanCurve(xsim.obs$time, xsim.obs[,j+1], xsim$time, 
-                        t(curphi[,j]), t(cursigma[j]), 
-                        kerneltype=config$kernel, deriv = TRUE)
-    curCov[[j]]$mu <- as.vector(ydy[[1]])
-    curCov[[j]]$dotmu <- as.vector(ydy[[2]])
-  }
-}
+curCov <- getCovMphi(config$kernel, xsim, xsim.obs, config=config)
+cursigma <- curCov$cursigma
+curphi <- curCov$curphi
+curCov$cursigma <- NULL
+curCov$curphi <- NULL
 
 gpsmoothFuncList <- list()
 gpderivFuncList <- list()
@@ -245,7 +101,35 @@ for(j in 1:(ncol(xsim)-1)){
   plot.function(gpsmoothFuncList[[j]], from = min(xsim$time), to = max(xsim$time),
                 lty = 2, col = j, add = TRUE)
 }
+
+xtrue.atsim <- sapply(xtrueFunc, function(f) f(xsim$time))
+dotxtrue.atsim <- gpds:::fnmodelODE(pram.true$theta, xtrue.atsim)
+
+if(config$forceMean=="gpsmooth"){
+  for(j in 1:(ncol(xsim)-1)){
+    curCov[[j]]$mu <- gpsmoothFuncList[[j]](xsim$time)
+    curCov[[j]]$dotmu <- gpderivFuncList[[j]](xsim$time)
+  }
+}else if(config$forceMean=="truth"){
+  for(j in 1:(ncol(xsim)-1)){
+    curCov[[j]]$mu <- xtrue.atsim[, j]
+    curCov[[j]]$dotmu <- dotxtrue.atsim[, j]
+  }
+  gpsmoothFuncList <- xtrueFunc
+  dotxtrue <- gpds:::fnmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
+  gpderivFuncList <- lapply(1:ncol(dotxtrue), function(j)
+    approxfun(xtrue[, "time"], dotxtrue[, j]))
+}else if(config$forceMean=="phase8"){
+  phase8 <- readRDS("~/Workspace/DynamicSys/results/phase8-mu.rds")
+  curCov[[1]]$mu = phase8[[1]]$mu
+  curCov[[1]]$dotmu = phase8[[1]]$dotmu
+  curCov[[2]]$mu = phase8[[2]]$mu
+  curCov[[2]]$dotmu = phase8[[2]]$dotmu
+}
+
 cursigma
+curphi
+length(curCov)
 # MCMC starting value ----------------------------------------------------------
 yobs <- data.matrix(xsim[,-1])
 
@@ -296,26 +180,6 @@ xthetasigmaInit <- c(xInit, thetaInit, sigmaInit)
 stepLowInit <- rep(0.000035, length(xthetasigmaInit))
 stepLowInit <- stepLowInit*config$stepSizeFactor
 
-xtrue.atsim <- sapply(xtrueFunc, function(f) f(xsim$time))
-dotxtrue.atsim <- gpds:::fnmodelODE(pram.true$theta, xtrue.atsim)
-if(config$forseTrueMean){
-  for(j in 1:2){
-    curCov[[j]]$mu <- xtrue.atsim[, j]
-    curCov[[j]]$dotmu <- dotxtrue.atsim[, j]
-  }
-  gpsmoothFuncList <- xtrueFunc
-  dotxtrue <- gpds:::fnmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
-  gpderivFuncList <- lapply(1:ncol(dotxtrue), function(j)
-    approxfun(xtrue[, "time"], dotxtrue[, j]))
-}
-
-if(config$forsePhase8Mean){
-  phase8 <- readRDS("/Users/shihaoyang/Workspace/DynamicSys/results/batch-output/FN-withmeanBand-generalMatern-nobs201-noise0.5_0.5-ndis201-temperPrior/phase8-mu.rds")
-  curCov[[1]]$mu = phase8[[1]]$mu
-  curCov[[1]]$dotmu = phase8[[1]]$dotmu
-  curCov[[2]]$mu = phase8[[2]]$mu
-  curCov[[2]]$dotmu = phase8[[2]]$dotmu
-}
 
 if(config$forceDiagKphi){
   stopifnot(sum(abs(curCov[[1]]$Kphi)) == sum(abs(diag(curCov[[1]]$Kphi))))
@@ -334,9 +198,11 @@ score_llik <- xthetasigmallikRcpp(
   yobs=yobs, curCov, config$priorTemperature, useBand = TRUE, useMean = TRUE, modelName = config$modelName
 )
 
-yobs <- xtrue.atsim
-xsim[, -1] <- xtrue.atsim
-xsim.obs[, -1] <- xtrue.atsim
+if(config$overrideNoise){
+  xsim[, -1] <- xtrue.atsim
+  xsim.obs[, -1] <- sapply(xtrueFunc, function(f) f(xsim.obs$time))
+  yobs <- data.matrix(xsim[,-1])
+}
 
 xthetasigamSingleSampler <- function(xthetasigma, stepSize) 
   xthetasigmaSample(yobs, curCov, xthetasigma[sigmaId], xthetasigma[c(xId, thetaId)], 
@@ -368,34 +234,33 @@ odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue, curCov=curCov,
                  gpsmoothFuncList=gpsmoothFuncList, gpderivFuncList=gpderivFuncList)
 
 filename <- paste0(outDir, 
-                   "mphi-",config$mphiType,"_",
-                   "diagKphi",config$forceDiagKphi,"_",
-                   "trueMean",config$forseTrueMean,"_",
-                   "phase8Mean",config$forsePhase8Mean,"_",
-                   "temperature-xCx-",config$priorTemperature[2])
+                   "kernel-",config$kernel,"_",
+                   "diagKphi-",config$forceDiagKphi,"_",
+                   config$forceMean,"_",
+                   "nobs-", config$nobs,"_",
+                   "ndis-", config$ndis,"_",
+                   "temperature-xCx-",config$priorTemperature[2],
+                   "seed",config$seed)
 
 gpds:::plotPostSamplesFlex(
-  paste0(filename,"_",config$seed,".pdf"), 
+  paste0(filename,"_gpds.pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, configWithPhiSig, odemodel)
+
+pdf(paste0(filename, "_kernelmat.pdf"))
+heatmap_cor(curCov[[1]]$mphi)
+title("m-matrix for component V")
+heatmap_cor(curCov[[2]]$mphi)
+title("m-matrix for component R")
+heatmap_cor(curCov[[1]]$Kphi, 0.01^2)
+title("K-matrix for component V")
+heatmap_cor(curCov[[2]]$Kphi, 0.01^2)
+title("K-matrix for component R")
+dev.off()
 
 absCI <- apply(gpode$theta, 2, quantile, probs = c(0.025, 0.5, 0.975))
 absCI <- rbind(absCI, mean=colMeans(gpode$theta))
 absCI <- rbind(absCI, coverage = (absCI["2.5%",] < pram.true$theta &  pram.true$theta < absCI["97.5%",]))
 
-saveRDS(absCI, paste0(filename,"_",config$seed,".rds"))
-
-save.image(paste0(filename,"_",config$seed,".rda"))
-
-# mphi-issue explained ------------------------------------------------------------
-pdf(paste0(filename,"_",config$seed,"-mphi-bias-visualized.pdf"))
-layout(1:2)
-for(j in 1:length(curCov)){
-  plot(xsim$time, dotxtrue.atsim[,j], type="l")
-  lines(xsim$time, curCov[[j]]$mphi %*% xtrue.atsim[,j], col=2)
-  legend("top", c("dotX true", "M %*% xtrue"), lty=1, col=c(1,2))
-  title(paste("component", j))
-  plot(xsim$time, curCov[[j]]$mphi %*% xtrue.atsim[,j] - dotxtrue.atsim[,j], type="l")
-  title("difference")
-}
-dev.off()
+saveRDS(absCI, paste0(filename,"_absCI.rds"))
+save.image(paste0(filename,"_img.rda"))
 
