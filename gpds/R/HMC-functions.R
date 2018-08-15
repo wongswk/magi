@@ -653,7 +653,15 @@ insertNaN <- function(mydata, level){
 #' get mphi in the same format of calCov return values
 #' 
 #' @export
-getCovMphi <- function(kernel, xsim, xsim.obs){
+getCovMphi <- function(kernel, xsim, xsim.obs, config=list()){
+  bandsize <- config$bandsize
+  forceDiagKphi <- config$forceDiagKphi
+  if(is.null(bandsize)){
+    bandsize <- nrow(xsim)
+  }
+  if(is.null(forceDiagKphi)){
+    forceDiagKphi <- FALSE
+  }
   if(kernel=="finiteDifference2h"){
     diffMat <- matrix(0, nrow=nrow(xsim), ncol=nrow(xsim))
     for(i in 1:nrow(xsim)){
@@ -674,7 +682,7 @@ getCovMphi <- function(kernel, xsim, xsim.obs){
     curCovNew <- rep(list(list()), 2)
     for(j in 1:length(curCovNew)){
       curCovNew[[j]]$mphi <- diffMat
-      curCovNew[[j]]$mphiBand <- mat2band(diffMat, bandsize=nrow(xsim))
+      curCovNew[[j]]$mphiBand <- mat2band(diffMat, bandsize=bandsize)
       curCovNew[[j]]$mphiLeftHalf <- NULL
     }
     return(curCovNew)
@@ -698,7 +706,7 @@ getCovMphi <- function(kernel, xsim, xsim.obs){
     curCovNew <- rep(list(list()), 2)
     for(j in 1:length(curCovNew)){
       curCovNew[[j]]$mphi <- diffMat
-      curCovNew[[j]]$mphiBand <- mat2band(diffMat, bandsize=nrow(xsim))
+      curCovNew[[j]]$mphiBand <- mat2band(diffMat, bandsize=bandsize)
       curCovNew[[j]]$mphiLeftHalf <- NULL
     }
     return(curCovNew)
@@ -706,7 +714,7 @@ getCovMphi <- function(kernel, xsim, xsim.obs){
     curCovNew <- rep(list(list()), 2)
     for(j in 1:length(curCovNew)){
       curCovNew[[j]]$mphi <- matrix(0, nrow(xsim), nrow(xsim))
-      curCovNew[[j]]$mphiBand <- mat2band(matrix(0, nrow(xsim), nrow(xsim)), bandsize=nrow(xsim))
+      curCovNew[[j]]$mphiBand <- mat2band(matrix(0, nrow(xsim), nrow(xsim)), bandsize=bandsize)
       curCovNew[[j]]$mphiLeftHalf <- NULL
     }
     return(curCovNew)
@@ -751,9 +759,12 @@ getCovMphi <- function(kernel, xsim, xsim.obs){
   
   foo <- outer(xsim$time, t(xsim$time),'-')[,1,]
   curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
-    covEach <- calCov(curphi[, j], abs(foo), -sign(foo), kerneltype=kernel)
+    covEach <- calCov(curphi[, j], abs(foo), -sign(foo), kerneltype=kernel, 
+                      bandsize = bandsize, forceDiagKphi = forceDiagKphi)
     covEach$mu[] <- mean(xsim.obs[,j+1])
     covEach
   })
+  curCov$cursigma <- cursigma
+  curCov$curphi <- curphi
   curCov
 }
