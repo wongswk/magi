@@ -31,8 +31,7 @@ for(arg in 1:960){
   config$ndis <- (config$nobs-1)*2^config$filllevel+1
   
   stanConfig <- list(
-    sigma_obs=0.5,
-    sigma_xdot=0.1
+    sigma_obs=0.5
   )
   
   if(config$ndis <= 801){

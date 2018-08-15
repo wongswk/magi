@@ -33,6 +33,7 @@ if(grepl("/n/",getwd())){
 outDir <- with(config, paste0(baseDir,"stan/"))
 system(paste("mkdir -p", outDir))
 filename <- paste0(outDir, 
+                   "mphi-Kphi_",
                    "nobs-",config$nobs,"_",
                    "filllevel-",config$filllevel,"_",
                    config$kernel,"_",
@@ -117,7 +118,7 @@ gpsmooth <- stan(file="stan/m-only.stan",
                    mphi_v=curCov[[1]]$mphi,
                    mphi_r=curCov[[2]]$mphi
                  ),
-                 iter=1000, chains=7, init=rep(list(init), 7), warmup = 300, 
+                 iter=500, chains=7, init=rep(list(init), 7), warmup = 200, 
                  control = list(max_treedepth = 15))
 
 gpsmooth_ss <- extract(gpsmooth, permuted=TRUE)

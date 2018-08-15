@@ -12,7 +12,6 @@ data {
   real time[n_discret];
   int obs_index[n_obs];
   real sigma_obs;
-  real sigma_xdot;
   matrix[n_discret, n_discret] mphi_r;
   matrix[n_discret, n_discret] mphi_v;
   matrix[n_discret, n_discret] Kphi_r;
@@ -56,6 +55,6 @@ model {
   robs ~ normal(rtrue_at_obs, sigma_obs);
   vobs ~ normal(vtrue_at_obs, sigma_obs);
   
-  drobs ~ multi_normal(m_rphi_rtrue, Kphi_r);
-  dvobs ~ multi_normal(m_vphi_vtrue, Kphi_v);
+  drobs ~ multi_normal(m_rtrue, Kphi_r);
+  dvobs ~ multi_normal(m_vtrue, Kphi_v);
 }
