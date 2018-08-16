@@ -567,7 +567,7 @@ plot.post.samples <- function(filename, fn.true, fn.sim, gpode, init, npostplot 
 heatmap_cor <- function(cor_heat, lim=NULL){
   cor_heat_plot <- cor_heat
   if(is.null(lim)){
-    lim <- max(abs(cor_heat))
+    lim <- max(c(abs(cor_heat), 1e-12))
   }
   cor_heat_plot[which(cor_heat_plot > lim)] <- lim
   cor_heat_plot[which(cor_heat_plot < -lim)] <- -lim
