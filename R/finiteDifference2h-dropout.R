@@ -6,7 +6,7 @@ if(!exists("config")){
     nobs = 101,
     noise = c(0.5, 0.5),
     overrideNoise = TRUE,
-    kernel = "finiteDifference1h",
+    kernel = "finiteDifference2h",
     forceDiagKphi = TRUE,
     forceMean = c("gpsmooth", "truth", "phase8", "zero")[4],
     priorTemperature = c(1, 1),
@@ -19,6 +19,7 @@ if(!exists("config")){
     burninRatio = 0.20,
     stepSizeFactor = 1,
     filllevel = 1,
+    dropoutRate = 0.5,
     modelName = "FN",
     startXAtTruth = TRUE,
     startThetaAtTruth = TRUE,
@@ -222,10 +223,33 @@ score_llik <- xthetasigmallikRcpp(
   yobs=yobs, curCov, config$priorTemperature, useBand = TRUE, useMean = TRUE, modelName = config$modelName
 )
 
-xthetasigamSingleSampler <- function(xthetasigma, stepSize) 
+xthetasigamSingleSampler <- function(xthetasigma, stepSize) {
+  observationIndex <- as.numeric(which(apply(yobs, 1, function(yeach) any(is.finite(yeach)))))
+  discretizationIndex <- setdiff(1:nrow(xsim), observationIndex)
+  sampledIndex <- sample(discretizationIndex, length(discretizationIndex) * (1-config$dropoutRate))
+  activeIndex <- sort(c(observationIndex, sampledIndex))
+  # xlasttime <- matrix(xthetasigma[xId], ncol=ncol(yobs))
+  # activeYobs <- yobs[activeIndex,]
+  # activeX <- xlasttime[activeIndex,]
+  # activeStepSize <- matrix(stepSize[xId], ncol=ncol(yobs))[activeIndex,]
+  # activeCov <- getCovMphi(kernel = config$kernel, xsim = xsim[activeIndex, ], xsim.obs = xsim.obs, config = config)
+  # for(j in 1:(ncol(xsim)-1)){
+  #   activeCov[[j]]$mu <- curCov[[j]]$mu[activeIndex]
+  #   activeCov[[j]]$dotmu <- curCov[[j]]$dotmu[activeIndex]
+  # }
+  # out <- xthetasigmaSample(activeYobs, activeCov, xthetasigma[sigmaId], c(activeX, xthetasigma[thetaId]), 
+  #                          c(activeStepSize, stepSize[c(thetaId, sigmaId)]), config$hmcSteps, F, loglikflag = config$loglikflag,
+  #                          priorTemperature = config$priorTemperature, modelName = config$modelName)
+  xImputeAfterDropout <- matrix(xthetasigma[xId], ncol=ncol(yobs))
+  for(j in 1:(ncol(xsim)-1)){
+    xImputeAfterDropout[, j] <- approx(xsim$time[activeIndex], xImputeAfterDropout[activeIndex, j], xout = xsim$time)$y
+  }
+  xthetasigma[xId] <- xImputeAfterDropout
   xthetasigmaSample(yobs, curCov, xthetasigma[sigmaId], xthetasigma[c(xId, thetaId)], 
                     stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
                     priorTemperature = config$priorTemperature, modelName = config$modelName)
+}
+
 stepLowInit[sigmaId] <- 0
 chainSamplesOut <- chainSampler(config, xthetasigmaInit, xthetasigamSingleSampler, stepLowInit, verbose=TRUE)
 
