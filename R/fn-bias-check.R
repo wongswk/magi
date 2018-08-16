@@ -6,7 +6,7 @@ if(!exists("config")){
     nobs = 101,
     noise = c(0.5, 0.5),
     overrideNoise = TRUE,
-    kernel = "finiteDifference1h",
+    kernel = "generalMatern-3.5",
     forceDiagKphi = TRUE,
     forceMean = c("gpsmooth", "truth", "phase8", "zero")[2],
     priorTemperature = c(1, 1e6),
@@ -245,12 +245,12 @@ odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue, curCov=curCov,
                  gpsmoothFuncList=gpsmoothFuncList, gpderivFuncList=gpderivFuncList)
 
 filename <- paste0(outDir, 
-                   "kernel-",config$kernel,"_",
+                   config$kernel,"_",
                    "diagKphi-",config$forceDiagKphi,"_",
-                   config$forceMean,"_",
+                   "mu-", config$forceMean,"_",
                    "nobs-", config$nobs,"_",
                    "ndis-", config$ndis,"_",
-                   "temperature-xCx-",config$priorTemperature[2],
+                   "temperature-xCx-",config$priorTemperature[2], "_",
                    "seed",config$seed)
 
 gpds:::plotPostSamplesFlex(
