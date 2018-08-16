@@ -50,10 +50,12 @@ config$ndis <- (config$nobs-1)*2^config$filllevel+1
 
 if(config$kernel %in% c("finiteDifference1h", "finiteDifference2h")){
   if(config$forceDiagKphi == FALSE){
-    stop("finiteDifference but forceDiagKphi is FALSE")
+    warning("finiteDifference but forceDiagKphi is FALSE")
+    quit()
   }
   if(config$forceMean == "gpsmooth"){
-    stop("finiteDifference but forceMean is gpsmooth")
+    warning("finiteDifference but forceMean is gpsmooth")
+    quit()
   }
 }
   
