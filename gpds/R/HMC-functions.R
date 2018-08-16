@@ -679,11 +679,15 @@ getCovMphi <- function(kernel, xsim, xsim.obs, config=list()){
         diffMat[i,] <- diffMat[i,] / (xsim$time[i+1] - xsim$time[i-1])
       }
     }
-    curCovNew <- rep(list(list()), 2)
+    curCovNew <- rep(list(list()), ncol(xsim)-1)
     for(j in 1:length(curCovNew)){
       curCovNew[[j]]$mphi <- diffMat
       curCovNew[[j]]$mphiBand <- mat2band(diffMat, bandsize=bandsize)
-      curCovNew[[j]]$mphiLeftHalf <- NULL
+      curCovNew[[j]]$Kinv <- diag(nrow(xsim))
+      curCovNew[[j]]$KinvBand <- mat2band(curCovNew[[j]]$Kinv, bandsize=bandsize)
+      curCovNew[[j]]$Cinv <- matrix(0, nrow(xsim), nrow(xsim))
+      curCovNew[[j]]$CinvBand <- mat2band(curCovNew[[j]]$Cinv, bandsize=bandsize)
+      curCovNew[[j]]$bandsize <- bandsize
     }
     return(curCovNew)
   }else if(kernel=="finiteDifference1h"){
@@ -703,11 +707,15 @@ getCovMphi <- function(kernel, xsim, xsim.obs, config=list()){
         diffMat[i,] <- diffMat[i,] / (xsim$time[i+1] - xsim$time[i])
       }
     }
-    curCovNew <- rep(list(list()), 2)
+    curCovNew <- rep(list(list()), ncol(xsim)-1)
     for(j in 1:length(curCovNew)){
       curCovNew[[j]]$mphi <- diffMat
       curCovNew[[j]]$mphiBand <- mat2band(diffMat, bandsize=bandsize)
-      curCovNew[[j]]$mphiLeftHalf <- NULL
+      curCovNew[[j]]$Kinv <- diag(nrow(xsim))
+      curCovNew[[j]]$KinvBand <- mat2band(curCovNew[[j]]$Kinv, bandsize=bandsize)
+      curCovNew[[j]]$Cinv <- matrix(0, nrow(xsim), nrow(xsim))
+      curCovNew[[j]]$CinvBand <- mat2band(curCovNew[[j]]$Cinv, bandsize=bandsize)
+      curCovNew[[j]]$bandsize <- bandsize
     }
     return(curCovNew)
   }else if(kernel=="zero"){

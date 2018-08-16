@@ -6,23 +6,24 @@ if(!exists("config")){
     nobs = 101,
     noise = c(0.5, 0.5),
     overrideNoise = TRUE,
-    kernel = "generalMatern-2.1",
-    forceDiagKphi = FALSE,
+    kernel = "finiteDifference1h",
+    forceDiagKphi = TRUE,
     forceMean = c("gpsmooth", "truth", "phase8", "zero")[2],
     priorTemperature = c(1, 1e6),
     seed = 125455454,
     npostplot = 50,
     loglikflag = "withmeanBand",
     bandsize = 20,
-    hmcSteps = 500,
-    n.iter = 2500,
-    burninRatio = 0.10,
+    hmcSteps = 1000,
+    n.iter = 5000,
+    burninRatio = 0.20,
     stepSizeFactor = 1,
     filllevel = 1,
     modelName = "FN",
     startXAtTruth = TRUE,
     startThetaAtTruth = TRUE,
-    startSigmaAtTruth = TRUE
+    startSigmaAtTruth = TRUE,
+    sigma_xdot = 0.1
   )
 }
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
@@ -86,24 +87,32 @@ signr.nobs <- -sign(foo)
 
 # GPsmoothing: marllik+fftNormalprior for phi-sigma ----------------------------
 curCov <- getCovMphi(config$kernel, xsim, xsim.obs, config=config)
+if(config$kernel %in% c("finiteDifference1h", "finiteDifference2h")){
+  for(j in 1:(ncol(xsim)-1)){
+    curCov[[j]]$Kinv <- curCov[[j]]$Kinv / config$sigma_xdot^2
+    curCov[[j]]$KinvBand <- curCov[[j]]$KinvBand / config$sigma_xdot^2
+  }
+}
 cursigma <- curCov$cursigma
 curphi <- curCov$curphi
 curCov$cursigma <- NULL
 curCov$curphi <- NULL
 
-gpsmoothFuncList <- list()
-gpderivFuncList <- list()
-for(j in 1:(ncol(xsim)-1)){
-  ynew <- getMeanCurve(xsim.obs$time, xsim.obs[,j+1], xtrue$time, 
-                       t(curphi[,j]), t(cursigma[j]), kerneltype=config$kernel, deriv = TRUE)
-  gpsmoothFuncList[[j]] <- approxfun(xtrue$time, ynew[[1]])
-  gpderivFuncList[[j]] <- approxfun(xtrue$time, ynew[[2]])
-  plot.function(gpsmoothFuncList[[j]], from = min(xsim$time), to = max(xsim$time),
-                lty = 2, col = j, add = TRUE)
-}
-
 xtrue.atsim <- sapply(xtrueFunc, function(f) f(xsim$time))
 dotxtrue.atsim <- gpds:::fnmodelODE(pram.true$theta, xtrue.atsim)
+
+if(!config$kernel %in% c("finiteDifference1h", "finiteDifference2h")){
+  gpsmoothFuncList <- list()
+  gpderivFuncList <- list()
+  for(j in 1:(ncol(xsim)-1)){
+    ynew <- getMeanCurve(xsim.obs$time, xsim.obs[,j+1], xtrue$time, 
+                         t(curphi[,j]), t(cursigma[j]), kerneltype=config$kernel, deriv = TRUE)
+    gpsmoothFuncList[[j]] <- approxfun(xtrue$time, ynew[[1]])
+    gpderivFuncList[[j]] <- approxfun(xtrue$time, ynew[[2]])
+    plot.function(gpsmoothFuncList[[j]], from = min(xsim$time), to = max(xsim$time),
+                  lty = 2, col = j, add = TRUE)
+  }
+}
 
 if(config$forceMean=="gpsmooth"){
   for(j in 1:(ncol(xsim)-1)){
@@ -132,39 +141,41 @@ curphi
 length(curCov)
 # MCMC starting value ----------------------------------------------------------
 yobs <- data.matrix(xsim[,-1])
-
 xsimInit <- xsim
-for(j in 1:(ncol(xsim)-1)){
-  nanId <- which(is.na(xsimInit[,j+1]))
-  xsimInit[nanId,j+1] <- gpsmoothFuncList[[j]](xsimInit$time[nanId])
-}
-matplot(xsimInit$time, xsimInit[,-1], type="p", pch=2, add=TRUE)
-xInit <- data.matrix(xsimInit[,-1])
 
-thetaInit <- rep(1, length(pram.true$theta))
-
-thetaoptim <- function(xInit, thetaInit, curphi, cursigma){
-  curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
-    covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize, 
-                      kerneltype=config$kernel)
-    covEach$mu[] <- mean(xsim.obs[,j+1])
-    covEach
-  })
-  fn <- function(par) {
-    -xthetallikRcpp( yobs, curCov, cursigma, c(xInit, par), "FN" )$value
+if(!config$kernel %in% c("finiteDifference1h", "finiteDifference2h")){
+  for(j in 1:(ncol(xsim)-1)){
+    nanId <- which(is.na(xsimInit[,j+1]))
+    xsimInit[nanId,j+1] <- gpsmoothFuncList[[j]](xsimInit$time[nanId])
   }
-  gr <- function(par) {
-    -as.vector(xthetallikRcpp( yobs, curCov, cursigma, c(xInit, par), "FN" )$grad[-(1:length(xInit))])
+  matplot(xsimInit$time, xsimInit[,-1], type="p", pch=2, add=TRUE)
+  xInit <- data.matrix(xsimInit[,-1])
+  
+  thetaInit <- rep(1, length(pram.true$theta))
+  
+  thetaoptim <- function(xInit, thetaInit, curphi, cursigma){
+    curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
+      covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize, 
+                        kerneltype=config$kernel)
+      covEach$mu[] <- mean(xsim.obs[,j+1])
+      covEach
+    })
+    fn <- function(par) {
+      -xthetallikRcpp( yobs, curCov, cursigma, c(xInit, par), "FN" )$value
+    }
+    gr <- function(par) {
+      -as.vector(xthetallikRcpp( yobs, curCov, cursigma, c(xInit, par), "FN" )$grad[-(1:length(xInit))])
+    }
+    marlikmap <- optim(c(thetaInit), fn, gr, 
+                       method="L-BFGS-B", lower = 0.001, control = list(maxit=1e5))
+    thetaInit[] <- marlikmap$par
+    list(thetaInit = thetaInit)
   }
-  marlikmap <- optim(c(thetaInit), fn, gr, 
-                     method="L-BFGS-B", lower = 0.001, control = list(maxit=1e5))
-  thetaInit[] <- marlikmap$par
-  list(thetaInit = thetaInit)
+  
+  thetamle <- thetaoptim(xInit, thetaInit, curphi, cursigma)
+  thetaInit <- thetamle$thetaInit
+  sigmaInit <- pmax(cursigma, 0.01)
 }
-
-thetamle <- thetaoptim(xInit, thetaInit, curphi, cursigma)
-thetaInit <- thetamle$thetaInit
-sigmaInit <- pmax(cursigma, 0.01)
 
 if(config$startXAtTruth){
   xInit <- sapply(xtrueFunc, function(f) f(xsim$time))  
@@ -182,9 +193,7 @@ stepLowInit <- stepLowInit*config$stepSizeFactor
 
 
 if(config$forceDiagKphi){
-  stopifnot(sum(abs(curCov[[1]]$Kphi)) == sum(abs(diag(curCov[[1]]$Kphi))))
   stopifnot(sum(abs(curCov[[1]]$Kinv)) == sum(abs(diag(curCov[[1]]$Kinv))))
-  stopifnot(sum(abs(curCov[[2]]$Kphi)) == sum(abs(diag(curCov[[2]]$Kphi))))
   stopifnot(sum(abs(curCov[[2]]$Kinv)) == sum(abs(diag(curCov[[2]]$Kinv))))
 }
 
@@ -193,16 +202,16 @@ xId <- 1:length(xInit)
 thetaId <- (max(xId)+1):(max(xId)+length(thetaInit))
 sigmaId <- (max(thetaId)+1):(max(thetaId)+length(sigmaInit))
 
+if(config$overrideNoise){
+  xsim.obs[, -1] <- sapply(xtrueFunc, function(f) f(xsim.obs$time))
+  xsim <- insertNaN(xsim.obs,config$filllevel)
+  yobs <- data.matrix(xsim[,-1])
+}
+
 score_llik <- xthetasigmallikRcpp(
   sapply(xtrueFunc, function(f) f(xsim$time)), theta = pram.true$theta, sigma = pram.true$sigma,
   yobs=yobs, curCov, config$priorTemperature, useBand = TRUE, useMean = TRUE, modelName = config$modelName
 )
-
-if(config$overrideNoise){
-  xsim[, -1] <- xtrue.atsim
-  xsim.obs[, -1] <- sapply(xtrueFunc, function(f) f(xsim.obs$time))
-  yobs <- data.matrix(xsim[,-1])
-}
 
 xthetasigamSingleSampler <- function(xthetasigma, stepSize) 
   xthetasigmaSample(yobs, curCov, xthetasigma[sigmaId], xthetasigma[c(xId, thetaId)], 
@@ -225,10 +234,12 @@ gpode$fode <- aperm(gpode$fode, c(3,1,2))
 dotxtrue = gpds:::fnmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
 configWithPhiSig <- config
-philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = "; "))
-names(philist) <- paste0("phi", 1:length(philist))
-configWithPhiSig <- c(configWithPhiSig, philist)
-configWithPhiSig$score_llik <- score_llik$value
+if(!config$kernel %in% c("finiteDifference1h", "finiteDifference2h")){
+  philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = "; "))
+  names(philist) <- paste0("phi", 1:length(philist))
+  configWithPhiSig <- c(configWithPhiSig, philist)
+  configWithPhiSig$score_llik <- score_llik$value
+}
 
 odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue, curCov=curCov, 
                  gpsmoothFuncList=gpsmoothFuncList, gpderivFuncList=gpderivFuncList)
@@ -251,10 +262,10 @@ heatmap_cor(curCov[[1]]$mphi)
 title("m-matrix for component V")
 heatmap_cor(curCov[[2]]$mphi)
 title("m-matrix for component R")
-heatmap_cor(curCov[[1]]$Kphi, 0.01^2)
-title("K-matrix for component V")
-heatmap_cor(curCov[[2]]$Kphi, 0.01^2)
-title("K-matrix for component R")
+heatmap_cor(curCov[[1]]$Kinv)
+title("Kinv-matrix for component V")
+heatmap_cor(curCov[[2]]$Kinv)
+title("Kinv-matrix for component R")
 dev.off()
 
 absCI <- apply(gpode$theta, 2, quantile, probs = c(0.025, 0.5, 0.975))
