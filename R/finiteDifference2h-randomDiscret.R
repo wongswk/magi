@@ -7,7 +7,7 @@ if(!exists("config")){
     noise = c(0.5, 0.5),
     overrideNoise = TRUE,
     kernel = "finiteDifference2h",
-    forceDiagKphi = TRUE,
+    forceDiagKphi = FALSE,
     forceMean = c("gpsmooth", "truth", "phase8", "zero")[4],
     priorTemperature = c(1, 1),
     seed = 100,
@@ -23,7 +23,8 @@ if(!exists("config")){
     startXAtTruth = TRUE,
     startThetaAtTruth = TRUE,
     startSigmaAtTruth = TRUE,
-    sigma_xdot = 0.1
+    sigma_xdot = 0.1,
+    betaRandDiscret = Inf
   )
 }
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
@@ -70,9 +71,17 @@ matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, ad
 
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
 
-xsim.discret <- data.frame(time=runif(config$ndis - config$nobs) * 20, X1=NaN, X2=NaN)
-xsim <- rbind(xsim.obs,xsim.discret)
-xsim <- xsim[order(xsim$time),]
+nExtraDiscret <- config$ndis - config$nobs
+if(config$filllevel > 0){
+  xsim.discret <- lapply(2:nrow(xsim.obs), function(i)
+    data.frame(time=rbeta(2^config$filllevel-1, config$betaRandDiscret, config$betaRandDiscret) * (xsim.obs$time[i] - xsim.obs$time[i-1]) + xsim.obs$time[i-1], X1=NaN, X2=NaN)
+  )
+  xsim.discret <- do.call(rbind, xsim.discret)
+  xsim <- rbind(xsim.obs,xsim.discret)
+  xsim <- xsim[order(xsim$time),]
+}else{
+  xsim.discret <- data.frame(time=numeric(0), X1=numeric(0), X2=numeric(0))
+}
 
 tvec.full <- xsim$time
 tvec.nobs <- xsim.obs$time
@@ -263,6 +272,7 @@ filename <- paste0(outDir,
                    "nobs-", config$nobs,"_",
                    "ndis-", config$ndis,"_",
                    "temperature-xCx-",config$priorTemperature[2], "_",
+                   "betaRandDiscret-",config$betaRandDiscret, "_",
                    "seed",config$seed)
 
 gpds:::plotPostSamplesFlex(
