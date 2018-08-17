@@ -674,9 +674,12 @@ getCovMphi <- function(kernel, xsim, xsim.obs, config=list()){
         diffMat[i,nrow(xsim)-1] <- -1
         diffMat[i,] <- diffMat[i,] / (xsim$time[nrow(xsim)] - xsim$time[nrow(xsim)-1])
       }else{
-        diffMat[i,i-1] <- -1
-        diffMat[i,i+1] <- 1
-        diffMat[i,] <- diffMat[i,] / (xsim$time[i+1] - xsim$time[i-1])
+        h1 <- xsim$time[i+1] - xsim$time[i]
+        h2 <- xsim$time[i] - xsim$time[i-1]
+        diffMat[i,i-1] <- -h1^2
+        diffMat[i,i] <- h1^2 - h2^2
+        diffMat[i,i+1] <- h2^2
+        diffMat[i,] <- diffMat[i,] / (h1*h2^2 + h1^2*h2)
       }
     }
     curCovNew <- rep(list(list()), ncol(xsim)-1)
