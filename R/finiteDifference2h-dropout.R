@@ -18,13 +18,13 @@ if(!exists("config")){
     n.iter = 5000,
     burninRatio = 0.20,
     stepSizeFactor = 1,
-    filllevel = 1,
+    filllevel = 2,
     dropoutRate = 0.5,
     modelName = "FN",
     startXAtTruth = TRUE,
     startThetaAtTruth = TRUE,
     startSigmaAtTruth = TRUE,
-    sigma_xdot = 0.1
+    sigma_xdot = 0.05
   )
 }
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
@@ -228,26 +228,26 @@ xthetasigamSingleSampler <- function(xthetasigma, stepSize) {
   discretizationIndex <- setdiff(1:nrow(xsim), observationIndex)
   sampledIndex <- sample(discretizationIndex, length(discretizationIndex) * (1-config$dropoutRate))
   activeIndex <- sort(c(observationIndex, sampledIndex))
-  # xlasttime <- matrix(xthetasigma[xId], ncol=ncol(yobs))
-  # activeYobs <- yobs[activeIndex,]
-  # activeX <- xlasttime[activeIndex,]
-  # activeStepSize <- matrix(stepSize[xId], ncol=ncol(yobs))[activeIndex,]
-  # activeCov <- getCovMphi(kernel = config$kernel, xsim = xsim[activeIndex, ], xsim.obs = xsim.obs, config = config)
-  # for(j in 1:(ncol(xsim)-1)){
-  #   activeCov[[j]]$mu <- curCov[[j]]$mu[activeIndex]
-  #   activeCov[[j]]$dotmu <- curCov[[j]]$dotmu[activeIndex]
-  # }
-  # out <- xthetasigmaSample(activeYobs, activeCov, xthetasigma[sigmaId], c(activeX, xthetasigma[thetaId]), 
-  #                          c(activeStepSize, stepSize[c(thetaId, sigmaId)]), config$hmcSteps, F, loglikflag = config$loglikflag,
-  #                          priorTemperature = config$priorTemperature, modelName = config$modelName)
-  xImputeAfterDropout <- matrix(xthetasigma[xId], ncol=ncol(yobs))
+  
+  xlasttime <- matrix(xthetasigma[xId], ncol=ncol(yobs))
+  activeYobs <- yobs[activeIndex,]
+  activeX <- xlasttime[activeIndex,]
+  activeStepSize <- matrix(stepSize[xId], ncol=ncol(yobs))[activeIndex,]
+  activeCov <- getCovMphi(kernel = config$kernel, xsim = xsim[activeIndex, ], xsim.obs = xsim.obs, config = config)
   for(j in 1:(ncol(xsim)-1)){
-    xImputeAfterDropout[, j] <- approx(xsim$time[activeIndex], xImputeAfterDropout[activeIndex, j], xout = xsim$time)$y
+    activeCov[[j]]$mu <- curCov[[j]]$mu[activeIndex]
+    activeCov[[j]]$dotmu <- curCov[[j]]$dotmu[activeIndex]
   }
-  xthetasigma[xId] <- xImputeAfterDropout
-  xthetasigmaSample(yobs, curCov, xthetasigma[sigmaId], xthetasigma[c(xId, thetaId)], 
-                    stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
-                    priorTemperature = config$priorTemperature, modelName = config$modelName)
+  out <- xthetasigmaSample(activeYobs, activeCov, xthetasigma[sigmaId], c(activeX, xthetasigma[thetaId]),
+                           c(activeStepSize, stepSize[c(thetaId, sigmaId)]), config$hmcSteps, F, loglikflag = config$loglikflag,
+                           priorTemperature = config$priorTemperature, modelName = config$modelName)
+  activeXupdated <- matrix(head(out$final, length(activeX)), ncol=ncol(yobs))
+  xthistime <- matrix(NA, nrow=nrow(yobs), ncol=ncol(yobs))
+  for(j in 1:(ncol(xsim)-1)){
+    xthistime[,j] <- approx(xsim$time[activeIndex], activeXupdated[,j], xout=xsim$time)$y
+  }
+  out$final <- c(xthistime, out$final[-(1:length(activeX))])
+  out
 }
 
 stepLowInit[sigmaId] <- 0
