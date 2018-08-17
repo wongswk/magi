@@ -35,7 +35,7 @@ if(grepl("/n/",getwd())){
 }else{
   baseDir <- "~/Workspace/DynamicSys/results/batch-output/"  
 }
-outDir <- paste0(baseDir, "fn-bias/")
+outDir <- paste0(baseDir, "randomDiscrete/")
 system(paste("mkdir -p", outDir))
 
 pram.true <- list(
