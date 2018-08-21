@@ -6,7 +6,7 @@ if(!exists("config")){
     nobs = 101,
     noise = c(0.5, 0.5),
     overrideNoise = TRUE,
-    kernel = "finiteDifference2h",
+    kernel = "generalMatern-2.01",
     forceDiagKphi = TRUE,
     forceMean = c("gpsmooth", "truth", "phase8", "zero")[4],
     priorTemperature = c(1, 1),
@@ -35,7 +35,7 @@ if(grepl("/n/",getwd())){
 }else{
   baseDir <- "~/Workspace/DynamicSys/results/batch-output/"  
 }
-outDir <- paste0(baseDir, "fn-bias/")
+outDir <- paste0(baseDir, "dropout/")
 system(paste("mkdir -p", outDir))
 
 pram.true <- list(
@@ -233,7 +233,17 @@ xthetasigamSingleSampler <- function(xthetasigma, stepSize) {
   activeYobs <- yobs[activeIndex,]
   activeX <- xlasttime[activeIndex,]
   activeStepSize <- matrix(stepSize[xId], ncol=ncol(yobs))[activeIndex,]
-  activeCov <- getCovMphi(kernel = config$kernel, xsim = xsim[activeIndex, ], xsim.obs = xsim.obs, config = config)
+  if(config$kernel %in% c("finiteDifference1h", "finiteDifference2h")){
+    activeCov <- getCovMphi(kernel = config$kernel, xsim = xsim[activeIndex, ], xsim.obs = xsim.obs, config = config)
+  }else{
+    foo <- outer(xsim$time[activeIndex], t(xsim$time[activeIndex]),'-')[,1,]
+    activeCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
+      covEach <- calCov(curphi[, j], abs(foo), -sign(foo), kerneltype=config$kernel,
+                        bandsize = config$bandsize, forceDiagKphi = config$forceDiagKphi)
+      covEach$mu[] <- mean(xsim.obs[,j+1])
+      covEach
+    })
+  }
   for(j in 1:(ncol(xsim)-1)){
     activeCov[[j]]$mu <- curCov[[j]]$mu[activeIndex]
     activeCov[[j]]$dotmu <- curCov[[j]]$dotmu[activeIndex]
@@ -244,7 +254,11 @@ xthetasigamSingleSampler <- function(xthetasigma, stepSize) {
   activeXupdated <- matrix(head(out$final, length(activeX)), ncol=ncol(yobs))
   xthistime <- matrix(NA, nrow=nrow(yobs), ncol=ncol(yobs))
   for(j in 1:(ncol(xsim)-1)){
-    xthistime[,j] <- approx(xsim$time[activeIndex], activeXupdated[,j], xout=xsim$time)$y
+    if(config$kernel %in% c("finiteDifference1h", "finiteDifference2h")){
+      xthistime[,j] <- approx(xsim$time[activeIndex], activeXupdated[,j], xout=xsim$time)$y
+    }else{
+      xthistime[,j] <- curCov[[j]]$C[,activeIndex] %*% (activeCov[[j]]$Cinv %*% activeXupdated[,j])
+    }
   }
   out$final <- c(xthistime, out$final[-(1:length(activeX))])
   out
