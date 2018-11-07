@@ -3,8 +3,8 @@ library(gpds)
 # set up configuration if not already exist ------------------------------------
 if(!exists("config")){
   config <- list(
-    nobs = 26,
-    noise = c(0.1, 0.1),
+    nobs = 41,
+    noise = c(0.15, 0.07),
     kernel = "generalMatern",
     seed = 1365546660, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 50,
@@ -25,7 +25,7 @@ if(!exists("config")){
     temperPrior = TRUE,
     phase3 = FALSE,
     max.epoch = 10,
-    epoch_method = c("mean", "median", "deSolve", "f_x_bar")[4]
+    epoch_method = c("mean", "median", "deSolve", "f_x_bar")[1]
   )
 }
 
@@ -56,7 +56,7 @@ pram.true <- list(
   sigma=config$noise
 )
 
-times <- seq(0,20,0.05)
+times <- seq(0,20,length=241)
 
 modelODE <- function(t, state, parameters) {
   list(as.vector(gpds:::fnmodelODE(parameters, t(state))))
