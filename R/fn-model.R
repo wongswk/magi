@@ -69,7 +69,8 @@ matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=1)
 xtrueFunc <- lapply(2:ncol(xtrue), function(j)
   approxfun(xtrue[, "time"], xtrue[, j]))
 
-xsim <- xtrue
+xsim <- data.frame(time = seq(0,20,length=config$nobs))
+xsim <- cbind(xsim, sapply(xtrueFunc, function(f) f(xsim$time)))
 
 set.seed(config$seed)
 for(j in 1:(ncol(xsim)-1)){

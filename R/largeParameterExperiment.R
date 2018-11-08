@@ -1,6 +1,6 @@
 library(gpds)
 
-nobs.candidates <- c(41, 81, 121)
+nobs.candidates <- c(41, 81, 121, 201)
 filllevel.candidates <- 0:2
 temperPrior.candidates <- c(TRUE, FALSE)
 
@@ -14,7 +14,7 @@ indicatorArray[arg] <- TRUE
 
 config <- list(
   nobs = nobs.candidates[apply(indicatorArray, 2, any)],
-  noise = c(0.15, 0.07),
+  noise = c(0.15, 0.07) * 5,
   kernel = "generalMatern",
   seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
   npostplot = 50,
