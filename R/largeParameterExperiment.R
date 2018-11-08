@@ -1,8 +1,8 @@
 library(gpds)
 
-nobs.candidates <- c(401)
-filllevel.candidates <- 0
-temperPrior.candidates <- c(TRUE)
+nobs.candidates <- c(41, 81, 121)
+filllevel.candidates <- 0:2
+temperPrior.candidates <- c(TRUE, FALSE)
 
 indicatorArray <- array(FALSE, dim=c(length(temperPrior.candidates), 
                                      length(nobs.candidates),
@@ -34,7 +34,7 @@ config <- list(
   phase2 = FALSE,
   phase3 = FALSE,
   temperPrior = temperPrior.candidates[apply(indicatorArray, 1, any)],
-  max.epoch = 9,
+  max.epoch = 10,
   epoch_method = c("mean", "median", "deSolve", "f_x_bar")[1]
 )
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
