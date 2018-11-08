@@ -28,5 +28,5 @@
 #   Rscript R/hes1-async-partial-observations.R ${SLURM_ARRAY_TASK_ID}
 # fi
 
-# Rscript R/largeParameterExperiment.R ${SLURM_ARRAY_TASK_ID}
-Rscript R/fn-ramsay.R ${SLURM_ARRAY_TASK_ID}
+Rscript R/largeParameterExperiment.R ${SLURM_ARRAY_TASK_ID}
+# Rscript R/fn-ramsay.R ${SLURM_ARRAY_TASK_ID}

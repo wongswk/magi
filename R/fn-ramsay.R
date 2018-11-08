@@ -18,7 +18,7 @@ config <- list(
   startThetaAtTruth = FALSE,
   startSigmaAtTruth = FALSE,
   useGPmean = TRUE,
-  forseTrueMean = TRUE,
+  forseTrueMean = FALSE,
   phase2 = FALSE,
   phase3 = FALSE,
   temperPrior = TRUE,

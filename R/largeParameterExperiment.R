@@ -14,7 +14,7 @@ indicatorArray[arg] <- TRUE
 
 config <- list(
   nobs = nobs.candidates[apply(indicatorArray, 2, any)],
-  noise = c(0.5, 0.5),
+  noise = c(0.15, 0.07),
   kernel = "generalMatern",
   seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
   npostplot = 50,
@@ -30,11 +30,11 @@ config <- list(
   startThetaAtTruth = FALSE,
   startSigmaAtTruth = FALSE,
   useGPmean = TRUE,
-  forseTrueMean = TRUE,
+  forseTrueMean = FALSE,
   phase2 = FALSE,
   phase3 = FALSE,
   temperPrior = temperPrior.candidates[apply(indicatorArray, 1, any)],
-  max.epoch = 10,
+  max.epoch = 9,
   epoch_method = c("mean", "median", "deSolve", "f_x_bar")[1]
 )
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
