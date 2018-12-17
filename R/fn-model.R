@@ -4,7 +4,7 @@ library(gpds)
 if(!exists("config")){
   config <- list(
     nobs = 41,
-    noise = c(0.15, 0.07),
+    noise = c(0.15, 0.07) * 2,
     kernel = "generalMatern",
     seed = 1365546660, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 50,
@@ -277,6 +277,26 @@ save.image(paste0(
   outDir,
   config$loglikflag,"-priorTempered-phase",1,"-",config$kernel,"-",config$seed,".rda"))
 
+pdf(paste0(outDir, "illustration.pdf"), width = 16, height = 9)
+layout(t(1:2))
+par(mar=c(5.1, 4.1, 4.1*1.5, 2.1)*1.2)
+matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, xlab='time', ylab=NA)
+matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=2, add=TRUE)
+mtext("P( x | y)", cex=2)
+for(j in 1:(ncol(xsim)-1)){
+  plot.function(gpsmoothFuncList[[j]], from = min(xsim$time), to = max(xsim$time),
+                lty = 1, col = j, add = TRUE)
+}
+matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, xlab='time', ylab=NA)
+matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=2, add=TRUE)
+mtext("P( x | y, ODE)", cex=2)
+gpdsFuncList <- list()
+for(j in 1:(ncol(xsim)-1)){
+  gpdsFuncList[[j]] <- approxfun(xsim$time, colMeans(gpode$xsampled[,,j]))
+  plot.function(gpdsFuncList[[j]], from = min(xsim$time), to = max(xsim$time),
+                lty = 1, col = j, add = TRUE)
+}
+dev.off()
 
 # phase 2 ----------------------------------------------------------------------
 if(config$phase2){
