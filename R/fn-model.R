@@ -277,6 +277,34 @@ save.image(paste0(
   outDir,
   config$loglikflag,"-priorTempered-phase",1,"-",config$kernel,"-",config$seed,".rda"))
 
+
+x0try <- c(-0.8, 0.8)
+theta_try <- c(0.1, 0.3, 2)
+xtry <- deSolve::ode(y = x0try, times = times, func = modelODE, parms = theta_try)
+xtry <- data.frame(xtry)
+
+
+pdf(paste0(outDir, "illustration-data.pdf"), width = 10, height = 9)
+par(mar=c(5.1, 4.1, 4.1*1.5, 2.1)*1.2)
+matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, xlab='time', ylab=NA)
+matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, xlab='time', ylab=NA)
+points(x=0, y=x0try[1], col="thistle4", pch=11, lwd=3, cex=2)
+points(x=0, y=x0try[2], col="indianred", pch=11, lwd=3, cex=2)
+matplot(xtry[, "time"], xtry[, -1], type="l", lty=1, lwd=4, col=c("thistle4", "indianred"))
+matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, xlab='time', ylab=NA)
+points(x=0, y=x0try[1], col="thistle4", pch=11, lwd=3, cex=2)
+points(x=0, y=x0try[2], col="indianred", pch=11, lwd=3, cex=2)
+matplot(xtry[, "time"], xtry[, -1], type="l", lty=1, add=TRUE, lwd=6, col=c("thistle4", "indianred"))
+matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, xlab='time', ylab=NA)
+points(x=0, y=x0try[1], col="thistle4", pch=11, lwd=3, cex=2)
+points(x=0, y=x0try[2], col="indianred", pch=11, lwd=3, cex=2)
+matplot(xtry[, "time"], xtry[, -1], type="l", lty=1, add=TRUE, lwd=6, col=c("thistle4", "indianred"))
+arrows(xsim.obs$time, xsim.obs[,-1][,1], xsim.obs$time, xtry[match(xsim.obs$time, xtry$time), -1][,1],
+       code=3, angle=90, length=0.05, col="thistle4")
+arrows(xsim.obs$time, xsim.obs[,-1][,2], xsim.obs$time, xtry[match(xsim.obs$time, xtry$time), -1][,2],
+       code=3, angle=90, length=0.05, col="indianred")
+dev.off()
+
 pdf(paste0(outDir, "illustration.pdf"), width = 16, height = 9)
 layout(t(1:2))
 par(mar=c(5.1, 4.1, 4.1*1.5, 2.1)*1.2)
