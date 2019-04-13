@@ -2,8 +2,6 @@ library(deSolve)
 library(CollocInfer)
 source("R/helper/utilities.r")
 source("R/helper/basic_hmc.R")
-arg <- commandArgs(trailingOnly = TRUE)
-lambda <- as.numeric(arg)
 
 xsim.obs <- structure(list(time = c(0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 
 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10, 10.5, 11, 11.5, 12, 
@@ -65,32 +63,36 @@ breaks <- seq(0, 20, 0.1)
 FhNbasis <- create.bspline.basis(range = FhNrange, norder = 4, breaks = breaks)
 
 FhNfdPar <- fdPar(FhNbasis, int2Lfd(2), 1)
-if(length(lambda) == 0){
-  lambda <- 0.1  # start pars at truth so this OK, Ramsey method's estimates converge as lambda --> infty  
+
+for (lambda in 0:10){
+  if (lambda == 0){
+    lambda <- 0.1
+    # initial smooth
+    DEfd0 <- smooth.basis(xsim.obs$time, data.matrix(xsim.obs[, 2:3]), FhNfdPar)$fd
+    coefs0 <- DEfd0$coef
+  }else{
+    coefs0 <- Ores2.2$coefs
+    FhNpars <- Ores2.2$pars
+  }
+  
+  profile.obj <- LS.setup(pars = FhNpars, fn = fhn.fun, lambda = lambda,
+                          times = FhNtimes, coefs = coefs0, basisvals = FhNbasis)
+  
+  proc <- profile.obj$proc
+  lik <- profile.obj$lik
+  
+  Ores2.2 <- Profile.LS(fhn.fun, data.matrix(xsim.obs[,-1]), xsim.obs$time, FhNpars, coefs0, FhNbasis, lambda)    # Ramsey optimization, use this as starting values for sampling
+  
+  Ores2.2$pars
+  
+  pdf(paste0(outDir, "illustration-ramsay-lambda-",sprintf("%03d", round(lambda)),".pdf"), width = 10, height = 9)
+  par(mar=c(5.1, 4.1, 4.1*1.5, 2.1)*1.2)
+  matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=0, pch=20, xlab='time', ylab=NA)
+  matplot(FhNtimes, Ores2.2$coefs[c(-1,-nrow(Ores2.2$coefs)),], lty=1, add=TRUE, type="l", 
+          lwd=1, col=c("thistle4", "indianred"))
+  matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim.obs)-1), pch=20, xlab='time', ylab=NA, add=TRUE)
+  par(family="mono")
+  title(paste0("lambda = ", sprintf("%3d", round(lambda))), line=1, cex.main=3)
+  dev.off()
+  save.image(paste0(outDir, "illustration-ramsay-lambda-",sprintf("%03d", round(lambda)),".rda"))
 }
-
-# initial smooth
-DEfd0 <- smooth.basis(xsim.obs$time, data.matrix(xsim.obs[, 2:3]), FhNfdPar)$fd
-coefs0 <- DEfd0$coef
-
-profile.obj <- LS.setup(pars = FhNpars, fn = fhn.fun, lambda = lambda,
-                        times = FhNtimes, coefs = coefs0, basisvals = FhNbasis)
-
-proc <- profile.obj$proc
-lik <- profile.obj$lik
-
-
-Ores2.2 <- Profile.LS(fhn.fun, data.matrix(xsim.obs[,-1]), xsim.obs$time, FhNpars, coefs0, FhNbasis, lambda)    # Ramsey optimization, use this as starting values for sampling
-
-Ores2.2$pars
-
-pdf(paste0(outDir, "illustration-ramsay-lambda-",sprintf("%03d", round(lambda)),".pdf"), width = 10, height = 9)
-par(mar=c(5.1, 4.1, 4.1*1.5, 2.1)*1.2)
-matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=0, pch=20, xlab='time', ylab=NA)
-matplot(FhNtimes, Ores2.2$coefs[c(-1,-nrow(Ores2.2$coefs)),], lty=1, add=TRUE, type="l", 
-        lwd=1, col=c("thistle4", "indianred"))
-matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim.obs)-1), pch=20, xlab='time', ylab=NA, add=TRUE)
-par(family="mono")
-title(paste0("lambda = ", sprintf("%3d", round(lambda))), line=1, cex.main=3)
-dev.off()
-save.image(paste0(outDir, "illustration-ramsay-lambda-",sprintf("%03d", round(lambda)),".rda"))
