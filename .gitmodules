@@ -1,15 +1,10 @@
 [submodule "package/armadillo-code"]
 	path = package/armadillo-code
 	url = https://gitlab.com/conradsnicta/armadillo-code.git
-	ignore = dirty
 	branch = 8.500.x
-
 [submodule "package/boost"]
 	path = package/boost
 	url = https://github.com/boostorg/boost
-	ignore = dirty
-
 [submodule "package/pybind11"]
 	path = package/pybind11
 	url = https://github.com/pybind/pybind11
-	branch = v2.2.2
