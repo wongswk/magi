@@ -28,9 +28,7 @@ if [ ! -d "package" ]; then
 fi
 
 if [ ! -f "lib/libarmadillo.dylib" ] && [ ! -f "lib/libarmadillo.so" ]; then
-    cd package
-    git clone https://gitlab.com/conradsnicta/armadillo-code.git
-    cd armadillo-code
+    cd package/armadillo-code
     git checkout 8.500.x
     ./configure
     make -j $CPU
@@ -40,10 +38,18 @@ if [ ! -f "lib/libarmadillo.dylib" ] && [ ! -f "lib/libarmadillo.so" ]; then
 fi
 
 if [ ! -d "include/pybind11" ]; then
-    cd package
-    git clone https://github.com/pybind/pybind11
-    cd pybind11
+    cd package/pybind11
     git checkout v2.2.2
     cd $PROJECT
     cp -r package/pybind11/include/* include/
+fi
+
+if [ ! -d "include/boost" ]; then
+    cd package/
+    BOOST=boost_1_70_0
+    wget https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.gz
+    tar xf $BOOST.tar.gz
+    rm $BOOST.tar.gz
+    cd $PROJECT
+    cp -r package/boost_1_70_0/boost include/
 fi
