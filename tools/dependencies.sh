@@ -42,6 +42,8 @@ fi
 if [ ! -d "include/pybind11" ]; then
     cd package
     git clone https://github.com/pybind/pybind11
+    cd pybind11
     git checkout v2.2.2
+    cd $PROJECT
     cp -r package/pybind11/include/* include/
 fi
