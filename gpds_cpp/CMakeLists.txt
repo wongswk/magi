@@ -30,15 +30,18 @@ endif ()
 
 
 find_library(ARMADILLO NAMES armadillo PATHS ${CMAKE_CURRENT_SOURCE_DIR}/../lib/)
-find_library(BLAS NAMES openblas /usr/local/opt/openblas/lib)
-find_library(LAPACK NAMES lapack PATHS /usr/lib/)
+#find_library(BLAS NAMES blas PATHS)
+#find_library(LAPACK NAMES lapack PATHS)
 find_library(RBLAS NAMES Rblas PATHS ${R_PATH}/Resources/lib/ ${R_PATH}/lib/)
 find_library(RLAPACK NAMES Rlapack PATHS ${R_PATH}/Resources/lib/ ${R_PATH}/lib/)
 
 include_directories(/usr/local/opt/openblas/include)
 
-add_library(gpds_cpp SHARED library.cpp library.h hmc.cpp hmc.h classDefinition.cpp classDefinition.h)  #  band.cpp band.h
-target_include_directories(gpds_cpp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include /usr/local/opt/openblas/include)
+file(GLOB LIB_GPDS_HEADERS "*.h")
+file(GLOB LIB_GPDS_SOURCE "*.cpp")
+
+add_library(cgpds SHARED ${LIB_GPDS_HEADERS} ${LIB_GPDS_SOURCE})
+target_include_directories(cgpds PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 
 SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath=../lib,-rpath=/usr/local/opt/openblas/lib")
 
