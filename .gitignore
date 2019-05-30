@@ -20,3 +20,12 @@ gpds/testout*.txt
 *.xlsx
 *.xls
 *.zip
+*.dylib
+.idea
+CMakeFiles
+cmake-build-debug
+cmake_install.cmake
+*.cbp
+CMakeCache.txt
+Makefile
+
