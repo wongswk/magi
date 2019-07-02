@@ -6,7 +6,7 @@
 #include <fstream>
 #include <math.h>
 #include <numeric>
-#include <RcppArmadillo.h>
+#include <armadillo>
 
 using namespace std;
 

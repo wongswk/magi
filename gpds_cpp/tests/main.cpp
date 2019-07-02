@@ -19,7 +19,7 @@ int main(){
                                {-arma::datum::inf},
                                {arma::datum::inf},
                                nsteps, traj);
-    // for(int i; i < post.final.size(); i++)
+    // for(int i; i < post.final.size(); i++)`
     //   cout << post.final(i) << endl;
     // cout << post.final << endl;
     return 0;
