@@ -26,7 +26,7 @@ target_include_directories(pygpds SYSTEM PUBLIC
 add_dependencies(pygpds cgpds)
 
 set_target_properties(pygpds PROPERTIES PREFIX "" SUFFIX "${SUFFIX}")
-set_target_properties(pygpds PROPERTIES OUTPUT_NAME "cgpds")
+set_target_properties(pygpds PROPERTIES OUTPUT_NAME "pygpds")
 find_library(CGPDS NAMES cgpds PATHS ${CMAKE_CURRENT_SOURCE_DIR}/../gpds_cpp/)
 target_link_libraries(pygpds ${CGPDS})
 

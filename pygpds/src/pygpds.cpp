@@ -57,7 +57,7 @@ IndexMatrix createIndexMatrix(py::array_t< arma::uword >& array)
 }
 
 
-PYBIND11_MODULE(gpds, macro)
+PYBIND11_MODULE(pygpds, macro)
 {
     /*
      * ARMADILLO FUNCTIONS AND TYPES
