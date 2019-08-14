@@ -5,9 +5,11 @@
 #include <pybind11/buffer_info.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
+#include <pybind11/functional.h>
 #include <armadillo>
 
 #include <tgtdistr.h>
+#include <hmc.h>
 #include <classDefinition.h>
 
 
@@ -381,5 +383,34 @@ PYBIND11_MODULE(pygpds, macro)
         py::arg("yobs"),
         py::arg("dist"),
         py::arg("kernel"));
+
+    /*
+     * cpp class with functionals
+     */
+    py::class_< OdeSystem >(macro, "OdeSystem")
+        .def(py::init<>())
+        .def_readwrite("fOde", &OdeSystem::fOde)
+        .def_readwrite("fOdeDx", &OdeSystem::fOdeDx)
+        .def_readwrite("fOdeDtheta", &OdeSystem::fOdeDtheta)
+        .def_readwrite("name", &OdeSystem::name)
+        .def_readwrite("thetaLowerBound", &OdeSystem::thetaLowerBound)
+        .def_readwrite("thetaUpperBound", &OdeSystem::thetaUpperBound)
+        .def_readwrite("xLowerBound", &OdeSystem::xLowerBound)
+        .def_readwrite("xUpperBound", &OdeSystem::xUpperBound);
+
+    /*
+     * cpp function with functional input
+     */
+    macro.def(
+        "basic_hmcC",
+        &basic_hmcC,
+        "",
+        py::arg("lpr"),
+        py::arg("initial"),
+        py::arg("step"),
+        py::arg("lb"),
+        py::arg("ub"),
+        py::arg("nsteps"),
+        py::arg("traj"));
 }
 
