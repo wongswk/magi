@@ -44,7 +44,7 @@ add_library(cgpds SHARED ${LIB_GPDS_HEADERS} ${LIB_GPDS_SOURCE})
 target_include_directories(cgpds PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 target_link_libraries(cgpds ${BLAS} ${ARMADILLO} ${LAPACK} ${PTHREAD})
 
-SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl")
+SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
 add_executable(gpds_main ${CMAKE_CURRENT_SOURCE_DIR}/tests/main.cpp)
 target_include_directories(gpds_main PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 target_link_libraries(gpds_main cgpds ${ARMADILLO})
