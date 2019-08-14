@@ -1,0 +1,4 @@
+
+PKG_CXX=clang++
+PKG_CXXFLAGS = -std=c++11 -O3 -DNDEBUG -Wall -I${HOME}/Workspace/DynamicSys/dynamic-systems/include/boost_1_65_1
+PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
