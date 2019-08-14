@@ -144,7 +144,7 @@ testthat::test_that("xthetaphisigmallik derivatives", {
          out$value)/delta
   }
   x <- (gradNum - out$grad[1:length(xlatentTest)])/abs(gradNum)
-  testthat::expect_true(all(abs(x) < 5e-3)) # gradient is self-consistent
+  testthat::expect_true(all(abs(x) < 5e-2)) # gradient is self-consistent
   
   # theta
   gradNum <- c()

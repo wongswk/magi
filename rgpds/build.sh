@@ -1,4 +1,4 @@
-#! bin/bash
+#! /bin/bash
 
 mkdir src/rcppgpds
 rsync -avz ../gpds_cpp/*.cpp src/rcppgpds/
