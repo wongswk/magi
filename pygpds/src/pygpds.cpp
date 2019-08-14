@@ -7,6 +7,9 @@
 #include <pybind11/stl.h>
 #include <armadillo>
 
+#include <tgtdistr.h>
+#include <classDefinition.h>
+
 
 namespace py = pybind11;
 
@@ -359,6 +362,10 @@ PYBIND11_MODULE(pygpds, macro)
         return new_cube;
     });
 
+    py::class_< lp >(macro, "lp")
+        .def(py::init<>())
+        .def_readwrite("value", &lp::value)
+        .def_readwrite("gradient", &lp::gradient);
 
 }
 
