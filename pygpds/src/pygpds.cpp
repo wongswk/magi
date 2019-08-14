@@ -372,6 +372,19 @@ PYBIND11_MODULE(pygpds, macro)
         .def_readwrite("value", &lp::value)
         .def_readwrite("gradient", &lp::gradient);
 
+    py::class_< hmcstate >(macro, "hmcstate")
+        .def(py::init<>())
+        .def_readwrite("final", &hmcstate::final)
+        .def_readwrite("finalp", &hmcstate::finalp)
+        .def_readwrite("step", &hmcstate::step)
+        .def_readwrite("trajH", &hmcstate::trajH)
+        .def_readwrite("lprvalue", &hmcstate::lprvalue)
+        .def_readwrite("apr", &hmcstate::apr)
+        .def_readwrite("delta", &hmcstate::delta)
+        .def_readwrite("acc", &hmcstate::acc)
+        .def_readwrite("trajq", &hmcstate::trajq)
+        .def_readwrite("trajp", &hmcstate::trajp);
+
     /*
      * cpp functions
      */
