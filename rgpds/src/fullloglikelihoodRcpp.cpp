@@ -1,8 +1,8 @@
-#include "classDefinition.h"
-#include "fullloglikelihood.h"
-#include "tgtdistr.h"
-#include "hmc.h"
-#include "dynamicalSystemModels.h"
+#include "rcppgpds/classDefinition.h"
+#include "rcppgpds/fullloglikelihood.h"
+#include "rcppgpds/tgtdistr.h"
+#include "rcppgpds/hmc.h"
+#include "rcppgpds/dynamicalSystemModels.h"
 
 using namespace arma;
 

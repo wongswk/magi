@@ -1,11 +1,11 @@
-#include "classDefinition.h"
-#include "fullloglikelihood.h"
-#include "tgtdistr.h"
-#include "hmc.h"
-#include "dynamicalSystemModels.h"
+#include "rcppgpds/classDefinition.h"
+#include "rcppgpds/fullloglikelihood.h"
+#include "rcppgpds/tgtdistr.h"
+#include "rcppgpds/hmc.h"
+#include "rcppgpds/dynamicalSystemModels.h"
+#include "rcppgpds/band.h"
+#include "rcppgpds/phi1loglikelihood.h"
 #include "wrapper.h"
-#include "band.h"
-
 
 using namespace arma;
 

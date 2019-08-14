@@ -1,12 +1,13 @@
 #include <RcppArmadillo.h>
 #include <chrono>
 
-#include "hmc.h"
-#include "classDefinition.h"
+#include "rcppgpds/hmc.h"
+#include "rcppgpds/classDefinition.h"
+#include "rcppgpds/dynamicalSystemModels.h"
+#include "rcppgpds/band.h"
+#include "rcppgpds/fullloglikelihood.h"
+
 #include "wrapper.h"
-#include "dynamicalSystemModels.h"
-#include "band.h"
-#include "fullloglikelihood.h"
 
 using namespace arma;
 using namespace Rcpp;
