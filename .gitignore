@@ -32,3 +32,4 @@ rgpds/src/*
 !rgpds/src/Rcpp*
 !rgpds/src/Makevars
 rgpds/src/RcppExports.cpp
+rgpds/R/RcppExports.R
