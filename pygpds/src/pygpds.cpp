@@ -413,6 +413,7 @@ PYBIND11_MODULE(pygpds, macro)
 
     /*
      * cpp function with functional input
+     * https://pybind11.readthedocs.io/en/stable/advanced/cast/functional.html
      */
     macro.def(
         "basic_hmcC",
