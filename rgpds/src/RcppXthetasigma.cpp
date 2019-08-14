@@ -1,28 +1,28 @@
-#include "rcppgpds/classDefinition.h"
-#include "rcppgpds/fullloglikelihood.h"
-#include "rcppgpds/tgtdistr.h"
-#include "rcppgpds/hmc.h"
-#include "rcppgpds/dynamicalSystemModels.h"
-#include "rcppgpds/band.h"
-#include "rcppgpds/phi1loglikelihood.h"
-#include "wrapper.h"
+#include "classDefinition.h"
+#include "fullloglikelihood.h"
+#include "tgtdistr.h"
+#include "hmc.h"
+#include "band.h"
+#include "dynamicalSystemModels.h"
+#include "xthetasigma.h"
+
+#include "RcppWrapper.h"
 
 using namespace arma;
 
 
-//' R wrapper for xthetallik
+//' R wrapper for xthetasigmallik
 //' @export
 // [[Rcpp::export]]
-Rcpp::List xthetaphi1sigmallikRcpp( const arma::mat & xlatent, 
-                                    const arma::vec & theta, 
-                                    const arma::vec & phi1, 
-                                    const arma::vec & sigma, 
-                                    const arma::mat & yobs, 
-                                    const Rcpp::List & covAllDimInput,
-                                    const Rcpp::NumericVector & priorTemperatureInput = 1.0,
-                                    const bool useBand = false,
-                                    const bool useMean = false,
-                                    const std::string modelName = "FN"){
+Rcpp::List xthetasigmallikRcpp( const arma::mat & xlatent, 
+                                const arma::vec & theta, 
+                                const arma::vec & sigma, 
+                                const arma::mat & yobs, 
+                                const Rcpp::List & covAllDimInput,
+                                const Rcpp::NumericVector & priorTemperatureInput = 1.0,
+                                const bool useBand = false,
+                                const bool useMean = false,
+                                const std::string modelName = "FN"){
   
   OdeSystem model;
   if(modelName == "FN"){
@@ -44,36 +44,33 @@ Rcpp::List xthetaphi1sigmallikRcpp( const arma::mat & xlatent,
   
   const arma::vec priorTemperature = Rcpp::as<arma::vec>(priorTemperatureInput);
   
-  lp ret = xthetaphi1sigmallik(xlatent, 
-                               theta, 
-                               phi1,
-                               sigma, 
-                               yobs, 
-                               covAllDimensions,
-                               model,
-                               priorTemperature,
-                               useBand,
-                               useMean);
+  lp ret = xthetasigmallik(xlatent, 
+                           theta, 
+                           sigma, 
+                           yobs, 
+                           covAllDimensions,
+                           model,
+                           priorTemperature,
+                           useBand,
+                           useMean);
   
   return Rcpp::List::create(Rcpp::Named("value")=ret.value,
                             Rcpp::Named("grad")=ret.gradient);
 }
 
-
 //' sample from GP ODE for latent x, theta, and sigma
 //' @export
 // [[Rcpp::export]]
-Rcpp::List xthetaphi1sigmaSample( const arma::mat & yobs, 
-                                  const Rcpp::List & covList,
-                                  const arma::vec & phi1Init,
-                                  const arma::vec & sigmaInit,
-                                  const arma::vec & xthetaInit, 
-                                  const arma::vec & step,
-                                  const int nsteps = 1, 
-                                  const bool traj = false, 
-                                  const std::string loglikflag = "usual",
-                                  const Rcpp::NumericVector & priorTemperatureInput = 1.0, 
-                                  const std::string modelName = "FN"){
+Rcpp::List xthetasigmaSample( const arma::mat & yobs, 
+                              const Rcpp::List & covList, 
+                              const arma::vec & sigmaInit,
+                              const arma::vec & xthetaInit, 
+                              const arma::vec & step,
+                              const int nsteps = 1, 
+                              const bool traj = false, 
+                              const std::string loglikflag = "usual",
+                              const Rcpp::NumericVector & priorTemperatureInput = 1.0, 
+                              const std::string modelName = "FN"){
   
   const arma::vec priorTemperature = Rcpp::as<arma::vec>(priorTemperatureInput);
   
@@ -113,29 +110,27 @@ Rcpp::List xthetaphi1sigmaSample( const arma::mat & yobs,
     useMean = true;
   }
   
-  std::function<lp(vec)> tgt = [&](const vec & xthetaphi1sigma) -> lp{
-    const mat & xlatent = mat(const_cast<double*>( xthetaphi1sigma.memptr()), yobs.n_rows, yobs.n_cols, false, false);
-    const vec & theta = vec(const_cast<double*>( xthetaphi1sigma.memptr() + yobs.size()), xthetaInit.size() - yobs.size(), false, false);
-    const vec & phi1 = vec(const_cast<double*>( xthetaphi1sigma.memptr() + yobs.size() + theta.size()), phi1Init.size(), false, false);
-    const vec & sigma = vec(const_cast<double*>( xthetaphi1sigma.memptr() + yobs.size() + theta.size() + phi1.size()), sigmaInit.size(), false, false);
-    return xthetaphi1sigmallik( xlatent, 
-                                theta, 
-                                phi1,
-                                sigma, 
-                                yobs, 
-                                covAllDimensions,
-                                model,
-                                priorTemperature,
-                                useBand,
-                                useMean);
-  };
+  std::function<lp(vec)> tgt = [&](const vec & xthetasigma) -> lp{
+      const mat & xlatent = mat(const_cast<double*>( xthetasigma.memptr()), yobs.n_rows, yobs.n_cols, false, false);
+      const vec & theta = vec(const_cast<double*>( xthetasigma.memptr() + yobs.size()), xthetaInit.size() - yobs.size(), false, false);
+      const vec & sigma = vec(const_cast<double*>( xthetasigma.memptr() + yobs.size() + theta.size()), sigmaInit.size(), false, false);
+      return xthetasigmallik( xlatent, 
+                              theta, 
+                              sigma, 
+                              yobs, 
+                              covAllDimensions,
+                              model,
+                              priorTemperature,
+                              useBand,
+                              useMean);
+    };
   
-  vec lb(xthetaInit.size() + phi1Init.size() + sigmaInit.size());
+  vec lb(xthetaInit.size() + sigmaInit.size());
   lb.subvec(0, yobs.size()-1).fill(-datum::inf);
   lb.subvec(yobs.size(), xthetaInit.size()-1) = model.thetaLowerBound;
-  lb.subvec(xthetaInit.size(), lb.size() - 1).fill(1e-3);
+  lb.subvec(xthetaInit.size(), xthetaInit.size() + sigmaInit.size() - 1).fill(1e-3);
   
-  vec initial = join_vert(join_vert(xthetaInit, phi1Init), sigmaInit);
+  vec initial = join_vert(xthetaInit, sigmaInit);
   hmcstate post = basic_hmcC(tgt, initial, step, lb, {datum::inf}, nsteps, traj);
   
   Rcpp::List ret = Rcpp::List::create(Rcpp::Named("final")=post.final,

@@ -28,4 +28,7 @@ cmake_install.cmake
 *.cbp
 CMakeCache.txt
 Makefile
-rgpds/src/rcppgpds
+rgpds/src/*
+!rgpds/src/Rcpp*
+!rgpds/src/Makevars
+rgpds/src/RcppExports.cpp

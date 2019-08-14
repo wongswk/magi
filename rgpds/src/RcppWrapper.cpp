@@ -1,5 +1,5 @@
 // [[Rcpp::plugins(cpp11)]]
-#include "wrapper.h"
+#include "RcppWrapper.h"
 
 using namespace std;
 using namespace arma;
