@@ -362,10 +362,24 @@ PYBIND11_MODULE(pygpds, macro)
         return new_cube;
     });
 
+    /*
+     * cpp classes
+     */
     py::class_< lp >(macro, "lp")
         .def(py::init<>())
         .def_readwrite("value", &lp::value)
         .def_readwrite("gradient", &lp::gradient);
 
+    /*
+     * cpp functions
+     */
+    macro.def(
+        "phisigllik",
+        &phisigllik,
+        "",
+        py::arg("phisig"),
+        py::arg("yobs"),
+        py::arg("dist"),
+        py::arg("kernel"));
 }
 
