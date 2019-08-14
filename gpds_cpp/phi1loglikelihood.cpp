@@ -20,9 +20,9 @@ lp xthetaphi1sigmallik( const mat & xlatent,
                         const mat & yobs, 
                         const std::vector<gpcov> & CovAllDimensions,
                         const OdeSystem & fOdeModel,
-                        const arma::vec & priorTemperatureInput = ones(1),
-                        const bool useBand = false,
-                        const bool useMean = false) {
+                        const arma::vec & priorTemperatureInput,
+                        const bool useBand,
+                        const bool useMean) {
   
   if(useMean){
     mat xlatentShifted = xlatent;
