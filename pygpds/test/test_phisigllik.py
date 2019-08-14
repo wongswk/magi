@@ -19,6 +19,6 @@ class LoglikTest(unittest.TestCase):
         kernel = "matern"
         out = phisigllik(phisig, yobs, dist, kernel)
         self.assertAlmostEqual(out.value, -44.43196495494328)
-        self.assertAlmostEqual(out.gradient, 5.43441)
-        self.assertAlmostEqual(out.gradient, 7.77066)
-        self.assertAlmostEqual(out.gradient, 16.7644)
+        self.assertAlmostEqual(out.gradient[0], 5.434412180472943)
+        self.assertAlmostEqual(out.gradient[1], 7.770662478338444)
+        self.assertAlmostEqual(out.gradient[2], 16.764440049170894)
