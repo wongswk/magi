@@ -5,22 +5,36 @@ if [[ -z "${CPU}" ]]; then
 fi
 
 PROJECT=$(pwd)
-BOOST=boost_1_65_1
-
-
-if [ ! -d "include/$BOOST" ]; then
-
-    cd include
-    wget https://downloads.sourceforge.net/project/boost/boost/1.65.1/$BOOST.tar.gz
-    tar xf $BOOST.tar.gz
-    rm $BOOST.tar.gz
-fi
 
 cd $PROJECT
+
+./tools/dependencies.sh
+
+# build cpp
+cd gpds_cpp
+cmake . && make -j $CPU
+
+cd $PROJECT
+
+# build python
+cd pygpds
+cmake . && make -j $CPU
+python3 -c "import pygpds"
+nosetests
+
+cd $PROJECT
+
+# build R
+export CODECOV_TOKEN="7b481576-694c-4591-8370-64f61df55bdc"
 
 echo "
 PKG_CXX=clang++
 PKG_CXXFLAGS = -std=c++11 -O3 -DNDEBUG -Wall \$(SHLIB_OPENMP_CXXFLAGS) -I$PROJECT/include/$BOOST
 PKG_LIBS = \$(SHLIB_OPENMP_CFLAGS) \$(LAPACK_LIBS) \$(BLAS_LIBS) \$(FLIBS)
 
-" > gpds/src/Makevars
+" > rgpds/src/Makevars
+
+cd rgpds
+./r_buid.sh
+Rscript -e 'devtools::test()'
+Rscript -e 'covr::codecov(path = "rgpds")'

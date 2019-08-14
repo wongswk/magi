@@ -13,4 +13,5 @@ rsync -avz src/rcppgpds/*.h src/
 
 rm -r src/rcppgpds/
 
+Rscript -e "devtools::document();"
 Rscript -e "pkgbuild:::compile_rcpp_attributes(); Rcpp::compileAttributes(); devtools::document(); devtools::install();"

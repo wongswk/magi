@@ -46,10 +46,10 @@ fi
 
 if [ ! -d "include/boost" ]; then
     cd package/
-    BOOST=boost_1_70_0
-    wget https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.gz
+    export BOOST=boost_1_70_0
+    wget https://dl.bintray.com/boostorg/release/1.70.0/source/$BOOST.tar.gz
     tar xf $BOOST.tar.gz
     rm $BOOST.tar.gz
     cd $PROJECT
-    cp -r package/boost_1_70_0/boost include/
+    cp -r package/$BOOST/boost include/
 fi
