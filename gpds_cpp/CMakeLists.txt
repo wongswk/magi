@@ -42,6 +42,8 @@ file(GLOB LIB_GPDS_SOURCE "*.cpp")
 
 add_library(cgpds SHARED ${LIB_GPDS_HEADERS} ${LIB_GPDS_SOURCE})
 target_include_directories(cgpds PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+#add_definitions(-DARMA_BLAS_LONG_LONG)
+set_target_properties(cgpds PROPERTIES COMPILE_DEFINITIONS "ARMA_BLAS_LONG_LONG")
 target_link_libraries(cgpds ${BLAS} ${ARMADILLO} ${LAPACK} ${PTHREAD})
 
 SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
