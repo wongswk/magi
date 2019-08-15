@@ -53,7 +53,7 @@ for(kerneltype in c("compact1","rbf","matern","periodicMatern","generalMatern",
                        -sign(outer(xtime,xtime,'-')),
                        kerneltype = kerneltype)
       expect_equal((egcov1$C - egcov0$C)/delta, egcov0$dCdphiCube[,,it],
-                   tolerance = 1e-3, scale = max(egcov0$dCdphiCube[,,it]))
+                   tolerance = 1e-3, scale = max(abs(egcov0$dCdphiCube[,,it])))
     }
   })
   
