@@ -1,19 +1,42 @@
+## python for travis: https://docs.travis-ci.com/user/languages/python
+#
+#language: python
+#sudo: true
+#cache: packages
+#
+#python:
+#  - "3.6"
+#
+#before_install:
+#  - sudo add-apt-repository ppa:marutter/rrutter3.5 -y
+#  - sudo apt-get update
+#  - sudo apt install r-api-3.5 -y
+#  - sudo apt-get install libblas-dev liblapack-dev gfortran -y
+#  - mkdir -p ~/R/library
+#  - export R_LIBS_USER=$HOME/R/library
+#  - Rscript -e 'install.packages("devtools", repos="http://cran.us.r-project.org")'
+#
+#install:
+#  - ./build.sh
+#
+#script:
+#  - R CMD build rgpds
+#  - R CMD check rgpds*tar.gz
+
+
+# R for travis: see documentation at https://docs.travis-ci.com/user/languages/r
 # R for travis: see documentation at https://docs.travis-ci.com/user/languages/r
 
-language: python
+language: r
 sudo: true
 cache: packages
 
-python:
-  - "3.6"
+r:
+  - release
 
 before_install:
-  - sudo add-apt-repository ppa:marutter/rrutter3.5 -y
-  - sudo apt-get update
-  - sudo apt install r-api-3.5 -y
-  - sudo apt-get install libblas-dev liblapack-dev gfortran -y
-  - mkdir -p ~/R/library
-  - export R_LIBS_USER=$HOME/R/library
+  - export CODECOV_TOKEN="7b481576-694c-4591-8370-64f61df55bdc"
+  - sudo apt-get install python3-dev -y
   - Rscript -e 'install.packages("devtools", repos="http://cran.us.r-project.org")'
 
 install:
@@ -22,3 +45,8 @@ install:
 script:
   - R CMD build rgpds
   - R CMD check rgpds*tar.gz
+
+after_success:
+  - Rscript -e 'covr::codecov(path = "rgpds")'
+
+# need a shell to install Rtools if not already exist on Windows

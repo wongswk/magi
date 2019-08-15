@@ -37,3 +37,5 @@ cd rgpds
 ./r_build.sh
 Rscript -e 'devtools::test()'
 Rscript -e 'covr::codecov(path = "rgpds")'
+
+cd $PROJECT
