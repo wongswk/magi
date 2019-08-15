@@ -1,28 +1,20 @@
 # R for travis: see documentation at https://docs.travis-ci.com/user/languages/r
 
-language: R
-sudo: false
+language: python
+sudo: true
 cache: packages
 
-r:
-  - release
+python:
+  - "3.6"
 
 before_install:
-  - export CODECOV_TOKEN="7b481576-694c-4591-8370-64f61df55bdc"
-  - ./build.sh
-  - cd gpds
+  - sudo add-apt-repository ppa:marutter/rrutter3.5
+  - sudo apt-get update
+  - sudo apt install r-api-3.5
 
 install:
-  - Rscript -e 'install.packages(c("devtools", "roxygen2"), repos="http://cran.us.r-project.org")'
-  - Rscript -e 'devtools::install_deps(dependencies = TRUE, repos="http://cran.us.r-project.org")'
-  - Rscript -e 'devtools::document(); devtools::test()'
+  - ./build.sh
 
 script:
-  - R CMD build .
-  - R CMD check *tar.gz
-
-after_success:
-  - cd ..
-  - Rscript -e 'covr::codecov(path = "gpds")'
-
-# need a shell to install Rtools if not already exist on Windows
+  - R CMD build rgpds
+  - R CMD check rgpds*tar.gz
