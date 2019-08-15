@@ -11,7 +11,9 @@ before_install:
   - sudo add-apt-repository ppa:marutter/rrutter3.5 -y
   - sudo apt-get update
   - sudo apt install r-api-3.5 -y
+  - sudo apt-get install libblas-dev liblapack-dev gfortran -y
   - mkdir -p ~/R/library
+  - export R_LIBS_USER=$HOME/R/library
 
 install:
   - ./build.sh

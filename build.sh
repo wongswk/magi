@@ -4,6 +4,10 @@ if [[ -z "${CPU}" ]]; then
     export CPU=$(python -c 'import multiprocessing as mp; print(mp.cpu_count())')
 fi
 
+if [[ -z "${R_LIBS_USER}" ]]; then
+    export R_LIBS_USER=$HOME/R/library
+fi
+
 export PROJECT=$(pwd)
 export BOOST=boost_1_70_0
 
