@@ -13,7 +13,9 @@ python:
   - "3.6"
 
 before_install:
-  - sudo apt-get install python3-tk python3-pip python3-venv python3-pip python3-dev ipython3 -y
+  - sudo apt-get install cmake -y
+
+  - sudo apt-get install python3-tk python3-pip python3-venv python3-dev ipython3 -y
   - python3 -m venv pyenv_gpds
   - source pyenv_gpds/bin/activate
   - export PYTHONPATH=$(pwd)/pygpds
