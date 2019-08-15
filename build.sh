@@ -39,6 +39,6 @@ cd rgpds
 ./r_build.sh
 # Rscript -e 'devtools::test()'
 Rscript -e 'testthat::test_package("gpds")'
-Rscript -e 'covr::codecov(path = ".")'
+# Rscript -e 'covr::codecov(path = ".")'
 
 cd $PROJECT
