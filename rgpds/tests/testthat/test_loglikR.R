@@ -149,7 +149,7 @@ outExpectedvalue <- -55.73911
 testthat::test_that("compact1 - xthetallikC runs without error and is correct", {
   out <- gpds::xthetallikC(dataInput, curCovVcompact1, curCovRcompact1, cursigma, xthInit)
   
-  testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-5, scale = abs(outExpectedvalue))
+  testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-4, scale = abs(outExpectedvalue))
   gradExpect <- 143.910609069213
   testthat::expect_equal(sum(out$grad), gradExpect, tolerance = 1e-4, scale = abs(gradExpect))
 })
@@ -180,7 +180,7 @@ outExpectedvalue <- -6017094
 testthat::test_that("rbf - xthetallikC runs without error and is correct", {
   out <- gpds::xthetallikC(dataInput, curCovVrbf, curCovRrbf, cursigma, xthInit)
   
-  testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-5, scale = abs(outExpectedvalue))
+  testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-4, scale = abs(outExpectedvalue))
   testthat::expect_equal(sum(out$grad), 2781668, tolerance = 1e-1)
 })
 
