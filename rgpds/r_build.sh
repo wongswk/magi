@@ -24,9 +24,9 @@ PKG_LIBS = \$(LAPACK_LIBS) \$(BLAS_LIBS) \$(FLIBS)
 MAKEFLAGS = -j$CPU
 " > src/Makevars
 
-Rscript -e 'if (!require("devtools")) install.packages("devtools", repos="http://cran.us.r-project.org")'
-Rscript -e 'if (!require("roxygen2")) install.packages("roxygen2", repos="http://cran.us.r-project.org")'
-Rscript -e 'devtools::install_deps(dependencies = TRUE, repos="http://cran.us.r-project.org")'
+MAKE="make -j$CPU" Rscript -e 'if (!require("devtools")) install.packages("devtools", repos="http://cran.us.r-project.org")'
+MAKE="make -j$CPU" Rscript -e 'if (!require("roxygen2")) install.packages("roxygen2", repos="http://cran.us.r-project.org")'
+MAKE="make -j$CPU" Rscript -e 'devtools::install_deps(dependencies = TRUE, repos="http://cran.us.r-project.org")'
 
 find src/ -lname '*' -delete
 mkdir src/rcppgpds

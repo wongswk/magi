@@ -28,7 +28,7 @@ before_install:
   - sudo apt-get install libblas-dev liblapack-dev gfortran -y
   - mkdir -p ~/R/library
   - export R_LIBS_USER=$HOME/R/library
-  - Rscript -e 'install.packages("devtools", repos="http://cran.us.r-project.org")'
+  - MAKE="make -j4" Rscript -e 'install.packages("devtools", repos="http://cran.us.r-project.org")'
 
 install:
   - ./build.sh
