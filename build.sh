@@ -1,4 +1,6 @@
 #!/bin/bash
+# if the following commands error, cause the script to error
+set -e
 
 if [[ -z "${CPU}" ]]; then
     export CPU=$(python -c 'import multiprocessing as mp; print(mp.cpu_count())')
