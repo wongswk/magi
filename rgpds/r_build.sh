@@ -1,4 +1,6 @@
 #! /bin/bash
+# if the following commands error, cause the script to error
+set -e
 
 if [[ -z "${R_LIBS_USER}" ]]; then
     export R_LIBS_USER=$HOME/R/library

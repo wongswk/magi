@@ -1,5 +1,6 @@
 // [[Rcpp::plugins(cpp11)]]
 #include "RcppWrapper.h"
+#include "RcppArmadillo.h"
 
 using namespace std;
 using namespace arma;
@@ -365,4 +366,42 @@ Rcpp::List xthetallikWithmuBandC(const arma::mat & yobs,
   lp ret = xthetallikWithmuBand(initial, covAllDimensions, sigma, yobs, fnmodel, useBand, priorTemperature);
   return Rcpp::List::create(Rcpp::Named("value")=ret.value,
                             Rcpp::Named("grad")=ret.gradient);
+}
+
+
+lp lp_r2cpp(const Rcpp::List & lp_r){
+    lp lp_c;
+    lp_c.value = lp_r["value"];
+
+    const Rcpp::NumericVector & gradient = as<const NumericVector>(lp_r["gradient"]);
+    lp_c.gradient = vec(const_cast<double*>( &(gradient[0])), gradient.size(), false, false);
+
+    return lp_c;
+}
+
+
+//' R wrapper for basic_hmcC
+//' @export
+// [[Rcpp::export]]
+Rcpp::List basic_hmcRcpp(const Rcpp::Function rlpr,
+                         const arma::vec & initial,
+                         const arma::vec & step,
+                         arma::vec lb,
+                         arma::vec ub,
+                         const int nsteps = 1,
+                         const bool traj = false){
+    const std::function<lp (vec)> & clpr = [& rlpr](const vec & x) -> lp {
+        return lp_r2cpp(rlpr(x));
+    };
+    const hmcstate & ret = basic_hmcC(clpr, initial, step, lb, ub, nsteps, traj);
+    return Rcpp::List::create(Rcpp::Named("final")=ret.final,
+                              Rcpp::Named("finalp")=ret.finalp,
+                              Rcpp::Named("step")=ret.step,
+                              Rcpp::Named("trajH")=ret.trajH,
+                              Rcpp::Named("lprvalue")=ret.lprvalue,
+                              Rcpp::Named("apr")=ret.apr,
+                              Rcpp::Named("delta")=ret.delta,
+                              Rcpp::Named("acc")=ret.acc,
+                              Rcpp::Named("trajq")=ret.trajq,
+                              Rcpp::Named("trajp")=ret.trajp);
 }
