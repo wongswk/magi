@@ -4,7 +4,8 @@ if [[ -z "${CPU}" ]]; then
     export CPU=$(python -c 'import multiprocessing as mp; print(mp.cpu_count())')
 fi
 
-PROJECT=$(pwd)
+export PROJECT=$(pwd)
+export BOOST=boost_1_70_0
 
 cd $PROJECT
 

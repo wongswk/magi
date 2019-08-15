@@ -46,7 +46,6 @@ fi
 
 if [ ! -d "include/boost" ]; then
     cd package/
-    export BOOST=boost_1_70_0
     wget https://dl.bintray.com/boostorg/release/1.70.0/source/$BOOST.tar.gz
     tar xf $BOOST.tar.gz
     rm $BOOST.tar.gz
