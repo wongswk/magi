@@ -22,3 +22,4 @@ Suggests:
     mvtnorm,
     covr,
     knitr,
+    MASS,
