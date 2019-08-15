@@ -2,7 +2,7 @@
 #define CLASSDEFINITION_H
 
 // [[Rcpp::depends(RcppArmadillo)]]
-#include <armadillo>
+#include <RcppArmadillo.h>
 // #include <armadillo> // uncomment this for pure c++ compilation 
 #include <iostream>
 #include <stdio.h>
