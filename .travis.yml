@@ -25,7 +25,6 @@
 
 
 # R for travis: see documentation at https://docs.travis-ci.com/user/languages/r
-# R for travis: see documentation at https://docs.travis-ci.com/user/languages/r
 
 language: r
 sudo: true
@@ -35,8 +34,13 @@ r:
   - release
 
 before_install:
-  - export CODECOV_TOKEN="7b481576-694c-4591-8370-64f61df55bdc"
-  - sudo apt-get install python3-dev -y
+  - sudo apt-get install python3-dev python3-venv -y
+  - python3 -m venv pyenv_gpds
+  - source pyenv_gpds/bin/activate
+  - mkdir -p ~/R/library
+  - export R_LIBS_USER=$HOME/R/library
+  - export PYTHONPATH=$(pwd)/pygpds
+  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/gpds_cpp/
   - Rscript -e 'install.packages("devtools", repos="http://cran.us.r-project.org")'
 
 install:
@@ -45,8 +49,5 @@ install:
 script:
   - R CMD build rgpds
   - R CMD check rgpds*tar.gz
-
-after_success:
-  - Rscript -e 'covr::codecov(path = "rgpds")'
 
 # need a shell to install Rtools if not already exist on Windows
