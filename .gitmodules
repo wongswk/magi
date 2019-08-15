@@ -2,6 +2,7 @@
 	path = package/armadillo-code
 	url = https://gitlab.com/conradsnicta/armadillo-code.git
 	branch = 8.500.x
+	ignore = dirty
 [submodule "package/pybind11"]
 	path = package/pybind11
 	url = https://github.com/pybind/pybind11

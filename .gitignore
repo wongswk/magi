@@ -33,3 +33,7 @@ rgpds/src/*
 !rgpds/src/Makevars
 rgpds/src/RcppExports.cpp
 rgpds/R/RcppExports.R
+__pycache__
+package/boost*
+rgpds/man
+gpds_cpp/gpds_main
