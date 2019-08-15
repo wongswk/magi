@@ -2,9 +2,8 @@
 
 echo "
 PKG_CXX=clang++
-PKG_CXXFLAGS = -std=c++11 -O3 -DNDEBUG -Wall \$(SHLIB_OPENMP_CXXFLAGS) -I$PROJECT/include
-PKG_LIBS = \$(SHLIB_OPENMP_CFLAGS) \$(LAPACK_LIBS) \$(BLAS_LIBS) \$(FLIBS)
-
+PKG_CXXFLAGS = -std=c++11 -O3 -DNDEBUG -Wall -I$PROJECT/include
+PKG_LIBS = \$(LAPACK_LIBS) \$(BLAS_LIBS) \$(FLIBS)
 " > src/Makevars
 
 Rscript -e 'install.packages(c("devtools", "roxygen2"), repos="http://cran.us.r-project.org")'
@@ -25,3 +24,4 @@ rm -r src/rcppgpds/
 
 Rscript -e "devtools::document();"
 Rscript -e "pkgbuild:::compile_rcpp_attributes(); Rcpp::compileAttributes(); devtools::document(); devtools::install();"
+
