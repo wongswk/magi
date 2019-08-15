@@ -1,7 +1,8 @@
 
 set(pybind11_DIR ${CMAKE_CURRENT_LIST_DIR}/../include/pybind11/)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -flto -O3 -W -Wall -Werror -Wformat=2 -Wnull-dereference -Wold-style-cast -pedantic -fprofile-arcs -ftest-coverage -fPIC ")
-set (CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_COMPILER g++-6)
 
 file(GLOB LIB_PYGPDS_HEADERS "src/*.h")
 file(GLOB LIB_PYGPDS_SOURCE "src/*.cpp")
