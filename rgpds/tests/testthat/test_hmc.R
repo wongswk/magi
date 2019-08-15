@@ -32,3 +32,13 @@ testthat::test_that("HMC for truncated normal distribution is correct", {
     testthat::expect_gt(checkoutput$p.value, 1e-5)
   }
 })
+
+testthat::test_that("HMC for generic distribution is correct", {
+  llk <- function(x) {
+    value = -0.5*sum(x^2)
+    gradient = -x
+    list(value=value, gradient=gradient)
+  }
+  hmc_out <- gpds::basic_hmcRcpp(llk, c(0.2, 0.2), c(0.1, 0.1), c(-10, -10), c(Inf, Inf), 200, TRUE)
+  testthat::expect_equal(llk(hmc_out$final)$value, hmc_out$lprvalue, scale=abs(hmc_out$lprvalue))
+})

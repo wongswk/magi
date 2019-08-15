@@ -23,3 +23,4 @@ class HmcTest(unittest.TestCase):
                          nsteps=200,
                          traj=False)
         self.assertEqual(out.final.size(), 2)
+        self.assertEqual(llk(out.final).value, out.lprvalue)
