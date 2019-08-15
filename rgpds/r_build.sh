@@ -1,5 +1,12 @@
 #! /bin/bash
 
+echo "
+PKG_CXX=clang++
+PKG_CXXFLAGS = -std=c++11 -O3 -DNDEBUG -Wall \$(SHLIB_OPENMP_CXXFLAGS) -I$PROJECT/include/$BOOST
+PKG_LIBS = \$(SHLIB_OPENMP_CFLAGS) \$(LAPACK_LIBS) \$(BLAS_LIBS) \$(FLIBS)
+
+" > src/Makevars
+
 Rscript -e 'install.packages(c("devtools", "roxygen2"), repos="http://cran.us.r-project.org")'
 Rscript -e 'devtools::install_deps(dependencies = TRUE, repos="http://cran.us.r-project.org")'
 

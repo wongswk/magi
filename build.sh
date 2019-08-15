@@ -28,13 +28,6 @@ cd $PROJECT
 # build R
 export CODECOV_TOKEN="7b481576-694c-4591-8370-64f61df55bdc"
 
-echo "
-PKG_CXX=clang++
-PKG_CXXFLAGS = -std=c++11 -O3 -DNDEBUG -Wall \$(SHLIB_OPENMP_CXXFLAGS) -I$PROJECT/include/$BOOST
-PKG_LIBS = \$(SHLIB_OPENMP_CFLAGS) \$(LAPACK_LIBS) \$(BLAS_LIBS) \$(FLIBS)
-
-" > rgpds/src/Makevars
-
 cd rgpds
 ./r_buid.sh
 Rscript -e 'devtools::test()'
