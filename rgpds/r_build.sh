@@ -1,5 +1,8 @@
 #! /bin/bash
 
+Rscript -e 'install.packages(c("devtools", "roxygen2"), repos="http://cran.us.r-project.org")'
+Rscript -e 'devtools::install_deps(dependencies = TRUE, repos="http://cran.us.r-project.org")'
+
 mkdir src/rcppgpds
 rsync -avz ../gpds_cpp/*.cpp src/rcppgpds/
 rsync -avz ../gpds_cpp/*.h src/rcppgpds/
