@@ -40,7 +40,7 @@ Rscript -e "pkgbuild:::compile_rcpp_attributes(); Rcpp::compileAttributes(); dev
 
 LIB_PYGPDS_SOURCE=$(cd "$PROJECT"/gpds_cpp && ls -- *.cpp)
 LIB_PYGPDS_HEADERS=$(cd "$PROJECT"/gpds_cpp && ls -- *.h)
-cd "$PROJECT"/rgpds/src && rm "$LIB_PYGPDS_SOURCE" "$LIB_PYGPDS_HEADERS"
+cd "$PROJECT"/rgpds/src && rm $LIB_PYGPDS_SOURCE $LIB_PYGPDS_HEADERS
 cd "$PROJECT"/rgpds || return
 ln -s "$(pwd)"/../gpds_cpp/*.cpp src/
 ln -s "$(pwd)"/../gpds_cpp/*.h src/
