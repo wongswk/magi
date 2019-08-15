@@ -11,12 +11,17 @@ if [[ -z "${PROJECT}" ]]; then
     export PROJECT
 fi
 
+if [[ -z "${CPU}" ]]; then
+    export CPU=$(python -c 'import multiprocessing as mp; print(mp.cpu_count())')
+fi
+
 cd "$PROJECT"/rgpds || exit 1
 
 echo "
 PKG_CXX=clang++
 PKG_CXXFLAGS = -std=c++11 -O3 -DNDEBUG -Wall -I$PROJECT/include
 PKG_LIBS = \$(LAPACK_LIBS) \$(BLAS_LIBS) \$(FLIBS)
+MAKEFLAGS = -j$CPU
 " > src/Makevars
 
 Rscript -e 'if (!require("devtools")) install.packages("devtools", repos="http://cran.us.r-project.org")'
