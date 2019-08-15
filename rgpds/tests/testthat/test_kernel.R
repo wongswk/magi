@@ -30,10 +30,10 @@ for(kerneltype in c("compact1","rbf","matern","periodicMatern","generalMatern",
     
     testthat::expect_equal( (egcov2$Cprime[-1,1] + egcov2$Cprime[-nrow(egcov2$Cprime),1])/2, 
                            diff(egcov2$C[,1])/delta, 
-                           tolerance = 0.0001, scale=max(egcov2$Cprime[-1,1]))
+                           tolerance = 0.0001, scale=max(abs(egcov2$Cprime[-1,1])))
     testthat::expect_equal( (egcov2$Cdoubleprime[-1,1] + egcov2$Cdoubleprime[-nrow(egcov2$Cdoubleprime),1])/2, 
                            -diff(egcov2$Cprime[,1])/0.01, 
-                           tolerance = 0.001, scale=max(egcov2$Cdoubleprime[-1,1]))
+                           tolerance = 0.001, scale=max(abs(egcov2$Cdoubleprime[-1,1])))
   })
   
   testthat::test_that("check dCdphi", {
