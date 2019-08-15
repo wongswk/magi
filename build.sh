@@ -18,7 +18,7 @@ cd $PROJECT
 
 # build python
 cd pygpds
-pip3 install numpy nose
+pip3 install numpy nose scipy
 cmake . && make -j $CPU
 python3 -c "import pygpds"
 nosetests
