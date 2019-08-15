@@ -7,6 +7,10 @@ PKG_LIBS = \$(SHLIB_OPENMP_CFLAGS) \$(LAPACK_LIBS) \$(BLAS_LIBS) \$(FLIBS)
 
 " > src/Makevars
 
+if [[ -z "${R_LIBS_USER}" ]]; then
+    export R_LIBS_USER=$HOME/R/library
+fi
+
 Rscript -e 'install.packages(c("devtools", "roxygen2"), repos="http://cran.us.r-project.org")'
 Rscript -e 'devtools::install_deps(dependencies = TRUE, repos="http://cran.us.r-project.org")'
 

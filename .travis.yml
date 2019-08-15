@@ -11,6 +11,7 @@ before_install:
   - sudo add-apt-repository ppa:marutter/rrutter3.5 -y
   - sudo apt-get update
   - sudo apt install r-api-3.5 -y
+  - mkdir -p ~/R/library
 
 install:
   - ./build.sh

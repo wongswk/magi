@@ -4,10 +4,10 @@ project(gpds_cpp)
 set(CMAKE_CXX_STANDARD 11)
 
 
-if (IS_DIRECTORY $ENV{HOME}/R_LIBS)
-    set(R_LIBS_USER $ENV{HOME}/R_LIBS)
+if (IS_DIRECTORY $ENV{HOME}/R/library)
+    set(R_LIBS_USER $ENV{HOME}/R/library)
 else ()
-    set(R_LIBS_USER $ENV{HOME}/Library/R/3.4/library/)
+    set(R_LIBS_USER $ENV{HOME}/Library/R/3.6/library/)
 endif ()
 
 
