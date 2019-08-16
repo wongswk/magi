@@ -34,7 +34,8 @@ install:
   - ./build.sh
 
 script:
-  - R CMD build rgpds
-  - R CMD check gpds*tar.gz
+  - echo "testing code integrated in intallation"
+#  - R CMD build rgpds
+#  - R CMD check gpds*tar.gz
 
 # need a shell to install Rtools if not already exist on Windows
