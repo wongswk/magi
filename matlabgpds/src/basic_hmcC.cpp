@@ -67,7 +67,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     //processing on input arguments
     mxArray * lpr_matlab = const_cast<mxArray *>(prhs[0]);
 
-    const std::function<lp (vec)> lpr = [& lpr_matlab](vec & x) -> lp {
+    const std::function<lp (vec)> & lpr = [& lpr_matlab](const vec & x) -> lp {
         mxArray * x_matlab = mxCreateDoubleMatrix(x.size(), 1, mxREAL);
         armaSetPr(x_matlab, x);
 
