@@ -35,6 +35,6 @@ install:
 
 script:
   - R CMD build rgpds
-  - R CMD check rgpds*tar.gz
+  - R CMD check gpds*tar.gz
 
 # need a shell to install Rtools if not already exist on Windows
