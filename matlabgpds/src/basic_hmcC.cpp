@@ -20,9 +20,7 @@ void matlab2arma(mat& A, const mxArray *mxdata){
 };
 
 void matlab2armavec(vec& A, const mxArray *mxdata){
-    access::rw(A.mem)=mxGetPr(mxdata);
-    access::rw(A.n_cols)=mxGetN(mxdata);
-    access::rw(A.n_elem)=mxGetN(mxdata);
+    A = vec(const_cast<double*>( mxGetPr(mxdata)), static_cast<int>(mxGetNumberOfElements(mxdata)), false, false);
 }
 
 void freeVar(mat& A, const double *ptr){
@@ -48,19 +46,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         mexErrMsgTxt("First input argument is not a function handle.");
     }
     // Second Argument is a Double Vector
-    if (!mxIsClass(prhs[1], "double")||(mxGetN(prhs[1])>1)) {
+    if (!mxIsClass(prhs[1], "double")||(mxGetM(prhs[1])>1)) {
         mexErrMsgTxt("Second input argument is not a double vector");
     }
     // 3rd Argument is a Double Vector
-    if (!mxIsClass(prhs[2], "double")||(mxGetN(prhs[2])>1)) {
+    if (!mxIsClass(prhs[2], "double")||(mxGetM(prhs[2])>1)) {
         mexErrMsgTxt("3rd input argument is not a double vector");
     }
     // 4th Argument is a Double Vector
-    if (!mxIsClass(prhs[3], "double")||(mxGetN(prhs[3])>1)) {
+    if (!mxIsClass(prhs[3], "double")||(mxGetM(prhs[3])>1)) {
         mexErrMsgTxt("4th input argument is not a double vector");
     }
     // 5th Argument is a Double Vector
-    if (!mxIsClass(prhs[4], "double")||(mxGetN(prhs[4])>1)) {
+    if (!mxIsClass(prhs[4], "double")||(mxGetM(prhs[4])>1)) {
         mexErrMsgTxt("5th input argument is not a double vector");
     }
 
@@ -92,11 +90,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     matlab2armavec(step, prhs[2]);
     matlab2armavec(lb, prhs[3]);
     matlab2armavec(ub, prhs[4]);
-    int nsteps = *static_cast<int*>(mxGetData(prhs[4]));
-    const bool traj = mxGetLogicals(prhs[5])[0];
+    int nsteps = static_cast<int>(*mxGetPr(prhs[5]));
+    const bool traj = mxGetLogicals(prhs[6])[0];
+
+    std::cout << "initial = " << initial << "\n";
+    std::cout << "step = " << step << "\n";
+    std::cout << "lb = " << lb << "\n";
+    std::cout << "ub = " << ub << "\n";
+    std::cout << "nsteps = " << nsteps << "\n";
+    std::cout << "traj = " << traj << "\n";
 
     const hmcstate & hmc_out = basic_hmcC(lpr, initial, step, lb, ub, nsteps, traj);
 
+    plhs[0] = mxCreateDoubleMatrix(hmc_out.final.size(), 1, mxREAL);
     armaSetPr(plhs[0], hmc_out.final);
     plhs[1] = mxCreateDoubleScalar(hmc_out.lprvalue);
 }
