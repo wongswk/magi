@@ -20,7 +20,7 @@ before_install:
   - python3 -m venv pyenv_gpds
   - source pyenv_gpds/bin/activate
   - export PYTHONPATH=$(pwd)/pygpds
-  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/gpds_cpp/
+  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/gpds_cpp/
 
   - sudo add-apt-repository ppa:marutter/rrutter3.5 -y
   - sudo apt-get update
