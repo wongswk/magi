@@ -5,9 +5,9 @@
 #include "mex.h"
 #include "matrix.h"
 
-#include "hmc.h"
-#include "classDefinition.h"
-#include "../../rgpds/src/classDefinition.h"
+#include "../gpds_cpp/hmc.h"
+#include "../gpds_cpp/classDefinition.h"
+//#include "../rgpds/src/classDefinition.h"
 
 using namespace arma;
 
