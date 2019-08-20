@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.9)
-project(gpds_cpp)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_COMPILER g++-6)
