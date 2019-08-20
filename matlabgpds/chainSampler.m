@@ -1,4 +1,4 @@
-function [ out ] = chainSampler(config, xInit, singleSampler, stepLowInit)
+function [ out ] = chainSampler(config, xInit, singleSampler, stepLowInit, verbose)
 
 %chainSampler <- function(config, xInit, singleSampler, stepLowInit, verbose=TRUE, 
 %                         thetaDim=3){
@@ -26,7 +26,7 @@ function [ out ] = chainSampler(config, xInit, singleSampler, stepLowInit)
         stepLow = stepLow * .995;
       end
       if mod(t, 100) == 0 
-        xthsd = std(xth.formal(max(1,t-99):t,:));
+        xthsd = std(xth_formal(max(1,t-99):t,:));
         if mean(xthsd)>0
             stepLow = 0.05 .*xthsd/mean(xthsd)*mean(stepLow) + 0.95*stepLow;
         end
@@ -34,16 +34,12 @@ function [ out ] = chainSampler(config, xInit, singleSampler, stepLowInit)
     end
     lliklist(t) = foo.lpr;
     
-    %if(verbose && t %% 100 ==0) 
-    %  methods::show(c(t, mean(tail(accepts[1:t],100)), tail(foo$final, thetaDim)))
+    if verbose && mod(t, 100) == 0 
+      fprintf(' Iter: %.0f, %.4f, %.4f \n', t, mean(accepts((t-99):t)), foo.lpr);
+    end
     
   end
   %list(xth=xth.formal, lliklist=lliklist, stepLow=stepLow)
-
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
-%outputArg1 = inputArg1;
-%outputArg2 = inputArg2;
 
   out.xth = xth_formal;
   out.lliklist = lliklist;
