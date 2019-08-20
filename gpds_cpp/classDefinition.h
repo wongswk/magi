@@ -61,6 +61,7 @@ public:
   
   arma::vec thetaLowerBound;
   arma::vec thetaUpperBound;
+  const unsigned int thetaSize;
   
   arma::vec xLowerBound;
   arma::vec xUpperBound;
@@ -72,7 +73,7 @@ public:
     const arma::vec & thetaLowerBoundInput,
     const arma::vec & thetaUpperBoundInput
   ) : fOde(fOdeInput), fOdeDx(fOdeDxInput), fOdeDtheta(fOdeDthetaInput), 
-  thetaLowerBound(thetaLowerBoundInput), thetaUpperBound(thetaUpperBoundInput) {};
+  thetaLowerBound(thetaLowerBoundInput), thetaUpperBound(thetaUpperBoundInput), thetaSize(thetaLowerBoundInput.size()) {};
   
   OdeSystem() {};
   bool checkBound(const arma::mat & xlatent, const arma::vec & theta, lp* retPtr) const;
