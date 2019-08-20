@@ -61,7 +61,7 @@ public:
   
   arma::vec thetaLowerBound;
   arma::vec thetaUpperBound;
-  const unsigned int thetaSize;
+  unsigned int thetaSize;
   
   arma::vec xLowerBound;
   arma::vec xUpperBound;
