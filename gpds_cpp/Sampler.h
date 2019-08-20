@@ -10,7 +10,7 @@ class Sampler {
     const OdeSystem & model;
     const unsigned int sigmaSize;
     const double burninRatio;
-    const double niter;
+    const unsigned int niter;
     bool useBand;
     bool useMean;
     std::function<lp(arma::vec)> tgt;
