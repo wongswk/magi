@@ -18,8 +18,9 @@ cd $PROJECT
 ./tools/dependencies.sh
 
 # build cpp
+cmake .
 cd gpds_cpp
-cmake . && make -j $CPU
+make -j $CPU
 
 cd $PROJECT
 
