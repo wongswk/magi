@@ -4,6 +4,24 @@
 
 namespace Rcpp
 {
+
+    arma::vec r2armavec(SEXP x){
+        const Rcpp::NumericVector & xtmp = as<const NumericVector>(x);
+        return arma::vec(const_cast<double*>( xtmp.begin()), xtmp.size(), false, false);
+    }
+
+    arma::mat r2armamat(SEXP x){
+        const Rcpp::NumericMatrix & xtmp = as<const NumericMatrix>(x);
+        return arma::mat(const_cast<double*>( xtmp.begin()), xtmp.nrow(), xtmp.ncol(), false, false);
+    }
+
+    arma::cube r2armacube(SEXP x){
+        const Rcpp::NumericVector & xtmp = as<const NumericVector>(x);
+        IntegerVector dim = xtmp.attr("dim");
+        return arma::cube(const_cast<double*>( xtmp.begin()), dim[0], dim[1], dim[2], false, false);
+    }
+
+
     // gpcov
     template <>
     gpcov as(SEXP x)
@@ -89,15 +107,15 @@ namespace Rcpp
         modelC.thetaSize = modelC.thetaLowerBound.size();
 
         modelC.fOde = [& fOdeR](const arma::vec & theta, const arma::mat & x) -> arma::mat {
-            return Rcpp::as<arma::mat>(fOdeR(theta, x));
+            return r2armamat(fOdeR(theta, x));
         };
 
         modelC.fOdeDx = [& fOdeDxR](const arma::vec & theta, const arma::mat & x) -> arma::cube {
-            return Rcpp::as<arma::cube>(fOdeDxR(theta, x));
+            return r2armacube(fOdeDxR(theta, x));
         };
 
         modelC.fOdeDtheta = [& fOdeDthetaR](const arma::vec & theta, const arma::mat & x) -> arma::cube {
-            return Rcpp::as<arma::cube>(fOdeDthetaR(theta, x));
+            return r2armacube(fOdeDthetaR(theta, x));
         };
 
         return modelC;
