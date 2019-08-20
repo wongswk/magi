@@ -1,9 +1,10 @@
 #include "RcppArmadillo.h"
 #include "classDefinition.h"
+#include "Sampler.h"
 
 namespace Rcpp
 {
-    // Date
+    // gpcov
     template <>
     gpcov as(SEXP x)
     {
@@ -56,4 +57,59 @@ namespace Rcpp
             Named("dSigmadphiCube")=object.dSigmadphiCube
         );
     }
+
+    // lp
+    template <>
+    lp as(SEXP x){
+        List lp_r(x);
+        lp lp_c;
+        lp_c.value = lp_r["value"];
+
+        const Rcpp::NumericVector & gradient = as<const NumericVector>(lp_r["gradient"]);
+        lp_c.gradient = arma::vec(const_cast<double*>( &(gradient[0])), gradient.size(), false, false);
+
+        return lp_c;
+    }
+
+    // OdeSystem
+    template <>
+    OdeSystem as(SEXP x){
+        List modelR(x);
+
+        const Rcpp::Function & fOdeR = as<const Function>(modelR["fOde"]);
+        const Rcpp::Function & fOdeDxR = as<const Function>(modelR["fOdeDx"]);
+        const Rcpp::Function & fOdeDthetaR = as<const Function>(modelR["fOdeDtheta"]);
+
+        const Rcpp::NumericVector & thetaLowerBoundR = as<const NumericVector>(modelR["thetaLowerBound"]);
+        const Rcpp::NumericVector & thetaUpperBoundR = as<const NumericVector>(modelR["thetaUpperBound"]);
+
+        OdeSystem modelC;
+        modelC.thetaUpperBound = arma::vec(const_cast<double*>( &(thetaUpperBoundR[0])), thetaUpperBoundR.size(), false, false);
+        modelC.thetaLowerBound = arma::vec(const_cast<double*>( &(thetaLowerBoundR[0])), thetaLowerBoundR.size(), false, false);
+        modelC.thetaSize = modelC.thetaLowerBound.size();
+
+        modelC.fOde = [& fOdeR](const arma::vec & theta, const arma::mat & x) -> arma::mat {
+            return Rcpp::as<arma::mat>(fOdeR(theta, x));
+        };
+
+        modelC.fOdeDx = [& fOdeDxR](const arma::vec & theta, const arma::mat & x) -> arma::cube {
+            return Rcpp::as<arma::cube>(fOdeDxR(theta, x));
+        };
+
+        modelC.fOdeDtheta = [& fOdeDthetaR](const arma::vec & theta, const arma::mat & x) -> arma::cube {
+            return Rcpp::as<arma::cube>(fOdeDthetaR(theta, x));
+        };
+
+        return modelC;
+    }
+
+    // Sampler
+    template <>
+    SEXP wrap(const Sampler& object){
+        return List::create(
+                Named("lliklist")=object.lliklist,
+                Named("xth")=object.xth
+        );
+    }
+
 }

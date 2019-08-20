@@ -15,9 +15,10 @@ class Sampler {
     bool useMean;
     std::function<lp(arma::vec)> tgt;
     arma::vec lb, ub;
+public:
     arma::vec lliklist;
     arma::mat xth;
-public:
+
     hmcstate sampleSingle(const arma::vec &xthetasigmaInit, const arma::vec & step);
     void sampleChian(const arma::vec &xthetasigmaInit, const arma::vec &stepLowInit, bool verbose);
     Sampler(const arma::mat & yobsInput,
