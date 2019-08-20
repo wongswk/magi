@@ -11,7 +11,6 @@ hmcstate Sampler::sampleSingle(const arma::vec &xthetasigmaInit, const arma::vec
 void Sampler::sampleChian(const arma::vec &xthetasigmaInit, const arma::vec &stepLowInit, bool verbose=false) {
     lliklist.fill(arma::datum::nan);
     xth.fill(arma::datum::nan);
-    const unsigned int numparam = yobs.size() + model.thetaSize + yobs.n_cols;
     arma::vec stepLow = stepLowInit;
     arma::vec accepts = arma::vec(niter).fill(arma::datum::nan);
     accepts(0) = 0;
@@ -36,7 +35,7 @@ void Sampler::sampleChian(const arma::vec &xthetasigmaInit, const arma::vec &ste
                 }
             }
         }
-        lliklist(t) <- hmcpostsample.lprvalue;
+        lliklist(t) = hmcpostsample.lprvalue;
         if (verbose && (t % 100 == 0)){
             std::cout << "t = " << t << "; acceptance rate = " << acceptRate << "theta = "
                       << xth.submat(arma::span(yobs.size() + 1, yobs.size() + model.thetaSize), arma::span(t, t)).t();
@@ -61,10 +60,10 @@ Sampler::Sampler(const arma::mat & yobsInput,
         priorTemperature(priorTemperatureInput),
         model(modelInput),
         sigmaSize(yobsInput.n_cols),
+        burninRatio(burninRatioInput),
+        niter(niterInput),
         lb(yobsInput.size() + modelInput.thetaSize + yobsInput.n_cols),
         ub(yobsInput.size() + modelInput.thetaSize + yobsInput.n_cols),
-        niter(niterInput),
-        burninRatio(burninRatioInput),
         lliklist(arma::vec(niterInput)),
         xth(arma::mat(yobsInput.size() + modelInput.thetaSize + yobsInput.n_cols, niterInput).fill(arma::datum::nan))
 {
