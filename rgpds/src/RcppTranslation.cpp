@@ -5,17 +5,17 @@
 namespace Rcpp
 {
 
-    arma::vec r2armavec(SEXP x){
+    arma::vec r2armavec(const SEXP & x){
         const Rcpp::NumericVector & xtmp = as<const NumericVector>(x);
         return arma::vec(const_cast<double*>( xtmp.begin()), xtmp.size(), false, false);
     }
 
-    arma::mat r2armamat(SEXP x){
+    arma::mat r2armamat(const SEXP & x){
         const Rcpp::NumericMatrix & xtmp = as<const NumericMatrix>(x);
         return arma::mat(const_cast<double*>( xtmp.begin()), xtmp.nrow(), xtmp.ncol(), false, false);
     }
 
-    arma::cube r2armacube(SEXP x){
+    arma::cube r2armacube(const SEXP & x){
         const Rcpp::NumericVector & xtmp = as<const NumericVector>(x);
         IntegerVector dim = xtmp.attr("dim");
         return arma::cube(const_cast<double*>( xtmp.begin()), dim[0], dim[1], dim[2], false, false);
