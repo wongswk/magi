@@ -1,6 +1,7 @@
 // [[Rcpp::plugins(cpp11)]]
 #include "RcppWrapper.h"
 #include "RcppArmadillo.h"
+#include "Sampler.h"
 
 using namespace std;
 using namespace arma;
@@ -404,4 +405,37 @@ Rcpp::List basic_hmcRcpp(const Rcpp::Function rlpr,
                               Rcpp::Named("acc")=ret.acc,
                               Rcpp::Named("trajq")=ret.trajq,
                               Rcpp::Named("trajp")=ret.trajp);
+}
+
+//' R wrapper for chainSamplerRcpp
+//' @export
+// [[Rcpp::export]]
+Rcpp::List chainSamplerRcpp(const arma::mat & yobs,
+                            const Rcpp::List & covAllDimInput,
+                            const int nstepsInput,
+                            const std::string loglikflagInput,
+                            const arma::vec & priorTemperatureInput,
+                            const OdeSystem & modelInput,
+                            const unsigned int niterInput,
+                            const double burninRatioInput,
+                            const arma::vec &xthetasigmaInit,
+                            const arma::vec &stepLowInit,
+                            bool verbose){
+  vector<gpcov> covAllDimensions(yobs.n_cols);
+  for(unsigned j = 0; j < yobs.n_cols; j++){
+    covAllDimensions[j] = cov_r2cpp(covAllDimInput[j]);
+  }
+  Sampler sampler(yobs,
+                  covAllDimensions,
+                  nstepsInput,
+                  loglikflagInput,
+                  priorTemperatureInput,
+                  modelInput,
+                  niterInput,
+                  burninRatioInput);
+  sampler.sampleChian(xthetasigmaInit, stepLowInit, verbose);
+  return List::create(
+            Named("lliklist")=sampler.lliklist,
+            Named("xth")=sampler.xth
+    );;
 }
