@@ -33,6 +33,13 @@ fn.sim[-seq(1,nrow(fn.sim), length=config$nobs),] <- NaN
 fn.sim.obs <- fn.sim[seq(1,nrow(fn.sim), length=config$nobs),]
 tvec.nobs <- fn.sim$time[seq(1,nrow(fn.sim), length=config$nobs)]
 
+r.nobs <- abs(outer(tvec.nobs, t(tvec.nobs),'-')[,1,])
+yobs1 <- data.matrix(fn.sim.obs[,1,drop=FALSE])
+gpds:::gpsmooth(yobs1,
+                r.nobs,
+                config$kernel,
+                3)
+
 foo <- outer(tvec.full, t(tvec.full),'-')[,1,]
 r <- abs(foo)
 r2 <- r^2
