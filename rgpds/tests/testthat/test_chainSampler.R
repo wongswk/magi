@@ -63,10 +63,6 @@ singleSampler <- function(xthetaValues, stepSize)
   xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma, 
                xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag)
 
-varKeep <- c("config", "xInit", "singleSampler", "stepLowInit", "fn.sim", 
-             "curCovV", "curCovR", "cursigma")
-rm(list=setdiff(ls(), varKeep))
-
 testthat::test_that("chainSampler can run without error",{
   chainSamplesOut <- chainSampler(config, xInit, singleSampler, stepLowInit, verbose=FALSE)  
 })
