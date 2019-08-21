@@ -34,7 +34,8 @@ public:
             kernel(std::move(kernelInput)),
             yobs(yobsInput),
             dist(distInput),
-            numparam(numparamInput) {
+            numparam(numparamInput),
+            BoundedProblem(numparamInput) {
         Eigen::VectorXd lb(numparam);
         lb.fill(1e-4);
         this->setLowerBound(lb);
