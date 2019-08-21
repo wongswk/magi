@@ -37,7 +37,7 @@ void Sampler::sampleChian(const arma::vec &xthetasigmaInit, const arma::vec &ste
         }
         lliklist(t) = hmcpostsample.lprvalue;
         if (verbose && (t % 100 == 0)){
-            std::cout << "t = " << t << "; acceptance rate = " << acceptRate << "theta = "
+            std::cout << "t = " << t << "; acceptance rate = " << acceptRate << "; theta = "
                       << xth.submat(arma::span(yobs.size() + 1, yobs.size() + model.thetaSize), arma::span(t, t)).t();
         }
     }

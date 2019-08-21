@@ -71,3 +71,22 @@ testthat::test_that("chainSampler can run without error",{
   chainSamplesOut <- chainSampler(config, xInit, singleSampler, stepLowInit, verbose=FALSE)  
 })
 
+testthat::test_that("chainSamplerRcpp can run without error",{
+  xthetasigmaInit <- c(fn.true$Vtrue, fn.true$Rtrue, pram.true$abc, c(cursigma, cursigma))
+  stepLowXthetasigmaInit <- c(rep(0.00035, 2*nall+3)*config$stepSizeFactor, 0, 0)
+
+  chainSamplerRcpp(
+    yobs = data.matrix(fn.sim[,1:2]),
+    covAllDimInput = list(curCovV, curCovR),
+    nstepsInput = config$hmcSteps,
+    loglikflagInput = config$loglikflag,
+    priorTemperatureInput = c(1, 1),
+    modelInput = fnmodel,
+    niterInput = config$n.iter,
+    burninRatioInput = config$burninRatio,
+    xthetasigmaInit = xthetasigmaInit,
+    stepLowInit = stepLowXthetasigmaInit,
+    verbose = TRUE
+  )
+
+})
