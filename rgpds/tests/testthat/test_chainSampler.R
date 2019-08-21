@@ -71,6 +71,14 @@ testthat::test_that("chainSamplerRcpp can run without error",{
   xthetasigmaInit <- c(fn.true$Vtrue, fn.true$Rtrue, pram.true$abc, c(cursigma, cursigma))
   stepLowXthetasigmaInit <- c(rep(0.00035, 2*nall+3)*config$stepSizeFactor, 0, 0)
 
+  fnmodel <- list(
+    fOde=gpds:::fODE,
+    fOdeDx=gpds:::fnmodelDx,
+    fOdeDtheta=gpds:::fnmodelDtheta,
+    thetaLowerBound=c(0,0,0),
+    thetaUpperBound=c(Inf,Inf,Inf)
+  )
+  
   chainSamplerRcpp(
     yobs = data.matrix(fn.sim[,1:2]),
     covAllDimInput = list(curCovV, curCovR),
