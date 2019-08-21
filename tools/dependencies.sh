@@ -53,6 +53,18 @@ if [ ! -d "include/boost" ]; then
     cp -r package/$BOOST/boost include/
 fi
 
+if [ ! -f "lib/libarmadillo.dylib" ] && [ ! -f "lib/libarmadillo.so" ]; then
+    cd package/eigen-git-mirror
+    git checkout 3.3.7
+    mkdir -p install_dir
+    mkdir -p build_dir && cd build_dir
+    cmake .. -DCMAKE_INSTALL_PREFIX=$PROJECT/package/eigen-git-mirror/install_dir
+    make install
+    cp -Rf ../install_dir/include/eigen3/Eigen $PROJECT/include/
+    cp -Rf ../install_dir/include/eigen3/unsupported $PROJECT/include/
+    cd $PROJECT
+fi
+
 if [ ! -d "include/cppoptlib" ]; then
     cd package/CppNumericalSolvers
     git checkout dfd4686ef4cde941702024a70ac2edc73d5ee88c

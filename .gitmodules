@@ -9,3 +9,8 @@
 [submodule "package/CppNumericalSolvers"]
 	path = package/CppNumericalSolvers
 	url = git@github.com:PatWie/CppNumericalSolvers.git
+	ignore = dirty
+[submodule "package/eigen-git-mirror"]
+	path = package/eigen-git-mirror
+	url = git@github.com:eigenteam/eigen-git-mirror.git
+	ignore = dirty
