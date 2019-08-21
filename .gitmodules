@@ -5,4 +5,7 @@
 	ignore = dirty
 [submodule "package/pybind11"]
 	path = package/pybind11
-	url = https://github.com/pybind/pybind11
+	url = https://github.com/pybind/pybind1
+[submodule "package/CppNumericalSolvers"]
+	path = package/CppNumericalSolvers
+	url = git@github.com:PatWie/CppNumericalSolvers.git

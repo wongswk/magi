@@ -52,3 +52,10 @@ if [ ! -d "include/boost" ]; then
     cd $PROJECT
     cp -r package/$BOOST/boost include/
 fi
+
+if [ ! -d "include/cppoptlib" ]; then
+    cd package/CppNumericalSolvers
+    git checkout dfd4686ef4cde941702024a70ac2edc73d5ee88c
+    cd $PROJECT
+    cp -r package/CppNumericalSolvers/include/* include/
+fi
