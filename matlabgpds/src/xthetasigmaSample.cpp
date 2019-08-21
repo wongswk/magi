@@ -28,7 +28,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   vec xthetaInit = armaGetPrVec(prhs[3]);
   vec step = armaGetPrVec(prhs[4]);;
   int nsteps = mxGetScalar(prhs[5]);
-  bool traj = mxGetScalar(prhs[6]);
+  const bool traj = mxGetLogicals(prhs[6])[0];
   
   char *str1, *str2;
   str1 = mxArrayToString(prhs[7]);
@@ -47,6 +47,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }else{
     throw std::runtime_error("sigmaInit size not right");
   }
+  
+  //cout << NStructElems << "\n";
   
   vector<gpcov> covAllDimensions(NStructElems);
   for(unsigned int j = 0; j < NStructElems; j++){
@@ -83,6 +85,27 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     useMean = true;
   }
   
+  
+//   vec initial = join_vert(xthetaInit, sigmaInit);
+//       const mat & xlatent = mat(const_cast<double*>( initial.memptr()), yobs.n_rows, yobs.n_cols, false, false);
+//       const vec & theta = vec(const_cast<double*>( initial.memptr() + yobs.size()), xthetaInit.size() - yobs.size(), false, false);
+//       const vec & sigmat = vec(const_cast<double*>( initial.memptr() + yobs.size() + theta.size()), sigmaInit.size(), false, false);
+//       xthetasigmallik( xlatent, 
+//                               theta, 
+//                               sigmat, 
+//                               yobs, 
+//                               covAllDimensions,
+//                               model,
+//                               priorTemperature,
+//                               false,
+//                               useMean);  
+//       
+//       cout << xlatent << "\n\n";
+//       cout << theta << "\n\n";
+//       cout << sigmat << "\n\n";
+      
+  
+  
   std::function<lp(vec)> tgt = [&](const vec & xthetasigma) -> lp{
       const mat & xlatent = mat(const_cast<double*>( xthetasigma.memptr()), yobs.n_rows, yobs.n_cols, false, false);
       const vec & theta = vec(const_cast<double*>( xthetasigma.memptr() + yobs.size()), xthetaInit.size() - yobs.size(), false, false);
@@ -94,7 +117,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                               covAllDimensions,
                               model,
                               priorTemperature,
-                              useBand,
+                              false,  //band not working in Matlab
                               useMean);
     };
   
@@ -104,7 +127,42 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   lb.subvec(xthetaInit.size(), xthetaInit.size() + sigmaInit.size() - 1).fill(1e-3);
   
   vec initial = join_vert(xthetaInit, sigmaInit);
-  hmcstate post = basic_hmcC(tgt, initial, step, lb, {datum::inf}, nsteps, traj);
+  
+  //initial.print();
+  //lb.print();
+  
+  //step = {1, 2};
+  
+  //cout << step << " " << traj << "\n";
+  //return;
+  
+  const hmcstate & post = basic_hmcC(tgt, initial, step, lb, {datum::inf}, nsteps, traj);
+  
+  const char* field_names[] = {"final", "final_p", "lpr", "step", "apr", "acc", "delta"};
+  //const char* field_names[] = {"final"};
+  mwSize dims[1] = {1};
+  plhs[0] = mxCreateStructArray(1, dims, 7, field_names);
+  
+  mxArray* tmp1 = mxCreateDoubleMatrix(post.final.n_rows, post.final.n_cols, mxREAL); 
+  armaSetPr(tmp1, post.final);
+  mxSetField( plhs[0], 0, "final", tmp1 ); 
+  
+  mxArray* tmp2 = mxCreateDoubleMatrix(post.finalp.n_rows, post.finalp.n_cols, mxREAL); 
+  armaSetPr(tmp2, post.finalp);
+  mxSetField( plhs[0], 0, "final_p", tmp2 ); 
+  
+  mxArray* tmp3 = mxCreateDoubleMatrix(post.step.n_rows, post.step.n_cols, mxREAL); 
+  armaSetPr(tmp3, post.step);
+  mxSetField( plhs[0], 0, "step", tmp3 ); 
+  
+  
+  mxSetField( plhs[0], 0, "lpr", mxCreateDoubleScalar(post.lprvalue));     
+  mxSetField( plhs[0], 0, "apr", mxCreateDoubleScalar(post.apr));
+  mxSetField( plhs[0], 0, "acc", mxCreateDoubleScalar(post.acc));
+  mxSetField( plhs[0], 0, "delta", mxCreateDoubleScalar(post.delta));
+  
+  //post.final.print();
+  //mxCreateDoubleScalar(post.final);
   
 //   Rcpp::List ret = Rcpp::List::create(Rcpp::Named("final")=post.final,
 //                                       Rcpp::Named("final.p")=post.finalp,

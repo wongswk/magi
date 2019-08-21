@@ -27,15 +27,20 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
    //cout << nfields << " " << NStructElems;
    
+   
    char *str1;
    str1 = mxArrayToString(prhs[4]);
+   
+   //cout << str1;
+   //return;
    string modelName = str1;
    
    
    bool useBand = mxGetScalar(prhs[5]);
    
    arma::vec priorTemperature = {1.0};
-    
+   
+   
   //const arma::vec priorTemperature = Rcpp::as<arma::vec>(priorTemperatureInput);
   
   vec sigma( yobs.n_cols);

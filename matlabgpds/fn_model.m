@@ -1,3 +1,10 @@
+%  Self-contained FN model demonstration using C++ defined OdeSystem
+%  (withBand currently needs to be disabled, maybe issue with LAPACK linked?)
+
+mex -v '-I../include' '-I../gpds_cpp' '-L../gpds_cpp' '-lcgpds' GCC='g++-6' COMPFLAGS='$COMPFLAGS -std=c++11' src/phisigllikC.cpp
+mex -v '-I../include' '-I../gpds_cpp' '-L../gpds_cpp' '-lcgpds' GCC='g++-6' COMPFLAGS='$COMPFLAGS -std=c++11' src/xthetallikM.cpp
+mex -v '-I../include' '-I../gpds_cpp' '-L../gpds_cpp' '-lcgpds' GCC='g++-6' COMPFLAGS='$COMPFLAGS -std=c++11' src/xthetasigmaSample.cpp
+
 config.nobs = 41;
 config.noise = [0.15, 0.07] * 2;
 config.kernel = "generalMatern";
@@ -19,7 +26,7 @@ config.forseTrueMean = false;
 config.phase2 = false;
 config.temperPrior = true;
 config.phase3 = false;
-config.max_epoch = 10;
+config.max_epoch = 10;not working
 config.epoch_method = ["mean", "median", "deSolve", "f_x_bar"];
 config.epoch_method = config.epoch_method(1);
 
@@ -34,12 +41,12 @@ else
 end
 
 % initialize global parameters, true x, simulated x ----------------------------
-baseDir = '/home/s246wong/dynsys-Matlab/';
-outDir =  baseDir + config.modelName + '-' + config.loglikflag +  '-' + config.kernel ...
-                              + '-nobs' + config.nobs +  '-noise' + num2str(config.noise, '%#5.3f_')...
-                              + '-ndis' + config.ndis + '-' + config.priorString + '/';
-
-system("mkdir -p " + outDir);
+% baseDir = '/home/s246wong/dynsys-Matlab/';
+% outDir =  baseDir + config.modelName + '-' + config.loglikflag +  '-' + config.kernel ...
+%                               + '-nobs' + config.nobs +  '-noise' + num2str(config.noise, '%#5.3f_')...
+%                               + '-ndis' + config.ndis + '-' + config.priorString + '/';
+% 
+% system("mkdir -p " + outDir);
 
 pram_true.theta = [0.2,0.2,3];
 pram_true.x0 = [-1, 1];
@@ -48,8 +55,6 @@ pram_true.phi= [0.9486433, 3.2682434;
 pram_true.sigma=config.noise;
 
 times = 0:(20/240):20;
-
-%times = 0:0.00001:20;
 
 [foo, xtrue]=ode45(@fnmodelODE,times,pram_true.x0,[],pram_true.theta);
 
@@ -108,14 +113,9 @@ for j=1:(size(xsim,2)-1)
     cursigma(j) = xout(3);
     curphi(j,:) = xout(1:2);
 end
-%[t1 t2] = mlp([1 1]);
 
-%j=1;
-%covEach = calCov(curphi(:,j), r, signr, config.bandsize)
-%calCov(curphi(:,j), r_nobs, signr_nobs, config.bandsize)
 
 for j=1:(size(xsim,2)-1)
-   %curCov(j) =  calCov(curphi(:,j), r_nobs, signr_nobs, config.bandsize);
    curCov(j) =  calCov(curphi(:,j), r, signr, config.bandsize);
 end
 
@@ -134,24 +134,15 @@ yobs = xsim(:,2:size(xsim,2));
 
 xsimInit = xsim;
 for j=1:(size(xsim,2)-1)
-  %nanId <- which(is.na(xsimInit[,j+1]))
-  %xsimInit[nanId,j+1] <- gpsmoothFuncList[[j]](xsimInit$time[nanId])
-  %xsimInit(:,j+1) = interp1( xsim_obs(:,1), xsim_obs(:,j+1), xsim(:,1), 'spline');
   xsimInit(:,j+1) = interp1( xsim_obs(:,1), xsim_obs(:,j+1), xsim(:,1), 'pchip');
 end
-%matplot(xsimInit$time, xsimInit[,-1], type="p", pch=2, add=TRUE)
 xInit = reshape(xsimInit(:,2:size(xsim,2)),[1 size(xsim,1)*(size(xsim,2)-1)]);
 
 thetaInit = ones(1, length(pram_true.theta));
 
 
-%[ f1 g1 ] =  xthetallikM( yobs, curCov, cursigma, [xInit thetaInit], config.modelName, false );
-chainSampler(config, xthetasigmaInit, xthetasigamSingleSampler, stepLowInit);
-%[ f1 g1 ] = thetaoptim( yobs, curCov, cursigma, [xInit thetaInit], config.modelName, false );
+llp = @(theta) thetaoptim(yobs, curCov, cursigma, [xInit theta], char(config.modelName), false );
 
-llp = @(theta) thetaoptim(yobs, curCov, cursigma, [xInit theta], config.modelName, false );
-
-%    optim_options = optimoptions(@fminunc,'Algorithm','trust-region','SpecifyObjectiveGradient',true);
     [xout,fval,exitflag,output,grad] = fminunc(llp,thetaInit,optim_options);
     thetaInit = xout;
     sigmaInit = cursigma;
@@ -163,11 +154,39 @@ xId = 1:length(xInit);
 thetaId = (max(xId)+1):(max(xId)+length(thetaInit));
 sigmaId = (max(thetaId)+1):(max(thetaId)+length(sigmaInit));
 
-
 xthetasigamSingleSampler = @(xthetasigma, stepSize)  xthetasigmaSample(yobs, curCov, xthetasigma(sigmaId), xthetasigma([xId, thetaId]), ...
-                    stepSize, config.hmcSteps, false, config.loglikflag, ...
-                    config.priorTemperature, config.modelName);
+                    stepSize, config.hmcSteps, false, char(config.loglikflag), ...
+                    config.priorTemperature, char(config.modelName));
 
-chainSamplesOut = chainSampler(config, xthetasigmaInit, xthetasigamSingleSampler, stepLowInit);
-    
+chainSamplesOut = chainSampler(config, xthetasigmaInit, xthetasigamSingleSampler, stepLowInit, true);
+
+%%%%%%%%%%%%%% Generate summary figure.
+fig = figure;
+set(fig,'PaperOrientation','landscape');
+set(fig,'PaperUnits','inches','PaperPosition',[0 0 11 8.5])
+
+j=0;
+for i=(max(xId)+1):(max(xId)+length(thetaInit))
+   j = j+1;
+   subplot(2,3,j)
+   histogram(chainSamplesOut.xth( (config.n_iter * config.burninRatio):config.n_iter,i)); 
+end
+
+for i=1:(size(xsim,2)-1)
+    qlim = zeros(2, length(xInit)/(size(xsim,2)-1));
+    k=0;
+    for j=(1+(i-1)*length(xInit)/(size(xsim,2)-1) ):(length(xInit)/(size(xsim,2)-1)*i)
+        k = k+1;
+        qlim(:,k) = quantile(chainSamplesOut.xth( (config.n_iter * config.burninRatio):config.n_iter,j),[0.025 0.975]);
+    end
+
+    subplot(2,3,3+i)
+    fill([tvec.full' fliplr(tvec.full')],[qlim(1,:) fliplr(qlim(2,:))],[.9 .9 .9],'LineStyle','none')
+    hold on;plot(tvec.full',yobs(:,i),'Marker','*')
+    hold off;
+end
+
+print(fig,'results','-dpdf')
+
+
 
