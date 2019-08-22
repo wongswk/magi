@@ -40,8 +40,8 @@ double modifiedBessel2ndKind (const double & nu, const double & x){
 //' @param complexity  how much derivative information should be calculated
 gpcov generalMaternCov( const vec & phi,
                         const mat & distSigned,
-                        int complexity = 0,
-                        double noiseInjection = 1e-7){
+                        int complexity){
+  double noiseInjection = 1e-7;
   double df = 2.01;
   gpcov out;
   out.C.set_size(distSigned.n_rows, distSigned.n_cols);
