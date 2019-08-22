@@ -33,12 +33,27 @@ fn.sim[-seq(1,nrow(fn.sim), length=config$nobs),] <- NaN
 fn.sim.obs <- fn.sim[seq(1,nrow(fn.sim), length=config$nobs),]
 tvec.nobs <- fn.sim$time[seq(1,nrow(fn.sim), length=config$nobs)]
 
-r.nobs <- abs(outer(tvec.nobs, t(tvec.nobs),'-')[,1,])
-yobs1 <- data.matrix(fn.sim.obs[,1,drop=FALSE])
-gpds:::gpsmooth(yobs1,
-                r.nobs,
-                config$kernel,
-                3)
+testthat::test_that("c++ gpsmooth correct", {
+  r.nobs <- abs(outer(tvec.nobs, t(tvec.nobs),'-')[,1,])
+  yobs1 <- data.matrix(fn.sim.obs[,1,drop=FALSE])
+  outputc <- gpds:::gpsmooth(yobs1,
+                             r.nobs,
+                             config$kernel,
+                             3)
+  
+  fn <- function(par) {
+    marlik <- phisigllikC( par, yobs1, r.nobs, config$kernel)
+    -marlik$value
+  }
+  gr <- function(par) {
+    marlik <- phisigllikC( par, yobs1, r.nobs, config$kernel)
+    grad <- -as.vector(marlik$grad)
+    grad
+  }
+
+  fn(outputc)
+  testthat::expect_true(all(abs(gr(outputc)) < 1e-4))
+})
 
 foo <- outer(tvec.full, t(tvec.full),'-')[,1,]
 r <- abs(foo)

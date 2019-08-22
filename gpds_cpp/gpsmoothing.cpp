@@ -14,12 +14,24 @@ public:
     const unsigned int numparam;
 
     double value(const Eigen::VectorXd & phisigInput) override {
+        if ((phisigInput.array() < this->lowerBound().array()).any()){
+            return INFINITY;
+        }
         const arma::vec & phisig = arma::vec(const_cast<double*>(phisigInput.data()), numparam, false, false);
         const lp & out = phisigllik(phisig, yobs, dist, kernel);
         return -out.value;
     }
 
     void gradient(const Eigen::VectorXd & phisigInput, Eigen::VectorXd & grad) override {
+        if ((phisigInput.array() < this->lowerBound().array()).any()){
+            grad.fill(0);
+            for(unsigned i = 0; i < numparam; i++){
+                if(phisigInput[i] < this->lowerBound()[i]){
+                    grad[i] = -1;
+                }
+            }
+            return;
+        }
         const arma::vec & phisig = arma::vec(const_cast<double*>(phisigInput.data()), numparam, false, false);
         const lp & out = phisigllik(phisig, yobs, dist, kernel);
         for(unsigned i = 0; i < numparam; i++){
@@ -55,7 +67,7 @@ arma::vec gpsmooth(const arma::mat & yobsInput,
     double sdOverall = 0;
     for(unsigned i = 0; i < yobsInput.n_cols; i++) {
         phisig[2 * i] = 0.5 * arma::stddev(yobsInput.col(i));
-        phisig[2 * i + 1] = maxDist;
+        phisig[2 * i + 1] = 0.5 * maxDist;
         sdOverall += phisig[2 * i];
     }
     phisig[2 * yobsInput.n_cols] = sdOverall / yobsInput.n_cols;
