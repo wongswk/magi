@@ -60,6 +60,28 @@ testthat::test_that("c++ gpsmooth correct", {
   testthat::expect_true(all(abs(gr(outputc)) < 1e-4))
 })
 
+testthat::test_that("c++ gpsmooth correct dim2", {
+  r.nobs <- abs(outer(tvec.nobs, t(tvec.nobs),'-')[,1,])
+  yobs1 <- data.matrix(fn.sim.obs[,1:2,drop=FALSE])
+  outputc <- gpds:::gpsmooth(yobs1,
+                             r.nobs,
+                             config$kernel,
+                             5)
+  
+  fn <- function(par) {
+    marlik <- phisigllikC( par, yobs1, r.nobs, config$kernel)
+    -marlik$value
+  }
+  gr <- function(par) {
+    marlik <- phisigllikC( par, yobs1, r.nobs, config$kernel)
+    grad <- -as.vector(marlik$grad)
+    grad
+  }
+  
+  fn(outputc)
+  testthat::expect_true(all(abs(gr(outputc)) < 1e-4))
+})
+
 testthat::test_that("c++ gpsmooth correct with fft prior", {
   r.nobs <- abs(outer(tvec.nobs, t(tvec.nobs),'-')[,1,])
   yobs1 <- data.matrix(fn.sim.obs[,1,drop=FALSE])
