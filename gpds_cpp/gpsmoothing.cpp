@@ -136,3 +136,54 @@ arma::vec gpsmooth(const arma::mat & yobsInput,
     const arma::vec & phisigArgmin = arma::vec(phisig.data(), 2 * yobsInput.n_cols + 1, false, false);
     return phisigArgmin;
 }
+
+
+// [[Rcpp::export]]
+arma::cube calcMeanCurve(const arma::vec & xInput,
+                        const arma::vec & yInput,
+                        const arma::vec & xOutput,
+                        const arma::mat & phiCandidates,
+                        const arma::vec & sigmaCandidates,
+                        const std::string kerneltype = "generalMatern",
+                        const bool useDeriv = false) {
+    assert(kerneltype == "generalMatern");
+
+    const arma::vec & tvec = arma::join_vert(xOutput, xInput);
+    arma::mat distSigned(tvec.size(), tvec.size());
+    for(unsigned int i = 0; i < distSigned.n_cols; i++){
+        distSigned.col(i) = tvec - tvec(i);
+    }
+    arma::cube ydyOutput(xOutput.size(), phiCandidates.n_cols, 2, arma::fill::zeros);
+    arma::mat & yOutput = ydyOutput.slice(0);
+    arma::mat & dyOutput = ydyOutput.slice(1);
+
+    int complexity = 0;
+    if(useDeriv){
+        complexity = 3;
+    }
+
+    for(unsigned it = 0; it < phiCandidates.n_cols; it++){
+        const double & sigma = sigmaCandidates(it);
+        const arma::vec & phi = phiCandidates.col(it);
+
+        gpcov covObj = generalMaternCov(phi, distSigned, complexity);
+        arma::mat C = std::move(covObj.C);
+
+        arma::vec Cdiag = C.diag();
+        Cdiag(arma::span(xOutput.size(), Cdiag.size() - 1)) += std::pow(sigma, 2);
+        C.diag() = Cdiag;
+        yOutput.col(it) = C(arma::span(0, xOutput.size() - 1),
+                            arma::span(xOutput.size(), Cdiag.size() - 1)) *
+                          arma::solve(C(arma::span(xOutput.size(), Cdiag.size() - 1),
+                                        arma::span(xOutput.size(), Cdiag.size() - 1)),
+                                      yInput);
+        if(useDeriv){
+            dyOutput.col(it) = covObj.Cprime(arma::span(0, xOutput.size() - 1),
+                                             arma::span(0, xOutput.size() - 1)) *
+                               arma::solve(C(arma::span(0, xOutput.size() - 1),
+                                             arma::span(0, xOutput.size() - 1)),
+                                           yOutput.col(it));
+        }
+    }
+    return ydyOutput;
+}
