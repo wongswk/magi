@@ -51,7 +51,7 @@ public:
     std::string kerneltype;
     double noiseInjection;
     void addBandCov(const int bandsizeInput);
-    gpcov() : complexity(-1), bandsize(-1), noiseInjection(1e-7) {}
+    gpcov() : bandsize(-1), complexity(-1), noiseInjection(1e-7) {}
 };
 
 class OdeSystem {
