@@ -30,6 +30,9 @@ gpcov maternCov( const vec & phi, const mat & dist, int complexity = 0){
 }
 
 double modifiedBessel2ndKind (const double & nu, const double & x){
+    if(x < 1e-10){
+        return INFINITY;
+    }
   return boost::math::cyl_bessel_k(nu, x);
 }
 
@@ -55,7 +58,7 @@ gpcov generalMaternCov( const vec & phi,
   }
   bessel_df.diag().fill(datum::inf);
   bessel_df = symmatu(bessel_df);
-  
+
   mat bessel_dfMinus1(x4bessel.n_rows, x4bessel.n_cols);
   for(unsigned int j = 0; j < bessel_df.n_cols; j++){
     for(unsigned int i = 0; i < j; i ++){
@@ -81,8 +84,8 @@ gpcov generalMaternCov( const vec & phi,
   bessel_dfPlus3.diag().fill(datum::inf);
  
   mat Cpart1 = phi(0) * pow(2.0, 1-df) * exp(-lgamma(df)) * pow( x4bessel, df);
-  out.C = Cpart1 % bessel_df;  
-  out.C.diag().fill(phi(0));
+  out.C = Cpart1 % bessel_df;
+  out.C.replace(datum::nan, phi(0));
   out.C.diag() += noiseInjection;  // stabilizer
 
   out.mu = arma::zeros(out.C.n_rows);
@@ -93,12 +96,12 @@ gpcov generalMaternCov( const vec & phi,
   }
   
   mat dCdx4bessel = Cpart1 % (df / x4bessel % bessel_df  - 0.5 * (bessel_dfMinus1 + bessel_dfPlus1));
-  dCdx4bessel.diag().fill(0);
-  
+  dCdx4bessel.replace(datum::nan, 0);
+
   out.dCdphiCube.set_size(out.C.n_rows, out.C.n_cols, 2);
   out.dCdphiCube.slice(0) = out.C/phi(0);
   out.dCdphiCube.slice(1) = dCdx4bessel % (-sqrt(2.0 * df) / pow(phi(1), 2) * abs(distSigned));
-  out.dCdphiCube.slice(1).diag().fill(0);
+  out.dCdphiCube.slice(1).replace(datum::nan, 0);
   
   if (complexity == 1) {
     return out;
@@ -106,7 +109,7 @@ gpcov generalMaternCov( const vec & phi,
   
   // out.Cprime
   out.Cprime = dCdx4bessel % (sqrt(2.0 * df) / phi(1) * sign(distSigned));
-  out.Cprime.diag().fill(0);
+  out.Cprime.replace(datum::nan, 0);
   
   // out.Cdoubleprime;
   mat dCprimedx4bessel =  Cpart1 * sqrt(2 * df) / phi(1);
@@ -115,8 +118,9 @@ gpcov generalMaternCov( const vec & phi,
     - df / x4bessel % (bessel_dfMinus1 + bessel_dfPlus1)
     + 0.25 * (bessel_dfMinus2 + 2*bessel_df + bessel_dfPlus2)
   );
-  dCprimedx4bessel.diag().fill(
-      -phi(0) * pow(2.0, 1-df) * exp(-lgamma(df)) * sqrt(2 * df) / phi(1) * exp(lgamma(df-1)) * pow(2, df-2)
+  dCprimedx4bessel.replace(
+    datum::nan,
+    -phi(0) * pow(2.0, 1-df) * exp(-lgamma(df)) * sqrt(2 * df) / phi(1) * exp(lgamma(df-1)) * pow(2, df-2)
   );
   out.Cdoubleprime = -sqrt(2 * df) / phi(1) * dCprimedx4bessel;
   
@@ -137,7 +141,8 @@ gpcov generalMaternCov( const vec & phi,
   );
   out.dCdoubleprimedphiCube.slice(1) %= phi(0) * pow(2, 1-df) * exp(-lgamma(df)) * 2 * df / pow(phi(1), 3) * x4bessel;
   out.dCdoubleprimedphiCube.slice(1) += out.Cdoubleprime * -2 / phi(1);
-  out.dCdoubleprimedphiCube.slice(1).diag() = out.Cdoubleprime.diag() * -2 / phi(1);
+  const arma::uvec idx0 = arma::find(x4bessel < 1e-10);
+  out.dCdoubleprimedphiCube.slice(1).elem(idx0) = out.Cdoubleprime.elem(idx0) * -2 / phi(1);
   
   // out.Cinv
   inv_sympd(out.Cinv, out.C);
