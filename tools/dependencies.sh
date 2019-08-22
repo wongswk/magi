@@ -53,7 +53,7 @@ if [ ! -d "include/boost" ]; then
     cp -r package/$BOOST/boost include/
 fi
 
-if [ ! -f "lib/libarmadillo.dylib" ] && [ ! -f "lib/libarmadillo.so" ]; then
+if [ ! -f "include/Eigen" ]; then
     cd package/eigen-git-mirror
     git checkout 3.3.7
     mkdir -p install_dir
