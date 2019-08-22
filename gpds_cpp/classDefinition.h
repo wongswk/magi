@@ -46,9 +46,6 @@ struct gpcov {
     arma::mat CinvBand, mphiBand, KinvBand;
     arma::vec Ceigen1over, Keigen1over, mu, dotmu;
     int bandsize;
-    int complexity;
-    std::string kerneltype;
-    double noiseInjection;
     void addBandCov(const int bandsizeInput);
 };
 

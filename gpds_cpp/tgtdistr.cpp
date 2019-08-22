@@ -84,9 +84,6 @@ gpcov generalMaternCov( const vec & phi,
   out.C = Cpart1 % bessel_df;  
   out.C.diag().fill(phi(0));
   out.C.diag() += noiseInjection;  // stabilizer
-  out.complexity = complexity;
-  out.noiseInjection = noiseInjection;
-  out.kerneltype = "generalMatern";
 
   out.mu = arma::zeros(out.C.n_rows);
   out.dotmu = arma::zeros(out.C.n_rows);
