@@ -278,3 +278,20 @@ public:
         this->setUpperBound(ub);
     }
 };
+
+// [[Rcpp::export]]
+arma::vec optimizeThetaInit(const arma::mat & yobsInput,
+                            const OdeSystem & fOdeModelInput,
+                            const std::vector<gpcov> & covAllDimensionsInput,
+                            const arma::vec & sigmaAllDimensionsInput,
+                            const arma::vec & priorTemperatureInput,
+                            const arma::mat & xInitInput,
+                            const unsigned int numparamInput) {
+    ThetaOptim objective(yobsInput, fOdeModelInput, covAllDimensionsInput, sigmaAllDimensionsInput, priorTemperatureInput, xInitInput, numparamInput);
+    cppoptlib::LbfgsbSolver<ThetaOptim> solver;
+    Eigen::VectorXd theta(numparamInput);
+    theta.fill(1);
+    solver.minimize(objective, theta);
+    const arma::vec & thetaArgmin = arma::vec(theta.data(), numparamInput, false, false);
+    return thetaArgmin;
+}

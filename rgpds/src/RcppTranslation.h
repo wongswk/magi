@@ -14,6 +14,9 @@ namespace Rcpp
     template <>
     SEXP wrap(const gpcov& object);
 
+    template <>
+    std::vector<gpcov> as(SEXP x);
+
     // lp
     template <>
     lp as(SEXP x);

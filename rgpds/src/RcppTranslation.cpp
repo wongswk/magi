@@ -76,6 +76,17 @@ namespace Rcpp
         );
     }
 
+    template <>
+    std::vector<gpcov> as(SEXP x)
+    {
+        List cov_r_list(x);
+        std::vector<gpcov> cov_c_vec;
+        for(unsigned i = 0; i < cov_r_list.size(); i++){
+            cov_c_vec.push_back(as<gpcov>(cov_r_list[i]));
+        }
+        return cov_c_vec;
+    }
+
     // lp
     template <>
     lp as(SEXP x){
