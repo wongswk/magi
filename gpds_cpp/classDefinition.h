@@ -39,8 +39,7 @@ struct mcmcstate {
     }
 };
 
-class gpcov {
-public:
+struct gpcov {
     arma::mat C, Cprime, Cdoubleprime, Cinv, mphi, Kphi, Kinv, CeigenVec, KeigenVec, mphiLeftHalf;
     arma::mat Sigma;
     arma::cube dCdphiCube, dCprimedphiCube, dCdoubleprimedphiCube, dSigmadphiCube;
@@ -51,7 +50,6 @@ public:
     std::string kerneltype;
     double noiseInjection;
     void addBandCov(const int bandsizeInput);
-    gpcov() : bandsize(-1), complexity(-1), noiseInjection(1e-7) {}
 };
 
 class OdeSystem {
