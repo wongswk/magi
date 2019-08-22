@@ -197,7 +197,6 @@ public:
     const arma::vec & sigmaAllDimensions;
     const arma::vec & priorTemperature;
     const arma::mat & xInit;
-    const unsigned int numparam;
 
     double value(const Eigen::VectorXd & thetaInput) override {
         if ((thetaInput.array() < this->lowerBound().array()).any()){
@@ -208,7 +207,7 @@ public:
         }
         const arma::vec & xtheta = arma::join_vert(
             arma::vectorise(xInit),
-            arma::vec(const_cast<double*>(thetaInput.data()), numparam, false, false)
+            arma::vec(const_cast<double*>(thetaInput.data()), fOdeModel.thetaSize, false, false)
         );
         const lp & out = xthetallik(
                 xtheta,
@@ -224,7 +223,7 @@ public:
     void gradient(const Eigen::VectorXd & thetaInput, Eigen::VectorXd & grad) override {
         if ((thetaInput.array() < this->lowerBound().array()).any()){
             grad.fill(0);
-            for(unsigned i = 0; i < numparam; i++){
+            for(unsigned i = 0; i < fOdeModel.thetaSize; i++){
                 if(thetaInput[i] < this->lowerBound()[i]){
                     grad[i] = -1;
                 }
@@ -233,7 +232,7 @@ public:
         }
         if ((thetaInput.array() > this->upperBound().array()).any()){
             grad.fill(0);
-            for(unsigned i = 0; i < numparam; i++){
+            for(unsigned i = 0; i < fOdeModel.thetaSize; i++){
                 if(thetaInput[i] > this->upperBound()[i]){
                     grad[i] = 1;
                 }
@@ -242,7 +241,7 @@ public:
         }
         const arma::vec & xtheta = arma::join_vert(
                 arma::vectorise(xInit),
-                arma::vec(const_cast<double*>(thetaInput.data()), numparam, false, false)
+                arma::vec(const_cast<double*>(thetaInput.data()), fOdeModel.thetaSize, false, false)
         );
         const lp & out = xthetallik(
                 xtheta,
@@ -252,7 +251,7 @@ public:
                 fOdeModel,
                 true,
                 priorTemperature);
-        for(unsigned i = 0; i < numparam; i++){
+        for(unsigned i = 0; i < fOdeModel.thetaSize; i++){
             grad[i] = -out.gradient(i);
         }
     }
@@ -262,19 +261,17 @@ public:
                const std::vector<gpcov> & covAllDimensionsInput,
                const arma::vec & sigmaAllDimensionsInput,
                const arma::vec & priorTemperatureInput,
-               const arma::mat & xInitInput,
-               const unsigned int numparamInput) :
-            BoundedProblem(numparamInput),
+               const arma::mat & xInitInput) :
+            BoundedProblem(fOdeModelInput.thetaSize),
             yobs(yobsInput),
             fOdeModel(fOdeModelInput),
             covAllDimensions(covAllDimensionsInput),
             sigmaAllDimensions(sigmaAllDimensionsInput),
             priorTemperature(priorTemperatureInput),
-            xInit(xInitInput),
-            numparam(numparamInput) {
-        const Eigen::Map<Eigen::VectorXd> lb (const_cast<double*>(fOdeModel.thetaLowerBound.memptr()), numparam);
+            xInit(xInitInput) {
+        const Eigen::Map<Eigen::VectorXd> lb (const_cast<double*>(fOdeModel.thetaLowerBound.memptr()), fOdeModel.thetaSize);
         this->setLowerBound(lb);
-        const Eigen::Map<Eigen::VectorXd> ub (const_cast<double*>(fOdeModel.thetaUpperBound.memptr()), numparam);
+        const Eigen::Map<Eigen::VectorXd> ub (const_cast<double*>(fOdeModel.thetaUpperBound.memptr()), fOdeModel.thetaSize);
         this->setUpperBound(ub);
     }
 };
@@ -285,13 +282,12 @@ arma::vec optimizeThetaInit(const arma::mat & yobsInput,
                             const std::vector<gpcov> & covAllDimensionsInput,
                             const arma::vec & sigmaAllDimensionsInput,
                             const arma::vec & priorTemperatureInput,
-                            const arma::mat & xInitInput,
-                            const unsigned int numparamInput) {
-    ThetaOptim objective(yobsInput, fOdeModelInput, covAllDimensionsInput, sigmaAllDimensionsInput, priorTemperatureInput, xInitInput, numparamInput);
+                            const arma::mat & xInitInput) {
+    ThetaOptim objective(yobsInput, fOdeModelInput, covAllDimensionsInput, sigmaAllDimensionsInput, priorTemperatureInput, xInitInput);
     cppoptlib::LbfgsbSolver<ThetaOptim> solver;
-    Eigen::VectorXd theta(numparamInput);
+    Eigen::VectorXd theta(fOdeModelInput.thetaSize);
     theta.fill(1);
     solver.minimize(objective, theta);
-    const arma::vec & thetaArgmin = arma::vec(theta.data(), numparamInput, false, false);
+    const arma::vec & thetaArgmin = arma::vec(theta.data(), fOdeModelInput.thetaSize, false, false);
     return thetaArgmin;
 }

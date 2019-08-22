@@ -156,3 +156,46 @@ for(j in 1:(ncol(xsim)-1)){
   testthat::expect_equal(ydyR[[1]], ydyC[,,1], check.attributes = FALSE)
 }
 
+
+gpsmoothFuncList <- list()
+for(j in 1:(ncol(xsim)-1)){
+  ynew <- getMeanCurve(xsim.obs$time, xsim.obs[,j+1], xsim$time, 
+                       t(curphi[,j]), t(cursigma[j]), kerneltype=config$kernel)
+  gpsmoothFuncList[[j]] <- approxfun(xsim$time, ynew)
+  plot.function(gpsmoothFuncList[[j]], from = min(xsim$time), to = max(xsim$time),
+                lty = 2, col = j, add = TRUE)
+}
+cursigma
+# MCMC starting value ----------------------------------------------------------
+yobs <- data.matrix(xsim[,-1])
+
+xsimInit <- xsim
+for(j in 1:(ncol(xsim)-1)){
+  nanId <- which(is.na(xsimInit[,j+1]))
+  xsimInit[nanId,j+1] <- gpsmoothFuncList[[j]](xsimInit$time[nanId])
+}
+matplot(xsimInit$time, xsimInit[,-1], type="p", pch=2, add=TRUE)
+xInit <- data.matrix(xsimInit[,-1])
+
+thetaInit <- rep(1, length(pram.true$theta))
+
+thetaoptim <- function(xInit, thetaInit, curphi, cursigma){
+  curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
+    covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize, 
+                      kerneltype=config$kernel)
+    covEach$mu[] <- mean(xsim.obs[,j+1])
+    covEach
+  })
+  fn <- function(par) {
+    -xthetallikRcpp( yobs, curCov, cursigma, c(xInit, par), "FN" )$value
+  }
+  gr <- function(par) {
+    -as.vector(xthetallikRcpp( yobs, curCov, cursigma, c(xInit, par), "FN" )$grad[-(1:length(xInit))])
+  }
+  marlikmap <- optim(c(thetaInit), fn, gr, 
+                     method="L-BFGS-B", lower = 0.001, control = list(maxit=1e5))
+  thetaInit[] <- marlikmap$par
+  list(thetaInit = thetaInit)
+}
+
+thetamle <- thetaoptim(xInit, thetaInit, curphi, cursigma)
