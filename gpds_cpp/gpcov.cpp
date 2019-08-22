@@ -17,6 +17,7 @@ arma::mat mat2band(const arma::mat & matInput, const int bandsize){
 
 void gpcov::addBandCov(const int bandsizeInput){
     bandsize = bandsizeInput;
-
-
+    CinvBand = mat2band(Cinv, bandsize);
+    mphiBand = mat2band(mphi, bandsize);
+    KinvBand = mat2band(Kinv, bandsize);
 }

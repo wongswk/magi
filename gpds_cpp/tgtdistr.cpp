@@ -38,7 +38,10 @@ double modifiedBessel2ndKind (const double & nu, const double & x){
 //' @param phi         the parameter of (sigma_c_sq, alpha)
 //' @param dist        distance matrix
 //' @param complexity  how much derivative information should be calculated
-gpcov generalMaternCov( const vec & phi, const mat & distSigned, int complexity = 0){
+gpcov generalMaternCov( const vec & phi,
+                        const mat & distSigned,
+                        int complexity = 0,
+                        double noiseInjection = 1e-7){
   double df = 2.01;
   gpcov out;
   out.C.set_size(distSigned.n_rows, distSigned.n_cols);
@@ -80,7 +83,13 @@ gpcov generalMaternCov( const vec & phi, const mat & distSigned, int complexity 
   mat Cpart1 = phi(0) * pow(2.0, 1-df) * exp(-lgamma(df)) * pow( x4bessel, df);
   out.C = Cpart1 % bessel_df;  
   out.C.diag().fill(phi(0));
-  out.C.diag() += 1e-7;  // stabilizer
+  out.C.diag() += noiseInjection;  // stabilizer
+  out.complexity = complexity;
+  out.noiseInjection = noiseInjection;
+  out.kerneltype = "generalMatern";
+
+  out.mu = arma::zeros(out.C.n_rows);
+  out.dotmu = arma::zeros(out.C.n_rows);
   
   if (complexity == 0) {
     return out;
@@ -141,7 +150,7 @@ gpcov generalMaternCov( const vec & phi, const mat & distSigned, int complexity 
   
   // out.Kinv
   out.Kphi = out.Cdoubleprime - out.mphi * out.Cprime.t();
-  out.Kphi.diag() += 1e-7;
+  out.Kphi.diag() += noiseInjection;
   inv_sympd(out.Kinv, out.Kphi);
   
   // block matrix
@@ -158,6 +167,7 @@ gpcov generalMaternCov( const vec & phi, const mat & distSigned, int complexity 
       join_horiz(out.dCprimedphiCube.slice(sliceIt), out.dCdoubleprimedphiCube.slice(sliceIt))
     );
   }
+
   return out;
 }
 
