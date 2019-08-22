@@ -33,6 +33,11 @@ fn.sim[-seq(1,nrow(fn.sim), length=config$nobs),] <- NaN
 fn.sim.obs <- fn.sim[seq(1,nrow(fn.sim), length=config$nobs),]
 tvec.nobs <- fn.sim$time[seq(1,nrow(fn.sim), length=config$nobs)]
 
+testthat::test_that("c++ calcFrequencyBasedPrior correct", {
+  priorFactor <- gpds:::calcFrequencyBasedPrior(fn.sim.obs[,1])
+  testthat::expect_true(all(priorFactor == c(0.25, 0.25)))
+})
+
 testthat::test_that("c++ gpsmooth correct", {
   r.nobs <- abs(outer(tvec.nobs, t(tvec.nobs),'-')[,1,])
   yobs1 <- data.matrix(fn.sim.obs[,1,drop=FALSE])
@@ -51,6 +56,38 @@ testthat::test_that("c++ gpsmooth correct", {
     grad
   }
 
+  fn(outputc)
+  testthat::expect_true(all(abs(gr(outputc)) < 1e-4))
+})
+
+testthat::test_that("c++ gpsmooth correct with fft prior", {
+  r.nobs <- abs(outer(tvec.nobs, t(tvec.nobs),'-')[,1,])
+  yobs1 <- data.matrix(fn.sim.obs[,1,drop=FALSE])
+  outputc <- gpds:::gpsmooth(yobs1,
+                             r.nobs,
+                             config$kernel,
+                             3,
+                             TRUE)
+  xsim.obs <- fn.sim.obs[,c("time", "Vtrue", "Rtrue")]
+  j=1
+  fn <- function(par) {
+    marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
+    penalty <- dnorm(par[2], max(xsim.obs$time)*priorFactor[1], 
+                     max(xsim.obs$time)*priorFactor[2], log=TRUE)
+    # penalty <- dgamma(par[2], alphaRate, betaRate/max(xsim.obs$time), log=TRUE)
+    # penalty <- 0
+    -(marlik$value + penalty)
+  }
+  gr <- function(par) {
+    marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
+    grad <- -as.vector(marlik$grad)
+    penalty <- (par[2] - max(xsim.obs$time)*priorFactor[1]) / (max(xsim.obs$time)*priorFactor[2])^2
+    # penalty <- ((alphaRate-1)/par[2] - betaRate/max(xsim.obs$time))
+    # penalty <- 0
+    grad[2] <- grad[2] + penalty
+    grad
+  }
+  
   fn(outputc)
   testthat::expect_true(all(abs(gr(outputc)) < 1e-4))
 })
