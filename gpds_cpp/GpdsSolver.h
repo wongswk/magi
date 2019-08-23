@@ -16,7 +16,6 @@ public:
     std::string kernel;
     const int nstepsHmc;
     const double burninRatioHmc;
-    const bool trajHmc = false;
     const unsigned int niterHmc;
     const double stepSizeFactorHmc;
     const int nEpoch;
@@ -37,7 +36,6 @@ public:
     std::function<gpcov(arma::vec, arma::mat, int)> kernelCov;
 
     arma::mat yObs;
-    arma::vec tvecObs;
     arma::mat distSignedObs;
     arma::uvec indicatorRowWithObs;
     arma::uvec idxRowWithObs;
@@ -50,8 +48,9 @@ public:
     arma::mat xInit;
     arma::mat thetaInit;
 
+    arma::vec stepLow;
+
     // output
-    arma::vec sigmaAllDimensions;
     arma::vec llikSamples;
     arma::mat xthetasigmaSamples;
 

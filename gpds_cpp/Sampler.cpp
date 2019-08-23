@@ -11,7 +11,7 @@ hmcstate Sampler::sampleSingle(const arma::vec &xthetasigmaInit, const arma::vec
 void Sampler::sampleChian(const arma::vec &xthetasigmaInit, const arma::vec &stepLowInit, bool verbose=false) {
     lliklist.fill(arma::datum::nan);
     xth.fill(arma::datum::nan);
-    arma::vec stepLow = stepLowInit;
+    stepLow = stepLowInit;
     arma::vec accepts = arma::vec(niter).fill(arma::datum::nan);
     accepts(0) = 0;
     xth.col(0) = xthetasigmaInit;

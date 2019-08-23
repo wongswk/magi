@@ -74,7 +74,6 @@ GpdsSolver::GpdsSolver(const arma::mat & yFull,
     indicatorRowWithObs = arma::sum(indicatorMatWithObs, 1);
     idxRowWithObs = arma::find(indicatorRowWithObs > 0);
     yObs = yFull.rows(idxRowWithObs);
-    tvecObs = tvecFull(idxRowWithObs);
     distSignedObs = distSignedFull.submat(idxRowWithObs, idxRowWithObs);
     idxColElemWithObs.resize(ydim);
     for(unsigned int j = 0; j < ydim; j++) {
@@ -251,5 +250,8 @@ void GpdsSolver::doHMC() {
     if(!sigmaExogenous.empty()){
         stepLowInit.subvec(xInit.size() + thetaInit.size(), stepLowInit.size() - 1).fill(0);
     }
-    hmcSampler.sampleChian(xthetasigmaInit, stepLowInit, true);
+    hmcSampler.sampleChian(xthetasigmaInit, stepLowInit, verbose);
+    llikSamples = hmcSampler.lliklist;
+    xthetasigmaSamples = hmcSampler.xth;
+    stepLow = hmcSampler.stepLow;
 }

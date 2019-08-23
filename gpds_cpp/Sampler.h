@@ -16,6 +16,7 @@ class Sampler {
     std::function<lp(arma::vec)> tgt;
     arma::vec lb, ub;
 public:
+    arma::vec stepLow;
     arma::vec lliklist;
     arma::mat xth;
 
