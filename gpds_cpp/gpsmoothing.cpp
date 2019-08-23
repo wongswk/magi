@@ -45,6 +45,7 @@ public:
     const arma::mat & yobs;
     const arma::mat & dist;
     const unsigned int numparam;
+    const double sigmaExogenScalar;
     const bool useFrequencyBasedPrior;
     arma::vec priorFactor;
     double maxDist;
@@ -53,7 +54,10 @@ public:
         if ((phisigInput.array() < this->lowerBound().array()).any()){
             return INFINITY;
         }
-        const arma::vec & phisig = arma::vec(const_cast<double*>(phisigInput.data()), numparam, false, false);
+        arma::vec phisig = arma::vec(const_cast<double*>(phisigInput.data()), numparam, false, false);
+        if(sigmaExogenScalar > 0){
+            phisig = arma::join_vert(phisig, arma::vec({sigmaExogenScalar}));
+        }
         const lp & out = phisigllik(phisig, yobs, dist, kernel);
         double penalty = 0;
         if (useFrequencyBasedPrior) {
@@ -74,7 +78,10 @@ public:
             }
             return;
         }
-        const arma::vec & phisig = arma::vec(const_cast<double*>(phisigInput.data()), numparam, false, false);
+        arma::vec phisig = arma::vec(const_cast<double*>(phisigInput.data()), numparam, false, false);
+        if(sigmaExogenScalar > 0){
+            phisig = arma::join_vert(phisig, arma::vec({sigmaExogenScalar}));
+        }
         const lp & out = phisigllik(phisig, yobs, dist, kernel);
         for(unsigned i = 0; i < numparam; i++){
             grad[i] = -out.gradient(i);
@@ -92,12 +99,14 @@ public:
                                 const arma::mat & distInput,
                                 std::string kernelInput,
                                 const unsigned int numparamInput,
+                                const double sigmaExogenScalarInput,
                                 const bool useFrequencyBasedPriorInput) :
             BoundedProblem(numparamInput),
             kernel(std::move(kernelInput)),
             yobs(yobsInput),
             dist(distInput),
             numparam(numparamInput),
+            sigmaExogenScalar(sigmaExogenScalarInput),
             useFrequencyBasedPrior(useFrequencyBasedPriorInput) {
         Eigen::VectorXd lb(numparam);
         lb.fill(1e-4);
@@ -119,6 +128,7 @@ public:
 arma::vec gpsmooth(const arma::mat & yobsInput,
                    const arma::mat & distInput,
                    std::string kernelInput,
+                   const double sigmaExogenScalar = -1,
                    bool useFrequencyBasedPrior = false) {
     unsigned int phiDim;
     if(kernelInput == "generalMatern") {
@@ -132,9 +142,15 @@ arma::vec gpsmooth(const arma::mat & yobsInput,
     }else{
         throw std::invalid_argument("kernelInput invalid");
     }
-    const unsigned int numparam = phiDim * yobsInput.n_cols + 1;
+    unsigned int numparam;
 
-    PhiGaussianProcessSmoothing objective(yobsInput, distInput, std::move(kernelInput), numparam, useFrequencyBasedPrior);
+    if(sigmaExogenScalar > 0){
+        numparam = phiDim * yobsInput.n_cols;
+    }else{
+        numparam = phiDim * yobsInput.n_cols + 1;
+    }
+
+    PhiGaussianProcessSmoothing objective(yobsInput, distInput, std::move(kernelInput), numparam, sigmaExogenScalar, useFrequencyBasedPrior);
     cppoptlib::LbfgsbSolver<PhiGaussianProcessSmoothing> solver;
     Eigen::VectorXd phisig(numparam);
     phisig.fill(1);
@@ -145,7 +161,9 @@ arma::vec gpsmooth(const arma::mat & yobsInput,
         phisig[phiDim * i + 1] = 0.5 * maxDist;
         sdOverall += phisig[phiDim * i];
     }
-    phisig[phiDim * yobsInput.n_cols] = sdOverall / yobsInput.n_cols;
+    if(sigmaExogenScalar <= 0){
+        phisig[phiDim * yobsInput.n_cols] = sdOverall / yobsInput.n_cols;
+    }
     solver.minimize(objective, phisig);
     const arma::vec & phisigArgmin = arma::vec(phisig.data(), numparam, false, false);
     return phisigArgmin;

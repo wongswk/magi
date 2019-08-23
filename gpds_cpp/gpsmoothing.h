@@ -16,6 +16,7 @@ arma::vec optimizeThetaInit(const arma::mat & yobsInput,
 arma::vec gpsmooth(const arma::mat & yobsInput,
                    const arma::mat & distInput,
                    std::string kernelInput,
+                   const double sigmaExogenScalar = -1,
                    bool useFrequencyBasedPrior = false);
 
 arma::cube calcMeanCurve(const arma::vec & xInput,

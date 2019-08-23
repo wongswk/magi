@@ -86,6 +86,7 @@ testthat::test_that("c++ gpsmooth correct with fft prior", {
   outputc <- gpds:::gpsmooth(yobs1,
                              r.nobs,
                              config$kernel,
+                             -1,
                              TRUE)
   xsim.obs <- fn.sim.obs[,c("time", "Vtrue", "Rtrue")]
   j=1
@@ -109,6 +110,23 @@ testthat::test_that("c++ gpsmooth correct with fft prior", {
   
   fn(outputc)
   testthat::expect_true(all(abs(gr(outputc)) < 1e-4))
+})
+
+testthat::test_that("c++ gpsmooth correct with fixed sigma fft prior", {
+  r.nobs <- abs(outer(tvec.nobs, t(tvec.nobs),'-')[,1,])
+  yobs1 <- data.matrix(fn.sim.obs[,1,drop=FALSE])
+  outputc <- gpds:::gpsmooth(yobs1,
+                             r.nobs,
+                             config$kernel,
+                             0.1,
+                             FALSE)
+  
+  outputc <- gpds:::gpsmooth(yobs1,
+                             r.nobs,
+                             config$kernel,
+                             0.1,
+                             TRUE)
+  
 })
 
 foo <- outer(tvec.full, t(tvec.full),'-')[,1,]
