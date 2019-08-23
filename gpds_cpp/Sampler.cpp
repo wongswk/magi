@@ -63,10 +63,10 @@ Sampler::Sampler(const arma::mat & yobsInput,
         sigmaSize(sigmaSizeInput),
         burninRatio(burninRatioInput),
         niter(niterInput),
-        lb(yobsInput.size() + modelInput.thetaSize + yobsInput.n_cols),
-        ub(yobsInput.size() + modelInput.thetaSize + yobsInput.n_cols),
+        lb(yobsInput.size() + modelInput.thetaSize + sigmaSizeInput),
+        ub(yobsInput.size() + modelInput.thetaSize + sigmaSizeInput),
         lliklist(arma::vec(niterInput)),
-        xth(arma::mat(yobsInput.size() + modelInput.thetaSize + yobsInput.n_cols, niterInput).fill(arma::datum::nan))
+        xth(arma::mat(yobsInput.size() + modelInput.thetaSize + sigmaSizeInput, niterInput).fill(arma::datum::nan))
 {
     useBand = false;
     if(loglikflag == "band" || loglikflag == "withmeanBand"){

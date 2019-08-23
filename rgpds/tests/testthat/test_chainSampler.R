@@ -189,6 +189,23 @@ testthat::test_that("chainSamplerRcpp can run without error",{
     stepLowInit = stepLowXthetasigmaInit,
     verbose = TRUE
   )
+  
+  xthetasigmaInit <- c(fn.true$Vtrue, fn.true$Rtrue, pram.true$abc, c(cursigma))
+  stepLowXthetasigmaInit <- c(rep(0.00035, 2*nall+3)*config$stepSizeFactor, 0)
+  chainSamplerRcpp(
+    yobs = data.matrix(fn.sim[,1:2]),
+    covAllDimInput = list(curCovV, curCovR),
+    nstepsInput = config$hmcSteps,
+    loglikflagInput = config$loglikflag,
+    priorTemperatureInput = c(1, 1),
+    sigmaSizeInput = 1,
+    modelInput = fnmodel,
+    niterInput = config$n.iter,
+    burninRatioInput = config$burninRatio,
+    xthetasigmaInit = xthetasigmaInit,
+    stepLowInit = stepLowXthetasigmaInit,
+    verbose = TRUE
+  )
 
   ## this gives segfault
   # gpds:::optimizeThetaInit(
