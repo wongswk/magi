@@ -119,21 +119,35 @@ public:
 arma::vec gpsmooth(const arma::mat & yobsInput,
                    const arma::mat & distInput,
                    std::string kernelInput,
-                   const unsigned int numparamInput,
                    bool useFrequencyBasedPrior = false) {
-    PhiGaussianProcessSmoothing objective(yobsInput, distInput, std::move(kernelInput), numparamInput, useFrequencyBasedPrior);
+    unsigned int phiDim;
+    if(kernelInput == "generalMatern") {
+        phiDim = 2;
+    }else if(kernelInput == "matern") {
+        phiDim = 2;
+    }else if(kernelInput == "compact1") {
+        phiDim = 2;
+    }else if(kernelInput == "periodicMatern"){
+        phiDim = 3;
+    }else{
+        throw std::invalid_argument("kernelInput invalid");
+    }
+    const unsigned int numparam = phiDim * yobsInput.n_cols + 1;
+
+    PhiGaussianProcessSmoothing objective(yobsInput, distInput, std::move(kernelInput), numparam, useFrequencyBasedPrior);
     cppoptlib::LbfgsbSolver<PhiGaussianProcessSmoothing> solver;
-    Eigen::VectorXd phisig(2 * yobsInput.n_cols + 1);
+    Eigen::VectorXd phisig(numparam);
+    phisig.fill(1);
     double maxDist = distInput.max();
     double sdOverall = 0;
     for(unsigned i = 0; i < yobsInput.n_cols; i++) {
-        phisig[2 * i] = 0.5 * arma::stddev(yobsInput.col(i));
-        phisig[2 * i + 1] = 0.5 * maxDist;
-        sdOverall += phisig[2 * i];
+        phisig[phiDim * i] = 0.5 * arma::stddev(yobsInput.col(i));
+        phisig[phiDim * i + 1] = 0.5 * maxDist;
+        sdOverall += phisig[phiDim * i];
     }
-    phisig[2 * yobsInput.n_cols] = sdOverall / yobsInput.n_cols;
+    phisig[phiDim * yobsInput.n_cols] = sdOverall / yobsInput.n_cols;
     solver.minimize(objective, phisig);
-    const arma::vec & phisigArgmin = arma::vec(phisig.data(), 2 * yobsInput.n_cols + 1, false, false);
+    const arma::vec & phisigArgmin = arma::vec(phisig.data(), numparam, false, false);
     return phisigArgmin;
 }
 

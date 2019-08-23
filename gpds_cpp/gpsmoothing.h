@@ -13,4 +13,17 @@ arma::vec optimizeThetaInit(const arma::mat & yobsInput,
                             const arma::vec & priorTemperatureInput,
                             const arma::mat & xInitInput);
 
+arma::vec gpsmooth(const arma::mat & yobsInput,
+                   const arma::mat & distInput,
+                   std::string kernelInput,
+                   bool useFrequencyBasedPrior = false);
+
+arma::cube calcMeanCurve(const arma::vec & xInput,
+                         const arma::vec & yInput,
+                         const arma::vec & xOutput,
+                         const arma::mat & phiCandidates,
+                         const arma::vec & sigmaCandidates,
+                         const std::string kerneltype = "generalMatern",
+                         const bool useDeriv = false);
+
 #endif //GPDS_MULTI_LANG_GPSMOOTHING_H

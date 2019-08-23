@@ -43,8 +43,7 @@ testthat::test_that("c++ gpsmooth correct", {
   yobs1 <- data.matrix(fn.sim.obs[,1,drop=FALSE])
   outputc <- gpds:::gpsmooth(yobs1,
                              r.nobs,
-                             config$kernel,
-                             3)
+                             config$kernel)
   
   fn <- function(par) {
     marlik <- phisigllikC( par, yobs1, r.nobs, config$kernel)
@@ -65,8 +64,7 @@ testthat::test_that("c++ gpsmooth correct dim2", {
   yobs1 <- data.matrix(fn.sim.obs[,1:2,drop=FALSE])
   outputc <- gpds:::gpsmooth(yobs1,
                              r.nobs,
-                             config$kernel,
-                             5)
+                             config$kernel)
   
   fn <- function(par) {
     marlik <- phisigllikC( par, yobs1, r.nobs, config$kernel)
@@ -88,7 +86,6 @@ testthat::test_that("c++ gpsmooth correct with fft prior", {
   outputc <- gpds:::gpsmooth(yobs1,
                              r.nobs,
                              config$kernel,
-                             3,
                              TRUE)
   xsim.obs <- fn.sim.obs[,c("time", "Vtrue", "Rtrue")]
   j=1
