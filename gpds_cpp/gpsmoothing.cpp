@@ -252,7 +252,7 @@ public:
                 true,
                 priorTemperature);
         for(unsigned i = 0; i < fOdeModel.thetaSize; i++){
-            grad[i] = -out.gradient(i);
+            grad[i] = -out.gradient(xInit.size() + i);
         }
     }
 

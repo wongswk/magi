@@ -2,6 +2,7 @@
 #include "RcppWrapper.h"
 #include "RcppArmadillo.h"
 #include "Sampler.h"
+#include "gpsmoothing.h"
 
 using namespace std;
 using namespace arma;
@@ -437,5 +438,26 @@ Rcpp::List chainSamplerRcpp(const arma::mat & yobs,
   return List::create(
             Named("lliklist")=sampler.lliklist,
             Named("xth")=sampler.xth
-    );;
+    );
+}
+
+//' R wrapper for chainSamplerRcpp
+//' @export
+// [[Rcpp::export]]
+arma::vec optimizeThetaInitRcpp(const arma::mat & yobs,
+                                 const OdeSystem & modelInput,
+                                 const Rcpp::List & covAllDimInput,
+                                 const arma::vec & sigmaAllDimensionsInput,
+                                 const arma::vec & priorTemperatureInput,
+                                 const arma::mat & xInitInput){
+    vector<gpcov> covAllDimensions(yobs.n_cols);
+    for(unsigned j = 0; j < yobs.n_cols; j++){
+        covAllDimensions[j] = cov_r2cpp(covAllDimInput[j]);
+    }
+    return optimizeThetaInit(yobs,
+                             modelInput,
+                             covAllDimensions,
+                             sigmaAllDimensionsInput,
+                             priorTemperatureInput,
+                             xInitInput);
 }

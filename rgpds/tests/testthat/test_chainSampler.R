@@ -174,4 +174,23 @@ testthat::test_that("chainSamplerRcpp can run without error",{
     verbose = TRUE
   )
 
+  ## this gives segfault
+  # gpds:::optimizeThetaInit(
+  #   yobsInput = data.matrix(fn.sim[,1:2]), 
+  #   fOdeModelInput = fnmodel, 
+  #   covAllDimensionsInput = list(curCovV, curCovR), 
+  #   sigmaAllDimensionsInput = c(cursigma, cursigma), 
+  #   priorTemperatureInput = c(1,1), 
+  #   xInitInput = cbind(fn.true$Vtrue, fn.true$Rtrue)
+  # )
+  
+  gpds:::optimizeThetaInitRcpp(
+    yobs = data.matrix(fn.sim[,1:2]), 
+    modelInput = fnmodel, 
+    covAllDimInput = list(curCovV, curCovR), 
+    sigmaAllDimensionsInput = c(cursigma, cursigma), 
+    priorTemperatureInput = c(1,1), 
+    xInitInput = cbind(fn.true$Vtrue, fn.true$Rtrue)
+  )
+  
 })

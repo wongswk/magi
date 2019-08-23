@@ -199,3 +199,15 @@ thetaoptim <- function(xInit, thetaInit, curphi, cursigma){
 }
 
 thetamle <- thetaoptim(xInit, thetaInit, curphi, cursigma)
+
+fnmodel <- list(
+  fOde=gpds:::fODE,
+  fOdeDx=gpds:::fnmodelDx,
+  fOdeDtheta=gpds:::fnmodelDtheta,
+  thetaLowerBound=c(0,0,0),
+  thetaUpperBound=c(Inf,Inf,Inf)
+)
+
+thetamle2 <- gpds:::optimizeThetaInitRcpp(yobs, fnmodel, curCov, cursigma, c(1,1), xInit)
+
+testthat::expect_equal(thetamle$thetaInit, thetamle2, check.attributes = FALSE, tolerance=1e-5)
