@@ -181,6 +181,7 @@ testthat::test_that("chainSamplerRcpp can run without error",{
     nstepsInput = config$hmcSteps,
     loglikflagInput = config$loglikflag,
     priorTemperatureInput = c(1, 1),
+    sigmaSizeInput = 2,
     modelInput = fnmodel,
     niterInput = config$n.iter,
     burninRatioInput = config$burninRatio,

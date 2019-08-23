@@ -26,6 +26,7 @@ public:
             const int nstepsInput,
             const std::string loglikflagInput,
             const arma::vec priorTemperatureInput,
+            const unsigned int sigmaSizeInput,
             const OdeSystem & modelInput,
             const unsigned int niterInput,
             const double burninRatioInput);
