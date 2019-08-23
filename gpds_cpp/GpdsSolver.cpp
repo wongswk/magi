@@ -3,6 +3,7 @@
 #include "tgtdistr.h"
 #include "Sampler.h"
 
+
 GpdsSolver::GpdsSolver(const arma::mat & yFull,
                        const OdeSystem & odeModel,
                        const arma::vec & tvecFull,
@@ -13,13 +14,15 @@ GpdsSolver::GpdsSolver(const arma::mat & yFull,
                        const int nstepsHmc,
                        const double burninRatioHmc,
                        const unsigned int niterHmc,
+                       const double stepSizeFactorHmc,
                        const int nEpoch,
                        const int bandSize,
                        bool useFrequencyBasedPrior,
                        bool useBand,
                        bool useMean,
                        bool useScalerSigma,
-                       bool useFixedSigma) :
+                       bool useFixedSigma,
+                       bool verbose) :
         yFull(yFull),
         odeModel(odeModel),
         tvecFull(tvecFull),
@@ -29,6 +32,7 @@ GpdsSolver::GpdsSolver(const arma::mat & yFull,
         nstepsHmc(nstepsHmc),
         burninRatioHmc(burninRatioHmc),
         niterHmc(niterHmc),
+        stepSizeFactorHmc(stepSizeFactorHmc),
         nEpoch(nEpoch),
         bandSize(bandSize),
         useFrequencyBasedPrior(useFrequencyBasedPrior),
@@ -36,6 +40,7 @@ GpdsSolver::GpdsSolver(const arma::mat & yFull,
         useMean(useMean),
         useScalerSigma(useScalerSigma),
         useFixedSigma(useFixedSigma),
+        verbose(verbose),
         ydim(yFull.n_cols),
         sigmaSize(useScalerSigma ? 1 : yFull.n_cols),
         distSignedFull(tvecFull.size(), tvecFull.size()),
@@ -241,6 +246,10 @@ void GpdsSolver::doHMC() {
                        niterHmc,
                        burninRatioHmc);
     arma::vec xthetasigmaInit = arma::join_vert(arma::join_vert(xInit, thetaInit), sigmaInit);
-//    hmcSampler.sampleChian()
-
+    arma::vec stepLowInit(xthetasigmaInit.size());
+    stepLowInit.fill(1.0 / nstepsHmc * stepSizeFactorHmc);
+    if(!sigmaExogenous.empty()){
+        stepLowInit.subvec(xInit.size() + thetaInit.size(), stepLowInit.size() - 1).fill(0);
+    }
+    hmcSampler.sampleChian(xthetasigmaInit, stepLowInit, true);
 }

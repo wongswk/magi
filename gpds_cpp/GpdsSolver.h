@@ -18,6 +18,7 @@ public:
     const double burninRatioHmc;
     const bool trajHmc = false;
     const unsigned int niterHmc;
+    const double stepSizeFactorHmc;
     const int nEpoch;
     const int bandSize;
     bool useFrequencyBasedPrior;
@@ -25,6 +26,7 @@ public:
     bool useMean;
     bool useScalerSigma;
     bool useFixedSigma;
+    bool verbose;
 
     // intermediate object storage
     const unsigned int ydim;
@@ -63,13 +65,15 @@ public:
                const int nstepsHmc = 500,
                const double burninRatioHmc = 0.5,
                const unsigned int niterHmc = 10000,
+               const double stepSizeFactorHmc = 1,
                const int nEpoch = 10,
                const int bandSize = 20,
                bool useFrequencyBasedPrior = false,
                bool useBand = true,
                bool useMean = true,
                bool useScalerSigma = false,
-               bool useFixedSigma = false);
+               bool useFixedSigma = false,
+               bool verbose = false);
 
     void setupPhiSigma();
     void initXmudotmu();
