@@ -13,6 +13,7 @@ gpcov maternCov( const arma::vec &, const arma::mat &, int);
 gpcov generalMaternCov( const arma::vec &, const arma::mat &, int complexity = 0);
 gpcov rbfCov( const arma::vec &, const arma::mat &, int);
 gpcov compact1Cov( const arma::vec &, const arma::mat &, int);
+gpcov periodicMaternCov( const arma::vec &, const arma::mat &, int);
 lp phisigllik( const arma::vec &, const arma::mat &, const arma::mat &, string kernel = "matern");
 lp phisigloocvllik( const arma::vec &, const arma::mat &, const arma::mat &, string kernel = "matern");
 lp phisigloocvmse( const arma::vec &, const arma::mat &, const arma::mat &, string kernel = "matern");

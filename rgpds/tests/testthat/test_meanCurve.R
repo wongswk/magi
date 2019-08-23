@@ -154,6 +154,7 @@ for(j in 1:(ncol(xsim)-1)){
                                curphi[,j,drop=FALSE], cursigma[j],
                                "generalMatern", TRUE)
   testthat::expect_equal(ydyR[[1]], ydyC[,,1], check.attributes = FALSE)
+  testthat::expect_equal(ydyR[[2]], ydyC[,,2], check.attributes = FALSE)
 }
 
 
