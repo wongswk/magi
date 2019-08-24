@@ -12,7 +12,7 @@ public:
     const arma::vec & sigmaExogenous;
 
     // configuration
-    const arma::vec & priorTemperature;
+    const arma::vec priorTemperature;
     std::string kernel;
     const int nstepsHmc;
     const double burninRatioHmc;
