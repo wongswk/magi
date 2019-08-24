@@ -19,4 +19,8 @@ arma::mat HIVmodelODE(const arma::vec &, const arma::mat &);
 arma::cube HIVmodelDx(const arma::vec &, const arma::mat &);
 arma::cube HIVmodelDtheta(const arma::vec &, const arma::mat &);
 
+arma::mat ptransmodelODE(const arma::vec &, const arma::mat &);
+arma::cube ptransmodelDx(const arma::vec &, const arma::mat &);
+arma::cube ptransmodelDtheta(const arma::vec &, const arma::mat &);
+
 #endif

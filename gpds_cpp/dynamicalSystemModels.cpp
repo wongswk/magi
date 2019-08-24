@@ -248,3 +248,87 @@ arma::cube HIVmodelDtheta(const arma::vec & theta, const arma::mat & x) {
         
   return resultDtheta;
 }
+
+// [[Rcpp::export]]
+arma::mat ptransmodelODE(const arma::vec & theta, const arma::mat & x) {
+  const vec & S = x.col(0);
+  const vec & dS = x.col(1);
+  const vec & R = x.col(2);
+  const vec & RS = x.col(3);
+  const vec & RPP = x.col(4);
+  
+  mat resultdt(x.n_rows, x.n_cols);
+
+  resultdt.col(0) = -theta(0)*S - theta(1) * S % R + theta(2) * RS;
+  resultdt.col(1) = theta(0)*S;
+  resultdt.col(2) = -theta(1)*S%R + theta(2)*RS + theta(4) * RPP / (theta(5)+RPP);
+  resultdt.col(3) = theta(1)*S%R - theta(2)* RS - theta(3)*RS;
+  resultdt.col(4) = theta(3)*RS - theta(4) * RPP / (theta(5)+RPP);
+  
+  return resultdt;
+}
+
+// [[Rcpp::export]]
+arma::cube ptransmodelDx(const arma::vec & theta, const arma::mat & x) {
+  cube resultDx(x.n_rows, x.n_cols, x.n_cols, fill::zeros);
+  
+  const vec & S = x.col(0);
+  const vec & dS = x.col(1);
+  const vec & R = x.col(2);
+  const vec & RS = x.col(3);
+  const vec & RPP = x.col(4);
+  
+  resultDx.slice(0).col(0) = -theta(0) - theta(1) * R;
+  resultDx.slice(0).col(2) = -theta(1) * S;
+  resultDx.slice(0).col(3).fill(theta(2));
+  
+  resultDx.slice(1).col(0).fill(theta(0));
+    
+  resultDx.slice(2).col(0) = -theta(1)*R;
+  resultDx.slice(2).col(2) = -theta(1)*S;
+  resultDx.slice(2).col(3).fill(theta(2));
+  resultDx.slice(2).col(4) =  theta(4) * theta(5) /  square(theta(5) + RPP);
+  
+  resultDx.slice(3).col(0) = theta(1)*R;
+  resultDx.slice(3).col(2) = theta(1)*S;
+  resultDx.slice(3).col(3).fill(-theta(2) - theta(3));
+  
+  resultDx.slice(4).col(3).fill(theta(3));
+  resultDx.slice(4).col(4) = -theta(4) * theta(5) /  square(theta(5) + RPP);
+  
+  return resultDx;
+}
+
+// [[Rcpp::export]]
+arma::cube ptransmodelDtheta(const arma::vec & theta, const arma::mat & x) {
+  cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
+  
+  const vec & S = x.col(0);
+  const vec & dS = x.col(1);
+  const vec & R = x.col(2);
+  const vec & RS = x.col(3);
+  const vec & RPP = x.col(4);  
+  
+  resultDtheta.slice(0).col(0) = -S;
+  resultDtheta.slice(0).col(1) = -S%R;
+  resultDtheta.slice(0).col(2) = RS;
+  
+  resultDtheta.slice(1).col(0) = S;
+  
+  resultDtheta.slice(2).col(1) = -S%R;
+  resultDtheta.slice(2).col(2) = RS;
+  resultDtheta.slice(2).col(4) = RPP / (theta(5)+RPP);
+  resultDtheta.slice(2).col(5) = -theta(4) * RPP / square(theta(5)+RPP);
+  
+  resultDtheta.slice(3).col(1) = S%R;
+  resultDtheta.slice(3).col(2) = -RS;
+  resultDtheta.slice(3).col(3) = -RS;
+  
+  resultDtheta.slice(4).col(3) = RS;
+  resultDtheta.slice(4).col(4) = - RPP / (theta(5)+RPP);
+  resultDtheta.slice(4).col(5) = theta(4) * RPP / square(theta(5)+RPP);;
+  
+  return resultDtheta;
+}
+
+  
