@@ -189,7 +189,7 @@ void GpdsSolver::initXmudotmu() {
     arma::mat xInitAllDim = arma::ones(yFull.n_rows, ydim);
     for(unsigned j = 0; j < ydim; j++){
         if(idxColElemWithObs[j].size() >= 3){
-            const arma::vec & yObsCol = yObs.col(j).eval().elem(idxColElemWithObs[j]);
+            const arma::vec & yObsCol = yFull.col(j).eval().elem(idxColElemWithObs[j]);
             const arma::vec & tvecObsCol = tvecFull.elem(idxColElemWithObs[j]);
 
             const arma::cube & xdx = calcMeanCurve(tvecObsCol,
@@ -204,7 +204,7 @@ void GpdsSolver::initXmudotmu() {
             covAllDimensions[j].mu = xdx.slice(0);
             covAllDimensions[j].dotmu = xdx.slice(1);
         }else if(!idxColElemWithObs[j].empty()){
-            const arma::vec & yObsCol = yObs.col(j).eval().elem(idxColElemWithObs[j]);
+            const arma::vec & yObsCol = yFull.col(j).eval().elem(idxColElemWithObs[j]);
             xInitAllDim.col(j).fill(arma::mean(yObsCol));
 
             covAllDimensions[j].mu = arma::ones(tvecFull.size()) * arma::mean(yObsCol);
