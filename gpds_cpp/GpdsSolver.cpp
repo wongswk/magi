@@ -45,7 +45,8 @@ GpdsSolver::GpdsSolver(const arma::mat & yFull,
         sigmaSize(useScalerSigma ? 1 : yFull.n_cols),
         distSignedFull(tvecFull.size(), tvecFull.size()),
         indicatorRowWithObs(yFull.n_rows),
-        indicatorMatWithObs(yFull.n_rows, yFull.n_cols, arma::fill::zeros)
+        indicatorMatWithObs(yFull.n_rows, yFull.n_cols, arma::fill::zeros),
+        phiAllDimensions(2, yFull.n_cols)
 {
     if(kernel != "generalMatern"){
         throw std::runtime_error("only generalMatern kernel has full support");
