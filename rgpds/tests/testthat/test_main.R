@@ -106,7 +106,7 @@ gpds:::solveGpds(
   nstepsHmc = 500,
   burninRatioHmc = 0.5,
   niterHmc = 10000,
-  stepSizeFactorHmc = 1,
+  stepSizeFactorHmc = 0.02,
   nEpoch = 10,
   bandSize = 20,
   useFrequencyBasedPrior = FALSE,
