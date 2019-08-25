@@ -1,6 +1,7 @@
 #include "RcppArmadillo.h"
 #include "classDefinition.h"
 #include "Sampler.h"
+#include "GpdsSolver.h"
 
 namespace Rcpp
 {
@@ -87,6 +88,17 @@ namespace Rcpp
         return cov_c_vec;
     }
 
+    // std::vector<gpcov> - NOT WORKING
+    template <>
+    SEXP wrap(const std::vector<gpcov> & object)
+    {
+        List output = List::create(object.size());
+        for(unsigned i = 0; i < object.size(); i++){
+            output.push_back(wrap(object[i]));
+        }
+        return output;
+    }
+
     // lp
     template <>
     lp as(SEXP x){
@@ -132,12 +144,28 @@ namespace Rcpp
         return modelC;
     }
 
-    // Sampler
+    // Sampler - NOT WORKING
     template <>
     SEXP wrap(const Sampler& object){
         return List::create(
                 Named("lliklist")=object.lliklist,
                 Named("xth")=object.xth
+        );
+    }
+
+    // GpdsSolver - NOT WORKING
+    template <>
+    SEXP wrap(const GpdsSolver& object)
+    {
+        return List::create(
+                Named("xthetasigmaSamples")=object.xthetasigmaSamples,
+                Named("llikSamples")=object.llikSamples,
+                Named("phi")=object.phiAllDimensions,
+                Named("xInit")=object.xInit,
+                Named("thetaInit")=object.thetaInit,
+                Named("sigmaInit")=object.sigmaInit,
+                Named("stepLow")=object.stepLow,
+                Named("covAllDimensions")=wrap(object.covAllDimensions)
         );
     }
 

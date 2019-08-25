@@ -25,10 +25,6 @@ namespace Rcpp
     template <>
     OdeSystem as(SEXP x);
 
-    // Sampler
-    template <>
-    SEXP wrap(const Sampler& object);
-
 }
 
 
