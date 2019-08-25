@@ -18,7 +18,7 @@ arma::vec calcFrequencyBasedPrior(const arma::vec & x){
     double upperQuarter = zmodEffectiveSorted(static_cast<unsigned int>(std::ceil(zmodEffectiveSorted.size() * 0.75)));
     double lowerQuarter = zmodEffectiveSorted(static_cast<unsigned int>(std::floor(zmodEffectiveSorted.size() * 0.25)));
     double iqr = upperQuarter - lowerQuarter;
-    arma::vec outliers = zmodEffective(zmodEffective > upperQuarter + 1.5 * iqr);
+    arma::vec outliers = zmodEffective(arma::find(zmodEffective > upperQuarter + 1.5 * iqr));
     long long int freq = 1;
     if(!outliers.empty()){
         for(unsigned long long int i = zmodEffective.size(); i > 0; i--){
