@@ -35,7 +35,8 @@ tvec.nobs <- fn.sim$time[seq(1,nrow(fn.sim), length=config$nobs)]
 
 testthat::test_that("c++ calcFrequencyBasedPrior correct", {
   priorFactor <<- gpds:::calcFrequencyBasedPrior(fn.sim.obs[,1])
-  testthat::expect_true(all(priorFactor == c(0.25, 0.25)))
+  priorFactor2 <<- gpds:::getFrequencyBasedPrior(fn.sim.obs[,1])
+  testthat::expect_true(all(priorFactor == priorFactor2))
 })
 
 testthat::test_that("c++ gpsmooth correct", {
