@@ -14,7 +14,13 @@ getFrequencyBasedPrior <- function(x, showplot=FALSE){
     barplot(zmodEffective)
     boxplot(zmodEffective)
   }
-  outliers <- boxplot.stats(zmodEffective)$out 
+  #outliers <- boxplot.stats(zmodEffective)$out
+
+  upperQuarter = sort(zmodEffective)[ceiling(length(zmodEffective) * 0.75)]
+  lowerQuarter = sort(zmodEffective)[floor(length(zmodEffective) * 0.25)]
+  iqr = upperQuarter - lowerQuarter
+  outliers = zmodEffective[zmodEffective > upperQuarter + 1.5 * iqr]
+
   if(length(outliers)==0){
     freq <- which.max(zmodEffective)
   }else{
