@@ -233,10 +233,11 @@ thetaoptim <- function(xInit, thetaInit, cursigma){
   thetaInit[] <- marlikmap$par
   list(thetaInit = thetaInit)
 }
-thetaInit <- thetaInit <- rep(1, 3)
+thetaInit <- rep(1, 3)
 yobs <- data.matrix(xsim[,-1])
 thetamle <- thetaoptim(xInit, thetaInit, cursigma)
 testthat::expect_equal(thetamle$thetaInit, thetaCpp, tolerance=5e-5)
+thetaInit <- thetamle$thetaInit
 
 ## hmc sampler
 sigmaInit <- cursigma
