@@ -114,7 +114,7 @@ samplesCpp <- gpds:::solveGpds(
 
 out <- samplesCpp[-1,1,drop=FALSE]
 xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=2)
-stopifnot(abs(sum(out[,1])*1e5 - 6879957.07974693) < 1e-8)
+stopifnot(abs(sum(out[,1])*1e5 - 6879957.07974693) < 1)
 thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + 3), 1]
 sigmaCpp <- tail(out[, 1], 2)
 
