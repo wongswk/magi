@@ -9,8 +9,8 @@ if(!exists("config")){
     seed = 1365546660, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     loglikflag = "withmeanBand",
     bandsize = 20,
-    hmcSteps = 500,
-    n.iter = 10000,
+    hmcSteps = 100,
+    n.iter = 101,
     burninRatio = 0.50,
     stepSizeFactor = 0.06,
     filllevel = 2,
@@ -91,35 +91,6 @@ fnmodel <- list(
   thetaUpperBound=c(Inf,Inf,Inf)
 )
 
-
-out <- gpds:::solveGpds(
-  yFull = data.matrix(xsim[,-1]),
-  odeModel = fnmodel,
-  tvecFull = xsim$time,
-  sigmaExogenous = numeric(0),
-  priorTemperatureLevel = config$priorTemperature,
-  priorTemperatureDeriv = config$priorTemperature,
-  kernel = config$kernel,
-  nstepsHmc = 1,
-  burninRatioHmc = config$burninRatio,
-  niterHmc = 1,
-  stepSizeFactorHmc = 0,
-  nEpoch = config$max.epoch,
-  bandSize = config$bandsize,
-  useFrequencyBasedPrior = config$useFrequencyBasedPrior,
-  useBand = config$useBand,
-  useMean = config$useMean,
-  useScalerSigma = config$useScalerSigma,
-  useFixedSigma = config$useFixedSigma,
-  verbose = TRUE)
-
-xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=2)
-stopifnot(abs(sum(out[,1])*1e5 - 6879957.07974693) < 1e-8)
-thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + 3), 1]
-sigmaCpp <- tail(out[, 1], 2)
-
-matplot(xsim$time, xCpp, type="l", add=TRUE)
-
 samplesCpp <- gpds:::solveGpds(
   yFull = data.matrix(xsim[,-1]),
   odeModel = fnmodel,
@@ -141,6 +112,13 @@ samplesCpp <- gpds:::solveGpds(
   useFixedSigma = config$useFixedSigma,
   verbose = TRUE)
 
+out <- samplesCpp[-1,1,drop=FALSE]
+xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=2)
+stopifnot(abs(sum(out[,1])*1e5 - 6879957.07974693) < 1e-8)
+thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + 3), 1]
+sigmaCpp <- tail(out[, 1], 2)
+
+matplot(xsim$time, xCpp, type="l", add=TRUE)
 
 # R inference ----------------------------
 
