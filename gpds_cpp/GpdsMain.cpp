@@ -43,8 +43,11 @@ arma::mat solveGpds(const arma::mat & yFull,
                       useFixedSigma,
                       verbose);
     solver.setupPhiSigma();
+    if(verbose){
+        std::cout << "phi = \n" << solver.phiAllDimensions << "\n";
+    }
     solver.initXmudotmu();
     solver.initTheta();
     solver.doHMC();
-    return solver.xthetasigmaSamples;
+    return arma::join_vert(solver.llikSamples.t(), solver.xthetasigmaSamples);
 }

@@ -119,6 +119,7 @@ public:
                 priorFactor += calcFrequencyBasedPrior(yobs);
             }
             priorFactor /= yobs.n_cols;
+            std::cout << "priorFactor =\n" << priorFactor << "\n";
         }
     }
 };
