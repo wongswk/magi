@@ -134,3 +134,59 @@ gpds:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-priorTempered-phase1.pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
  
+# cpp with fixed exogenous sigma ----------------------------
+
+samplesCpp <- gpds:::solveGpds(
+  yFull = data.matrix(xsim[,-1]),
+  odeModel = hes1logmodel,
+  tvecFull = xsim$time,
+  sigmaExogenous = pram.true$sigma,
+  priorTemperatureLevel = config$priorTemperature,
+  priorTemperatureDeriv = config$priorTemperature,
+  kernel = config$kernel,
+  nstepsHmc = config$hmcSteps,
+  burninRatioHmc = config$burninRatio,
+  niterHmc = config$n.iter,
+  stepSizeFactorHmc = config$stepSizeFactor,
+  nEpoch = config$max.epoch,
+  bandSize = config$bandsize,
+  useFrequencyBasedPrior = config$useFrequencyBasedPrior,
+  useBand = config$useBand,
+  useMean = config$useMean,
+  useScalerSigma = config$useScalerSigma,
+  useFixedSigma = TRUE,
+  verbose = TRUE)
+
+out <- samplesCpp[-1,1,drop=FALSE]
+xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=ncol(xsim[,-1]))
+thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + 3), 1]
+sigmaCpp <- tail(out[, 1], ncol(xsim[,-1]))
+
+matplot(xsim$time, xCpp, type="l", add=TRUE)
+
+llikId <- 1
+xId <- (max(llikId)+1):(max(llikId)+length(data.matrix(xsim[,-1])))
+thetaId <- (max(xId)+1):(max(xId)+length(hes1logmodel$thetaLowerBound))
+sigmaId <- (max(thetaId)+1):(max(thetaId)+ncol(xsim[,-1]))
+
+
+burnin <- as.integer(config$n.iter*config$burninRatio)
+gpode <- list(theta=t(samplesCpp[thetaId, -(1:burnin)]),
+              xsampled=array(t(samplesCpp[xId, -(1:burnin)]),
+                             dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
+              lglik=samplesCpp[llikId,-(1:burnin)],
+              sigma = t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]))
+gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
+  with(gpode, gpds:::hes1logmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
+gpode$fode <- aperm(gpode$fode, c(3,1,2))
+
+dotxtrue = gpds:::hes1logmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
+
+odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
+
+outDir <- "../results/cpp/"
+
+gpds:::plotPostSamplesFlex(
+  paste0(outDir, config$modelName,"-",config$seed,"-fixedsigma.pdf"), 
+  xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+
