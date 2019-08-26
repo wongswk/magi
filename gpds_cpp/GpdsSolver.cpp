@@ -206,11 +206,13 @@ void GpdsSolver::initXmudotmu() {
         }else if(!idxColElemWithObs[j].empty()){
             const arma::vec & yObsCol = yFull.col(j).eval().elem(idxColElemWithObs[j]);
             xInitAllDim.col(j).fill(arma::mean(yObsCol));
+//            xInitAllDim.col(j) = arma::randn(tvecFull.size()) + arma::mean(yObsCol);
 
             covAllDimensions[j].mu = arma::ones(tvecFull.size()) * arma::mean(yObsCol);
             covAllDimensions[j].dotmu = arma::zeros(tvecFull.size());
         }else{
             xInitAllDim.col(j) = arma::ones(tvecFull.size());
+//            xInitAllDim.col(j) = arma::randn(yFull.n_rows) + 1;
 
             covAllDimensions[j].mu = arma::zeros(tvecFull.size());
             covAllDimensions[j].dotmu = arma::zeros(tvecFull.size());
