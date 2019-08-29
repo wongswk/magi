@@ -355,7 +355,7 @@ public:
     void gradient(const Eigen::VectorXd & phiInput, Eigen::VectorXd & grad) override {
         if ((phiInput.array() < this->lowerBound().array()).any()){
             grad.fill(0);
-            for(unsigned i = 0; i < fOdeModel.thetaSize; i++){
+            for(unsigned i = 0; i < phiInput.size(); i++){
                 if(phiInput[i] < this->lowerBound()[i]){
                     grad[i] = -1;
                 }
