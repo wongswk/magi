@@ -34,6 +34,7 @@ arma::mat optimizePhi(const arma::mat & yobsInput,
                       const arma::vec & priorTemperatureInput,
                       const arma::mat & xInitInput,
                       const arma::vec & thetaInitInput,
-                      const arma::mat & phiInitInput);
+                      const arma::mat & phiInitInput,
+                      const arma::uvec & missingComponentDim);
 
 #endif //GPDS_MULTI_LANG_GPSMOOTHING_H

@@ -263,6 +263,26 @@ void GpdsSolver::initMissingComponent() {
                 yFull.submat(idxColElemWithObs[*iPtr], arma::uvec({*iPtr}));
     }
 
+    const arma::mat & phiMissingDimensions = optimizePhi(yFull,
+                                                         tvecFull,
+                                                         odeModel,
+                                                         sigmaInit,
+                                                         priorTemperature,
+                                                         xInit,
+                                                         thetaInit,
+                                                         phiAllDimensions,
+                                                         missingComponentDim);
+    if(verbose){
+        std::cout << "initMissingComponent: phiMissingDimensions = \n"
+                  << phiMissingDimensions << "\n";
+    }
+
+    phiAllDimensions.cols(missingComponentDim) = phiMissingDimensions;
+
+    if(verbose) {
+        std::cout << "phiAllDimensions = \n" << phiAllDimensions << "\n";
+    }
+
     lp llikOld = xthetaphisigmallik( xInit,
                                      thetaInit,
                                      phiAllDimensions,
