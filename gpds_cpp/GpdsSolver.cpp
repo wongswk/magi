@@ -248,7 +248,7 @@ void GpdsSolver::initTheta() {
 }
 
 void GpdsSolver::initMissingComponent() {
-    const unsigned int nSGD = 100;
+    const unsigned int nSGD = 1000;
     double learningRate = 1e-8;
     const arma::uvec & nobsEachDim = arma::sum(indicatorMatWithObs, 0).t();
     const arma::uvec & missingComponentDim = arma::find(nobsEachDim < 3);
@@ -304,13 +304,17 @@ void GpdsSolver::initMissingComponent() {
                                               odeModel);
 
         if(llik.value - llikOld.value < -std::abs(llikOld.value) * 0.1){
-            if (verbose) {
-                std::cout << "initMissingComponent iteration " << iSGD << "; roll back\n";
-            }
             learningRate *= 0.1;
             xInit = xInitOld;
             thetaInit = thetaInitOld;
             phiAllDimensions = phiAllDimensionsOld;
+
+            if (verbose) {
+                std::cout << "initMissingComponent iteration " << iSGD << "; roll back:\n"
+                          << "llik.value = " << llik.value
+                          << "; learningRate = " << learningRate << "\n";
+            }
+
             continue;
         }
 

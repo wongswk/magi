@@ -440,6 +440,6 @@ arma::mat optimizePhi(const arma::mat & yobsInput,
         phi[2*i+1] = phiInitInput(1, currentDim);
     }
     solver.minimize(objective, phi);
-    const arma::mat phiArgmin(phi.data(), 2, missingComponentDim.size(), false, false);
+    const arma::mat & phiArgmin = arma::mat(phi.data(), 2, missingComponentDim.size(), false, false);
     return phiArgmin;
 }
