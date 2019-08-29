@@ -158,7 +158,7 @@ sigmaId <- (phiId[length(phiId)]+1):(phiId[length(phiId)]+length(pram.true$sigma
 obsDim <- dim(data.matrix(xsim[,-1]))
 
 cursigma <- pram.true$sigma
-x3thetaphi3Init <- x3thetaphi3sgd(xInit, thetaInit, curphi, cursigma, maxit=1000, learningRate=1e-8)
+x3thetaphi3Init <- x3thetaphi3sgd(xInit, thetaInit, curphi, cursigma, maxit=1, learningRate=1e-8)
 xInit <- x3thetaphi3Init$xInit
 curphi <- x3thetaphi3Init$curphi
 thetaInit <- x3thetaphi3Init$thetaInit
