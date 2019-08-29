@@ -104,7 +104,7 @@ samplesCpp <- gpds:::solveGpds(
 
 out <- samplesCpp[-1,1,drop=FALSE]
 xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=ncol(xsim[,-1]))
-thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + 3), 1]
+thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + length(hes1logmodel$thetaLowerBound)), 1]
 sigmaCpp <- tail(out[, 1], ncol(xsim[,-1]))
 
 matplot(xsim$time, xCpp, type="l", add=TRUE)
