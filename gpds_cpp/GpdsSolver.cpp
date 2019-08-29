@@ -1,6 +1,7 @@
 #include "GpdsSolver.h"
 #include "gpsmoothing.h"
 #include "tgtdistr.h"
+#include "fullloglikelihood.h"
 #include "Sampler.h"
 
 
@@ -186,6 +187,7 @@ void GpdsSolver::initXmudotmu() {
     }else{
         sigmaUsed = sigmaInit;
     }
+    arma::uvec sucess(ydim);
     arma::mat xInitAllDim = arma::ones(yFull.n_rows, ydim);
     for(unsigned j = 0; j < ydim; j++){
         if(idxColElemWithObs[j].size() >= 3){
@@ -203,6 +205,7 @@ void GpdsSolver::initXmudotmu() {
 
             covAllDimensions[j].mu = xdx.slice(0);
             covAllDimensions[j].dotmu = xdx.slice(1);
+            sucess(j) = 2;
         }else if(!idxColElemWithObs[j].empty()){
             const arma::vec & yObsCol = yFull.col(j).eval().elem(idxColElemWithObs[j]);
             xInitAllDim.col(j).fill(arma::mean(yObsCol));
@@ -210,15 +213,22 @@ void GpdsSolver::initXmudotmu() {
 
             covAllDimensions[j].mu = arma::ones(tvecFull.size()) * arma::mean(yObsCol);
             covAllDimensions[j].dotmu = arma::zeros(tvecFull.size());
+            sucess(j) = 1;
         }else{
             xInitAllDim.col(j) = arma::ones(tvecFull.size());
 //            xInitAllDim.col(j) = arma::randn(yFull.n_rows) + 1;
 
             covAllDimensions[j].mu = arma::zeros(tvecFull.size());
             covAllDimensions[j].dotmu = arma::zeros(tvecFull.size());
+            sucess(j) = 0;
         }
     }
-    xInit = arma::vectorise(xInitAllDim);
+
+    const arma::uvec & sucessDim = arma::find(sucess == 2);
+    const arma::vec & xMean = arma::mean(xInitAllDim.cols(sucessDim), 1);
+    const arma::uvec & failedDim1 = arma::find(sucess == 1);
+
+    xInit = xInitAllDim;
 }
 
 void GpdsSolver::initTheta() {
@@ -237,6 +247,50 @@ void GpdsSolver::initTheta() {
                                   xInit);
 }
 
+void GpdsSolver::initMissingComponent() {
+    const unsigned int nSGD = 100;
+    double learningRate = 1e-8;
+    const arma::uvec & nobsEachDim = arma::sum(indicatorMatWithObs, 0).t();
+    const arma::uvec & missingComponentDim = arma::find(nobsEachDim < 3);
+    if(missingComponentDim.empty()){
+        return;
+    }
+
+    const arma::uvec & observedComponentDim = arma::find(nobsEachDim >= 0);
+    for (auto iPtr = missingComponentDim.begin(); iPtr < missingComponentDim.end(); iPtr++){
+        xInit.col(*iPtr) = arma::mean(xInit.cols(observedComponentDim), 1);
+        xInit.submat(idxColElemWithObs[*iPtr], arma::uvec({*iPtr})) =
+                yFull.submat(idxColElemWithObs[*iPtr], arma::uvec({*iPtr}));
+    }
+
+    for(unsigned int iSGD = 0; iSGD < nSGD; iSGD++){
+        const lp & llik = xthetaphisigmallik( xInit,
+                                              thetaInit,
+                                              phiAllDimensions,
+                                              sigmaInit,
+                                              yFull,
+                                              tvecFull,
+                                              odeModel);
+        thetaInit += learningRate * llik.gradient.subvec(xInit.size(), xInit.size() + thetaInit.size() - 1);
+        for (auto iPtr = missingComponentDim.begin(); iPtr < missingComponentDim.end(); iPtr++){
+            xInit.col(*iPtr) += learningRate * llik.gradient.subvec(
+                    xInit.n_rows * (*iPtr), xInit.n_rows * (*iPtr + 1) - 1);
+            phiAllDimensions.col(*iPtr) += learningRate * llik.gradient.subvec(
+                    xInit.size() + thetaInit.size() + phiAllDimensions.n_rows * (*iPtr),
+                    xInit.size() + thetaInit.size() + phiAllDimensions.n_rows * (*iPtr + 1) - 1);
+        }
+        thetaInit = arma::max(thetaInit, odeModel.thetaLowerBound + 1e-6);
+        thetaInit = arma::min(thetaInit, odeModel.thetaUpperBound + 1e-6);
+        phiAllDimensions = arma::max(phiAllDimensions, arma::ones(arma::size(phiAllDimensions)) * 1e-6);
+        if (verbose) {
+            std::cout << "initMissingComponent iteration " << iSGD
+                      << "; xthetaphisigmallik = " << llik.value
+                      << "; phi missing dim = \n" << phiAllDimensions.cols(missingComponentDim)
+                      << "\n";
+        }
+    }
+}
+
 void GpdsSolver::doHMC() {
     Sampler hmcSampler(yFull,
                        covAllDimensions,
@@ -247,7 +301,7 @@ void GpdsSolver::doHMC() {
                        odeModel,
                        niterHmc,
                        burninRatioHmc);
-    arma::vec xthetasigmaInit = arma::join_vert(arma::join_vert(xInit, thetaInit), sigmaInit);
+    arma::vec xthetasigmaInit = arma::join_vert(arma::join_vert(arma::vectorise(xInit), thetaInit), sigmaInit);
     arma::vec stepLowInit(xthetasigmaInit.size());
     stepLowInit.fill(1.0 / nstepsHmc * stepSizeFactorHmc);
     if(!sigmaExogenous.empty()){

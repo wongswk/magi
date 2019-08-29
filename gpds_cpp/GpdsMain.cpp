@@ -48,6 +48,7 @@ arma::mat solveGpds(const arma::mat & yFull,
     }
     solver.initXmudotmu();
     solver.initTheta();
+    solver.initMissingComponent();
     solver.doHMC();
     return arma::join_vert(solver.llikSamples.t(), solver.xthetasigmaSamples);
 }

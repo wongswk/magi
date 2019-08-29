@@ -77,6 +77,7 @@ public:
     void setupPhiSigma();
     void initXmudotmu();
     void initTheta();
+    void initMissingComponent();
     void doHMC();
 };
 
