@@ -4,6 +4,7 @@
 #include <cppoptlib/solver/bfgssolver.h>
 
 #include "tgtdistr.h"
+#include "fullloglikelihood.h"
 
 
 // [[Rcpp::export]]
@@ -323,4 +324,93 @@ arma::vec optimizeThetaInit(const arma::mat & yobsInput,
     solver.minimize(objective, theta);
     const arma::vec & thetaArgmin = arma::vec(theta.data(), fOdeModelInput.thetaSize, false, false);
     return thetaArgmin;
+}
+
+
+class PhiOptim : public cppoptlib::BoundedProblem<double> {
+public:
+    const arma::mat & yobs;
+    const arma::vec & tvec;
+    const OdeSystem & fOdeModel;
+    const arma::vec & sigmaAllDimensions;
+    const arma::vec & priorTemperature;
+    const arma::mat & xInit;
+    const arma::vec & thetaInit;
+
+    double value(const Eigen::VectorXd & phiInput) override {
+        if ((phiInput.array() < this->lowerBound().array()).any()){
+            return INFINITY;
+        }
+        const arma::mat phiAllDimensions(const_cast<double*>(phiInput.data()), 2, yobs.n_cols,false, false);
+        const lp & out = xthetaphisigmallik( xInit,
+                                             thetaInit,
+                                             phiAllDimensions,
+                                             sigmaAllDimensions,
+                                             yobs,
+                                             tvec,
+                                             fOdeModel);
+        return -out.value;
+    }
+
+    void gradient(const Eigen::VectorXd & phiInput, Eigen::VectorXd & grad) override {
+        if ((phiInput.array() < this->lowerBound().array()).any()){
+            grad.fill(0);
+            for(unsigned i = 0; i < fOdeModel.thetaSize; i++){
+                if(phiInput[i] < this->lowerBound()[i]){
+                    grad[i] = -1;
+                }
+            }
+            return;
+        }
+        const arma::mat phiAllDimensions(const_cast<double*>(phiInput.data()), 2, yobs.n_cols,false, false);
+
+        const lp & out = xthetaphisigmallik( xInit,
+                                             thetaInit,
+                                             phiAllDimensions,
+                                             sigmaAllDimensions,
+                                             yobs,
+                                             tvec,
+                                             fOdeModel);
+
+        for(unsigned i = 0; i < phiAllDimensions.size(); i++){
+            grad[i] = -out.gradient(xInit.size() + thetaInit.size() + i);
+        }
+    }
+
+    PhiOptim(const arma::mat & yobsInput,
+             const arma::vec & tvecInput,
+             const OdeSystem & fOdeModelInput,
+             const arma::vec & sigmaAllDimensionsInput,
+             const arma::vec & priorTemperatureInput,
+             const arma::mat & xInitInput,
+             const arma::vec & thetaInitInput) :
+            BoundedProblem(yobsInput.n_cols * 2),
+            yobs(yobsInput),
+            tvec(tvecInput),
+            fOdeModel(fOdeModelInput),
+            sigmaAllDimensions(sigmaAllDimensionsInput),
+            priorTemperature(priorTemperatureInput),
+            xInit(xInitInput),
+            thetaInit(thetaInitInput) {
+        const Eigen::VectorXd lb = Eigen::VectorXd::Zero(yobsInput.n_cols * 2);
+        this->setLowerBound(lb);
+    }
+};
+
+
+// [[Rcpp::export]]
+arma::mat optimizePhi(const arma::mat & yobsInput,
+                      const arma::vec & tvecInput,
+                      const OdeSystem & fOdeModelInput,
+                      const arma::vec & sigmaAllDimensionsInput,
+                      const arma::vec & priorTemperatureInput,
+                      const arma::mat & xInitInput,
+                      const arma::vec & thetaInitInput) {
+    PhiOptim objective(yobsInput, tvecInput, fOdeModelInput, sigmaAllDimensionsInput, priorTemperatureInput, xInitInput, thetaInitInput);
+    cppoptlib::LbfgsbSolver<PhiOptim> solver;
+    Eigen::VectorXd phi(2 * yobsInput.n_cols);
+    phi.fill(1);
+    solver.minimize(objective, phi);
+    const arma::mat phiArgmin(phi.data(), 2, yobsInput.n_cols, false, false);
+    return phiArgmin;
 }
