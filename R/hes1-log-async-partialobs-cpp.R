@@ -1,6 +1,5 @@
 #### run with priorTempered phase 1 --------------------------------------------
 library(gpds)
-source("R/hes1-helper-functions.R")
 # set up configuration if not already exist ------------------------------------
 if(!exists("config")){
   config <- list(
