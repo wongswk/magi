@@ -263,6 +263,17 @@ void GpdsSolver::initMissingComponent() {
                 yFull.submat(idxColElemWithObs[*iPtr], arma::uvec({*iPtr}));
     }
 
+    lp llikOld = xthetaphisigmallik( xInit,
+                                     thetaInit,
+                                     phiAllDimensions,
+                                     sigmaInit,
+                                     yFull,
+                                     tvecFull,
+                                     odeModel);
+    auto xInitOld = xInit;
+    auto thetaInitOld = thetaInit;
+    auto phiAllDimensionsOld = phiAllDimensions;
+
     for(unsigned int iSGD = 0; iSGD < nSGD; iSGD++){
         const lp & llik = xthetaphisigmallik( xInit,
                                               thetaInit,
@@ -271,6 +282,29 @@ void GpdsSolver::initMissingComponent() {
                                               yFull,
                                               tvecFull,
                                               odeModel);
+
+        if(llik.value - llikOld.value < -std::abs(llikOld.value) * 0.1){
+            if (verbose) {
+                std::cout << "initMissingComponent iteration " << iSGD << "; roll back\n";
+            }
+            learningRate *= 0.1;
+            xInit = xInitOld;
+            thetaInit = thetaInitOld;
+            phiAllDimensions = phiAllDimensionsOld;
+            continue;
+        }
+
+        xInitOld = xInit;
+        thetaInitOld = thetaInit;
+        phiAllDimensionsOld = phiAllDimensions;
+        llikOld = llik;
+
+        if(learningRate < 1e-14){
+            break;
+        }
+        if(iSGD % 100 == 0){
+            learningRate *= 10.0;
+        }
         thetaInit += learningRate * llik.gradient.subvec(xInit.size(), xInit.size() + thetaInit.size() - 1);
         for (auto iPtr = missingComponentDim.begin(); iPtr < missingComponentDim.end(); iPtr++){
             xInit.col(*iPtr) += learningRate * llik.gradient.subvec(
@@ -282,6 +316,7 @@ void GpdsSolver::initMissingComponent() {
         thetaInit = arma::max(thetaInit, odeModel.thetaLowerBound + 1e-6);
         thetaInit = arma::min(thetaInit, odeModel.thetaUpperBound + 1e-6);
         phiAllDimensions = arma::max(phiAllDimensions, arma::ones(arma::size(phiAllDimensions)) * 1e-6);
+
         if (verbose) {
             std::cout << "initMissingComponent iteration " << iSGD
                       << "; xthetaphisigmallik = " << llik.value
