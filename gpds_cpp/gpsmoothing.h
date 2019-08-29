@@ -27,4 +27,13 @@ arma::cube calcMeanCurve(const arma::vec & xInput,
                          const std::string kerneltype = "generalMatern",
                          const bool useDeriv = false);
 
+arma::mat optimizePhi(const arma::mat & yobsInput,
+                      const arma::vec & tvecInput,
+                      const OdeSystem & fOdeModelInput,
+                      const arma::vec & sigmaAllDimensionsInput,
+                      const arma::vec & priorTemperatureInput,
+                      const arma::mat & xInitInput,
+                      const arma::vec & thetaInitInput,
+                      const arma::mat & phiInitInput);
+
 #endif //GPDS_MULTI_LANG_GPSMOOTHING_H

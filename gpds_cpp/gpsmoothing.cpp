@@ -392,7 +392,8 @@ public:
             priorTemperature(priorTemperatureInput),
             xInit(xInitInput),
             thetaInit(thetaInitInput) {
-        const Eigen::VectorXd lb = Eigen::VectorXd::Zero(yobsInput.n_cols * 2);
+        Eigen::VectorXd lb(yobsInput.n_cols * 2);
+        lb.fill(1e-4);
         this->setLowerBound(lb);
     }
 };
