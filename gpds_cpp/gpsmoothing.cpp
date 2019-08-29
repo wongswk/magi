@@ -405,11 +405,14 @@ arma::mat optimizePhi(const arma::mat & yobsInput,
                       const arma::vec & sigmaAllDimensionsInput,
                       const arma::vec & priorTemperatureInput,
                       const arma::mat & xInitInput,
-                      const arma::vec & thetaInitInput) {
+                      const arma::vec & thetaInitInput,
+                      const arma::mat & phiInitInput) {
     PhiOptim objective(yobsInput, tvecInput, fOdeModelInput, sigmaAllDimensionsInput, priorTemperatureInput, xInitInput, thetaInitInput);
     cppoptlib::LbfgsbSolver<PhiOptim> solver;
     Eigen::VectorXd phi(2 * yobsInput.n_cols);
-    phi.fill(1);
+    for(unsigned i = 0; i < phi.size(); i++){
+        phi[i] = phiInitInput(i);
+    }
     solver.minimize(objective, phi);
     const arma::mat phiArgmin(phi.data(), 2, yobsInput.n_cols, false, false);
     return phiArgmin;
