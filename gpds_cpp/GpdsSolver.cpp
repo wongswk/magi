@@ -263,6 +263,7 @@ void GpdsSolver::initMissingComponent() {
                 yFull.submat(idxColElemWithObs[*iPtr], arma::uvec({*iPtr}));
     }
 
+    // phi for missing component
     const arma::mat & phiMissingDimensions = optimizePhi(yFull,
                                                          tvecFull,
                                                          odeModel,
@@ -283,6 +284,18 @@ void GpdsSolver::initMissingComponent() {
         std::cout << "phiAllDimensions = \n" << phiAllDimensions << "\n";
     }
 
+    for(unsigned i = 0; i < missingComponentDim.size(); i++){
+        unsigned j = missingComponentDim[i];
+        auto mu = covAllDimensions[j].mu;
+        auto dotmu = covAllDimensions[j].dotmu;
+        covAllDimensions[j] = kernelCov(phiAllDimensions.col(j), distSignedFull, 3);
+        covAllDimensions[j].addBandCov(bandSize);
+        covAllDimensions[j].mu = mu;
+        covAllDimensions[j].dotmu = dotmu;
+    }
+
+
+    // x for missing component
     lp llikOld = xthetaphisigmallik( xInit,
                                      thetaInit,
                                      phiAllDimensions,
@@ -348,6 +361,9 @@ void GpdsSolver::initMissingComponent() {
                       << "\n";
         }
     }
+
+    // update theta
+    initTheta();
 }
 
 void GpdsSolver::doHMC() {
