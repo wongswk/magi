@@ -30,7 +30,7 @@ arma::vec calcFrequencyBasedPrior(const arma::vec & x){
         }
 
     }else{
-        freq = zmodEffective.index_max();
+        freq = zmodEffective.index_max() + 1;
     }
 
     double meanFactor = 0.5 / freq;
