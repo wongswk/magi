@@ -447,11 +447,12 @@ Rcpp::List chainSamplerRcpp(const arma::mat & yobs,
 //' @export
 // [[Rcpp::export]]
 arma::vec optimizeThetaInitRcpp(const arma::mat & yobs,
-                                 const OdeSystem & modelInput,
-                                 const Rcpp::List & covAllDimInput,
-                                 const arma::vec & sigmaAllDimensionsInput,
-                                 const arma::vec & priorTemperatureInput,
-                                 const arma::mat & xInitInput){
+                                const OdeSystem & modelInput,
+                                const Rcpp::List & covAllDimInput,
+                                const arma::vec & sigmaAllDimensionsInput,
+                                const arma::vec & priorTemperatureInput,
+                                const arma::mat & xInitInput,
+                                const bool useBandInput){
     vector<gpcov> covAllDimensions(yobs.n_cols);
     for(unsigned j = 0; j < yobs.n_cols; j++){
         covAllDimensions[j] = cov_r2cpp(covAllDimInput[j]);
@@ -461,5 +462,6 @@ arma::vec optimizeThetaInitRcpp(const arma::mat & yobs,
                              covAllDimensions,
                              sigmaAllDimensionsInput,
                              priorTemperatureInput,
-                             xInitInput);
+                             xInitInput,
+                             useBandInput);
 }
