@@ -11,7 +11,8 @@ arma::vec optimizeThetaInit(const arma::mat & yobsInput,
                             const std::vector<gpcov> & covAllDimensionsInput,
                             const arma::vec & sigmaAllDimensionsInput,
                             const arma::vec & priorTemperatureInput,
-                            const arma::mat & xInitInput);
+                            const arma::mat & xInitInput,
+                            const bool useBandInput);
 
 arma::vec gpsmooth(const arma::mat & yobsInput,
                    const arma::mat & distInput,
