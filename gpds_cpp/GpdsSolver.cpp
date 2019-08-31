@@ -244,7 +244,8 @@ void GpdsSolver::initTheta() {
                                   covAllDimensions,
                                   sigmaUsed,
                                   priorTemperature,
-                                  xInit);
+                                  xInit,
+                                  useBand);
 }
 
 void GpdsSolver::initMissingComponent() {
