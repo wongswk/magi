@@ -209,6 +209,6 @@ fnmodel <- list(
   thetaUpperBound=c(Inf,Inf,Inf)
 )
 
-thetamle2 <- gpds:::optimizeThetaInitRcpp(yobs, fnmodel, curCov, cursigma, c(1,1), xInit)
+thetamle2 <- gpds:::optimizeThetaInitRcpp(yobs, fnmodel, curCov, cursigma, c(1,1), xInit, TRUE)
 
 testthat::expect_equal(thetamle$thetaInit, thetamle2, check.attributes = FALSE, tolerance=1e-5)

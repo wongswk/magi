@@ -224,7 +224,8 @@ testthat::test_that("chainSamplerRcpp can run without error",{
     covAllDimInput = list(curCovV, curCovR), 
     sigmaAllDimensionsInput = c(cursigma, cursigma), 
     priorTemperatureInput = c(1,1), 
-    xInitInput = cbind(fn.true$Vtrue, fn.true$Rtrue)
+    xInitInput = cbind(fn.true$Vtrue, fn.true$Rtrue),
+    useBandInput = TRUE
   )
   
 })
