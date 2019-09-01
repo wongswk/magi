@@ -249,7 +249,7 @@ void GpdsSolver::initTheta() {
 }
 
 void GpdsSolver::initMissingComponent() {
-    const unsigned int nSGD = 100;  // skip sgd, not useful, and produce unstable result due to delay eval of arma
+    const unsigned int nSGD = 0;  // skip sgd, not useful, and produce unstable result due to delay eval of arma
     double learningRate = 1e-8;
     const arma::uvec & nobsEachDim = arma::sum(indicatorMatWithObs, 0).t();
     const arma::uvec & missingComponentDim = arma::find(nobsEachDim < 3);
