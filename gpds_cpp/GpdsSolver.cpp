@@ -249,7 +249,7 @@ void GpdsSolver::initTheta() {
 }
 
 void GpdsSolver::initMissingComponent() {
-    const unsigned int nSGD = 1000;
+    const unsigned int nSGD = 100;  // skip sgd, not useful, and produce unstable result due to delay eval of arma
     double learningRate = 1e-8;
     const arma::uvec & nobsEachDim = arma::sum(indicatorMatWithObs, 0).t();
     const arma::uvec & missingComponentDim = arma::find(nobsEachDim < 3);
@@ -314,8 +314,8 @@ void GpdsSolver::initMissingComponent() {
 
     for(unsigned int iSGD = 0; iSGD < nSGD; iSGD++){
         // this std stringstream is essential for the code to run
-        ss << "initMissingComponent: xInit.row(0) = " << xInit.row(0).t() << "\n"
-                << "thetaInit = " << thetaInit.t() << "\n";
+        std::cout << "initMissingComponent: xInit.row(0) = " << xInit.row(0)
+                  << "thetaInit = " << thetaInit.t();
         const lp & llik = xthetaphisigmallik( xInit,
                                               thetaInit,
                                               phiAllDimensions,
