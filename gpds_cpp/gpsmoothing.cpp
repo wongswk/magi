@@ -307,9 +307,9 @@ public:
             xInit(xInitInput),
             useBand(useBandInput) {
         const Eigen::Map<Eigen::VectorXd> lb (const_cast<double*>(fOdeModel.thetaLowerBound.memptr()), fOdeModel.thetaSize);
-        this->setLowerBound(lb);
+        this->setLowerBound(lb.array() + 1e-6);
         const Eigen::Map<Eigen::VectorXd> ub (const_cast<double*>(fOdeModel.thetaUpperBound.memptr()), fOdeModel.thetaSize);
-        this->setUpperBound(ub);
+        this->setUpperBound(ub.array() - 1e-6);
     }
 };
 
