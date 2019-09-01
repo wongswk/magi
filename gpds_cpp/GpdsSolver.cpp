@@ -295,6 +295,8 @@ void GpdsSolver::initMissingComponent() {
         covAllDimensions[j].dotmu = dotmu;
     }
 
+    // update theta
+    initTheta();
 
     // x for missing component
     lp llikOld = xthetaphisigmallik( xInit,
@@ -304,11 +306,16 @@ void GpdsSolver::initMissingComponent() {
                                      yFull,
                                      tvecFull,
                                      odeModel);
-    auto xInitOld = xInit;
-    auto thetaInitOld = thetaInit;
-    auto phiAllDimensionsOld = phiAllDimensions;
+    arma::mat xInitOld = xInit;
+    arma::mat thetaInitOld = thetaInit;
+//    arma::mat phiAllDimensionsOld = phiAllDimensions;
+
+    std::stringstream ss;
 
     for(unsigned int iSGD = 0; iSGD < nSGD; iSGD++){
+        // this std stringstream is essential for the code to run
+        ss << "initMissingComponent: xInit.row(0) = " << xInit.row(0).t() << "\n"
+                << "thetaInit = " << thetaInit.t() << "\n";
         const lp & llik = xthetaphisigmallik( xInit,
                                               thetaInit,
                                               phiAllDimensions,
@@ -321,7 +328,7 @@ void GpdsSolver::initMissingComponent() {
             learningRate *= 0.1;
             xInit = xInitOld;
             thetaInit = thetaInitOld;
-            phiAllDimensions = phiAllDimensionsOld;
+//            phiAllDimensions = phiAllDimensionsOld;
 
             if (verbose) {
                 std::cout << "initMissingComponent iteration " << iSGD << "; roll back:\n"
@@ -334,7 +341,7 @@ void GpdsSolver::initMissingComponent() {
 
         xInitOld = xInit;
         thetaInitOld = thetaInit;
-        phiAllDimensionsOld = phiAllDimensions;
+//        phiAllDimensionsOld = phiAllDimensions;
         llikOld = llik;
 
         if(learningRate < 1e-14){
@@ -347,24 +354,22 @@ void GpdsSolver::initMissingComponent() {
         for (auto iPtr = missingComponentDim.begin(); iPtr < missingComponentDim.end(); iPtr++){
             xInit.col(*iPtr) += learningRate * llik.gradient.subvec(
                     xInit.n_rows * (*iPtr), xInit.n_rows * (*iPtr + 1) - 1);
-            phiAllDimensions.col(*iPtr) += learningRate * llik.gradient.subvec(
-                    xInit.size() + thetaInit.size() + phiAllDimensions.n_rows * (*iPtr),
-                    xInit.size() + thetaInit.size() + phiAllDimensions.n_rows * (*iPtr + 1) - 1);
+//            phiAllDimensions.col(*iPtr) += learningRate * llik.gradient.subvec(
+//                    xInit.size() + thetaInit.size() + phiAllDimensions.n_rows * (*iPtr),
+//                    xInit.size() + thetaInit.size() + phiAllDimensions.n_rows * (*iPtr) + 1);
         }
         thetaInit = arma::max(thetaInit, odeModel.thetaLowerBound + 1e-6);
-        thetaInit = arma::min(thetaInit, odeModel.thetaUpperBound + 1e-6);
-        phiAllDimensions = arma::max(phiAllDimensions, arma::ones(arma::size(phiAllDimensions)) * 1e-6);
+        thetaInit = arma::min(thetaInit, odeModel.thetaUpperBound - 1e-6);
+//        phiAllDimensions = arma::max(phiAllDimensions, arma::ones(arma::size(phiAllDimensions)) * 1e-6);
 
         if (verbose) {
             std::cout << "initMissingComponent iteration " << iSGD
                       << "; xthetaphisigmallik = " << llik.value
-                      << "; phi missing dim = \n" << phiAllDimensions.cols(missingComponentDim)
+//                      << "; phi missing dim = \n" << phiAllDimensions.cols(missingComponentDim)
                       << "\n";
         }
     }
 
-    // update theta
-    initTheta();
 }
 
 void GpdsSolver::doHMC() {
