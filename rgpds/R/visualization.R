@@ -385,17 +385,17 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
   }
   
   if(!is.null(odemodel) && !is.null(odemodel$curCov)){
-    layout(1:(ncol(yobs)+1))
     curCov <- odemodel$curCov
+    layout(1:(length(curCov)+1))
     
-    gpode$mxode <- sapply(1:ncol(yobs), function(j) 
+    gpode$mxode <- sapply(1:length(curCov), function(j) 
       curCov[[j]]$mphi %*% (t(gpode$xsampled[,,j]) - curCov[[j]]$mu) + curCov[[j]]$dotmu, 
       simplify = "array")
     gpode$mxode <- aperm(gpode$mxode, c(2,1,3))
     gpode$odeErr <- gpode$fode - gpode$mxode
     postmeanOdeErr <- apply(gpode$odeErr, 2:3, mean)
     matplot(postmeanOdeErr, lty=1, type="l", main="postmeanOdeErr")
-    for(j in 1:ncol(yobs))
+    for(j in 1:length(curCov))
       plot(xsim$time, cumsum(postmeanOdeErr[,j]), lty=1, type="l", main="cumsum postmeanOdeErr")
   }
   dev.off()
