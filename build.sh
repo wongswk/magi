@@ -7,6 +7,7 @@ if [[ -z "${CPU}" ]]; then
 fi
 
 if [[ -z "${R_LIBS_USER}" ]]; then
+    mkdir -p $HOME/R/library
     export R_LIBS_USER=$HOME/R/library
 fi
 
