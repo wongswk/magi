@@ -18,7 +18,6 @@ if(!exists("config")){
     modelName = "Hes1-log",
     async = TRUE,
     max.epoch = 12,
-
     useMean = TRUE,
     useBand = TRUE,
     useFrequencyBasedPrior = TRUE,
@@ -106,7 +105,7 @@ xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=ncol(xsim[,-1]))
 thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + length(hes1logmodel$thetaLowerBound)), 1]
 sigmaCpp <- tail(out[, 1], ncol(xsim[,-1]))
 
-matplot(xsim$time, xCpp, type="l", add=TRUE)
+matplot(xsim$time, xCpp, type="l", add=TRUE, lty=2)
 
 llikId <- 1
 xId <- (max(llikId)+1):(max(llikId)+length(data.matrix(xsim[,-1])))
@@ -133,3 +132,64 @@ outDir <- "../results/cpp/"
 gpds:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-async-partialobs-fixedsigma.pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+
+
+# using R routine ------------------------------------
+curphi <- rbind(
+  c(2.1282, 0.3872, 0.4638),
+  c(65.1345, 35.9814, 22.5917)
+)
+
+cursigma <- c(0.15, 0.15, 0.1)
+
+foo <- outer(xsim$time, t(xsim$time),'-')[,1,]
+
+curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
+  covEach <- calCov(curphi[, j], abs(foo), -sign(foo), bandsize=config$bandsize,
+                    kerneltype=config$kernel)
+  if(j == 3){
+    covEach$mu[] <- 0
+  }else{
+    covEach$mu[] <- mean(xsim[,j+1], na.rm = TRUE) 
+  }
+  covEach
+})
+
+xInit <- xCpp
+thetaInit <- thetaCpp
+
+stepLowInit <- rep(config$stepSizeFactor/config$hmcSteps, length(xInit) + length(thetaInit))
+
+config$n.iter <- 2e4
+
+singleSampler <- function(xthetaValues, stepSize) 
+  xthetaSample(data.matrix(xsim[,-1]), curCov, cursigma, 
+               xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
+               priorTemperature = config$priorTemperature, modelName = "Hes1-log")
+chainSamplesOut <- chainSampler(config, c(xInit, thetaInit), singleSampler, stepLowInit, verbose=TRUE)
+
+odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue, curCov=curCov)
+
+burnin <- as.integer(config$n.iter*config$burninRatio)
+gpode <- list(theta=chainSamplesOut$xth[-(1:burnin), (length(data.matrix(xsim[,-1]))+1):(ncol(chainSamplesOut$xth))],
+              xsampled=array(chainSamplesOut$xth[-(1:burnin), 1:length(data.matrix(xsim[,-1]))], 
+                             dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
+              lglik=chainSamplesOut$lliklist[-(1:burnin)],
+              sigma = cursigma,
+              phi = curphi)
+sampleId <- dim(gpode$xsampled)[1]
+gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
+  with(gpode, gpds:::hes1logmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
+gpode$fode <- aperm(gpode$fode, c(3,1,2))
+
+dotxtrue = gpds:::hes1logmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
+
+configWithPhiSig <- config
+configWithPhiSig$sigma <- paste(round(cursigma, 3), collapse = "; ")
+philist <- lapply(data.frame(round(curphi,3)), function(x) paste(x, collapse = "; "))
+names(philist) <- paste0("phi", 1:length(philist))
+configWithPhiSig <- c(configWithPhiSig, philist)
+
+gpds:::plotPostSamplesFlex(
+  paste0(outDir, config$kernel,"-",config$seed,"-",date(),"-hes1-log-async-partial-observed-trueSigma.pdf"), 
+  xtrue, dotxtrue, xsim, gpode, pram.true, configWithPhiSig, odemodel)
