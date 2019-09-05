@@ -103,7 +103,7 @@ GpdsSolver::GpdsSolver(const arma::mat & yFull,
 }
 
 void GpdsSolver::setupPhiSigma() {
-    if(sigmaExogenous.empty()){
+    if(sigmaExogenous.empty() && phiExogenous.empty()){
         if(useScalerSigma){
             const arma::vec & phisig = gpsmooth(yObs,
                                                 arma::abs(distSignedObs),
@@ -140,7 +140,7 @@ void GpdsSolver::setupPhiSigma() {
             phiAllDimensions.submat(arma::uvec({0}), failedDim).fill(phiMean(0));
             phiAllDimensions.submat(arma::uvec({1}), failedDim).fill(phiMean(1));
         }
-    }else{
+    }else if(!sigmaExogenous.empty() && phiExogenous.empty()){
         if(useScalerSigma){
             const arma::vec & phisig = gpsmooth(yObs,
                                                 arma::abs(distSignedObs),
@@ -174,6 +174,15 @@ void GpdsSolver::setupPhiSigma() {
             phiAllDimensions.submat(arma::uvec({0}), failedDim).fill(phiMean(0));
             phiAllDimensions.submat(arma::uvec({1}), failedDim).fill(phiMean(1));
         }
+    }else if(!sigmaExogenous.empty() && !phiExogenous.empty()) {
+        if(useScalerSigma){
+            sigmaInit = sigmaExogenous.subvec(0, 0);
+        }else{
+            sigmaInit = sigmaExogenous;
+        }
+        phiAllDimensions = phiExogenous;
+    }else{
+        throw std::runtime_error("when supplying phiExogenous, sigmaExogenous must be supplied");
     }
 
     for(unsigned j = 0; j < ydim; j++){
@@ -267,21 +276,23 @@ void GpdsSolver::initMissingComponent() {
     }
 
     // phi for missing component
-    const arma::mat & phiMissingDimensions = optimizePhi(yFull,
-                                                         tvecFull,
-                                                         odeModel,
-                                                         sigmaInit,
-                                                         priorTemperature,
-                                                         xInit,
-                                                         thetaInit,
-                                                         phiAllDimensions,
-                                                         missingComponentDim);
-    if(verbose){
-        std::cout << "initMissingComponent: phiMissingDimensions = \n"
-                  << phiMissingDimensions << "\n";
-    }
+    if(phiExogenous.empty()){
+        const arma::mat & phiMissingDimensions = optimizePhi(yFull,
+                                                             tvecFull,
+                                                             odeModel,
+                                                             sigmaInit,
+                                                             priorTemperature,
+                                                             xInit,
+                                                             thetaInit,
+                                                             phiAllDimensions,
+                                                             missingComponentDim);
+        if(verbose){
+            std::cout << "initMissingComponent: phiMissingDimensions = \n"
+                      << phiMissingDimensions << "\n";
+        }
 
-    phiAllDimensions.cols(missingComponentDim) = phiMissingDimensions;
+        phiAllDimensions.cols(missingComponentDim) = phiMissingDimensions;
+    }
 
     if(verbose) {
         std::cout << "phiAllDimensions = \n" << phiAllDimensions << "\n";
