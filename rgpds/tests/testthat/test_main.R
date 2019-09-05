@@ -25,7 +25,7 @@ if(!exists("config")){
 
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
 if(config$temperPrior){
-  config$priorTemperature <- config$ndis / config$nobs  
+  config$priorTemperature <- config$ndis / config$nobs
 }else{
   config$priorTemperature <- 1
 }
@@ -71,7 +71,7 @@ xsim <- cbind(xsim, sapply(xtrueFunc, function(f) f(xsim$time)))
 
 set.seed(config$seed)
 for(j in 1:(ncol(xsim)-1)){
-  xsim[,1+j] <- xsim[,1+j]+rnorm(nrow(xsim), sd=config$noise[j])  
+  xsim[,1+j] <- xsim[,1+j]+rnorm(nrow(xsim), sd=config$noise[j])
 }
 
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
@@ -96,7 +96,7 @@ samplesCpp <- gpds:::solveGpds(
   odeModel = fnmodel,
   tvecFull = xsim$time,
   sigmaExogenous = numeric(0),
-  phiExogenous = numeric(0),
+  phiExogenous = matrix(numeric(0)),
   priorTemperatureLevel = config$priorTemperature,
   priorTemperatureDeriv = config$priorTemperature,
   kernel = config$kernel,
@@ -120,6 +120,30 @@ thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + 3), 1]
 sigmaCpp <- tail(out[, 1], 2)
 
 matplot(xsim$time, xCpp, type="l", add=TRUE)
+
+phiExogenous = cbind(c(2.24, 1.64), c(0.65, 2.93))
+
+samplesCpp <- gpds:::solveGpds(
+  yFull = data.matrix(xsim[,-1]),
+  odeModel = fnmodel,
+  tvecFull = xsim$time,
+  sigmaExogenous = c(0.30, 0.15),
+  phiExogenous = phiExogenous,
+  priorTemperatureLevel = config$priorTemperature,
+  priorTemperatureDeriv = config$priorTemperature,
+  kernel = config$kernel,
+  nstepsHmc = config$hmcSteps,
+  burninRatioHmc = config$burninRatio,
+  niterHmc = config$n.iter,
+  stepSizeFactorHmc = config$stepSizeFactor,
+  nEpoch = config$max.epoch,
+  bandSize = config$bandsize,
+  useFrequencyBasedPrior = config$useFrequencyBasedPrior,
+  useBand = config$useBand,
+  useMean = config$useMean,
+  useScalerSigma = config$useScalerSigma,
+  useFixedSigma = config$useFixedSigma,
+  verbose = TRUE)
 
 # R inference ----------------------------
 
