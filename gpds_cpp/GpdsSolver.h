@@ -10,6 +10,7 @@ public:
     const OdeSystem & odeModel;
     const arma::vec & tvecFull;
     const arma::vec & sigmaExogenous;
+    const arma::mat & phiExogenous;
 
     // configuration
     const arma::vec priorTemperature;
@@ -58,6 +59,7 @@ public:
                const OdeSystem & odeModel,
                const arma::vec & tvecFull,
                const arma::vec & sigmaExogenous = arma::vec(),
+               const arma::mat & phiExogenous = arma::mat(),
                const double priorTemperatureLevel = 1,
                const double priorTemperatureDeriv = 1,
                std::string kernel = "generalMatern",
