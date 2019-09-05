@@ -96,6 +96,7 @@ samplesCpp <- gpds:::solveGpds(
   odeModel = fnmodel,
   tvecFull = xsim$time,
   sigmaExogenous = numeric(0),
+  phiExogenous = numeric(0),
   priorTemperatureLevel = config$priorTemperature,
   priorTemperatureDeriv = config$priorTemperature,
   kernel = config$kernel,
