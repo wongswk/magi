@@ -10,6 +10,9 @@ GpdsSolver::GpdsSolver(const arma::mat & yFull,
                        const arma::vec & tvecFull,
                        const arma::vec & sigmaExogenous,
                        const arma::mat & phiExogenous,
+                       const arma::mat & xInitExogenous,
+                       const arma::mat & muExogenous,
+                       const arma::mat & dotmuExogenous,
                        const double priorTemperatureLevel,
                        const double priorTemperatureDeriv,
                        std::string kernel,
@@ -30,6 +33,9 @@ GpdsSolver::GpdsSolver(const arma::mat & yFull,
         tvecFull(tvecFull),
         sigmaExogenous(sigmaExogenous),
         phiExogenous(phiExogenous),
+        xInitExogenous(xInitExogenous),
+        muExogenous(muExogenous),
+        dotmuExogenous(dotmuExogenous),
         priorTemperature({priorTemperatureLevel, priorTemperatureDeriv}),
         kernel(kernel),
         nstepsHmc(nstepsHmc),
@@ -240,6 +246,18 @@ void GpdsSolver::initXmudotmu() {
     const arma::uvec & failedDim1 = arma::find(sucess == 1);
 
     xInit = xInitAllDim;
+    if(!xInitExogenous.empty()){
+        xInit = xInitExogenous;
+    }
+    if(!muExogenous.empty() || !dotmuExogenous.empty()){
+        if(muExogenous.empty() || dotmuExogenous.empty()){
+            throw std::runtime_error("muExogenous and dotmuExogenous must be specified together");
+        }
+        for(unsigned j = 0; j < ydim; j++) {
+            covAllDimensions[j].mu = muExogenous.col(j);
+            covAllDimensions[j].dotmu = dotmuExogenous.col(j);
+        }
+    }
 }
 
 void GpdsSolver::initTheta() {
@@ -269,10 +287,12 @@ void GpdsSolver::initMissingComponent() {
     }
 
     const arma::uvec & observedComponentDim = arma::find(nobsEachDim >= 0);
-    for (auto iPtr = missingComponentDim.begin(); iPtr < missingComponentDim.end(); iPtr++){
-        xInit.col(*iPtr) = arma::mean(xInit.cols(observedComponentDim), 1);
-        xInit.submat(idxColElemWithObs[*iPtr], arma::uvec({*iPtr})) =
-                yFull.submat(idxColElemWithObs[*iPtr], arma::uvec({*iPtr}));
+    if(xInitExogenous.empty()) {
+        for (auto iPtr = missingComponentDim.begin(); iPtr < missingComponentDim.end(); iPtr++) {
+            xInit.col(*iPtr) = arma::mean(xInit.cols(observedComponentDim), 1);
+            xInit.submat(idxColElemWithObs[*iPtr], arma::uvec({*iPtr})) =
+                    yFull.submat(idxColElemWithObs[*iPtr], arma::uvec({*iPtr}));
+        }
     }
 
     // phi for missing component
