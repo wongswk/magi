@@ -6,50 +6,35 @@ using namespace arma;
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
-
-// arma::mat solveGpds(const arma::mat & yFull,
-//                     const OdeSystem & odeModel,
-//                     const arma::vec & tvecFull,
-//                     const arma::vec & sigmaExogenous = arma::vec(),
-//                     const double priorTemperatureLevel = 1,
-//                     const double priorTemperatureDeriv = 1,
-//                     std::string kernel = "generalMatern",
-//                     const int nstepsHmc = 500,
-//                     const double burninRatioHmc = 0.5,
-//                     const unsigned int niterHmc = 10000,
-//                     const double stepSizeFactorHmc = 1,
-//                     const int nEpoch = 10,
-//                     const int bandSize = 20,
-//                     bool useFrequencyBasedPrior = false,
-//                     bool useBand = true,
-//                     bool useMean = true,
-//                     bool useScalerSigma = false,
-//                     bool useFixedSigma = false,
-//                     bool verbose = false) 
   
   const mat yFull = armaGetPr(prhs[0]);
   
   const vec tvecFull = armaGetPrVec(prhs[2]);
   const vec sigmaExogenous = armaGetPrVec(prhs[3]);
-  const double priorTemperatureLevel = mxGetScalar(prhs[4]);
-  const double priorTemperatureDeriv = mxGetScalar(prhs[5]);
+  const mat phiExogenous = armaGetPr(prhs[4]);
+  const mat xInitExogenous= armaGetPr(prhs[5]);
+  const mat muExogenous= armaGetPr(prhs[6]);
+  const mat dotmuExogenous= armaGetPr(prhs[7]);
+
+  const double priorTemperatureLevel = mxGetScalar(prhs[8]);
+  const double priorTemperatureDeriv = mxGetScalar(prhs[9]);
 
   char *str1;
-  str1 = mxArrayToString(prhs[6]);
+  str1 = mxArrayToString(prhs[10]);
   string kernel = str1;
   
-  const int nstepsHmc = mxGetScalar(prhs[7]);
-  const double burninRatioHmc = mxGetScalar(prhs[8]);
-  const unsigned int niterHmc = mxGetScalar(prhs[9]);
-  const double stepSizeFactorHmc = mxGetScalar(prhs[10]);
-  const int nEpoch = mxGetScalar(prhs[11]);
-  const int bandSize = mxGetScalar(prhs[12]);
-  bool useFrequencyBasedPrior = mxGetLogicals(prhs[13])[0];
-  bool useBand = mxGetLogicals(prhs[14])[0];
-  bool useMean = mxGetLogicals(prhs[15])[0];
-  bool useScalerSigma = mxGetLogicals(prhs[16])[0];
-  bool useFixedSigma = mxGetLogicals(prhs[17])[0];
-  bool verbose = mxGetLogicals(prhs[18])[0];    
+  const int nstepsHmc = mxGetScalar(prhs[11]);
+  const double burninRatioHmc = mxGetScalar(prhs[12]);
+  const unsigned int niterHmc = mxGetScalar(prhs[13]);
+  const double stepSizeFactorHmc = mxGetScalar(prhs[14]);
+  const int nEpoch = mxGetScalar(prhs[15]);
+  const int bandSize = mxGetScalar(prhs[16]);
+  bool useFrequencyBasedPrior = mxGetLogicals(prhs[17])[0];
+  bool useBand = mxGetLogicals(prhs[18])[0];
+  bool useMean = mxGetLogicals(prhs[19])[0];
+  bool useScalerSigma = mxGetLogicals(prhs[20])[0];
+  bool useFixedSigma = mxGetLogicals(prhs[21])[0];
+  bool verbose = mxGetLogicals(prhs[22])[0];    
 
   mxArray *fOde_matlab = const_cast<mxArray *>(mxGetField(prhs[1], 0, "fOde"));
   mxArray *fOdeDx_matlab = const_cast<mxArray *>(mxGetField(prhs[1], 0, "fOdeDx"));
@@ -83,7 +68,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       
       mxArray *lhs_f[1];
       mexCallMATLAB(1,lhs_f,3,rhs_f,"feval");
-      mat ret = armaGetPr(lhs_f[0]);
+      mat temp_ret = armaGetPr(lhs_f[0]);
+      mat ret = temp_ret;
+    
+      mxDestroyArray(x_matlab);
+      mxDestroyArray(theta_matlab);
+      mxDestroyArray(lhs_f[0]);      
       
       return ret;
   };
@@ -101,8 +91,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       
       mxArray *lhs_f[1];
       mexCallMATLAB(1,lhs_f,3,rhs_f,"feval");
-      cube ret = armaGetCubePr(lhs_f[0]);
-      
+      cube temp_ret = armaGetCubePr(lhs_f[0]);
+
+      cube ret = temp_ret;
+      mxDestroyArray(x_matlab);
+      mxDestroyArray(theta_matlab);
+      mxDestroyArray(lhs_f[0]);
+
       return ret;
   };
   
@@ -119,7 +114,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       
       mxArray *lhs_f[1];
       mexCallMATLAB(1,lhs_f,3,rhs_f,"feval");
-      cube ret = armaGetCubePr(lhs_f[0]);
+      cube temp_ret = armaGetCubePr(lhs_f[0]);
+
+      cube ret = temp_ret;
+      mxDestroyArray(theta_matlab);
+      mxDestroyArray(lhs_f[0]);           
       
       return ret;
   };
@@ -127,28 +126,33 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   OdeSystem model;
   model = OdeSystem(fOde, fOdeDx, fOdeDtheta, lb, ub);
 
-  GpdsSolver         solver(yFull,
-                            model,
-                            tvecFull,
-                            sigmaExogenous,
-                            priorTemperatureLevel,
-                            priorTemperatureDeriv,
-                            kernel,
-                            nstepsHmc,
-                            burninRatioHmc,
-                            niterHmc,
-                            stepSizeFactorHmc,
-                            nEpoch,
-                            bandSize,
-                            useFrequencyBasedPrior,
-                            useBand,
-                            useMean,
-                            useScalerSigma,
-                            useFixedSigma,
-                            verbose);
+  GpdsSolver solver(yFull,
+          model,
+          tvecFull,
+          sigmaExogenous,
+          phiExogenous,
+          xInitExogenous,
+          muExogenous,
+          dotmuExogenous,
+          priorTemperatureLevel,
+          priorTemperatureDeriv,
+          kernel,
+          nstepsHmc,
+          burninRatioHmc,
+          niterHmc,
+          stepSizeFactorHmc,
+          nEpoch,
+          bandSize,
+          useFrequencyBasedPrior,
+          useBand,
+          useMean,
+          useScalerSigma,
+          useFixedSigma,
+          verbose);
   
-  
+
   solver.setupPhiSigma();
+  
   if(verbose){
       std::cout << "phi = \n" << solver.phiAllDimensions << "\n";
   }

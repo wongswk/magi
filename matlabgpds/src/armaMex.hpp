@@ -94,7 +94,7 @@ armaGetPr(const mxArray *matlabMatrix, bool copy_aux_mem = false, bool strict = 
     }
   else
     {
-    mexErrMsgTxt("No data available.");
+    //mexErrMsgTxt("No data available.");
     return Mat<double>();
     }
   }
