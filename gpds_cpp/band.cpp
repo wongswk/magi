@@ -1,6 +1,6 @@
 #include "band.h"
 
-typedef int blasint;
+typedef size_t blasint;
 
 extern "C" {
   
