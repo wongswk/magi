@@ -418,7 +418,7 @@ void GpdsSolver::doHMC() {
     arma::vec xthetasigmaInit = arma::join_vert(arma::join_vert(arma::vectorise(xInit), thetaInit), sigmaInit);
     arma::vec stepLowInit(xthetasigmaInit.size());
     stepLowInit.fill(1.0 / nstepsHmc * stepSizeFactorHmc);
-    if(!sigmaExogenous.empty()){
+    if(useFixedSigma){
         stepLowInit.subvec(xInit.size() + thetaInit.size(), stepLowInit.size() - 1).fill(0);
     }
     hmcSampler.sampleChian(xthetasigmaInit, stepLowInit, verbose);

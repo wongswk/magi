@@ -99,7 +99,7 @@ hmcstate basic_hmcC(const std::function<lp (vec)> & lpr,
     p = p % bounces.col(1);
     
     lprq = lpr(q);
-    if(std::isnan(lprq.value)){
+    if(std::isnan(lprq.value) || lprq.value < -1e8){
       break;
     }
     gr = lprq.gradient;

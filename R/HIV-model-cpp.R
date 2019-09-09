@@ -10,8 +10,8 @@ if(!exists("config")){
     npostplot = 50,
     loglikflag = "withmeanBand",
     bandsize = 20,
-    hmcSteps = 200,
-    n.iter = 10000,
+    hmcSteps = 400,
+    n.iter = 20000,
     burninRatio = 0.5,
     stepSizeFactor = 0.1,
     filllevel = 1,
@@ -87,8 +87,10 @@ HIVmodel <- list(
   fOde=gpds:::HIVmodelODE,
   fOdeDx=gpds:::HIVmodelDx,
   fOdeDtheta=gpds:::HIVmodelDtheta,
-  thetaLowerBound=rep(0,9),
-  thetaUpperBound=rep(Inf,9)
+  #thetaLowerBound=c(-Inf,rep(0,5),-Inf,-Inf,-Inf),
+  #thetaUpperBound=rep(Inf,9)
+  thetaLowerBound=c(-10,rep(0,5),-10,-10,-10),
+  thetaUpperBound=rep(10,9)  
 )
 
 samplesCpp <- gpds:::solveGpdsRcpp(
@@ -96,6 +98,10 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   odeModel = HIVmodel,
   tvecFull = xsim$time,
   sigmaExogenous = numeric(0),
+  phiExogenous = matrix(nrow=0,ncol=0),
+  xInitExogenous = matrix(nrow=0,ncol=0),
+  muExogenous = matrix(nrow=0,ncol=0),
+  dotmuExogenous = matrix(nrow=0,ncol=0),
   priorTemperatureLevel = config$priorTemperature,
   priorTemperatureDeriv = config$priorTemperature,
   kernel = config$kernel,
@@ -142,5 +148,5 @@ odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 outDir <- "../results/cpp/"
 
 gpds:::plotPostSamplesFlex(
-  paste0(outDir, config$modelName,"-",config$seed,"-noise0.5.pdf"), 
+  paste0(outDir, config$modelName,"-",config$seed,"-noise0.5-Sep9.pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
