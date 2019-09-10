@@ -55,6 +55,9 @@ public:
         if ((phisigInput.array() < this->lowerBound().array()).any()){
             return INFINITY;
         }
+        if ((phisigInput.array() > this->upperBound().array()).any()){
+            return INFINITY;
+        }
         arma::vec phisig = arma::vec(const_cast<double*>(phisigInput.data()), numparam, false, false);
         if(sigmaExogenScalar > 0){
             phisig = arma::join_vert(phisig, arma::vec({sigmaExogenScalar}));
@@ -75,6 +78,15 @@ public:
             for(unsigned i = 0; i < numparam; i++){
                 if(phisigInput[i] < this->lowerBound()[i]){
                     grad[i] = -1;
+                }
+            }
+            return;
+        }
+        if ((phisigInput.array() > this->upperBound().array()).any()){
+            grad.fill(0);
+            for(unsigned i = 0; i < numparam; i++){
+                if(phisigInput[i] > this->upperBound()[i]){
+                    grad[i] = 1;
                 }
             }
             return;
@@ -112,7 +124,14 @@ public:
         Eigen::VectorXd lb(numparam);
         lb.fill(1e-4);
         this->setLowerBound(lb);
+
         maxDist = dist.max();
+        double maxScale = arma::max(arma::abs(yobs(arma::find_finite(yobs))));
+        maxScale = std::max(maxScale, maxDist);
+
+        Eigen::VectorXd ub(numparam);
+        ub.fill(10 * maxScale);
+        this->setUpperBound(ub);
 
         priorFactor = arma::zeros(2);
         if(useFrequencyBasedPrior){
