@@ -4,21 +4,23 @@ library(gpds)
 if(!exists("config")){
   config <- list(
     nobs = 15,
-    noise = rep(0.001, 6),
+    noise = rep(0.01, 5), # 0.001 = low noise, 0.01 = high noise
     kernel = "generalMatern",
     seed = 1365546660, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     loglikflag = "withmeanBand",
     bandsize = 20,
-    hmcSteps = 500,
-    n.iter = 10000,
+    hmcSteps = 100,
+    n.iter = 10001,
     burninRatio = 0.50,
     stepSizeFactor = 0.06,
-    filllevel = 2,
+    filllevel = 3,
     modelName = "PTrans",
     temperPrior = TRUE,
     useFrequencyBasedPrior = TRUE,
     useScalerSigma = FALSE,
     useFixedSigma = FALSE,
+    linearizexInit = TRUE,
+    useExoSigma = TRUE,
     max.epoch = 10
   )
 }
@@ -79,6 +81,19 @@ matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
 
 xsim <- insertNaN(xsim.obs,config$filllevel)
 
+if (config$useExoSigma) {
+  exoSigma = config$noise
+} else {
+  exoSigma = numeric(0)
+}
+
+if (config$linearizexInit) {
+  exoxInit <- sapply(2:ncol(xsim.obs), function(j)
+    approx(xsim.obs[, "time"], xsim.obs[, j], xsim[, "time"])$y)
+} else {
+  exoxInit <- matrix(nrow=0,ncol=0)
+}
+
 
 # cpp inference ----------------------------
 ptransmodel <- list(
@@ -89,11 +104,15 @@ ptransmodel <- list(
   thetaUpperBound=rep(Inf,6)
 )
 
-samplesCpp <- gpds:::solveGpds(
+samplesCpp <- gpds:::solveGpdsRcpp(
   yFull = data.matrix(xsim[,-1]),
   odeModel = ptransmodel,
   tvecFull = xsim$time,
-  sigmaExogenous = numeric(0),
+  sigmaExogenous = exoSigma,
+  phiExogenous = matrix(nrow=0,ncol=0),
+  xInitExogenous = exoxInit,
+  muExogenous = matrix(nrow=0,ncol=0),
+  dotmuExogenous = matrix(nrow=0,ncol=0),
   priorTemperatureLevel = config$priorTemperature,
   priorTemperatureDeriv = config$priorTemperature,
   kernel = config$kernel,
@@ -140,5 +159,5 @@ odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 outDir <- "../results/cpp/"
 
 gpds:::plotPostSamplesFlex(
-  paste0(outDir, config$modelName,"-",config$seed,"-lownoise.pdf"), 
+  paste0(outDir, config$modelName,"-",config$seed,"-Sep9.pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
