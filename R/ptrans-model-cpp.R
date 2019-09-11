@@ -8,12 +8,14 @@ if(!exists("config")){
     kernel = "generalMatern",
     seed = 1365546660, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     loglikflag = "withmeanBand",
-    bandsize = 20,
+    bandsize = 40,
     hmcSteps = 100,
     n.iter = 10001,
     burninRatio = 0.50,
     stepSizeFactor = 0.06,
-    filllevel = 3,
+    #filllevel = 3,
+    linfillspace = 0.1,
+    t.end = 100,
     modelName = "PTrans",
     temperPrior = TRUE,
     useFrequencyBasedPrior = TRUE,
@@ -25,7 +27,8 @@ if(!exists("config")){
   )
 }
 
-config$ndis <- (config$nobs-1)*2^config$filllevel+1
+#config$ndis <- (config$nobs-1)*2^config$filllevel+1
+config$ndis <- config$t.end / config$linfillspace + 1;
 if(config$temperPrior){
   config$priorTemperature <- config$ndis / config$nobs  
 }else{
@@ -79,10 +82,18 @@ matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, ad
 
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
 
-xsim <- insertNaN(xsim.obs,config$filllevel)
+#xsim <- insertNaN(xsim.obs,config$filllevel)
+fillC <- seq(0, config$t.end, by = config$linfillspace)
+xsim <- data.frame(time = fillC)
+xsim <- cbind(xsim, matrix(NaN, nrow = length(fillC), ncol = ncol(xsim.obs)-1 ))
+for (i in 1:length(fillC)) {
+  loc <- match( fillC[i], xsim.obs[, "time"])
+  if (!is.na(loc))
+    xsim[i,2:ncol(xsim)] = xsim.obs[loc,2:ncol(xsim)];
+}
 
 if (config$useExoSigma) {
-  exoSigma = config$noise
+  exoSigma = rep(0.001, ncol(xsim)-1) #config$noise
 } else {
   exoSigma = numeric(0)
 }
@@ -101,7 +112,7 @@ ptransmodel <- list(
   fOdeDx=gpds:::ptransmodelDx,
   fOdeDtheta=gpds:::ptransmodelDtheta,
   thetaLowerBound=rep(0,6),
-  thetaUpperBound=rep(Inf,6)
+  thetaUpperBound=rep(100,6)
 )
 
 samplesCpp <- gpds:::solveGpdsRcpp(
@@ -159,5 +170,5 @@ odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 outDir <- "../results/cpp/"
 
 gpds:::plotPostSamplesFlex(
-  paste0(outDir, config$modelName,"-",config$seed,"-Sep9.pdf"), 
+  paste0(outDir, config$modelName,"-",config$seed,"-Sep11.pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
