@@ -2,6 +2,7 @@
 #include "classDefinition.h"
 #include "Sampler.h"
 #include "GpdsSolver.h"
+#include "dynamicalSystemModels.h"
 
 using namespace Rcpp;
 
@@ -47,29 +48,40 @@ arma::cube solveGpdsRcpp(
     //const Rcpp::Function fOdeR = odeModel["fOde"];
     //const Rcpp::Function fOdeDxR = odeModel["fOdeDx"];
     //const Rcpp::Function fOdeDthetaR = odeModel["fOdeDtheta"];
-    const Rcpp::Function & fOdeR = as<const Function>(odeModel["fOde"]);
-    const Rcpp::Function & fOdeDxR = as<const Function>(odeModel["fOdeDx"]);
-    const Rcpp::Function & fOdeDthetaR = as<const Function>(odeModel["fOdeDtheta"]);
+    const Rcpp::String modelName = as<Rcpp::String>(odeModel["name"]);
+    if(modelName == "FN"){
+        modelC = OdeSystem(fnmodelODE, fnmodelDx, fnmodelDtheta, arma::zeros(3), arma::ones(3)*INFINITY);
+    }else if(modelName == "Hes1"){
+        modelC = OdeSystem(hes1modelODE, hes1modelDx, hes1modelDtheta, arma::zeros(7), arma::ones(7)*INFINITY);
+    }else if(modelName == "Hes1-log"){
+        modelC = OdeSystem(hes1logmodelODE, hes1logmodelDx, hes1logmodelDtheta, arma::zeros(7), arma::ones(7)*INFINITY);
+    }else if(modelName == "HIV"){
+        modelC = OdeSystem(HIVmodelODE, HIVmodelDx, HIVmodelDtheta, {-INFINITY, 0,0,0,0,0, -INFINITY,-INFINITY,-INFINITY}, arma::ones(9)*INFINITY);
+    }else{
+        const Rcpp::Function & fOdeR = as<const Function>(odeModel["fOde"]);
+        const Rcpp::Function & fOdeDxR = as<const Function>(odeModel["fOdeDx"]);
+        const Rcpp::Function & fOdeDthetaR = as<const Function>(odeModel["fOdeDtheta"]);
 
 
-    const Rcpp::NumericVector & thetaLowerBoundR = as<const NumericVector>(odeModel["thetaLowerBound"]);
-    const Rcpp::NumericVector & thetaUpperBoundR = as<const NumericVector>(odeModel["thetaUpperBound"]);
+        const Rcpp::NumericVector & thetaLowerBoundR = as<const NumericVector>(odeModel["thetaLowerBound"]);
+        const Rcpp::NumericVector & thetaUpperBoundR = as<const NumericVector>(odeModel["thetaUpperBound"]);
 
-    modelC.thetaUpperBound = arma::vec(const_cast<double*>( &(thetaUpperBoundR[0])), thetaUpperBoundR.size(), false, false);
-    modelC.thetaLowerBound = arma::vec(const_cast<double*>( &(thetaLowerBoundR[0])), thetaLowerBoundR.size(), false, false);
-    modelC.thetaSize = modelC.thetaLowerBound.size();
+        modelC.thetaUpperBound = arma::vec(const_cast<double*>( &(thetaUpperBoundR[0])), thetaUpperBoundR.size(), false, false);
+        modelC.thetaLowerBound = arma::vec(const_cast<double*>( &(thetaLowerBoundR[0])), thetaLowerBoundR.size(), false, false);
+        modelC.thetaSize = modelC.thetaLowerBound.size();
 
-    modelC.fOde = [& fOdeR](const arma::vec & theta, const arma::mat & x) -> arma::mat {
-        return r2armamat(fOdeR(theta, x));
-    };
+        modelC.fOde = [& fOdeR](const arma::vec & theta, const arma::mat & x) -> arma::mat {
+            return r2armamat(fOdeR(theta, x));
+        };
 
-    modelC.fOdeDx = [& fOdeDxR](const arma::vec & theta, const arma::mat & x) -> arma::cube {
-        return r2armacube(fOdeDxR(theta, x));
-    };
+        modelC.fOdeDx = [& fOdeDxR](const arma::vec & theta, const arma::mat & x) -> arma::cube {
+            return r2armacube(fOdeDxR(theta, x));
+        };
 
-    modelC.fOdeDtheta = [& fOdeDthetaR](const arma::vec & theta, const arma::mat & x) -> arma::cube {
-        return r2armacube(fOdeDthetaR(theta, x));
-    };
+        modelC.fOdeDtheta = [& fOdeDthetaR](const arma::vec & theta, const arma::mat & x) -> arma::cube {
+            return r2armacube(fOdeDthetaR(theta, x));
+        };
+    }
 
     GpdsSolver solver(yFull,
                       modelC,
