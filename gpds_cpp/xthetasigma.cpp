@@ -135,9 +135,12 @@ lp xthetasigmallik( const mat & xlatent,
   }
   res.col(1) = -0.5 * sum(fitDerivError % KinvfitDerivError).t() / priorTemperature(0);
   res.col(2) = -0.5 * sum(xlatent % CinvX).t() / priorTemperature(1);
-  
-  // cout << "lglik component = \n" << res << endl;
-  
+
+  if(arma::any(res.col(2) > arma::min(arma::abs(res.col(0)), arma::abs(res.col(1))))){
+      std::cout << "lglik component = \n" << res << std::endl;
+      throw std::runtime_error("smoothing component positive definiteness violated, consider increase band size");
+  }
+
   ret.value = accu(res);
   
   // cout << "lglik = " << ret.value << endl;
