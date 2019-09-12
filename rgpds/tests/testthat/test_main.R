@@ -176,6 +176,9 @@ samplesCpp <- gpds:::solveGpds(
   useFixedSigma = config$useFixedSigma,
   verbose = TRUE)
 
+nBurn = config$burninRatio * config$n.iter
+xSamples <- matrix(rowMeans(samplesCpp[1 + 1:length(data.matrix(xsim[,-1])), -(1:nBurn)]), ncol=2)
+matplot(xsim$time, xSamples, type="l", add=TRUE)
 
 # R inference ----------------------------
 
