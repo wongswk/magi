@@ -109,7 +109,7 @@ arma::mat solveGpdsRcpp(
 
     //return yFull;
     solver.initMissingComponent();
-    solver.doHMC();
+    solver.sampleInEpochs();
     return arma::join_vert(solver.llikSamples.t(), solver.xthetasigmaSamples);
 
 }

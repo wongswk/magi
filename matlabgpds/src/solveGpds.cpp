@@ -163,7 +163,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       std::cout << "thetaInit = \n" << solver.thetaInit << "\n";
   }
   
-  solver.doHMC();
+  solver.sampleInEpochs();
   
   mat ret = join_vert(solver.llikSamples.t(), solver.xthetasigmaSamples);
   
