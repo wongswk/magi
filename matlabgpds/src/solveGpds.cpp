@@ -173,7 +173,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   dimensions[2] = ret.n_slices;
 
   plhs[0] = mxCreateNumericArray(3, dimensions, mxDOUBLE_CLASS, mxREAL);
-  armaSetPr(plhs[0], ret);
+  armaSetCubePr(plhs[0], ret);
   
 
 }
