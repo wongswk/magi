@@ -180,6 +180,31 @@ nBurn = config$burninRatio * config$n.iter
 xSamples <- matrix(rowMeans(samplesCpp[1 + 1:length(data.matrix(xsim[,-1])), -(1:nBurn), 1]), ncol=2)
 matplot(xsim$time, xSamples, type="l", add=TRUE)
 
+samplesCpp <- gpds:::solveGpdsRcpp(
+  yFull = data.matrix(xsim[,-1]),
+  odeModel = list(name="FN"),
+  tvecFull = xsim$time,
+  sigmaExogenous = numeric(0),
+  phiExogenous = matrix(numeric(0)),
+  xInitExogenous = matrix(numeric(0)),
+  muExogenous = matrix(numeric(0)),
+  dotmuExogenous = matrix(numeric(0)),
+  priorTemperatureLevel = config$priorTemperature,
+  priorTemperatureDeriv = config$priorTemperature,
+  kernel = config$kernel,
+  nstepsHmc = config$hmcSteps,
+  burninRatioHmc = config$burninRatio,
+  niterHmc = 201,
+  stepSizeFactorHmc = config$stepSizeFactor,
+  nEpoch = 4,
+  bandSize = config$bandsize,
+  useFrequencyBasedPrior = config$useFrequencyBasedPrior,
+  useBand = config$useBand,
+  useMean = config$useMean,
+  useScalerSigma = config$useScalerSigma,
+  useFixedSigma = config$useFixedSigma,
+  verbose = TRUE)
+
 # R inference ----------------------------
 
 ## GPsmoothing: marllik+fftNormalprior for phi-sigma; CHECKS OUT
