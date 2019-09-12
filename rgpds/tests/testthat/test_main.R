@@ -19,7 +19,7 @@ if(!exists("config")){
     useFrequencyBasedPrior = TRUE,
     useScalerSigma = FALSE,
     useFixedSigma = FALSE,
-    max.epoch = 10
+    max.epoch = 1
   )
 }
 
@@ -150,6 +150,32 @@ samplesCpp <- gpds:::solveGpds(
   useScalerSigma = config$useScalerSigma,
   useFixedSigma = config$useFixedSigma,
   verbose = TRUE)
+
+samplesCpp <- gpds:::solveGpds(
+  yFull = data.matrix(xsim[,-1]),
+  odeModel = fnmodel,
+  tvecFull = xsim$time,
+  sigmaExogenous = numeric(0),
+  phiExogenous = matrix(numeric(0)),
+  xInitExogenous = matrix(numeric(0)),
+  muExogenous = matrix(numeric(0)),
+  dotmuExogenous = matrix(numeric(0)),
+  priorTemperatureLevel = config$priorTemperature,
+  priorTemperatureDeriv = config$priorTemperature,
+  kernel = config$kernel,
+  nstepsHmc = config$hmcSteps,
+  burninRatioHmc = config$burninRatio,
+  niterHmc = config$n.iter,
+  stepSizeFactorHmc = config$stepSizeFactor,
+  nEpoch = 4,
+  bandSize = config$bandsize,
+  useFrequencyBasedPrior = config$useFrequencyBasedPrior,
+  useBand = config$useBand,
+  useMean = config$useMean,
+  useScalerSigma = config$useScalerSigma,
+  useFixedSigma = config$useFixedSigma,
+  verbose = TRUE)
+
 
 # R inference ----------------------------
 
