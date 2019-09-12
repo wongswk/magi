@@ -75,7 +75,7 @@ public:
                const double burninRatioHmc = 0.5,
                const unsigned int niterHmc = 10000,
                const double stepSizeFactorHmc = 1,
-               const int nEpoch = 10,
+               const int nEpoch = 1,
                const int bandSize = 20,
                bool useFrequencyBasedPrior = false,
                bool useBand = true,
@@ -89,6 +89,7 @@ public:
     void initTheta();
     void initMissingComponent();
     void doHMC();
+    void sampleInEpochs();
 };
 
 

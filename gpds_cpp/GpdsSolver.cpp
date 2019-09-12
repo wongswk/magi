@@ -426,3 +426,62 @@ void GpdsSolver::doHMC() {
     xthetasigmaSamples = hmcSampler.xth;
     stepLow = hmcSampler.stepLow;
 }
+
+void GpdsSolver::sampleInEpochs() {
+    std::string epochMethod = "mean";
+
+    for(int iEpoch = 0; iEpoch < nEpoch; iEpoch++){
+        doHMC();
+        // update mu and dotmu
+        arma::mat xPosteriorMean = arma::mean(
+                xthetasigmaSamples(
+                        arma::span(0, yFull.size() - 1),
+                        arma::span(static_cast<int>(niterHmc * burninRatioHmc), niterHmc - 1)),
+                1);
+        xPosteriorMean.reshape(yFull.n_rows, yFull.n_cols);
+        arma::vec thetaPosteriorMean = arma::mean(
+                xthetasigmaSamples(
+                        arma::span(yFull.size(), yFull.size() + thetaInit.size() - 1),
+                        arma::span(static_cast<int>(niterHmc * burninRatioHmc), niterHmc - 1)),
+                1);
+        arma::vec sigmaPosteriorMean = arma::mean(
+                xthetasigmaSamples(
+                        arma::span(yFull.size() + thetaInit.size(), xthetasigmaSamples.n_rows - 1),
+                        arma::span(static_cast<int>(niterHmc * burninRatioHmc), niterHmc - 1)),
+                1);
+
+        // TODO allow median or numerical solver
+        for(unsigned long j = 0; j < covAllDimensions.size(); j++){
+            covAllDimensions[j].mu = xPosteriorMean.col(j);
+        }
+
+        if (epochMethod == "mean"){
+            for(unsigned long j = 0; j < covAllDimensions.size(); j++){
+                covAllDimensions[j].dotmu = covAllDimensions[j].mphi * xPosteriorMean.col(j);
+            }
+        }else if(epochMethod == "f_bar_x") {
+            arma::mat dotxOde = odeModel.fOde(thetaPosteriorMean, xPosteriorMean);
+            for(unsigned long j = 0; j < covAllDimensions.size(); j++) {
+                covAllDimensions[j].dotmu = dotxOde.col(j);
+            }
+        }else if(epochMethod == "bar_f_x"){
+            arma::mat dotxOde(yFull.n_rows, yFull.n_cols, arma::fill::zeros);
+            for(unsigned it = static_cast<int>(niterHmc * burninRatioHmc); it < niterHmc; it++){
+                dotxOde += odeModel.fOde(
+                        thetaPosteriorMean,
+                        arma::reshape(xthetasigmaSamples(
+                                arma::span(0, yFull.size() - 1),
+                                arma::span(it, it)
+                        ), yFull.n_rows, yFull.n_cols));
+            }
+            dotxOde /= niterHmc - static_cast<int>(niterHmc * burninRatioHmc);
+            for(unsigned long j = 0; j < covAllDimensions.size(); j++) {
+                covAllDimensions[j].dotmu = dotxOde.col(j);
+            }
+        }
+
+        xInit = xPosteriorMean;
+        thetaInit = thetaPosteriorMean;
+        sigmaInit = sigmaPosteriorMean;
+    }
+}
