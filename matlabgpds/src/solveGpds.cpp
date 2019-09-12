@@ -165,9 +165,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   solver.sampleInEpochs();
   
-  mat ret = join_vert(solver.llikSamples.t(), solver.xthetasigmaSamples);
-  
-  plhs[0] = mxCreateDoubleMatrix(ret.n_rows, ret.n_cols, mxREAL); 
+  cube ret = solver.llikxthetasigmaSamples;
+
+  mwSize dimensions[3];
+  dimensions[0] = ret.n_rows;
+  dimensions[1] = ret.n_cols;
+  dimensions[2] = ret.n_slices;
+
+  plhs[0] = mxCreateDoubleMatrix(3, dimensions, mxDOUBLE_CLASS, mxREAL);
   armaSetPr(plhs[0], ret);
   
 

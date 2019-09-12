@@ -116,11 +116,11 @@ samplesCpp <- gpds:::solveGpds(
   useFixedSigma = config$useFixedSigma,
   verbose = TRUE)
 
-out <- samplesCpp[-1,1,drop=FALSE]
-xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=2)
-stopifnot(abs(sum(out[,1])*1e5 - 6879957.07974693) < 1)
-thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + 3), 1]
-sigmaCpp <- tail(out[, 1], 2)
+out <- samplesCpp[-1,1,1]
+xCpp <- matrix(out[1:length(data.matrix(xsim[,-1]))], ncol=2)
+stopifnot(abs(sum(out)*1e5 - 6879957.07974693) < 1)
+thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + 3)]
+sigmaCpp <- tail(out, 2)
 
 matplot(xsim$time, xCpp, type="l", add=TRUE)
 
@@ -177,7 +177,7 @@ samplesCpp <- gpds:::solveGpds(
   verbose = TRUE)
 
 nBurn = config$burninRatio * config$n.iter
-xSamples <- matrix(rowMeans(samplesCpp[1 + 1:length(data.matrix(xsim[,-1])), -(1:nBurn)]), ncol=2)
+xSamples <- matrix(rowMeans(samplesCpp[1 + 1:length(data.matrix(xsim[,-1])), -(1:nBurn), 1]), ncol=2)
 matplot(xsim$time, xSamples, type="l", add=TRUE)
 
 # R inference ----------------------------

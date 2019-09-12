@@ -57,8 +57,7 @@ public:
     arma::vec stepLow;
 
     // output
-    arma::vec llikSamples;
-    arma::mat xthetasigmaSamples;
+    arma::cube llikxthetasigmaSamples;
 
     GpdsSolver(const arma::mat & yFull,
                const OdeSystem & odeModel,
@@ -88,7 +87,7 @@ public:
     void initXmudotmu();
     void initTheta();
     void initMissingComponent();
-    void doHMC();
+    void doHMC(int iEpoch);
     void sampleInEpochs();
 };
 

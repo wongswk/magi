@@ -3,7 +3,7 @@
 
 
 // [[Rcpp::export]]
-arma::mat solveGpds(const arma::mat & yFull,
+arma::cube solveGpds(const arma::mat & yFull,
                     const OdeSystem & odeModel,
                     const arma::vec & tvecFull,
                     const arma::vec & sigmaExogenous = arma::vec(),
@@ -58,5 +58,5 @@ arma::mat solveGpds(const arma::mat & yFull,
     solver.initTheta();
     solver.initMissingComponent();
     solver.sampleInEpochs();
-    return arma::join_vert(solver.llikSamples.t(), solver.xthetasigmaSamples);
+    return solver.llikxthetasigmaSamples;
 }

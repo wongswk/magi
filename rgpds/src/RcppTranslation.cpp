@@ -158,8 +158,7 @@ namespace Rcpp
     SEXP wrap(const GpdsSolver& object)
     {
         return List::create(
-                Named("xthetasigmaSamples")=object.xthetasigmaSamples,
-                Named("llikSamples")=object.llikSamples,
+                Named("llikxthetasigmaSamples")=object.llikxthetasigmaSamples,
                 Named("phi")=object.phiAllDimensions,
                 Named("xInit")=object.xInit,
                 Named("thetaInit")=object.thetaInit,

@@ -17,7 +17,7 @@ arma::cube r2armacube(const SEXP & x){
 }
 
 // [[Rcpp::export]]
-arma::mat solveGpdsRcpp(
+arma::cube solveGpdsRcpp(
         const arma::mat & yFull,
         const List & odeModel,
         const arma::vec & tvecFull,
@@ -110,7 +110,7 @@ arma::mat solveGpdsRcpp(
     //return yFull;
     solver.initMissingComponent();
     solver.sampleInEpochs();
-    return arma::join_vert(solver.llikSamples.t(), solver.xthetasigmaSamples);
+    return solver.llikxthetasigmaSamples;
 
 }
 

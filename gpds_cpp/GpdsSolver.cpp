@@ -55,7 +55,8 @@ GpdsSolver::GpdsSolver(const arma::mat & yFull,
         distSignedFull(tvecFull.size(), tvecFull.size()),
         indicatorRowWithObs(yFull.n_rows),
         indicatorMatWithObs(yFull.n_rows, yFull.n_cols, arma::fill::zeros),
-        phiAllDimensions(2, yFull.n_cols)
+        phiAllDimensions(2, yFull.n_cols),
+        llikxthetasigmaSamples(1 + yFull.size() + odeModel.thetaSize + sigmaSize, niterHmc, nEpoch)
 {
     if(kernel != "generalMatern"){
         throw std::runtime_error("only generalMatern kernel has full support");
@@ -405,7 +406,7 @@ void GpdsSolver::initMissingComponent() {
 
 }
 
-void GpdsSolver::doHMC() {
+void GpdsSolver::doHMC(int iEpoch) {
     Sampler hmcSampler(yFull,
                        covAllDimensions,
                        nstepsHmc,
@@ -416,22 +417,25 @@ void GpdsSolver::doHMC() {
                        niterHmc,
                        burninRatioHmc);
     arma::vec xthetasigmaInit = arma::join_vert(arma::join_vert(arma::vectorise(xInit), thetaInit), sigmaInit);
-    arma::vec stepLowInit(xthetasigmaInit.size());
-    stepLowInit.fill(1.0 / nstepsHmc * stepSizeFactorHmc);
-    if(useFixedSigma){
-        stepLowInit.subvec(xInit.size() + thetaInit.size(), stepLowInit.size() - 1).fill(0);
-    }
-    hmcSampler.sampleChian(xthetasigmaInit, stepLowInit, verbose);
-    llikSamples = hmcSampler.lliklist;
-    xthetasigmaSamples = hmcSampler.xth;
+    hmcSampler.sampleChian(xthetasigmaInit, stepLow, verbose);
+    llikxthetasigmaSamples(arma::span(0, 0), arma::span::all, arma::span(iEpoch, iEpoch)) = hmcSampler.lliklist;
+    llikxthetasigmaSamples(arma::span(1, llikxthetasigmaSamples.n_rows - 1), arma::span::all, arma::span(iEpoch, iEpoch)) = hmcSampler.xth;
     stepLow = hmcSampler.stepLow;
 }
 
 void GpdsSolver::sampleInEpochs() {
     std::string epochMethod = "mean";
 
+    stepLow = arma::vec(llikxthetasigmaSamples.n_rows - 1);
+    stepLow.fill(1.0 / nstepsHmc * stepSizeFactorHmc);
+    if(useFixedSigma){
+        stepLow.subvec(xInit.size() + thetaInit.size(), stepLow.size() - 1).fill(0);
+    }
+
     for(int iEpoch = 0; iEpoch < nEpoch; iEpoch++){
-        doHMC();
+        doHMC(iEpoch);
+        const arma::mat & xthetasigmaSamples = llikxthetasigmaSamples(
+                arma::span(1, llikxthetasigmaSamples.n_rows - 1), arma::span::all, arma::span(iEpoch, iEpoch));
         // update mu and dotmu
         arma::mat xPosteriorMean = arma::mean(
                 xthetasigmaSamples(

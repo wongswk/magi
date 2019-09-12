@@ -28,7 +28,7 @@ hmcstate basic_hmcC(const std::function<lp (vec)> & lpr,
                     const bool traj = false){
   // Check and process the arguments
   if(step.size() != initial.size())
-    throw std::runtime_error("step and initial dimention note matched");
+    throw std::runtime_error("step and initial dimension not matched");
   if(nsteps <= 0)
     throw std::runtime_error("Invalid nsteps argument");
   if(lb.size() != initial.size()){
