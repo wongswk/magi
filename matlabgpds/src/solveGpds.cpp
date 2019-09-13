@@ -117,6 +117,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       cube temp_ret = armaGetCubePr(lhs_f[0]);
 
       cube ret = temp_ret;
+      mxDestroyArray(x_matlab);
       mxDestroyArray(theta_matlab);
       mxDestroyArray(lhs_f[0]);           
       
