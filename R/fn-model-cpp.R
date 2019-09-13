@@ -96,6 +96,10 @@ samplesCpp <- gpds:::solveGpds(
   odeModel = fnmodel,
   tvecFull = xsim$time,
   sigmaExogenous = numeric(0),
+  phiExogenous = matrix(numeric(0)),
+  xInitExogenous = matrix(numeric(0)),
+  muExogenous = matrix(numeric(0)),
+  dotmuExogenous = matrix(numeric(0)),
   priorTemperatureLevel = config$priorTemperature,
   priorTemperatureDeriv = config$priorTemperature,
   kernel = config$kernel,
@@ -112,11 +116,11 @@ samplesCpp <- gpds:::solveGpds(
   useFixedSigma = config$useFixedSigma,
   verbose = TRUE)
 
-out <- samplesCpp[-1,1,drop=FALSE]
-xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=2)
-stopifnot(abs(sum(out[,1])*1e5 - 6879957.07974693) < 1e-8)
-thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + 3), 1]
-sigmaCpp <- tail(out[, 1], 2)
+out <- samplesCpp[-1,1,1]
+xCpp <- matrix(out[1:length(data.matrix(xsim[,-1]))], ncol=2)
+stopifnot(abs(sum(out)*1e5 - 6879957.07974693) < 1e-4)
+thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + 3)]
+sigmaCpp <- tail(out, 2)
 
 matplot(xsim$time, xCpp, type="l", add=TRUE)
 
@@ -127,21 +131,21 @@ sigmaId <- (max(thetaId)+1):(max(thetaId)+ncol(xsim[,-1]))
 
 
 burnin <- as.integer(config$n.iter*config$burninRatio)
-gpode <- list(theta=t(samplesCpp[thetaId, -(1:burnin)]),
-              xsampled=array(t(samplesCpp[xId, -(1:burnin)]),
-                             dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
-              lglik=samplesCpp[llikId,-(1:burnin)],
-              sigma = t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]))
-gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
-  with(gpode, gpds:::fnmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
-gpode$fode <- aperm(gpode$fode, c(3,1,2))
-
+odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
+outDir <- "../results/cpp/"
 dotxtrue = gpds:::fnmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
-odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
-
-outDir <- "../results/cpp/"
-
-gpds:::plotPostSamplesFlex(
-  paste0(outDir, config$kernel,"-",config$seed,"-priorTempered-phase1.pdf"), 
-  xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+for(iEpoch in 1:config$max.epoch){
+  gpode <- list(theta=t(samplesCpp[thetaId, -(1:burnin), iEpoch]),
+                xsampled=array(t(samplesCpp[xId, -(1:burnin), iEpoch]),
+                               dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
+                lglik=samplesCpp[llikId,-(1:burnin), iEpoch],
+                sigma = t(samplesCpp[sigmaId, -(1:burnin), iEpoch]))
+  gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
+    with(gpode, gpds:::fnmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
+  gpode$fode <- aperm(gpode$fode, c(3,1,2))
+  
+  gpds:::plotPostSamplesFlex(
+    paste0(outDir, config$kernel,"-",config$seed,"-priorTempered-phase",iEpoch,".pdf"), 
+    xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+}
