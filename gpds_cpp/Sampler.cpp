@@ -92,7 +92,7 @@ Sampler::Sampler(const arma::mat & yobsInput,
     };
     lb.subvec(0, yobs.size()-1).fill(-arma::datum::inf);
     lb.subvec(yobs.size(), yobs.size() + model.thetaSize - 1) = model.thetaLowerBound;
-    lb.subvec(yobs.size() + model.thetaSize, yobs.size() + model.thetaSize + sigmaSize - 1).fill(1e-3);
+    lb.subvec(yobs.size() + model.thetaSize, yobs.size() + model.thetaSize + sigmaSize - 1).fill(1e-7);
     ub.fill(arma::datum::inf);
     ub.subvec(yobs.size(), yobs.size() + model.thetaSize - 1) = model.thetaUpperBound;
 }
