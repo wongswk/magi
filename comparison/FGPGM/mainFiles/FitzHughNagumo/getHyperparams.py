@@ -23,8 +23,7 @@ plt.switch_backend('agg')
 
 """kernel decision"""
 kernelIter = 100
-gammaValue = np.loadtxt("gammaInput.csv")  #3e-1  # state derivative in the GP model.
-
+gammaValue = 3e-1  # state derivative in the GP model.
 np.savetxt("gammaValues.csv", np.asarray(gammaValue).reshape([-1, 1]))
 
 y = np.loadtxt("observations.csv")

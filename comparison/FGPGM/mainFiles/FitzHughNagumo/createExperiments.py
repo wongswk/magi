@@ -27,23 +27,22 @@ theta = np.asarray(theta)
 np.savetxt("trueODEParams.csv", theta)
 
 print("normal time")
-tEnd = 10 # 5
-#dt = 0.1 # 0.125
-dt = np.loadtxt("dt.csv")
+tEnd = 20 # 5
+dt = 0.5 # 0.125
 time = np.arange(0, tEnd+0.5*dt, dt)  # obs time
 time = np.asarray(time)
 np.savetxt("time.csv", time)
 
-SNR = np.loadtxt("SNRInput.csv") # same as VGM and AGM
-np.savetxt("usedSNR.csv", np.asarray(SNR).reshape([1, 1]))
-
 standardize=1
 np.savetxt("standardize.csv", np.asarray(standardize).reshape([1, 1]))
 
+obsStd = 0.2
+np.savetxt("obsStdInput.csv", np.asarray(obsStd).reshape([1, 1]))
+
 experiment = FHN()
 # sample noisy and true states at observation times
-x, y = experiment.sampleTrajectoryNonUniform(XInit, theta, time, obsNoiseStd=None,
-                                             SNR=SNR, plotting="./experimentPlots")
+x, y = experiment.sampleTrajectoryNonUniform(XInit, theta, time, obsNoiseStd=obsStd,
+                                             SNR=None, plotting=None)
 
 np.savetxt("trueStates.csv", x)
 np.savetxt("observations.csv", y)

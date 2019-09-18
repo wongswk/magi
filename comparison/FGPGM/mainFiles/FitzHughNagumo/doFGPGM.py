@@ -79,30 +79,3 @@ newStates, newParams = FM.getFGPGMResults(GPPosteriorInit=True,
 np.savetxt("optimalParamsFGPGM.csv", newParams)
 np.savetxt("optimalStatesFGPGM.csv", newStates)
 print(newParams)
-
-"""quick debug code specifically for FHN"""
-# Plotting the resulting trajectories as the system is not identifiable
-import os
-if not os.path.exists("./plots"):
-    os.makedirs("./plots")
-
-tEnd = time[-1]
-noiseObsStd=0.1  # not used anyways
-timeDense = np.arange(0, tEnd+0.5*0.01, .01)
-XInit = np.loadtxt("XInit.csv") 
-
-xDenseTrue = experiment.sampleTrajectoryNonUniform(
-    XInit, trueTheta, timeDense, noiseObsStd)[0]
-xDenseNew = experiment.sampleTrajectoryNonUniform(
-    XInit, newParams, timeDense, noiseObsStd)[0]
-
-from matplotlib import pyplot as plt
-for i in np.arange(xDenseNew.shape[1]):
-    plt.figure()
-    plt.plot(timeDense, xDenseTrue[:, i], 'k')
-    plt.plot(timeDense, xDenseNew[:, i], 'r')
-    plt.scatter(time, newStates[:, i], marker='x', c='r')
-    plt.title("state {}".format(i))
-    plt.legend(["groundTruth", "newParams", "newStates"])
-    plt.savefig("./plots/state{}".format(i))
-    plt.close()
