@@ -38,9 +38,11 @@ def MCMCWithBounds(logTarget, xInit, proposalStds, lowerBounds, upperBounds,
     """
     xInit = np.asarray(xInit)
     allSamples = []
+    alllogpost = []
     xNew = xInit.copy()
     logPNew = logTarget(xInit)
     allSamples.append(xNew)
+    alllogpost.append(logPNew)
     nAccepted=np.zeros_like(xInit)
     nRejected=np.zeros_like(xInit)
     for i in np.arange(nSamples+nBurnin):
@@ -95,8 +97,9 @@ def MCMCWithBounds(logTarget, xInit, proposalStds, lowerBounds, upperBounds,
         if i%1000==0:
             print("iteration {}: {}".format(i, xNew))
         allSamples.append(np.mean(currSamples, axis=0))
+        alllogpost.append(logPNew)
     
-    return np.asarray(allSamples[nBurnin:]), nAccepted, nRejected
+    return np.asarray(alllogpost[nBurnin:]), np.asarray(allSamples[nBurnin:]), nAccepted, nRejected
 
 def getProposal(mean, std, lowerBound, upperBound, maxTry=100):
     """
