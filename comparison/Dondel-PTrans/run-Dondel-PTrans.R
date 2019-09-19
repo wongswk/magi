@@ -10,7 +10,7 @@ if(!exists("config")){
     #loglikflag = "withmeanBand",
     #bandsize = 40,
     #hmcSteps = 100,
-    n.iter = 300001,
+    n.iter = 300000,
     burninRatio = 0.50,
     #stepSizeFactor = 0.06,
     #filllevel = 3,
@@ -84,21 +84,32 @@ VG_func <- function(t, X, params) {
 timeTest <- xsim[,1]  #c(0,1,2,4,5,7,10,15,20,30,40,50,60,80,100)
 dataTest <- as.matrix(xsim[,2:ncol(xsim)])
 
-## noise 0.01 case
-#dataTest = ode(c(1,0,1,0,0), timeTest,function(t,y,params)list(VG_func(t,matrix(y,1,length(y)),params)),c(0.07,0.6,0.05,0.3,0.017,0.3))
-#dataTest = dataTest[,2:6] +rnorm(dim(dataTest)[1]*5,0,0.01)
-agm.result =agm(data=dataTest,time=timeTest,ode.system=VG_func, numberOfParameters=length(pram.true$theta), noise.sd = config$noise[1], maxIterations = config$n.iter, showProgress = TRUE)
+# define our own prior with parameter bounds
+log_prior <- function(params) {
+  return(c(dunif(params[1],0,4,log=TRUE),
+           dunif(params[2],0,4,log=TRUE),
+           dunif(params[3],0,4,log=TRUE),
+           dunif(params[4],0,4,log=TRUE),
+           dunif(params[5],0,4,log=TRUE),
+           dunif(params[6],0,4,log=TRUE)))
+}
+
+agm.result =agm(data=dataTest,time=timeTest,ode.system=VG_func, numberOfParameters=length(pram.true$theta),
+                noise.sd = config$noise[1], logPrior = log_prior, maxIterations = config$n.iter, showProgress = TRUE)
 ### you have to input noise.sd, method does not sample it
 
 
 #### Use our plotting codes
 config$n.iter <- config$n.iter / 25
+x_means <- apply(xsim[,-1],2,mean)
 
 xsampled <- (sapply(agm.result$x.samples, function(x) x, simplify="array"))
+xsampled <- aperm(apply(xsampled, c(1,2), function(x) x + x_means), c(2,3,1))
 thetasampled <- agm.result$posterior.samples
 lglik <- agm.result$ll
 
 burnin <- as.integer(config$n.iter*config$burninRatio)
+
 gpode <- list(theta= thetasampled[-(1:burnin),],
               xsampled= xsampled[-(1:burnin),,],
               lglik=  lglik[-(1:burnin)],
@@ -111,8 +122,10 @@ dotxtrue = gpds:::ptransmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
 odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 
-outDir <- "./"
+outDir <- "comparison/Dondel-PTrans/"
 
 gpds:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+
+save(agm.result, file=paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".rda"))

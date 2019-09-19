@@ -58,7 +58,7 @@ arma::cube solveGpdsRcpp(
     }else if(modelName == "HIV"){
         modelC = OdeSystem(HIVmodelODE, HIVmodelDx, HIVmodelDtheta, {-INFINITY, 0,0,0,0,0, -INFINITY,-INFINITY,-INFINITY}, arma::ones(9)*INFINITY);
     }else if(modelName == "PTrans"){
-        modelC = OdeSystem(ptransmodelODE, ptransmodelDx, ptransmodelDtheta, arma::zeros(6), arma::ones(6)*100);
+        modelC = OdeSystem(ptransmodelODE, ptransmodelDx, ptransmodelDtheta, arma::zeros(6), arma::ones(6)*4);
     }else{
         const Rcpp::Function & fOdeR = as<const Function>(odeModel["fOde"]);
         const Rcpp::Function & fOdeDxR = as<const Function>(odeModel["fOdeDx"]);
