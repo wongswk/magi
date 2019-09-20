@@ -10,7 +10,7 @@ if(!exists("config")){
     loglikflag = "withmeanBand",
     bandsize = 20,
     hmcSteps = 500,
-    n.iter = 100000,
+    n.iter = 300000,
     burninRatio = 0.50,
     stepSizeFactor = 0.06,
     filllevel = 2,
@@ -110,6 +110,8 @@ agm.result = agm(data=dataTest,
 
 #### Use our plotting codes
 xsampled <- (sapply(agm.result$x.samples, function(x) x, simplify="array"))
+x_means <- apply(dataTest,2,mean)
+xsampled <- aperm(apply(xsampled, c(1,2), function(x) x + x_means), c(2,3,1))
 thetasampled <- agm.result$posterior.samples
 lglik <- agm.result$ll
 
