@@ -1,10 +1,10 @@
 # Use our plotting codes for Wenk output
 library(gpds)
-dataDir <- '/home/s246wong/github/FGPGM-output/noise0.001/'
+dataDir <- '/home/s246wong/github/dynamic-systems/comparison/Wenk-PTrans/'
 
 config <- list(
   nobs = 15,
-  noise = rep(0.01, 5), # 0.001 = low noise, 0.01 = high noise
+  noise = rep(0.001, 5), # 0.001 = low noise, 0.01 = high noise
   seed = 12345,   #### not used just placeholder
   n.iter = 300001,  ## change to iterations used in Wenk sampler
   burninRatio = 0.5,
@@ -40,6 +40,7 @@ colnames(xsim.obs) <- c("time", 1:5)
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
 
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
+xsim <- xsim.obs
 
 ptransmodel <- list(
   fOde=gpds:::ptransmodelODE,
@@ -53,8 +54,9 @@ samplesCpp <- as.matrix(read.table(paste0(dataDir, "MCMCMatrix.csv")))
 xMean <- as.vector(as.matrix(read.table(paste0(dataDir, "meanMatrix.csv") )))
 xSD <- as.vector(as.matrix(read.table(paste0(dataDir, "stdMatrix.csv") )))
 thetaMag <- as.vector(as.matrix(read.table(paste0(dataDir, "thetaMagnitudes.csv") )))
+lliklist <- as.vector(as.matrix(read.table(paste0(dataDir, "lliklist.csv") )))
 
-llikId <- 0  ### llik not currently saved
+llikId <- 0  ### llik is in its own file
 xId <- (max(llikId)+1):(max(llikId)+length(data.matrix(xsim[,-1])))
 thetaId <- (max(xId)+1):(max(xId)+length(ptransmodel$thetaLowerBound))
 #sigmaId <- (max(thetaId)+1):(max(thetaId)+ncol(xsim[,-1]))  ## no sigma sampled
@@ -67,7 +69,7 @@ burnin <- as.integer(config$n.iter*config$burninRatio)
 gpode <- list(theta= samplesCpp[-(1:burnin), thetaId],
               xsampled=array(samplesCpp[-(1:burnin), xId],
                              dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
-              lglik=  rep(0, config$n.iter - burnin), ###samplesCpp[llikId,-(1:burnin)],
+              lglik=  lliklist[-(1:burnin)], ###samplesCpp[llikId,-(1:burnin)],
               sigma=  matrix(0, nrow = config$n.iter - burnin, ncol = ncol(xsim)-1)) # t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]))
 gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
   with(gpode, gpds:::ptransmodelODE(theta[t,], xsampled[t,,])), simplify = "array")

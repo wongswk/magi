@@ -262,7 +262,7 @@ class FGPGM(object):
             propStds = np.ones(x0.size)
         assert propStds.size == x0.size
 
-        MCMCSamples, nAccepted, nRejected = MCMCWithBounds(
+        lliklist, MCMCSamples, nAccepted, nRejected = MCMCWithBounds(
             logTarget=getDensity,
             xInit=x0,
             proposalStds=propStds,
@@ -278,6 +278,7 @@ class FGPGM(object):
         newStates = stdMatrix*newStates + meanMatrix
 
         np.savetxt("MCMCMatrix.csv", MCMCSamples)
+        np.savetxt("lliklist.csv", lliklist)
 
         newParams = inferredStuff[-self.nODEParams:]*(10**thetaMagnitudes)
 
