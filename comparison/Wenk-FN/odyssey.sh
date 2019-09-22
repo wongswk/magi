@@ -5,8 +5,8 @@
 #SBATCH -p serial_requeue # Partition
 #SBATCH --mem 8000 # Memory request
 #SBATCH -t 1-01:20 # (D-HH:MM)
-#SBATCH -o /n/regal/kou_lab/shihaoyang/dynamic_sys/DynamicSystem%a.out # Standard output
-#SBATCH -e /n/regal/kou_lab/shihaoyang/dynamic_sys/DynamicSystem%a.err # Standard error
+#SBATCH -o /n/scratchlfs/kou_lab/shihaoyang/dynamic_sys/DynamicSystem%a.out # Standard output
+#SBATCH -e /n/scratchlfs/kou_lab/shihaoyang/dynamic_sys/DynamicSystem%a.err # Standard error
 
 
 export PYTHONPATH="$HOME/Workspace/DynamicSys/dynamic-systems/comparison/"
