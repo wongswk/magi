@@ -8,7 +8,7 @@ config <- list(
   seed = 12345,   #### not used just placeholder
   n.iter = 300001,  ## change to iterations used in Wenk sampler
   burninRatio = 0.5,
-  t.end = 20,
+  t.end = 10,
   modelName = "FN"
 )
 
