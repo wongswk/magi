@@ -9,8 +9,8 @@
 #SBATCH -e /n/scratchlfs/kou_lab/shihaoyang/dynamic_sys/DynamicSystem%a.err # Standard error
 
 
-export PYTHONPATH="$HOME/Workspace/DynamicSys/dynamic-systems/comparison/"
 source "$HOME/Workspace/DynamicSys/pyenv_gpds/bin/activate"
+export PYTHONPATH="$HOME/Workspace/DynamicSys/dynamic-systems/comparison/"
 mkdir -p "$PYTHONPATH/Wenk-FN/Wenk19-FN-${SLURM_ARRAY_TASK_ID}" && cd "$PYTHONPATH/Wenk-FN/Wenk19-FN-${SLURM_ARRAY_TASK_ID}"
 
 python3 $PYTHONPATH/FGPGM/mainFiles/FitzHughNagumo/createExperiments.py --slurm_array_task_id $SLURM_ARRAY_TASK_ID
