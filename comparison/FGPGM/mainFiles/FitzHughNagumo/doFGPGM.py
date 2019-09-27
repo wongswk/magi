@@ -10,11 +10,17 @@ plotting=True     #
 useMagnitudes = False 
 
 import numpy as np
+import argparse
 
 from FGPGM.Experiments.FitzHughNagumo import FHN as exp
 from FGPGM.Kernels.Matern52 import Matern52 as kernel
 
 from FGPGM.FGPGM import FGPGM
+
+"""parse the command line argument"""
+parser = argparse.ArgumentParser()
+parser.add_argument('--nSamples', help='nSamples number of iterations', default=300000, type=int)
+args = parser.parse_args()
 
 """determine standardization"""
 standardize = np.loadtxt("standardize.csv")
@@ -73,7 +79,7 @@ newStates, newParams = FM.getFGPGMResults(GPPosteriorInit=True,
                                           debug=True,
                                           theta0=theta0,
                                           thetaMagnitudes=np.zeros_like(theta0),
-                                          nSamples=300000,
+                                          nSamples=args.nSamples,
                                           nBurnin=1000,
                                           propStds=propStds)
 np.savetxt("optimalParamsFGPGM.csv", newParams)
