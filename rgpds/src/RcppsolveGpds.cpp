@@ -48,7 +48,7 @@ arma::cube solveGpdsRcpp(
     //const Rcpp::Function fOdeR = odeModel["fOde"];
     //const Rcpp::Function fOdeDxR = odeModel["fOdeDx"];
     //const Rcpp::Function fOdeDthetaR = odeModel["fOdeDtheta"];
-    const Rcpp::String modelName = as<Rcpp::String>(odeModel["name"]);
+    const Rcpp::String modelName = odeModel.containsElementNamed("name") ? as<Rcpp::String>(odeModel["name"]) : "";
     if(modelName == "FN"){
         modelC = OdeSystem(fnmodelODE, fnmodelDx, fnmodelDtheta, arma::zeros(3), arma::ones(3)*INFINITY);
     }else if(modelName == "Hes1"){
