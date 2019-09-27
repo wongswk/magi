@@ -225,7 +225,7 @@ write.table(as.matrix(xsim.obs[,2:ncol(xsim)]), row.names = F, col.names = F, fi
 
 system( paste0("cd ", config$seed, "; python3 ", PROJECT_DIR, "/comparison/FGPGM/mainFiles/FitzHughNagumo/getHyperparams.py" ))
 system( paste0("cd ", config$seed, "; python3 ", PROJECT_DIR, "/comparison/FGPGM/mainFiles/FitzHughNagumo/doFGPGM.py",
-               " --nSamples ", config$n.iter.Wenk))
+               " --nSamples ", sprintf("%d", config$n.iter.Wenk)))
 
 dataDir <- paste0(config$seed, "/")
 
