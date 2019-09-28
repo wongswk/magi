@@ -235,6 +235,11 @@ xMean <- as.vector(as.matrix(read.table(paste0(dataDir, "meanMatrix.csv") )))
 xSD <- as.vector(as.matrix(read.table(paste0(dataDir, "stdMatrix.csv") )))
 thetaMag <- as.vector(as.matrix(read.table(paste0(dataDir, "thetaMagnitudes.csv") )))
 lliklist <- as.vector(as.matrix(read.table(paste0(dataDir, "lliklist.csv") )))
+sigmaWenk <- list()
+for(j in 1:(ncol(xsim)-1)){
+  sigmaWenk[[j]] <- read.table(paste0(dataDir, "/hyperparams/sigma", j - 1, ".csv") )
+}
+sigmaWenk <- unlist(sigmaWenk)
 
 llikId <- 0  ### llik is in its own file
 xId <- (max(llikId)+1):(max(llikId)+length(data.matrix(xsim.obs[,-1])))
@@ -250,7 +255,7 @@ gpode <- list(theta= samplesCpp[-(1:burnin), thetaId],
               xsampled=array(samplesCpp[-(1:burnin), xId],
                              dim=c(nrow(samplesCpp)-burnin, nrow(xsim.obs), ncol(xsim)-1)),
               lglik=  lliklist[-(1:burnin)], ###samplesCpp[llikId,-(1:burnin)],
-              sigma=  matrix(0, nrow = nrow(samplesCpp) - burnin, ncol = ncol(xsim)-1)) # t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]))
+              sigma=  matrix(sigmaWenk, nrow = nrow(samplesCpp) - burnin, ncol = ncol(xsim)-1, byrow = TRUE)) # t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]))
 gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
   with(gpode, gpds:::fnmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
 gpode$fode <- aperm(gpode$fode, c(3,1,2))
