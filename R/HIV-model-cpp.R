@@ -1,27 +1,31 @@
 #### run with priorTempered phase 1 --------------------------------------------
 library(gpds)
+#where to save results
+outDir <- "comparison/results/"
+
 # set up configuration if not already exist ------------------------------------
 if(!exists("config")){
   config <- list(
-    nobs = 11,
-    noise = rep(0.5,4),
+    nobs = 5,
+    noise = rep(0.3,4),
     kernel = "generalMatern",
-    seed = 396033147,
+    seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 50,
     loglikflag = "withmeanBand",
     bandsize = 20,
     hmcSteps = 400,
     n.iter = 20000,
     burninRatio = 0.5,
-    stepSizeFactor = 0.1,
-    filllevel = 1,
+    stepSizeFactor = 0.01,
+    filllevel = 2,
     modelName = "HIV",
-    
     temperPrior = TRUE,
     useFrequencyBasedPrior = TRUE,
     useScalerSigma = FALSE,
     useFixedSigma = FALSE,
-    max.epoch = 10
+    linearizexInit = TRUE,
+    useExoSigma = TRUE,
+    max.epoch = 1
     
   )
 }
@@ -50,11 +54,11 @@ if(config$loglikflag == "withmeanBand"){
 # initialize global parameters, true x, simulated x ----------------------------
 pram.true <- list(
   theta = c(0.015, 1.51e-3, 1.11e-3, 4.4e-4, 4.15e-3, 1.1e-3, -2.29e-2, 7.13e-03, 5.68e-04),
-  x0 = log(c(3.2e7, 134000, 26000, 10000)),
+  x0 = log(c(3.35e7, 134000, 25000, 9000)),
   sigma=config$noise
 )
 
-times <- seq(0, 100, by = 0.25)
+times <- seq(0, 93, by = 0.25)
 
 modelODE <- function(t, state, parameters) {
   list(as.vector(gpds:::HIVmodelODE(parameters, t(state))))
@@ -67,7 +71,8 @@ matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=1)
 xtrueFunc <- lapply(2:ncol(xtrue), function(j)
   approxfun(xtrue[, "time"], xtrue[, j]))
 
-xsim <- xtrue
+xsim <- data.frame(time = c(70,94,115,139,163) - 70)
+xsim <- cbind(xsim, sapply(xtrueFunc, function(f) f(xsim$time)))
 
 set.seed(config$seed)
 for(j in 1:(ncol(xsim)-1)){
@@ -81,14 +86,25 @@ matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
 
 xsim <- insertNaN(xsim.obs,config$filllevel)
 
+if (config$useExoSigma) {
+  exoSigma = rep(0.001, ncol(xsim)-1) #config$noise
+} else {
+  exoSigma = numeric(0)
+}
+
+if (config$linearizexInit) {
+  exoxInit <- sapply(2:ncol(xsim.obs), function(j)
+    approx(xsim.obs[, "time"], xsim.obs[, j], xsim[, "time"])$y)
+} else {
+  exoxInit <- matrix(nrow=0,ncol=0)
+}
 
 # cpp inference ----------------------------
 HIVmodel <- list(
+  name= paste0(config$modelName,"test"),
   fOde=gpds:::HIVmodelODE,
   fOdeDx=gpds:::HIVmodelDx,
   fOdeDtheta=gpds:::HIVmodelDtheta,
-  #thetaLowerBound=c(-Inf,rep(0,5),-Inf,-Inf,-Inf),
-  #thetaUpperBound=rep(Inf,9)
   thetaLowerBound=c(-10,rep(0,5),-10,-10,-10),
   thetaUpperBound=rep(10,9)  
 )
@@ -97,9 +113,9 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   yFull = data.matrix(xsim[,-1]),
   odeModel = HIVmodel,
   tvecFull = xsim$time,
-  sigmaExogenous = numeric(0),
+  sigmaExogenous = exoSigma,
   phiExogenous = matrix(nrow=0,ncol=0),
-  xInitExogenous = matrix(nrow=0,ncol=0),
+  xInitExogenous = exoxInit,
   muExogenous = matrix(nrow=0,ncol=0),
   dotmuExogenous = matrix(nrow=0,ncol=0),
   priorTemperatureLevel = config$priorTemperature,
@@ -117,6 +133,8 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   useScalerSigma = config$useScalerSigma,
   useFixedSigma = config$useFixedSigma,
   verbose = TRUE)
+
+samplesCpp <- samplesCpp[,,1]
 
 out <- samplesCpp[-1,1,drop=FALSE]
 xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=ncol(xsim[,-1]))
@@ -145,8 +163,9 @@ dotxtrue = gpds:::HIVmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
 odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 
-outDir <- "../results/cpp/"
-
 gpds:::plotPostSamplesFlex(
-  paste0(outDir, config$modelName,"-",config$seed,"-noise0.5-Sep9.pdf"), 
+  paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+
+system( paste0("mkdir ", config$seed) )  
+save(xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel, file= paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".rda"))
