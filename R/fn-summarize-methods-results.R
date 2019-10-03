@@ -70,6 +70,15 @@ j <- 0
 ours <- list()
 Wenk <- list()
 Dondel <- list()
+
+oursPostX <- list()
+WenkPostX <- list()
+DondelPostX <- list()
+
+oursPostTheta <- list()
+WenkPostTheta <- list()
+DondelPostTheta <- list()
+
 for (i in seeds) {
   if(!file.exists(paste0(outDirWenk, i, "/MCMCMatrix.csv"))){
     next
@@ -80,6 +89,16 @@ for (i in seeds) {
   load(paste0(rdaDir, config$modelName,"-",i,"-noise", config$noise[1], ".rda"))
   xsim.obs <- xsim[complete.cases(xsim),]
   ours[[j]] <- rmsePostSamples(xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+  oursPostX[[j]] <- cbind(
+    apply(gpode$xsampled, 2:3, mean), 
+    apply(gpode$xsampled, 2:3, function(x) quantile(x, 0.025)),
+    apply(gpode$xsampled, 2:3, function(x) quantile(x, 0.975))
+  )
+  oursPostTheta[[j]] <- cbind(
+    apply(gpode$theta, 2, mean), 
+    apply(gpode$theta, 2, function(x) quantile(x, 0.025)),
+    apply(gpode$theta, 2, function(x) quantile(x, 0.975))
+  )
   
   load(paste0(rdaDir, config$modelName,"-Dondel-",config$seed,"-noise", config$noise[1], ".rda"))
   config$n.iter.Dondel <- config$n.iter.Dondel / 25
@@ -100,6 +119,16 @@ for (i in seeds) {
     with(gpode, gpds:::fnmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
   gpode$fode <- aperm(gpode$fode, c(3,1,2))
   Dondel[[j]] <- rmsePostSamples(xtrue, dotxtrue, xsim.obs, gpode, pram.true, config, odemodel)
+  DondelPostX[[j]] <- cbind(
+    apply(gpode$xsampled, 2:3, mean), 
+    apply(gpode$xsampled, 2:3, function(x) quantile(x, 0.025)),
+    apply(gpode$xsampled, 2:3, function(x) quantile(x, 0.975))
+  )
+  DondelPostTheta[[j]] <- cbind(
+    apply(gpode$theta, 2, mean), 
+    apply(gpode$theta, 2, function(x) quantile(x, 0.025)),
+    apply(gpode$theta, 2, function(x) quantile(x, 0.975))
+  )
   
   dataDir <- paste0(outDirWenk, config$seed, "/")
   
@@ -130,6 +159,16 @@ for (i in seeds) {
   
   
   Wenk[[j]]<- rmsePostSamples( xtrue, dotxtrue, xsim.obs, gpode, pram.true, config, odemodel)
+  WenkPostX[[j]] <- cbind(
+    apply(gpode$xsampled, 2:3, mean), 
+    apply(gpode$xsampled, 2:3, function(x) quantile(x, 0.025)),
+    apply(gpode$xsampled, 2:3, function(x) quantile(x, 0.975))
+  )
+  WenkPostTheta[[j]] <- cbind(
+    apply(gpode$theta, 2, mean), 
+    apply(gpode$theta, 2, function(x) quantile(x, 0.025)),
+    apply(gpode$theta, 2, function(x) quantile(x, 0.975))
+  )
   
 }
 
@@ -182,3 +221,6 @@ for (i in 1:(ncol(xsim)-1)) {
   lines(times, WenkMed[,i])
 }
 dev.off()
+
+
+
