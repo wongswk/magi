@@ -228,24 +228,44 @@ WenkPostTheta <- sapply(WenkPostTheta, identity, simplify = "array")
 DondelPostTheta <- sapply(DondelPostTheta, identity, simplify = "array")
 
 mean_est <- rbind(
-  format(rowMeans(oursPostTheta[,1,]), nsmall = 4),
-  format(rowMeans(WenkPostTheta[,1,]), nsmall = 4),
-  format(rowMeans(DondelPostTheta[,1,]), nsmall = 4)
+  rowMeans(oursPostTheta[,1,]),
+  rowMeans(WenkPostTheta[,1,]),
+  rowMeans(DondelPostTheta[,1,])
 )
 
 sd_est <- rbind(
-  format(apply(oursPostTheta[,1,], 1, sd), nsmall = 4),
-  format(apply(WenkPostTheta[,1,], 1, sd), nsmall = 4),
-  format(apply(DondelPostTheta[,1,], 1, sd), nsmall = 4)
+  apply(oursPostTheta[,1,], 1, sd),
+  apply(WenkPostTheta[,1,], 1, sd),
+  apply(DondelPostTheta[,1,], 1, sd)
 )
+
+printr <- function(x) format(round(x, 4), nsmall=4)
+tablizeEstErr <- function(est, err){
+  paste(format(round(est, 4), nsmall=4), "\\pm", format(round(err, 4), nsmall=4))
+}
+
+tab <- rbind(
+  c("Ours", tablizeEstErr(mean_est[1,],sd_est[1,])),
+  c("Wenk", tablizeEstErr(mean_est[2,],sd_est[2,])),
+  c("Dondel", tablizeEstErr(mean_est[3,],sd_est[3,]))
+)
+tab <- data.frame(tab)
+colnames(tab) <- c("Method", "a", "b", "c")
+rownames(tab) <- NULL
+library(xtable)
+print(xtable(tab), include.rownames=FALSE)
+
 
 
 # theta posterior credible interval coverage table 
-rbind(
-  rowMeans((oursPostTheta[,2,] <= pram.true$theta) & (pram.true$theta <= oursPostTheta[,3,])),
-  rowMeans((WenkPostTheta[,2,] <= pram.true$theta) & (pram.true$theta <= WenkPostTheta[,3,])),
-  rowMeans((DondelPostTheta[,2,] <= pram.true$theta) & (pram.true$theta <= DondelPostTheta[,3,]))
+coverage <- rbind(
+  printr(rowMeans((oursPostTheta[,2,] <= pram.true$theta) & (pram.true$theta <= oursPostTheta[,3,]))),
+  printr(rowMeans((WenkPostTheta[,2,] <= pram.true$theta) & (pram.true$theta <= WenkPostTheta[,3,]))),
+  printr(rowMeans((DondelPostTheta[,2,] <= pram.true$theta) & (pram.true$theta <= DondelPostTheta[,3,])))
 )
+coverage <- cbind(c("Ours", "Wenk", "Dondel"), coverage)
+colnames(coverage) <- c("Method", "a", "b", "c")
+print(xtable(coverage), include.rownames=FALSE)
 
 # X posterior mean plot
 oursPostX <- sapply(oursPostX, identity, simplify = "array")
