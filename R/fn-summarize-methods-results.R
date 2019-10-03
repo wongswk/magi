@@ -172,7 +172,7 @@ for (i in seeds) {
   
 }
 
-save(ours,Wenk,Dondel, file=paste0(outDirWenk,"compare.rda"))
+save.image(file=paste0(outDirWenk,"compare.rda"))
 
 # Average the posterior mean RMSEs for the different seeds
 rmse.table <- rbind( round(apply(sapply(ours, function(x) x$rmseOdePM), 1, mean), digits=4),
@@ -222,5 +222,67 @@ for (i in 1:(ncol(xsim)-1)) {
 }
 dev.off()
 
+# theta posterior mean table 
+oursPostTheta <- sapply(oursPostTheta, identity, simplify = "array")
+WenkPostTheta <- sapply(WenkPostTheta, identity, simplify = "array")
+DondelPostTheta <- sapply(DondelPostTheta, identity, simplify = "array")
 
+mean_est <- rbind(
+  format(rowMeans(oursPostTheta[,1,]), nsmall = 4),
+  format(rowMeans(WenkPostTheta[,1,]), nsmall = 4),
+  format(rowMeans(DondelPostTheta[,1,]), nsmall = 4)
+)
+
+sd_est <- rbind(
+  format(apply(oursPostTheta[,1,], 1, sd), nsmall = 4),
+  format(apply(WenkPostTheta[,1,], 1, sd), nsmall = 4),
+  format(apply(DondelPostTheta[,1,], 1, sd), nsmall = 4)
+)
+
+
+# theta posterior credible interval coverage table 
+rbind(
+  rowMeans((oursPostTheta[,2,] <= pram.true$theta) & (pram.true$theta <= oursPostTheta[,3,])),
+  rowMeans((WenkPostTheta[,2,] <= pram.true$theta) & (pram.true$theta <= WenkPostTheta[,3,])),
+  rowMeans((DondelPostTheta[,2,] <= pram.true$theta) & (pram.true$theta <= DondelPostTheta[,3,]))
+)
+
+# X posterior mean plot
+oursPostX <- sapply(oursPostX, identity, simplify = "array")
+WenkPostX <- sapply(WenkPostX, identity, simplify = "array")
+DondelPostX <- sapply(DondelPostX, identity, simplify = "array")
+
+xdesolveTRUE <- deSolve::ode(y = pram.true$x0, times = xsim$time, func = odemodel$modelODE, parms = pram.true$theta)
+pdf(width = 20, height = 5, file=paste0(outDirWenk, "posteriorxOurs.pdf"))
+par(mfrow=c(1, ncol(xsim)-1))
+for (i in 1:(ncol(xsim)-1)) {
+  ourEst <- apply(oursPostX[,i,], 1, quantile, probs = 0.5)
+  ourUB <- apply(oursPostX[,i,], 1, quantile, probs = 0.025)
+  ourLB <- apply(oursPostX[,i,], 1, quantile, probs = 0.975)
+  times <- xsim$time
+  
+  plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+  polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
+          col = "skyblue", border = NA)
+  lines(times, xdesolveTRUE[,1+i], col="red", lwd=1)
+  lines(times, ourEst, col="forestgreen")
+}
+dev.off()
+
+xdesolveTRUE <- deSolve::ode(y = pram.true$x0, times = xsim.obs$time, func = odemodel$modelODE, parms = pram.true$theta)
+pdf(width = 20, height = 5, file=paste0(outDirWenk, "posteriorxWenk.pdf"))
+par(mfrow=c(1, ncol(xsim)-1))
+for (i in 1:(ncol(xsim)-1)) {
+  ourEst <- apply(WenkPostX[,i,], 1, quantile, probs = 0.5)
+  ourUB <- apply(WenkPostX[,i,], 1, quantile, probs = 0.025)
+  ourLB <- apply(WenkPostX[,i,], 1, quantile, probs = 0.975)
+  times <- xsim.obs$time
+  
+  plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+  polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
+          col = "skyblue", border = NA)
+  lines(times, xdesolveTRUE[,1+i], col="red", lwd=1)
+  lines(times, ourEst, col="forestgreen")
+}
+dev.off()
 
