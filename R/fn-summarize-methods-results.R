@@ -178,6 +178,7 @@ save.image(file=paste0(outDirWenk,"compare.rda"))
 rmse.table <- rbind( round(apply(sapply(ours, function(x) x$rmseOdePM), 1, mean), digits=4),
                      round(apply(sapply(Wenk, function(x) x$rmseOdePM), 1, mean), digits=4),
                      round(apply(sapply(Dondel, function(x) x$rmseOdePM), 1, mean), digits=4))
+print(rmse.table)
 
 # Make the figures comparing Wenk and Ours using ODE solver results
 # use the same axis limits for both methods for easier visual comparison

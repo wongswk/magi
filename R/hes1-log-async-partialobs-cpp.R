@@ -17,7 +17,7 @@ if(!exists("config")){
     filllevel = 0,
     modelName = "Hes1-log",
     async = TRUE,
-    max.epoch = 12,
+    max.epoch = 1,
     useMean = TRUE,
     useBand = TRUE,
     useFrequencyBasedPrior = TRUE,
@@ -72,6 +72,7 @@ xsim <- insertNaN(xsim.obs,config$filllevel)
 
 # cpp inference ----------------------------
 hes1logmodel <- list(
+  name="Hes1",
   fOde=gpds:::hes1logmodelODE,
   fOdeDx=gpds:::hes1logmodelDx,
   fOdeDtheta=gpds:::hes1logmodelDtheta,
@@ -84,6 +85,10 @@ samplesCpp <- gpds:::solveGpds(
   odeModel = hes1logmodel,
   tvecFull = xsim$time,
   sigmaExogenous = pram.true$sigma,
+  phiExogenous = matrix(numeric(0)),
+  xInitExogenous = matrix(numeric(0)),
+  muExogenous = matrix(numeric(0)),
+  dotmuExogenous = matrix(numeric(0)),
   priorTemperatureLevel = config$priorTemperature,
   priorTemperatureDeriv = config$priorTemperature,
   kernel = config$kernel,
@@ -100,6 +105,7 @@ samplesCpp <- gpds:::solveGpds(
   useFixedSigma = config$useFixedSigma,
   verbose = TRUE)
 
+samplesCpp <- samplesCpp[,,1]
 out <- samplesCpp[-1,1,drop=FALSE]
 xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=ncol(xsim[,-1]))
 thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + length(hes1logmodel$thetaLowerBound)), 1]
