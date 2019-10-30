@@ -80,7 +80,7 @@ hes1logmodel <- list(
   thetaUpperBound=rep(Inf,7)
 )
 
-samplesCpp <- gpds:::solveGpds(
+samplesCpp <- gpds:::solveGpdsRcpp(
   yFull = data.matrix(xsim[,-1]),
   odeModel = hes1logmodel,
   tvecFull = xsim$time,
