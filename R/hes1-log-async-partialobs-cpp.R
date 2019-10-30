@@ -72,7 +72,7 @@ xsim <- insertNaN(xsim.obs,config$filllevel)
 
 # cpp inference ----------------------------
 hes1logmodel <- list(
-  name="Hes1",
+  name="Hes1-log",
   fOde=gpds:::hes1logmodelODE,
   fOdeDx=gpds:::hes1logmodelDx,
   fOdeDtheta=gpds:::hes1logmodelDtheta,
