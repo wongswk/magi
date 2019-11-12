@@ -100,10 +100,19 @@ save.image(file=paste0(rdaDir,"hes1log_summary.rda"))
 rmse.table <- round(apply(sapply(ours, function(x) x$rmseOdePM), 1, mean), digits=4)
 print(rmse.table)
 
-# Make the figures comparing Wenk and Ours using ODE solver results
+logscale <- FALSE
+# Make the figures showing Ours using ODE solver results
 # use the same axis limits for both methods for easier visual comparison
+# on log scale
 ylim_lower <- c(-1, -1, -2)
 ylim_upper <- c(3, 2, 5)
+
+# on original scale
+if(!logscale){
+  ylim_lower <- c(0, 0, 0)
+  ylim_upper <- c(10, 4, 20)
+}
+
 # names of components to use on y-axis label
 compnames <- c("P", "M", "H")
 
@@ -112,15 +121,26 @@ ourLB <- apply(desolveOurs, c(1,2), function(x) quantile(x, 0.025))
 ourMed <- apply(desolveOurs, c(1,2), function(x) quantile(x, 0.5))
 ourUB <- apply(desolveOurs, c(1,2), function(x) quantile(x, 0.975))
 
+xdesolveTRUE <-ours[[1]]$xdesolveTRUE
+
+if(!logscale){
+  # on original scale
+  # quantile is preserved after exponentiation
+  ourLB <- exp(ourLB)
+  ourMed <- exp(ourMed)
+  ourUB <- exp(ourUB)
+  xdesolveTRUE[,-1] <- exp(xdesolveTRUE[,-1])
+}
+
 times <- ours[[1]]$xdesolveTRUE[,1]
 
 pdf(width = 20, height = 5, file=paste0(rdaDir, "/plotOurs.pdf"))
 par(mfrow=c(1, ncol(xsim)-1))
 for (i in 1:(ncol(xsim)-1)) {
-  plot(times, ours[[1]]$xdesolveTRUE[,1+i], type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+  plot(times, xdesolveTRUE[,1+i], type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
   polygon(c(times, rev(times)), c(ourUB[,i], rev(ourLB[,i])),
           col = "grey80", border = NA)
-  lines(times, ours[[1]]$xdesolveTRUE[,1+i], col="red", lwd=1)
+  lines(times, xdesolveTRUE[,1+i], col="red", lwd=1)
   lines(times, ourMed[,i])
 }
 dev.off()
@@ -150,6 +170,7 @@ colnames(tab) <- c("Method", letters[1:7])
 rownames(tab) <- NULL
 library(xtable)
 print(xtable(tab), include.rownames=FALSE)
+print(xtable(t(tab)))
 
 
 # theta posterior credible interval coverage table 
@@ -160,16 +181,30 @@ coverage <- cbind(c("Ours"), coverage)
 colnames(coverage) <- c("Method", letters[1:7])
 print(xtable(coverage), include.rownames=FALSE)
 
+print(xtable(cbind(t(tab), t(coverage))))
+
 # X posterior mean plot
 oursPostX <- sapply(oursPostX, identity, simplify = "array")
 
 xdesolveTRUE <- deSolve::ode(y = pram.true$x0, times = xsim$time, func = odemodel$modelODE, parms = pram.true$theta)
+if(!logscale){
+  xdesolveTRUE[,-1] <- exp(xdesolveTRUE[,-1])
+}
+
 pdf(width = 20, height = 5, file=paste0(rdaDir, "/posteriorxOurs.pdf"))
 par(mfrow=c(1, ncol(xsim)-1))
 for (i in 1:(ncol(xsim)-1)) {
   ourEst <- apply(oursPostX[,i,], 1, quantile, probs = 0.5)
   ourUB <- apply(oursPostX[,i,], 1, quantile, probs = 0.025)
   ourLB <- apply(oursPostX[,i,], 1, quantile, probs = 0.975)
+  
+  if(!logscale){
+    # quantile is preserved after exponentiation
+    ourLB <- exp(ourLB)
+    ourEst <- exp(ourEst)
+    ourUB <- exp(ourUB)
+  }
+  
   times <- xsim$time
   
   plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
