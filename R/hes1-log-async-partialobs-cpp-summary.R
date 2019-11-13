@@ -25,6 +25,9 @@ hes1logmodel <- list(
   thetaUpperBound=rep(Inf,7)
 )
 
+hes1modelODE <- function(t, state, parameters) {
+  list(as.vector(gpds:::hes1modelODE(parameters, t(state))))
+}
 
 ## Helper function adapted from Visualization to extract trajectories and RMSE
 rmsePostSamples <- function(xtrue, dotxtrue, xsim, gpode, param, config, odemodel=NULL){
@@ -76,6 +79,8 @@ rmsePostSamples <- function(xtrue, dotxtrue, xsim, gpode, param, config, odemode
 ours <- list()
 oursPostX <- list()
 oursPostTheta <- list()
+oursPostExpX <- list()
+oursExpXdesolvePM <- list()
 
 rda_files <- as.character(unlist(rda_files))
 for (f in rda_files) {
@@ -92,6 +97,18 @@ for (f in rda_files) {
     apply(gpode$theta, 2, function(x) quantile(x, 0.025)),
     apply(gpode$theta, 2, function(x) quantile(x, 0.975))
   )
+  
+  xsampledexp <- exp(gpode$xsampled)
+  oursPostExpX[[f]] <- cbind(
+    apply(xsampledexp, 2:3, mean), 
+    apply(xsampledexp, 2:3, function(x) quantile(x, 0.025)),
+    apply(xsampledexp, 2:3, function(x) quantile(x, 0.975))
+  )
+  
+  ttheta <- colMeans(gpode$theta)
+  exptx0 <- colMeans(xsampledexp[,1,])
+  xdesolvePM <- deSolve::ode(y = exptx0, times = times, func = hes1modelODE, parms = ttheta)
+  oursExpXdesolvePM[[f]] <- xdesolvePM
 }
 
 save.image(file=paste0(rdaDir,"hes1log_summary.rda"))
@@ -135,6 +152,25 @@ if(!logscale){
 times <- ours[[1]]$xdesolveTRUE[,1]
 
 pdf(width = 20, height = 5, file=paste0(rdaDir, "/plotOurs.pdf"))
+par(mfrow=c(1, ncol(xsim)-1))
+for (i in 1:(ncol(xsim)-1)) {
+  plot(times, xdesolveTRUE[,1+i], type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+  polygon(c(times, rev(times)), c(ourUB[,i], rev(ourLB[,i])),
+          col = "grey80", border = NA)
+  lines(times, xdesolveTRUE[,1+i], col="red", lwd=1)
+  lines(times, ourMed[,i])
+}
+dev.off()
+
+
+oursExpXdesolvePM <- sapply(oursExpXdesolvePM, function(x) x[,-1], simplify = "array")
+ourLB <- apply(oursExpXdesolvePM, c(1,2), function(x) quantile(x, 0.025))
+ourMed <- apply(oursExpXdesolvePM, c(1,2), function(x) quantile(x, 0.5))
+ourUB <- apply(oursExpXdesolvePM, c(1,2), function(x) quantile(x, 0.975))
+xdesolveTRUE <-ours[[1]]$xdesolveTRUE
+xdesolveTRUE[,-1] <- exp(xdesolveTRUE[,-1])
+times <- xdesolveTRUE[,1]
+pdf(width = 20, height = 5, file=paste0(rdaDir, "/plotOursHes1OrigScale.pdf"))
 par(mfrow=c(1, ncol(xsim)-1))
 for (i in 1:(ncol(xsim)-1)) {
   plot(times, xdesolveTRUE[,1+i], type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
@@ -204,6 +240,28 @@ for (i in 1:(ncol(xsim)-1)) {
     ourEst <- exp(ourEst)
     ourUB <- exp(ourUB)
   }
+  
+  times <- xsim$time
+  
+  plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+  polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
+          col = "skyblue", border = NA)
+  lines(times, xdesolveTRUE[,1+i], col="red", lwd=1)
+  lines(times, ourEst, col="forestgreen")
+}
+dev.off()
+
+
+xdesolveTRUE <- deSolve::ode(y = pram.true$x0, times = xsim$time, func = odemodel$modelODE, parms = pram.true$theta)
+xdesolveTRUE[,-1] <- exp(xdesolveTRUE[,-1])
+  
+oursPostExpX <- sapply(oursPostExpX, identity, simplify = "array")
+pdf(width = 20, height = 5, file=paste0(rdaDir, "/posteriorExpxHes1Ours.pdf"))
+par(mfrow=c(1, ncol(xsim)-1))
+for (i in 1:(ncol(xsim)-1)) {
+  ourEst <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.5)
+  ourUB <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.025)
+  ourLB <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.975)
   
   times <- xsim$time
   
