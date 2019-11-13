@@ -240,9 +240,10 @@ sd_est <- rbind(
   apply(DondelPostTheta[,1,], 1, sd)
 )
 
-printr <- function(x) format(round(x, 4), nsmall=4)
+digit_precision = 2
+printr <- function(x) format(round(x, digit_precision), nsmall=digit_precision)
 tablizeEstErr <- function(est, err){
-  paste(format(round(est, 4), nsmall=4), "\\pm", format(round(err, 4), nsmall=4))
+  paste(format(round(est, digit_precision), nsmall=digit_precision), "\\pm", format(round(err, digit_precision), nsmall=digit_precision))
 }
 
 tab <- rbind(
@@ -267,6 +268,12 @@ coverage <- rbind(
 coverage <- cbind(c("Ours", "Wenk", "Dondel"), coverage)
 colnames(coverage) <- c("Method", "a", "b", "c")
 print(xtable(coverage), include.rownames=FALSE)
+
+inference <- cbind(tab[,1,drop=FALSE],cbind(tab[,-1], coverage[,-1])[,c(1,4,2,5,3,6)])
+print(xtable(inference), include.rownames=FALSE)
+
+inference <- cbind(t(tab[,-1]), t(coverage[,-1]))[,c(1,4,2,5,3,6)]
+print(xtable(inference))
 
 # X posterior mean plot
 oursPostX <- sapply(oursPostX, identity, simplify = "array")
