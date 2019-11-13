@@ -2,7 +2,7 @@
 library(gpds)
 
 pdf_files <- list.files("~/Workspace/DynamicSys/results/cpp/good/")
-pdf_files <- pdf_files[grep("\\.pdf", pdf_files)]
+pdf_files <- pdf_files[grep("Hes1-log-.*\\.pdf", pdf_files)]
 rda_files <- gsub("\\.pdf", ".rda", pdf_files)
 write.table(rda_files, file="good_hes1_list.txt", row.names = FALSE, col.names = FALSE, quote = FALSE)
 for (f in files){
@@ -273,3 +273,51 @@ for (i in 1:(ncol(xsim)-1)) {
 }
 dev.off()
 
+matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=1)
+matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
+
+
+# smooth visualization with illustration
+xdesolveTRUE <-ours[[1]]$xdesolveTRUE
+xdesolveTRUE[,-1] <- exp(xdesolveTRUE[,-1])
+id <- seq(1, nrow(xdesolveTRUE), by=50)
+xdesolveTRUE <- xdesolveTRUE[id,]
+plot(xdesolveTRUE[,1], xdesolveTRUE[,2], type="l")
+
+phiVisualization <- rbind(
+  c(2.07, 0.38, 0.45),
+  c(64, 40, 23)
+)
+
+
+pdf(width = 16, height = 16, file=paste0(rdaDir, "/posteriorExpxHes1OursIllustration.pdf"))
+par(mfrow=c(2, 2))
+
+matplot(xtrue[, "time"], exp(xtrue[, -1]), type="l", lty=1)
+matplot(xsim.obs$time, exp(xsim.obs[,-1]), type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
+
+for (i in 1:(ncol(xsim)-1)) {
+  ourEst <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.5)
+  ourUB <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.025)
+  ourLB <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.975)
+  
+  ourEst <- exp(getMeanCurve(xsim$time, log(ourEst), xdesolveTRUE[,1], 
+                             t(phiVisualization[,i]), 0, 
+                             kerneltype=config$kernel, deriv = FALSE))
+  ourUB <- exp(getMeanCurve(xsim$time, log(ourUB), xdesolveTRUE[,1], 
+                            t(phiVisualization[,i]), 0, 
+                            kerneltype=config$kernel, deriv = FALSE))
+  ourLB <- exp(getMeanCurve(xsim$time, log(ourLB), xdesolveTRUE[,1], 
+                            t(phiVisualization[,i]), 0, 
+                            kerneltype=config$kernel, deriv = FALSE))
+  
+  
+  times <- xdesolveTRUE[,1]
+  
+  plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+  polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
+          col = "skyblue", border = NA)
+  lines(times, xdesolveTRUE[,1+i], col="red", lwd=1)
+  lines(times, ourEst, col="forestgreen")
+}
+dev.off()
