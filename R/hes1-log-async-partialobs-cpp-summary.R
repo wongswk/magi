@@ -127,7 +127,7 @@ ylim_upper <- c(3, 2, 5)
 # on original scale
 if(!logscale){
   ylim_lower <- c(0, 0, 0)
-  ylim_upper <- c(10, 4, 20)
+  ylim_upper <- c(13, 4, 25)
 }
 
 # names of components to use on y-axis label
@@ -284,17 +284,27 @@ id <- seq(1, nrow(xdesolveTRUE), by=50)
 xdesolveTRUE <- xdesolveTRUE[id,]
 plot(xdesolveTRUE[,1], xdesolveTRUE[,2], type="l")
 
+ourExpXdesolveLB <- apply(oursExpXdesolvePM[id,,], c(1,2), function(x) quantile(x, 0.025))
+ourExpXdesolveMed <- apply(oursExpXdesolvePM[id,,], c(1,2), function(x) quantile(x, 0.5))
+ourExpXdesolveUB <- apply(oursExpXdesolvePM[id,,], c(1,2), function(x) quantile(x, 0.975))
+
 phiVisualization <- rbind(
   c(2.07, 0.38, 0.45),
   c(64, 40, 23)
 )
 
 
-pdf(width = 16, height = 16, file=paste0(rdaDir, "/posteriorExpxHes1OursIllustration.pdf"))
-par(mfrow=c(2, 2))
+ylim_lower <- c(1.5, 0.5, 0)
+ylim_upper <- c(11.5, 3.5, 24)
 
-matplot(xtrue[, "time"], exp(xtrue[, -1]), type="l", lty=1)
-matplot(xsim.obs$time, exp(xsim.obs[,-1]), type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
+pdf(width = 20, height = 5, file=paste0(rdaDir, "/posteriorExpxHes1OursIllustration.pdf"))
+par(mfrow=c(1, ncol(xsim)))
+
+matplot(xtrue[, "time"], exp(xtrue[, -1]), type="l", lty=1, col=c(4,6,"goldenrod1"))
+matplot(xsim.obs$time, exp(xsim.obs[,-1]), type="p", col=c(4,6,"goldenrod1"), pch=20, add = TRUE)
+legend("topright", c("true P", "true M", "true H", "observed P", "observed M"), 
+       lty=c(1,1,1,NA,NA), pch=c(NA,NA,NA,20,20), col=c(4,6,"goldenrod1"))
+       
 
 for (i in 1:(ncol(xsim)-1)) {
   ourEst <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.5)
@@ -316,8 +326,17 @@ for (i in 1:(ncol(xsim)-1)) {
   
   plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
   polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
-          col = "skyblue", border = NA)
-  lines(times, xdesolveTRUE[,1+i], col="red", lwd=1)
-  lines(times, ourEst, col="forestgreen")
+          col = "skyblue", border = "skyblue", lty = 1, density = 10, angle = -45)
+  
+  polygon(c(times, rev(times)), c(ourExpXdesolveUB[,i], rev(ourExpXdesolveLB[,i])),
+          col = "grey80", border = "grey80", lty = 1, density = 10, angle = 45)
+
+  lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
+  lines(times, ourExpXdesolveMed[,i], lwd=3)
+  lines(times, ourEst, col="forestgreen", lwd=3)
+  legend("topright", c("truth", "median posterior mean", "median reconstructed trajectory", 
+                       "CI on posterior mean", "CI on reconstructed trajectory"), lty=c(1,1,1,0,0), lwd=c(4,3,3,0,0),
+         col = c("red", "forestgreen", "black", NA, NA), density=c(NA, NA, NA, 40, 40), fill=c(0, 0, 0, "skyblue", "grey80"),
+         border=c(0, 0, 0, "skyblue", "grey80"), angle=c(NA,NA,NA,-45,45), x.intersp=c(2,2,2,0.5, 0.5),  bty = "n")
 }
 dev.off()
