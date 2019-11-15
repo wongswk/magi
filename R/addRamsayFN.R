@@ -25,7 +25,7 @@ library(CollocInfer)
 source("R/helper/utilities.r")
 source("R/helper/basic_hmc.R")
 
-sampleRamsay <- function(xsimobs, n.iter, burnin){
+sampleRamsay <- function(xsimobs, n.iter, burninRatio){
   FhNdata <- data.matrix(xsimobs[,-1])
   FhNtimes <- xsimobs$time
   
