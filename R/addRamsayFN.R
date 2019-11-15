@@ -4,8 +4,8 @@ library(gpds)
 config <- list()
 config$modelName <- "FN"
 config$noise <- rep(0.2, 2)
-rdaDir <- "comparison/results/"   ## where ours & Dondel rda saved
-outDirWenk <- "comparison/results/"   ## where all the seeds are in separate folders with Wenk's output
+rdaDir <- paste0(getwd(), "/comparison/results/")   ## where ours & Dondel rda saved
+outDirWenk <- paste0(getwd(), "/comparison/results/")   ## where all the seeds are in separate folders with Wenk's output
 
 seeds <- list.files(outDirWenk, pattern='^\\d+$')  ## get the list of seeds ran
 
@@ -67,7 +67,7 @@ sampleRamsay <- function(xsimobs, n.iter, burninRatio){
   lik <- profile.obj$lik
   
   Ores2.2 <- Profile.LS(fhn.fun, FhNdata, FhNtimes, FhNpars, coefs0, FhNbasis, lambda)    # Ramsey optimization, use this as starting values for sampling
-  
+
   Ores2.2$pars
   
   ################################
@@ -180,6 +180,9 @@ configRamsay <- list(
   noise=config$noise,
   nobs=config$nobs
 )
+
+setwd(tempdir())
+
 gpodeRamsay <- sampleRamsay(na.omit(xsim), configRamsay$n.iter, configRamsay$burninRatio)
 saveRDS(gpodeRamsay, paste0(rdaDir, configRamsay$modelName,"-",i,"-noise", configRamsay$noise[1], "-gpodeRamsay.rds"))
 
