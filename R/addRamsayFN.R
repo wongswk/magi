@@ -182,6 +182,7 @@ configRamsay <- list(
 )
 
 setwd(tempdir())
+print(i)
 
 gpodeRamsay <- sampleRamsay(na.omit(xsim), configRamsay$n.iter, configRamsay$burninRatio)
 saveRDS(gpodeRamsay, paste0(rdaDir, configRamsay$modelName,"-",i,"-noise", configRamsay$noise[1], "-gpodeRamsay.rds"))
