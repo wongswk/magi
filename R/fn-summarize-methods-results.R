@@ -70,14 +70,17 @@ j <- 0
 ours <- list()
 Wenk <- list()
 Dondel <- list()
+Ramsay <- list()
 
 oursPostX <- list()
 WenkPostX <- list()
 DondelPostX <- list()
+RamsayPostX <- list()
 
 oursPostTheta <- list()
 WenkPostTheta <- list()
 DondelPostTheta <- list()
+RamsayPostTheta <- list()
 
 for (i in seeds) {
   if(!file.exists(paste0(outDirWenk, i, "/MCMCMatrix.csv"))){
@@ -103,79 +106,101 @@ for (i in seeds) {
   load(paste0(rdaDir, config$modelName,"-Dondel-",config$seed,"-noise", config$noise[1], ".rda"))
   config$n.iter.Dondel <- config$n.iter.Dondel / 25
   x_means <- apply(xsim.obs[,-1],2,mean)
-  
+
   xsampled <- (sapply(agm.result$x.samples, function(x) x, simplify="array"))
   xsampled <- aperm(apply(xsampled, c(1,2), function(x) x + x_means), c(2,3,1))
   thetasampled <- agm.result$posterior.samples
   lglik <- agm.result$ll
-  
+
   burnin <- as.integer(config$n.iter.Dondel*config$burninRatio)
-  
+
   gpode <- list(theta= thetasampled[-(1:burnin),],
                 xsampled= xsampled[-(1:burnin),,],
                 lglik=  lglik[-(1:burnin)],
                 sigma=  matrix(0, nrow = config$n.iter-burnin, ncol = ncol(xsim)-1)) # not sampled in this method
-  gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
+  gpode$fode <- sapply(1:length(gpode$lglik), function(t)
     with(gpode, gpds:::fnmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
   gpode$fode <- aperm(gpode$fode, c(3,1,2))
   Dondel[[j]] <- rmsePostSamples(xtrue, dotxtrue, xsim.obs, gpode, pram.true, config, odemodel)
   DondelPostX[[j]] <- cbind(
-    apply(gpode$xsampled, 2:3, mean), 
+    apply(gpode$xsampled, 2:3, mean),
     apply(gpode$xsampled, 2:3, function(x) quantile(x, 0.025)),
     apply(gpode$xsampled, 2:3, function(x) quantile(x, 0.975))
   )
   DondelPostTheta[[j]] <- cbind(
-    apply(gpode$theta, 2, mean), 
+    apply(gpode$theta, 2, mean),
     apply(gpode$theta, 2, function(x) quantile(x, 0.025)),
     apply(gpode$theta, 2, function(x) quantile(x, 0.975))
   )
-  
+
   dataDir <- paste0(outDirWenk, config$seed, "/")
-  
+
   samplesCpp <- as.matrix(read.table(paste0(dataDir, "MCMCMatrix.csv")))
   xMean <- as.vector(as.matrix(read.table(paste0(dataDir, "meanMatrix.csv") )))
   xSD <- as.vector(as.matrix(read.table(paste0(dataDir, "stdMatrix.csv") )))
   thetaMag <- as.vector(as.matrix(read.table(paste0(dataDir, "thetaMagnitudes.csv") )))
   lliklist <- as.vector(as.matrix(read.table(paste0(dataDir, "lliklist.csv") )))
-  
+
   llikId <- 0  ### llik is in its own file
   xId <- (max(llikId)+1):(max(llikId)+length(data.matrix(xsim.obs[,-1])))
   thetaId <- (max(xId)+1):(max(xId)+length(fnmodel$thetaLowerBound))
   #sigmaId <- (max(thetaId)+1):(max(thetaId)+ncol(xsim[,-1]))  ## no sigma sampled
-  
+
   ## Un-standardize their X's and untransform thetas
   samplesCpp[,xId] <- t(apply(samplesCpp[,xId],1, function(x) xSD*x + xMean))
   samplesCpp[,thetaId] <- t(apply(samplesCpp[,thetaId],1, function(x) x * 10^thetaMag))
-  
+
   burnin <- as.integer(config$n.iter.Wenk*config$burninRatio)
   gpode <- list(theta= samplesCpp[-(1:burnin), thetaId],
                 xsampled=array(samplesCpp[-(1:burnin), xId],
                                dim=c(nrow(samplesCpp)-burnin, nrow(xsim.obs), ncol(xsim)-1)),
                 lglik=  lliklist[-(1:burnin)], ###samplesCpp[llikId,-(1:burnin)],
                 sigma=  matrix(0, nrow = nrow(samplesCpp) - burnin, ncol = ncol(xsim)-1)) # t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]))
-  gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
+  gpode$fode <- sapply(1:length(gpode$lglik), function(t)
     with(gpode, gpds:::fnmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
   gpode$fode <- aperm(gpode$fode, c(3,1,2))
-  
-  
+
+
   Wenk[[j]]<- rmsePostSamples( xtrue, dotxtrue, xsim.obs, gpode, pram.true, config, odemodel)
   WenkPostX[[j]] <- cbind(
-    apply(gpode$xsampled, 2:3, mean), 
+    apply(gpode$xsampled, 2:3, mean),
     apply(gpode$xsampled, 2:3, function(x) quantile(x, 0.025)),
     apply(gpode$xsampled, 2:3, function(x) quantile(x, 0.975))
   )
   WenkPostTheta[[j]] <- cbind(
-    apply(gpode$theta, 2, mean), 
+    apply(gpode$theta, 2, mean),
     apply(gpode$theta, 2, function(x) quantile(x, 0.025)),
     apply(gpode$theta, 2, function(x) quantile(x, 0.975))
   )
-  
+
+  gpodeRamsay <- readRDS(paste0(rdaDir, config$modelName,"-",i,"-noise", config$noise[1], "-gpodeRamsay.rds"))
+  gpodeRamsay$sigma <- matrix(pram.true$sigma, nrow=length(gpodeRamsay$lglik), ncol=length(pram.true$sigma), byrow = TRUE)
+  xsimRamsay <- data.frame(time=seq(0, 20, 0.1), V=NA, R=NA)
+  xsimRamsay$V[match(na.omit(xsim)$time, xsimRamsay$time)] <- na.omit(xsim)[,2]
+  xsimRamsay$R[match(na.omit(xsim)$time, xsimRamsay$time)] <- na.omit(xsim)[,3]
+  gpodeRamsay$xsampled <- gpodeRamsay$xsampled[,2:202,]
+  gpodeRamsay$fode <- sapply(1:length(gpodeRamsay$lglik), function(t)
+    with(gpodeRamsay, gpds:::fnmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
+  gpodeRamsay$fode <- aperm(gpodeRamsay$fode, c(3,1,2))
+
+  Ramsay[[j]] <- rmsePostSamples(xtrue, dotxtrue, xsim, gpodeRamsay, pram.true, config, odemodel)
+  RamsayPostX[[j]] <- cbind(
+    apply(gpodeRamsay$xsampled, 2:3, mean), 
+    apply(gpodeRamsay$xsampled, 2:3, function(x) quantile(x, 0.025)),
+    apply(gpodeRamsay$xsampled, 2:3, function(x) quantile(x, 0.975))
+  )
+  RamsayPostTheta[[j]] <- cbind(
+    apply(gpodeRamsay$theta, 2, mean), 
+    apply(gpodeRamsay$theta, 2, function(x) quantile(x, 0.025)),
+    apply(gpodeRamsay$theta, 2, function(x) quantile(x, 0.975))
+  )
 }
 
-save.image(file=paste0(outDirWenk,"compare.rda"))
+save.image(file=paste0(outDirWenk,"compare-withRamsay.rda"))
 
 # Average the posterior mean RMSEs for the different seeds
 rmse.table <- rbind( round(apply(sapply(ours, function(x) x$rmseOdePM), 1, mean), digits=4),
+                     round(apply(sapply(Ramsay, function(x) x$rmseOdePM), 1, mean), digits=4),
                      round(apply(sapply(Wenk, function(x) x$rmseOdePM), 1, mean), digits=4),
                      round(apply(sapply(Dondel, function(x) x$rmseOdePM), 1, mean), digits=4))
 print(rmse.table)
@@ -205,6 +230,26 @@ for (i in 1:(ncol(xsim)-1)) {
 }
 dev.off()
 
+
+desolveRamsay <- sapply(Ramsay, function(x) x$xdesolvePM[,-1], simplify = "array")
+RamsayLB <- apply(desolveRamsay, c(1,2), function(x) quantile(x, 0.025))
+RamsayMed <- apply(desolveRamsay, c(1,2), function(x) quantile(x, 0.5))
+RamsayUB <- apply(desolveRamsay, c(1,2), function(x) quantile(x, 0.975))
+
+times <- Ramsay[[1]]$xdesolveTRUE[,1]
+
+pdf(width = 20, height = 5, file=paste0(outDirWenk, "plotRamsay.pdf"))
+par(mfrow=c(1, ncol(xsim)-1))
+for (i in 1:(ncol(xsim)-1)) {
+  plot(times, Ramsay[[1]]$xdesolveTRUE[,1+i], type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+  polygon(c(times, rev(times)), c(RamsayUB[,i], rev(RamsayLB[,i])),
+          col = "grey80", border = NA)
+  lines(times, Ramsay[[1]]$xdesolveTRUE[,1+i], col="red", lwd=1)
+  lines(times, RamsayMed[,i])
+}
+dev.off()
+
+
 desolveWenk <- sapply(Wenk, function(x) x$xdesolvePM[,-1], simplify = "array")
 WenkLB <- apply(desolveWenk, c(1,2), function(x) quantile(x, 0.025))
 WenkMed <- apply(desolveWenk, c(1,2), function(x) quantile(x, 0.5))
@@ -223,19 +268,23 @@ for (i in 1:(ncol(xsim)-1)) {
 }
 dev.off()
 
+
 # theta posterior mean table 
 oursPostTheta <- sapply(oursPostTheta, identity, simplify = "array")
+RamsayPostTheta <- sapply(RamsayPostTheta, identity, simplify = "array")
 WenkPostTheta <- sapply(WenkPostTheta, identity, simplify = "array")
 DondelPostTheta <- sapply(DondelPostTheta, identity, simplify = "array")
 
 mean_est <- rbind(
   rowMeans(oursPostTheta[,1,]),
+  rowMeans(RamsayPostTheta[,1,]),
   rowMeans(WenkPostTheta[,1,]),
   rowMeans(DondelPostTheta[,1,])
 )
 
 sd_est <- rbind(
   apply(oursPostTheta[,1,], 1, sd),
+  apply(RamsayPostTheta[,1,], 1, sd),
   apply(WenkPostTheta[,1,], 1, sd),
   apply(DondelPostTheta[,1,], 1, sd)
 )
@@ -282,7 +331,7 @@ DondelPostX <- sapply(DondelPostX, identity, simplify = "array")
 
 xdesolveTRUE <- deSolve::ode(y = pram.true$x0, times = xsim$time, func = odemodel$modelODE, parms = pram.true$theta)
 pdf(width = 20, height = 5, file=paste0(outDirWenk, "posteriorxOurs.pdf"))
-par(mfrow=c(1, ncol(xsim)-1))
+layout(t(1:3), widths = c(2,2,1))
 for (i in 1:(ncol(xsim)-1)) {
   ourEst <- apply(oursPostX[,i,], 1, quantile, probs = 0.5)
   ourUB <- apply(oursPostX[,i,], 1, quantile, probs = 0.025)
@@ -290,11 +339,17 @@ for (i in 1:(ncol(xsim)-1)) {
   times <- xsim$time
   
   plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+  mtext(compnames[i], cex=2)
   polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
           col = "skyblue", border = NA)
-  lines(times, xdesolveTRUE[,1+i], col="red", lwd=1)
-  lines(times, ourEst, col="forestgreen")
+  lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
+  lines(times, ourEst, col="forestgreen", lwd=3)
 }
+par(mar=rep(0,4))
+plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
+legend("center", c("truth", "median posterior mean", "95% interval on posterior mean"), lty=c(1,1,0), lwd=c(4,3,0),
+       col = c("red", "forestgreen", NA), fill=c(0, 0, "skyblue"), pch=c(NA, NA, 15),
+       border=c(0, 0, "skyblue"), bty = "n", cex=1.8)
 dev.off()
 
 xdesolveTRUE <- deSolve::ode(y = pram.true$x0, times = xsim.obs$time, func = odemodel$modelODE, parms = pram.true$theta)
