@@ -289,8 +289,16 @@ sd_est <- rbind(
   apply(DondelPostTheta[,1,], 1, sd)
 )
 
+rmse_est <- rbind(
+  apply(oursPostTheta[,1,] - pram.true$theta, 1, function(x) sqrt(mean(x^2))),
+  apply(RamsayPostTheta[,1,] - pram.true$theta, 1, function(x) sqrt(mean(x^2))),
+  apply(WenkPostTheta[,1,] - pram.true$theta, 1, function(x) sqrt(mean(x^2))),
+  apply(DondelPostTheta[,1,] - pram.true$theta, 1, function(x) sqrt(mean(x^2)))
+)
+
+
 digit_precision = 2
-printr <- function(x) format(round(x, digit_precision), nsmall=digit_precision)
+printr <- function(x, precision=digit_precision) format(round(x, precision), nsmall=precision)
 tablizeEstErr <- function(est, err){
   paste(format(round(est, digit_precision), nsmall=digit_precision), "\\pm", format(round(err, digit_precision), nsmall=digit_precision))
 }
@@ -318,10 +326,26 @@ coverage <- cbind(c("Ours", "Wenk", "Dondel"), coverage)
 colnames(coverage) <- c("Method", "a", "b", "c")
 print(xtable(coverage), include.rownames=FALSE)
 
+rmse_theta <- rbind(
+  printr(apply(oursPostTheta[,1,] - pram.true$theta, 1, function(x) sqrt(mean(x^2))), 4),
+  printr(apply(WenkPostTheta[,1,] - pram.true$theta, 1, function(x) sqrt(mean(x^2))), 4),
+  printr(apply(DondelPostTheta[,1,] - pram.true$theta, 1, function(x) sqrt(mean(x^2))), 4)
+)
+rmse_theta <- cbind(c("Ours", "Wenk", "Dondel"), rmse_theta)
+colnames(rmse_theta) <- c("Method", "a", "b", "c")
+print(xtable(rmse_theta), include.rownames=FALSE)
+
+
 inference <- cbind(tab[,1,drop=FALSE],cbind(tab[,-1], coverage[,-1])[,c(1,4,2,5,3,6)])
 print(xtable(inference), include.rownames=FALSE)
 
 inference <- cbind(t(tab[,-1]), t(coverage[,-1]))[,c(1,4,2,5,3,6)]
+print(xtable(inference))
+
+inference <- cbind(t(tab[,-1]), t(rmse_theta[,-1]))[,c(1,4,2,5,3,6)]
+print(xtable(inference))
+
+inference <- cbind(t(tab[,-1]), t(rmse_theta[,-1]), t(coverage[,-1]))[,c(1,4,7,2,5,8,3,6,9)]
 print(xtable(inference))
 
 # X posterior mean plot
