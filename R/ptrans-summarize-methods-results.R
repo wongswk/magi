@@ -76,7 +76,7 @@ for (i in seeds) {
   
   load(paste0(rdaDir, config$modelName,"-",i,"-noise", config$noise[1], ".rda"))
   xsim.obs <- xsim[complete.cases(xsim),]
-  ours[[j]] <- rmsePostSamples(xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+  ours[[j]] <- rmsePostSamples(xtrue, dotxtrue, xsim.obs, gpode, pram.true, config, odemodel)
   
   load(paste0(rdaDir, config$modelName,"-Dondel-",config$seed,"-noise", config$noise[1], ".rda"))
   config$n.iter.Dondel <- config$n.iter.Dondel / 25
