@@ -48,8 +48,8 @@ rmsePostSamples <- function(xtrue, dotxtrue, xsim, gpode, param, config, odemode
     
     rmseTrue <- sqrt(apply((xdesolveTRUE.obs - xsim[,-1])^2, 2, mean, na.rm=TRUE))
     rmseWholeGpode <- sqrt(apply((xpostmean - xsim[,-1])^2, 2, mean, na.rm=TRUE))
-    rmseOdeMAP <- sqrt(apply((xdesolveMAP.obs - xsim[,-1])^2, 2, mean, na.rm=TRUE))
-    rmseOdePM <- sqrt(apply((xdesolvePM.obs - xsim[,-1])^2, 2, mean, na.rm=TRUE))
+    rmseOdeMAP <- sqrt(apply((xdesolveMAP.obs - xdesolveTRUE.obs)^2, 2, mean, na.rm=TRUE)) # compared to true traj
+    rmseOdePM <- sqrt(apply((xdesolvePM.obs - xdesolveTRUE.obs)^2, 2, mean, na.rm=TRUE))   # compared to true traj
     
     rmselist <- list(
       true = paste0(round(rmseTrue, 3), collapse = "; "),
@@ -132,6 +132,25 @@ for (i in seeds) {
 
 save(ours,Wenk,Dondel, file=paste0(outDirWenk,"compare.rda"))
 
+####### Recalculate RMSE against true trajectory (load compare.rda first)
+rowId <- sapply(xsim.obs$time, function(x) which(abs(x-xtrue$time) < 1e-6))
+for (i in 1:length(ours)) {
+    xdesolveTRUE.obs <- ours[[i]]$xdesolveTRUE[rowId,-1]
+    xdesolvePM.obs <- ours[[i]]$xdesolvePM[rowId,-1]
+    ours[[i]]$rmseOdePM <- sqrt(apply((xdesolvePM.obs - xdesolveTRUE.obs)^2, 2, mean, na.rm=TRUE))   # compared to true traj
+}
+for (i in 1:length(Wenk)) {
+  xdesolveTRUE.obs <- Wenk[[i]]$xdesolveTRUE[rowId,-1]
+  xdesolvePM.obs <- Wenk[[i]]$xdesolvePM[rowId,-1]
+  Wenk[[i]]$rmseOdePM <- sqrt(apply((xdesolvePM.obs - xdesolveTRUE.obs)^2, 2, mean, na.rm=TRUE))   # compared to true traj
+}
+for (i in 1:length(Dondel)) {
+  xdesolveTRUE.obs <- Dondel[[i]]$xdesolveTRUE[rowId,-1]
+  xdesolvePM.obs <- Dondel[[i]]$xdesolvePM[rowId,-1]
+  Dondel[[i]]$rmseOdePM <- sqrt(apply((xdesolvePM.obs - xdesolveTRUE.obs)^2, 2, mean, na.rm=TRUE))   # compared to true traj
+}
+##########  end recalculation
+
 # Average the posterior mean RMSEs for the different seeds
 rmse.table <- rbind( round(apply(sapply(ours, function(x) x$rmseOdePM), 1, mean), digits=4),
   round(apply(sapply(Wenk, function(x) x$rmseOdePM), 1, mean), digits=4),
@@ -142,7 +161,7 @@ rmse.table <- rbind( round(apply(sapply(ours, function(x) x$rmseOdePM), 1, mean)
 ylim_lower <- c(0,0,0.3,0,0)
 ylim_upper <- c(1, 0.25, 1, 0.4, 0.65)
 # names of components to use on y-axis label
-compnames <- c("S", "dS", "R", "RS", "Rpp")
+compnames <- c("S", "Sd", "R", "RS", "Rpp")
 
 desolveOurs <- sapply(ours, function(x) x$xdesolvePM[,-1], simplify = "array")
 ourLB <- apply(desolveOurs, c(1,2), function(x) quantile(x, 0.025))
