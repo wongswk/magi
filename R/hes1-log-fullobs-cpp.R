@@ -4,7 +4,7 @@ library(gpds)
 if(!exists("config")){
   config <- list(
     nobs = 33,
-    noise = c(0.15,0.15,0.1),
+    noise = c(0.15,0.15,0.15),
     kernel = "generalMatern",
     seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 50,
@@ -14,7 +14,7 @@ if(!exists("config")){
     n.iter = 2e4,
     burninRatio = 0.50,
     stepSizeFactor = 0.01,
-    filllevel = 0,
+    filllevel = 1,
     modelName = "Hes1-log",
     async = FALSE,
     max.epoch = 1,
