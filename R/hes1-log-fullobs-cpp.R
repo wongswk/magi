@@ -6,7 +6,7 @@ if(!exists("config")){
     nobs = 33,
     noise = c(0.15,0.15,0.1),
     kernel = "generalMatern",
-    seed = 1365546660, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+    seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 50,
     loglikflag = "withmeanBand",
     bandsize = 20,
