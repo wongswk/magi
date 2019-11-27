@@ -106,14 +106,14 @@ for (i in seeds) {
   load(paste0(rdaDir, config$modelName,"-Dondel-",config$seed,"-noise", config$noise[1], ".rda"))
   config$n.iter.Dondel <- config$n.iter.Dondel / 25
   x_means <- apply(xsim.obs[,-1],2,mean)
-
+  
   xsampled <- (sapply(agm.result$x.samples, function(x) x, simplify="array"))
   xsampled <- aperm(apply(xsampled, c(1,2), function(x) x + x_means), c(2,3,1))
   thetasampled <- agm.result$posterior.samples
   lglik <- agm.result$ll
-
+  
   burnin <- as.integer(config$n.iter.Dondel*config$burninRatio)
-
+  
   gpode <- list(theta= thetasampled[-(1:burnin),],
                 xsampled= xsampled[-(1:burnin),,],
                 lglik=  lglik[-(1:burnin)],
@@ -132,24 +132,24 @@ for (i in seeds) {
     apply(gpode$theta, 2, function(x) quantile(x, 0.025)),
     apply(gpode$theta, 2, function(x) quantile(x, 0.975))
   )
-
+  
   dataDir <- paste0(outDirWenk, config$seed, "/")
-
+  
   samplesCpp <- as.matrix(read.table(paste0(dataDir, "MCMCMatrix.csv")))
   xMean <- as.vector(as.matrix(read.table(paste0(dataDir, "meanMatrix.csv") )))
   xSD <- as.vector(as.matrix(read.table(paste0(dataDir, "stdMatrix.csv") )))
   thetaMag <- as.vector(as.matrix(read.table(paste0(dataDir, "thetaMagnitudes.csv") )))
   lliklist <- as.vector(as.matrix(read.table(paste0(dataDir, "lliklist.csv") )))
-
+  
   llikId <- 0  ### llik is in its own file
   xId <- (max(llikId)+1):(max(llikId)+length(data.matrix(xsim.obs[,-1])))
   thetaId <- (max(xId)+1):(max(xId)+length(fnmodel$thetaLowerBound))
   #sigmaId <- (max(thetaId)+1):(max(thetaId)+ncol(xsim[,-1]))  ## no sigma sampled
-
+  
   ## Un-standardize their X's and untransform thetas
   samplesCpp[,xId] <- t(apply(samplesCpp[,xId],1, function(x) xSD*x + xMean))
   samplesCpp[,thetaId] <- t(apply(samplesCpp[,thetaId],1, function(x) x * 10^thetaMag))
-
+  
   burnin <- as.integer(config$n.iter.Wenk*config$burninRatio)
   gpode <- list(theta= samplesCpp[-(1:burnin), thetaId],
                 xsampled=array(samplesCpp[-(1:burnin), xId],
@@ -159,8 +159,8 @@ for (i in seeds) {
   gpode$fode <- sapply(1:length(gpode$lglik), function(t)
     with(gpode, gpds:::fnmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
   gpode$fode <- aperm(gpode$fode, c(3,1,2))
-
-
+  
+  
   Wenk[[j]]<- rmsePostSamples( xtrue, dotxtrue, xsim.obs, gpode, pram.true, config, odemodel)
   WenkPostX[[j]] <- cbind(
     apply(gpode$xsampled, 2:3, mean),
@@ -172,7 +172,7 @@ for (i in seeds) {
     apply(gpode$theta, 2, function(x) quantile(x, 0.025)),
     apply(gpode$theta, 2, function(x) quantile(x, 0.975))
   )
-
+  
   gpodeRamsay <- readRDS(paste0(rdaDir, config$modelName,"-",i,"-noise", config$noise[1], "-gpodeRamsay.rds"))
   gpodeRamsay$sigma <- matrix(pram.true$sigma, nrow=length(gpodeRamsay$lglik), ncol=length(pram.true$sigma), byrow = TRUE)
   xsimRamsay <- data.frame(time=seq(0, 20, 0.1), V=NA, R=NA)
@@ -182,7 +182,7 @@ for (i in seeds) {
   gpodeRamsay$fode <- sapply(1:length(gpodeRamsay$lglik), function(t)
     with(gpodeRamsay, gpds:::fnmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
   gpodeRamsay$fode <- aperm(gpodeRamsay$fode, c(3,1,2))
-
+  
   Ramsay[[j]] <- rmsePostSamples(xtrue, dotxtrue, xsim, gpodeRamsay, pram.true, config, odemodel)
   RamsayPostX[[j]] <- cbind(
     apply(gpodeRamsay$xsampled, 2:3, mean), 
@@ -277,23 +277,23 @@ DondelPostTheta <- sapply(DondelPostTheta, identity, simplify = "array")
 
 mean_est <- rbind(
   rowMeans(oursPostTheta[,1,]),
-  rowMeans(RamsayPostTheta[,1,]),
   rowMeans(WenkPostTheta[,1,]),
-  rowMeans(DondelPostTheta[,1,])
+  rowMeans(DondelPostTheta[,1,]),
+  rowMeans(RamsayPostTheta[,1,])
 )
 
 sd_est <- rbind(
   apply(oursPostTheta[,1,], 1, sd),
-  apply(RamsayPostTheta[,1,], 1, sd),
   apply(WenkPostTheta[,1,], 1, sd),
-  apply(DondelPostTheta[,1,], 1, sd)
+  apply(DondelPostTheta[,1,], 1, sd),
+  apply(RamsayPostTheta[,1,], 1, sd)
 )
 
 rmse_est <- rbind(
   apply(oursPostTheta[,1,] - pram.true$theta, 1, function(x) sqrt(mean(x^2))),
-  apply(RamsayPostTheta[,1,] - pram.true$theta, 1, function(x) sqrt(mean(x^2))),
   apply(WenkPostTheta[,1,] - pram.true$theta, 1, function(x) sqrt(mean(x^2))),
-  apply(DondelPostTheta[,1,] - pram.true$theta, 1, function(x) sqrt(mean(x^2)))
+  apply(DondelPostTheta[,1,] - pram.true$theta, 1, function(x) sqrt(mean(x^2))),
+  apply(RamsayPostTheta[,1,] - pram.true$theta, 1, function(x) sqrt(mean(x^2)))
 )
 
 
