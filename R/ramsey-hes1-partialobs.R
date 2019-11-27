@@ -1,5 +1,7 @@
 source("R/ramsey-getx0.R")
 # First we will define some variable and parameter names
+library(deSolve)
+library(CollocInfer)
 
 Hes1varnames <- c("P", "M", "H")
 Hes1parnames <- c(paste0("theta",1:7))
@@ -46,7 +48,7 @@ legend("bottomleft", c("P", "M", "H"), lwd = 3, col = 1:2, lty = 1:2, cex = 1.5)
 hes1times <- seq(0, 240, by=7.5)
 nobs <- length(hes1times)
 out <- lsoda(x0, times = hes1times, hes1.ode, Hes1pars)
-hes1compdata <- out[, 2:4] + 0.1 * matrix(rnorm(3 * nobs), nobs, 3)
+hes1compdata <- out[, 2:4] + 0.0 * matrix(rnorm(3 * nobs), nobs, 3)
 
 # In order to run the profiling proceedures, we need to define some objects.
 
@@ -107,7 +109,7 @@ pars1 <- Pres0$pars  ### rough guess for initial parameters  (based on complete 
 
 
 ##### Read incomplete dataset
-data2 <-  read.csv("github/dynamic-systems/R/xsim-obs-Hes1-log.csv")
+data2 <-  read.csv("~/Downloads/xsim-obs-Hes1-log.csv")
 data2 <-  as.matrix(data2[,3:5])
 colnames(data2) <- Hes1varnames
 
@@ -182,3 +184,12 @@ plot(log10(lambdas), FPEs, type = "l", lwd = 2, col = 4, cex.lab = 2.5, cex.axis
 best.pars <- all.pars[which.min(FPEs),]   ## can pick lowest FPE as the parameter estimate and associated x0
 best.pars.x0 <- all.x0[which.min(FPEs),]
 
+modelODE <- function(t, state, parameters) {
+  list(as.vector(gpds:::hes1logmodelODE(parameters, t(state))))
+}
+
+xdesolveRamsay <- deSolve::ode(y = best.pars.x0, times = times, func = modelODE, parms = best.pars)
+matplot(xdesolveRamsay[,1], xdesolveRamsay[,-1], col=1:3, type="l")
+
+colMeans((out[,-1] - xdesolveRamsay[match(out[,1], xdesolveRamsay[,1]),-1])^2)
+colMeans((exp(out[,-1]) - exp(xdesolveRamsay[match(out[,1], xdesolveRamsay[,1]),-1]))^2)
