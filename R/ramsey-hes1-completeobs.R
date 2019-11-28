@@ -1,7 +1,5 @@
 source("R/ramsey-getx0.R")
 # First we will define some variable and parameter names
-library(deSolve)
-library(CollocInfer)
 
 Hes1varnames <- c("P", "M", "H")
 Hes1parnames <- c(paste0("theta",1:7))
@@ -21,11 +19,11 @@ names(Hes1pars) <- Hes1parnames
 hes1.ode <- function(times, x, p) {
   dx <- x
   dimnames(dx) <- dimnames(x)
-
+  
   dx["P"] <- -p["theta1"] * exp(x["H"]) + p["theta2"] * exp(x["M"])/exp(x["P"]) - p["theta3"] 
   dx["M"] <- -p["theta4"]  + p["theta5"]/(1 + exp(x["P"])^2)/exp(x["M"])
   dx["H"] <- -p["theta1"] * exp(x["P"]) + p["theta6"]/(1 + exp(x["P"])^2)/exp(x["H"]) - p["theta7"]
-    
+  
   return(list(dx))
 }
 
@@ -48,7 +46,7 @@ legend("bottomleft", c("P", "M", "H"), lwd = 3, col = 1:2, lty = 1:2, cex = 1.5)
 hes1times <- seq(0, 240, by=7.5)
 nobs <- length(hes1times)
 out <- lsoda(x0, times = hes1times, hes1.ode, Hes1pars)
-hes1compdata <- out[, 2:4] + 0.0 * matrix(rnorm(3 * nobs), nobs, 3)
+hes1compdata <- out[, 2:4] + 0.15 * matrix(rnorm(3 * nobs), nobs, 3)
 
 # In order to run the profiling proceedures, we need to define some objects.
 
@@ -109,26 +107,27 @@ pars1 <- Pres0$pars  ### rough guess for initial parameters  (based on complete 
 
 
 ##### Read incomplete dataset
-data2 <-  read.csv("~/Downloads/xsim-obs-Hes1-log.csv")
-data2 <-  as.matrix(data2[,3:5])
-colnames(data2) <- Hes1varnames
+#data2 <-  read.csv("github/dynamic-systems/R/xsim-obs-Hes1-log.csv")
+#data2 <-  as.matrix(data2[,3:5])
+#colnames(data2) <- Hes1varnames
+data2 <- hes1compdata
 
 ### reset smoothing for missing component
-coefs0.2 <- coefs0
-coefs0.2[, 3] <- 0
+#coefs0.2 <- coefs0
+#coefs0.2[, 3] <- 0
 
 # The function FitMatchOpt allows us to pull some columns of the coefficient
 # matrix into line with the differential equation (keeping the other columns
 # fixed):
-Fres3 <- FitMatchOpt(coefs0.2, 3, pars1, proc)  # col 3 is hidden/missing state
+#Fres3 <- FitMatchOpt(coefs0.2, 3, pars1, proc)  # col 3 is hidden/missing state
 
 ### Now run profiling with default lambda = 1000 
-Ores <- Profile.LS(hes1.fun, data2, hes1times, pars1, Fres3$coefs, hes1basis, lambda)
+#Ores <- Profile.LS(hes1.fun, data2, hes1times, pars1, Fres3$coefs, hes1basis, lambda)
+Ores <- Profile.LS(hes1.fun, data2, hes1times, pars1, coefs0, hes1basis, lambda)
 def.pars <- Ores$pars  ### parameter estimate.  (with fixed lambda, which might not be ideal)
 
 t.fd <- fd(Ores$coefs, hes1basis)
-#def.x0 <- getfdx0(t.fd)  ## quick hack to get initial B-spline-fitted x0
-def.x0 <- eval.fd(0, t.fd)
+def.x0 <- eval.fd(0,t.fd)  ## quick hack to get initial B-spline-fitted x0
 
 # Covariance of parameters can be obtained from
 covar <- Profile.covariance(Ores$pars, times = hes1times, data = data2, coefs = Ores$coefs, 
@@ -169,8 +168,7 @@ for (ilam in 1:length(lambdas)) {
   t.fd <- fd(t.Ores$coefs, hes1basis)
   lines(t.fd, lwd = 2, col = ilam, lty = 1)
   
-  #all.x0[ilam,] <- getfdx0(t.fd)  ## quick hack to get initial x0
-  all.x0[ilam,] <- eval.fd(0, t.fd)
+  all.x0[ilam,] <- eval.fd(0, t.fd)  ## quick hack to get initial x0
   
   FPEs[ilam] <- forward.prediction.error(hes1times, data2, t.Ores$coefs, lik, 
                                          proc, t.Ores$pars, whichtimes)
@@ -186,12 +184,3 @@ plot(log10(lambdas), FPEs, type = "l", lwd = 2, col = 4, cex.lab = 2.5, cex.axis
 best.pars <- all.pars[which.min(FPEs),]   ## can pick lowest FPE as the parameter estimate and associated x0
 best.pars.x0 <- all.x0[which.min(FPEs),]
 
-modelODE <- function(t, state, parameters) {
-  list(as.vector(gpds:::hes1logmodelODE(parameters, t(state))))
-}
-
-xdesolveRamsay <- deSolve::ode(y = best.pars.x0, times = times, func = modelODE, parms = best.pars)
-matplot(xdesolveRamsay[,1], xdesolveRamsay[,-1], col=1:3, type="l")
-
-colMeans((out[,-1] - xdesolveRamsay[match(out[,1], xdesolveRamsay[,1]),-1])^2)
-colMeans((exp(out[,-1]) - exp(xdesolveRamsay[match(out[,1], xdesolveRamsay[,1]),-1]))^2)
