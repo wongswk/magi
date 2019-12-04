@@ -198,6 +198,25 @@ for (i in seeds) {
 
 save.image(file=paste0(outDirWenk,"compare-withRamsay.rda"))
 
+####### Recalculate RMSE against true trajectory (load compare.rda first)
+rowId <- sapply(xsim.obs$time, function(x) which(abs(x-xtrue$time) < 1e-6))
+for (i in 1:length(ours)) {
+  xdesolveTRUE.obs <- ours[[i]]$xdesolveTRUE[rowId,-1]
+  xdesolvePM.obs <- ours[[i]]$xdesolvePM[rowId,-1]
+  ours[[i]]$rmseOdePM <- sqrt(apply((xdesolvePM.obs - xdesolveTRUE.obs)^2, 2, mean, na.rm=TRUE))   # compared to true traj
+}
+for (i in 1:length(Wenk)) {
+  xdesolveTRUE.obs <- Wenk[[i]]$xdesolveTRUE[rowId,-1]
+  xdesolvePM.obs <- Wenk[[i]]$xdesolvePM[rowId,-1]
+  Wenk[[i]]$rmseOdePM <- sqrt(apply((xdesolvePM.obs - xdesolveTRUE.obs)^2, 2, mean, na.rm=TRUE))   # compared to true traj
+}
+for (i in 1:length(Dondel)) {
+  xdesolveTRUE.obs <- Dondel[[i]]$xdesolveTRUE[rowId,-1]
+  xdesolvePM.obs <- Dondel[[i]]$xdesolvePM[rowId,-1]
+  Dondel[[i]]$rmseOdePM <- sqrt(apply((xdesolvePM.obs - xdesolveTRUE.obs)^2, 2, mean, na.rm=TRUE))   # compared to true traj
+}
+
+
 # Average the posterior mean RMSEs for the different seeds
 rmse.table <- rbind( round(apply(sapply(ours, function(x) x$rmseOdePM), 1, mean), digits=4),
                      round(apply(sapply(Ramsay, function(x) x$rmseOdePM), 1, mean), digits=4),
