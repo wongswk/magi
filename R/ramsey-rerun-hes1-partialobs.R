@@ -119,6 +119,12 @@ rda_files <- as.character(unlist(rda_files))
 rdaDir <- "~/Workspace/DynamicSys/results/cpp/"   ## where ours rda saved
 envhes1log <- new.env()
 
+# for (f in rda_files){
+#   if (!file.exists(paste0(rdaDir, "ramsay-optimation-", f))){
+#     print(f)
+#   }
+# }
+
 args <- commandArgs(trailingOnly = TRUE)
 args <- as.numeric(args)
 if(length(args) == 0){
@@ -129,6 +135,10 @@ if(length(args) == 0){
 
 ##### Read incomplete dataset
 f <- rda_files[rda_it]
+if (file.exists(paste0(rdaDir, "ramsay-optimation-", f))){
+  quit(save = "no")
+}
+
 print(f)
 load(paste0(rdaDir, f), envir = envhes1log)
 
