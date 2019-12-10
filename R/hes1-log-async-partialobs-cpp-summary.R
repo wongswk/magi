@@ -111,11 +111,50 @@ for (f in rda_files) {
   oursExpXdesolvePM[[f]] <- xdesolvePM
 }
 
+ramsayPostX0 <- list()
+ramsayPostTheta <- list()
+ramsayXdesolvePM <- list()
+ramsayRmseLog <- list()
+ramsayRmseOrig <- list()
+for (f in rda_files){
+  env_ramsay <- new.env()
+  load(paste0(rdaDir, "ramsay-optimation-", f), envir = env_ramsay)
+  ramsayXdesolvePM[[f]] <- env_ramsay$xdesolveRamsay
+  ramsayRmseLog[[f]] <- env_ramsay$rmse_log
+  ramsayRmseOrig[[f]] <- env_ramsay$rmse_orig
+  ramsayPostTheta[[f]] <- env_ramsay$best.pars
+  ramsayPostX0[[f]] <- env_ramsay$best.pars.x0
+}
+  
 save.image(file=paste0(rdaDir,"hes1log_summary.rda"))
 
 # Average the posterior mean RMSEs for the different seeds
 rmse.table <- round(apply(sapply(ours, function(x) x$rmseOdePM), 1, mean), digits=4)
 print(rmse.table)
+
+rowId <- sapply(xsim.obs$time, function(x) which(abs(x-xtrue$time) < 1e-6))
+for (i in 1:length(ours)) {
+  xdesolveTRUE.obs <- ours[[i]]$xdesolveTRUE[rowId,-1]
+  xdesolvePM.obs <- ours[[i]]$xdesolvePM[rowId,-1]
+  ours[[i]]$rmseOdePM <- sqrt(apply((xdesolvePM.obs - xdesolveTRUE.obs)^2, 2, mean, na.rm=TRUE))   # compared to true traj
+}
+rmse.table <- round(apply(sapply(ours, function(x) x$rmseOdePM), 1, mean), digits=4)
+print(rmse.table)
+
+for (i in 1:length(ours)) {
+  xdesolveTRUE.obs <- ours[[i]]$xdesolveTRUE[rowId,-1]
+  xdesolvePM.obs <- ours[[i]]$xdesolvePM[rowId,-1]
+  ours[[i]]$rmseOdeExpPM <- sqrt(apply((exp(xdesolvePM.obs) - exp(xdesolveTRUE.obs))^2, 2, mean, na.rm=TRUE))   # compared to true traj
+}
+rmse_orig <- round(apply(sapply(ours, function(x) x$rmseOdeExpPM), 1, mean), digits=4)
+print(rmse_orig)
+
+rmse_ramsay_log <- round(apply(sapply(ramsayRmseLog, identity), 1, mean, na.rm=TRUE), digits=4)
+rmse_ramsay_orig <- round(apply(sapply(ramsayRmseOrig, identity), 1, mean, na.rm=TRUE), digits=4)
+
+xtable(rbind(rmse.table, rmse_ramsay_log))
+xtable(rbind(rmse_orig, rmse_ramsay_orig))
+
 
 logscale <- FALSE
 # Make the figures showing Ours using ODE solver results
@@ -150,15 +189,16 @@ if(!logscale){
 }
 
 times <- ours[[1]]$xdesolveTRUE[,1]
+times2 <- seq(0, 240, 0.01)
 
 pdf(width = 20, height = 5, file=paste0(rdaDir, "/plotOurs.pdf"))
 par(mfrow=c(1, ncol(xsim)-1))
 for (i in 1:(ncol(xsim)-1)) {
   plot(times, xdesolveTRUE[,1+i], type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
-  polygon(c(times, rev(times)), c(ourUB[,i], rev(ourLB[,i])),
+  polygon(c(times2, rev(times2)), c(ourUB[,i], rev(ourLB[,i])),
           col = "grey80", border = NA)
   lines(times, xdesolveTRUE[,1+i], col="red", lwd=1)
-  lines(times, ourMed[,i])
+  lines(times2, ourMed[,i])
 }
 dev.off()
 
@@ -174,10 +214,10 @@ pdf(width = 20, height = 5, file=paste0(rdaDir, "/plotOursHes1OrigScale.pdf"))
 par(mfrow=c(1, ncol(xsim)-1))
 for (i in 1:(ncol(xsim)-1)) {
   plot(times, xdesolveTRUE[,1+i], type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
-  polygon(c(times, rev(times)), c(ourUB[,i], rev(ourLB[,i])),
+  polygon(c(times2, rev(times2)), c(ourUB[,i], rev(ourLB[,i])),
           col = "grey80", border = NA)
   lines(times, xdesolveTRUE[,1+i], col="red", lwd=1)
-  lines(times, ourMed[,i])
+  lines(times2, ourMed[,i])
 }
 dev.off()
 
@@ -342,4 +382,43 @@ legend("center", c("truth", "median posterior mean", "median reconstructed traje
                      "CI on posterior mean", "CI on reconstructed trajectory"), lty=c(1,1,1,0,0), lwd=c(4,3,3,0,0),
        col = c("red", "forestgreen", "black", NA, NA), density=c(NA, NA, NA, 40, 40), fill=c(0, 0, 0, "skyblue", "grey80"),
        border=c(0, 0, 0, "skyblue", "grey80"), angle=c(NA,NA,NA,-45,45), x.intersp=c(2.5,2.5,2.5,0, 0),  bty = "n", cex=1.8)
+dev.off()
+
+
+ramsayXdesolvePM <- sapply(ramsayXdesolvePM, identity, simplify = "array")
+
+pdf(width = 20, height = 5, file=paste0(rdaDir, "/posteriorExpxHes1Ramsay.pdf"))
+par(mfrow=c(1, ncol(xsim)+1))
+
+matplot(xtrue[, "time"], exp(xtrue[, -1]), type="l", lty=1, col=c(4,6,"goldenrod1"), xlab="time", ylab=NA)
+matplot(xsim.obs$time, exp(xsim.obs[,-1]), type="p", col=c(4,6,"goldenrod1"), pch=20, add = TRUE)
+mtext('sample observations', cex=1.5)
+legend("topright", c("true P", "true M", "true H", "observed P", "observed M"), 
+       lty=c(1,1,1,NA,NA), pch=c(NA,NA,NA,20,20), col=c(4,6,"goldenrod1"), cex=1.5)
+
+for (i in 1:(ncol(xsim)-1)) {
+  ourEst <- apply(ramsayXdesolvePM[id,i+1,], 1, quantile, probs = 0.5, na.rm=TRUE)
+  ourUB <- apply(ramsayXdesolvePM[id,i+1,], 1, quantile, probs = 0.025, na.rm=TRUE)
+  ourLB <- apply(ramsayXdesolvePM[id,i+1,], 1, quantile, probs = 0.975, na.rm=TRUE)
+  
+  ourEst <- exp(ourEst)
+  ourUB <- exp(ourUB)
+  ourLB <- exp(ourLB)
+  
+  times <- xdesolveTRUE[,1]
+  
+  plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+  mtext(compnames[i], cex=1.5)
+  polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
+          col = "skyblue", border = "skyblue", lty = 1, density = 10, angle = -45)
+  
+  lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
+  lines(times, ourEst, col="forestgreen", lwd=3)
+}
+par(mar=rep(0,4))
+plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
+legend("center", c("truth",  "median reconstructed trajectory", 
+                   "CI on reconstructed trajectory"), lty=c(1,1,0), lwd=c(4,3,0),
+       col = c("red", "forestgreen", NA), density=c(NA, NA, 40), fill=c(0, 0, "skyblue"),
+       border=c(0, 0, "skyblue"), angle=c(NA,NA,-45), x.intersp=c(2.5,2.5, 0),  bty = "n", cex=1.8)
 dev.off()
