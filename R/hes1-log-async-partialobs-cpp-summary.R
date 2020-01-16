@@ -401,6 +401,7 @@ legend("topright", c("true P", "true M", "true H", "observed P", "observed M"),
 
 for (i in 1:(ncol(xsim)-1)) {
   ourEst <- apply(ramsayXdesolvePM[id,i+1,], 1, quantile, probs = 0.5, na.rm=TRUE)
+  # use 0.25 and 0.75 to check if outliers have significant effect on the inference, turns out no outlier issue
   ourUB <- apply(ramsayXdesolvePM[id,i+1,], 1, quantile, probs = 0.025, na.rm=TRUE)
   ourLB <- apply(ramsayXdesolvePM[id,i+1,], 1, quantile, probs = 0.975, na.rm=TRUE)
   
