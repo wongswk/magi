@@ -128,6 +128,9 @@ for (f in rda_files){
   
 save.image(file=paste0(rdaDir,"hes1log_summary.rda"))
 
+library(gpds)
+library(xtable)
+
 # Average the posterior mean RMSEs for the different seeds
 rmse.table <- round(apply(sapply(ours, function(x) x$rmseOdePM), 1, mean), digits=4)
 print(rmse.table)
