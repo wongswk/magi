@@ -4,7 +4,7 @@ library(gpds)
 if(!exists("config")){
   config <- list(
     nobs = 33,
-    noise = c(0.15,0.15,0.1),
+    noise = c(0.15,0.15,0.15),
     kernel = "generalMatern",
     seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 50,
@@ -72,12 +72,12 @@ xsim <- insertNaN(xsim.obs,config$filllevel)
 
 # cpp inference ----------------------------
 hes1logmodel <- list(
-  name="Hes1-log",
+  # name="Hes1-log",
   fOde=gpds:::hes1logmodelODE,
   fOdeDx=gpds:::hes1logmodelDx,
   fOdeDtheta=gpds:::hes1logmodelDtheta,
-  thetaLowerBound=rep(0,7),
-  thetaUpperBound=rep(Inf,7)
+  thetaLowerBound=c(rep(0,6), 0.3 - 1e-6),
+  thetaUpperBound=c(rep(Inf,6), 0.3 + 1e-6)
 )
 
 samplesCpp <- gpds:::solveGpdsRcpp(
