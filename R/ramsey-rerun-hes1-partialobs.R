@@ -189,11 +189,14 @@ lambdas <- 10^(3:7)
 FPEs <- 0 * lambdas
 all.pars <- matrix(NA, nrow = length(lambdas), ncol = length(pars1))
 all.x0 <- matrix(NA, nrow = length(lambdas), ncol = length(x0))
+all.Ores <- list()
+all.ci <- list()
 temp.pars <- pars1
 temp.coefs <- Fres3$coefs
 for (ilam in 1:length(lambdas)) {
   print(paste("lambda = ", lambdas[ilam]))
   t.Ores <- Profile.LS(hes1.fun, data2, hes1times, temp.pars, temp.coefs, hes1basis, lambdas[ilam])
+  all.Ores[[ilam]] <- t.Ores
   print(t.Ores$pars)
   temp.pars <- t.Ores$pars
   all.pars[ilam,] <- t.Ores$pars
@@ -207,6 +210,16 @@ for (ilam in 1:length(lambdas)) {
   
   FPEs[ilam] <- forward.prediction.error(hes1times, data2, t.Ores$coefs, lik, 
                                          proc, t.Ores$pars, whichtimes)
+  
+  # Covariance of parameters can be obtained from
+  covar <- Profile.covariance(t.Ores$pars, times = hes1times, data = data2, coefs = t.Ores$coefs, 
+                              lik = lik, proc = proc)
+  covar
+  
+  # and we can look at confidence intervals
+  CIs <- cbind(t.Ores$pars - 2 * sqrt(diag(covar)), t.Ores$pars + 2 * sqrt(diag(covar)))
+  rownames(CIs) <- Hes1parnames
+  all.ci[[ilam]] <- CIs
 }
 
 #legend("bottomleft", c("lambda = 1", "lambda = 1e3", "lambda = 1e7"), col = c(1,  2, 4), lwd = 2, cex = 1.2)
@@ -218,6 +231,7 @@ plot(log10(lambdas), FPEs, type = "l", lwd = 2, col = 4, cex.lab = 2.5, cex.axis
 
 best.pars <- all.pars[which.min(FPEs),]   ## can pick lowest FPE as the parameter estimate and associated x0
 best.pars.x0 <- all.x0[which.min(FPEs),]
+best.ci <- all.ci[[which.min(FPEs)]]
 
 modelODE <- function(t, state, parameters) {
   list(as.vector(gpds:::hes1logmodelODE(parameters, t(state))))
