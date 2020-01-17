@@ -4,8 +4,8 @@ library(gpds)
 config <- list()
 config$modelName <- "HIV"
 config$noise <- rep(0.3, 5)
-rdaDir <- "HIV-9obs-fill3/"   ## where ours & Dondel rda saved
-#rdaDir <- "HIV-fill4/"   ## where ours & Dondel rda saved
+#rdaDir <- "HIV-9obs-fill3/"   ## where ours & Dondel rda saved
+rdaDir <- "HIV-5obs-fill4/"   ## where ours & Dondel rda saved
 outDirWenk <- rdaDir   ## where all the seeds are in separate folders with Wenk's output
 
 seeds <- list.files(outDirWenk, pattern='^\\d+$')  ## get the list of seeds ran
@@ -49,8 +49,8 @@ rmsePostSamples <- function(xtrue, dotxtrue, xsim, gpode, param, config, odemode
     
     rmseTrue <- sqrt(apply((xdesolveTRUE.obs - xsim[,-1])^2, 2, mean, na.rm=TRUE))
     rmseWholeGpode <- sqrt(apply((xpostmean - xsim[,-1])^2, 2, mean, na.rm=TRUE))
-    rmseOdeMAP <- sqrt(apply((xdesolveMAP.obs - xsim[,-1])^2, 2, mean, na.rm=TRUE))
-    rmseOdePM <- sqrt(apply((xdesolvePM.obs - xsim[,-1])^2, 2, mean, na.rm=TRUE))
+    rmseOdeMAP <- sqrt(apply((xdesolveMAP.obs - xdesolveTRUE.obs)^2, 2, mean, na.rm=TRUE)) # compared to true traj
+    rmseOdePM <- sqrt(apply((xdesolvePM.obs - xdesolveTRUE.obs)^2, 2, mean, na.rm=TRUE))   # compared to true traj
     
     rmselist <- list(
       true = paste0(round(rmseTrue, 3), collapse = "; "),
@@ -81,7 +81,7 @@ for (i in seeds) {
   
   load(paste0(rdaDir, config$modelName,"-",i,"-noise", config$noise[1], ".rda"))
   xsim.obs <- xsim[complete.cases(xsim),]
-  ours[[j]] <- rmsePostSamples(xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+  ours[[j]] <- rmsePostSamples(xtrue, dotxtrue, xsim.obs, gpode, pram.true, config, odemodel)
   
   # load(paste0(rdaDir, config$modelName,"-Dondel-",config$seed,"-noise", config$noise[1], ".rda"))
   # config$n.iter.Dondel <- config$n.iter.Dondel / 25
@@ -135,16 +135,24 @@ for (i in seeds) {
 
 }
 
-save(ours,Wenk,Dondel, file=paste0(outDirWenk,"compare.rda"))
+#save(ours,Wenk,Dondel, file=paste0(outDirWenk,"compare.rda"))
+save(ours,file=paste0(outDirWenk,"compare.rda"))
 
 # Average the posterior mean RMSEs for the different seeds
 rmse.table <- round(apply(sapply(ours, function(x) x$rmseOdePM), 1, mean), digits=4)
 
 CI.table <- lapply(ours, function(x) x$CIs)
 apply(sapply(CI.table, function(x) x[4,]),1,mean) # coverage per parameter
-apply(sapply(CI.table, function(x) x[3,] - x[2,]),1,mean) # width per parameter
 
-      
+avgest <- apply(sapply(CI.table, function(x) x[1,]),1, mean)  ## avg point estimates
+SEest <- apply(sapply(CI.table, function(x) x[1,]),1, sd)  ## SE of estimates
+widthest <- apply(sapply(CI.table, function(x) x[3,] - x[2,]),1,mean) # width per parameter
+signif(cbind(avgest,SEest,widthest),digits=2)[c(1,7:9,2:6),]
+
+#par.summary <- cbind(avgest,SEest,widthest)[c(1,7:9,2:6),]
+#t( t(par.summary) * 10^ c(0,0,3,3,3,3,0,0,0) )
+#signif(par.summary,2)
+        
   #round(apply(sapply(Wenk, function(x) x$rmseOdePM), 1, mean), digits=4),
   #round(apply(sapply(Dondel, function(x) x$rmseOdePM), 1, mean), digits=4))
 
