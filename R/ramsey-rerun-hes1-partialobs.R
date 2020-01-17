@@ -83,7 +83,7 @@ legend("bottomleft", c("P", "M", "H"), lwd = 3, col = 1:2, lty = 1:2, cex = 1.5)
 hes1times <- seq(0, 240, by=7.5)
 nobs <- length(hes1times)
 out <- lsoda(x0, times = hes1times, hes1.ode, Hes1pars)
-hes1compdata <- out[, 2:4] + 0.0 * matrix(rnorm(3 * nobs), nobs, 3)
+hes1compdata <- out[, 2:4] + 0.15 * matrix(rnorm(3 * nobs), nobs, 3)
 hes1compdata[is.finite(data2)] <- data2[is.finite(data2)]
 
 # In order to run the profiling proceedures, we need to define some objects.
