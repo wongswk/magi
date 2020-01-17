@@ -10,9 +10,9 @@ if(!exists("config")){
     loglikflag = "withmeanBand",
     bandsize = 40,
     hmcSteps = 100,
-    n.iter = 10001,
+    n.iter = 20001,
     burninRatio = 0.50,
-    stepSizeFactor = 0.06,
+    stepSizeFactor = 0.01,
     #filllevel = 3,
     linfillspace = 0.1,
     t.end = 100,
@@ -23,7 +23,7 @@ if(!exists("config")){
     useFixedSigma = FALSE,
     linearizexInit = TRUE,
     useExoSigma = TRUE,
-    max.epoch = 10
+    max.epoch = 1
   )
 }
 
@@ -108,6 +108,7 @@ if (config$linearizexInit) {
 
 # cpp inference ----------------------------
 ptransmodel <- list(
+  name= config$modelName,
   fOde=gpds:::ptransmodelODE,
   fOdeDx=gpds:::ptransmodelDx,
   fOdeDtheta=gpds:::ptransmodelDtheta,
@@ -140,6 +141,8 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   useFixedSigma = config$useFixedSigma,
   verbose = TRUE)
 
+samplesCpp <- samplesCpp[,,1]
+
 out <- samplesCpp[-1,1,drop=FALSE]
 xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=ncol(xsim[,-1]))
 thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + length(ptransmodel$thetaLowerBound)), 1]
@@ -170,5 +173,5 @@ odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 outDir <- "../results/cpp/"
 
 gpds:::plotPostSamplesFlex(
-  paste0(outDir, config$modelName,"-",config$seed,"-Sep11.pdf"), 
+  paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1],"-linfill", config$linfillspace, "-",  Sys.time(), ".pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)

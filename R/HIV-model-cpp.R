@@ -6,7 +6,7 @@ outDir <- "comparison/results/"
 # set up configuration if not already exist ------------------------------------
 if(!exists("config")){
   config <- list(
-    nobs = 5,
+    nobs = 9,  # also set xsim below if changing nobs
     noise = rep(0.3,4),
     kernel = "generalMatern",
     seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
@@ -17,7 +17,7 @@ if(!exists("config")){
     n.iter = 20000,
     burninRatio = 0.5,
     stepSizeFactor = 0.01,
-    filllevel = 2,
+    filllevel = 3,
     modelName = "HIV",
     temperPrior = TRUE,
     useFrequencyBasedPrior = TRUE,
@@ -57,6 +57,7 @@ pram.true <- list(
   x0 = log(c(3.35e7, 134000, 25000, 9000)),
   sigma=config$noise
 )
+#(0.015, -0.0229, 0.00713, 0.000568, 1.51 \times 10^{-9},  1.11 \times 10^{-9}, 4.36 \times 10^{-10},  4.15 \times 10^{-9}, 1.10 \times 10^{-9})
 
 times <- seq(0, 93, by = 0.25)
 
@@ -71,7 +72,8 @@ matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=1)
 xtrueFunc <- lapply(2:ncol(xtrue), function(j)
   approxfun(xtrue[, "time"], xtrue[, j]))
 
-xsim <- data.frame(time = c(70,94,115,139,163) - 70)
+#xsim <- data.frame(time = c(70,94,115,139,163) - 70)                # n=5
+xsim <- data.frame(time = c(70,82, 94,106,115,127,139,151,163) - 70) # n=9
 xsim <- cbind(xsim, sapply(xtrueFunc, function(f) f(xsim$time)))
 
 set.seed(config$seed)
