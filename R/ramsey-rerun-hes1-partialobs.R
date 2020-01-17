@@ -2,116 +2,6 @@
 library(deSolve)
 library(CollocInfer)
 
-reload <- FALSE
-
-if(reload){
-  Hes1varnames <- c("P", "M", "H")
-  Hes1parnames <- c(paste0("theta",1:7))
-  
-  # and initial conditions and parameters
-  
-  x0 = log(c(1.438575, 2.037488, 17.90385))
-  names(x0) <- Hes1varnames
-  
-  Hes1pars <-  c(0.022, 0.3, 0.031, 0.028, 0.5, 20, 0.3)
-  names(Hes1pars) <- Hes1parnames
-  
-  
-  # The following is a function specifying the model in a form that
-  # lsoda works with
-  
-  hes1.ode <- function(times, x, p) {
-    dx <- x
-    dimnames(dx) <- dimnames(x)
-    
-    dx["P"] <- -p["theta1"] * exp(x["H"]) + p["theta2"] * exp(x["M"])/exp(x["P"]) - p["theta3"] 
-    dx["M"] <- -p["theta4"]  + p["theta5"]/(1 + exp(x["P"])^2)/exp(x["M"])
-    dx["H"] <- -p["theta1"] * exp(x["P"]) + p["theta6"]/(1 + exp(x["P"])^2)/exp(x["H"]) - p["theta7"]
-    
-    return(list(dx))
-  }
-  
-  # We need the times at which we will solve the system
-  
-  times <- seq(0, 60*4, by = 0.01)
-  
-  # And now we can create solutions to the equations
-  
-  out <- lsoda(x0, times = times, hes1.ode, Hes1pars)
-  
-  par(mar = c(5, 5, 1, 1))
-  matplot(out[, 1], exp(out[, 2:4]), type = "l", xlab = "time", ylab = "(P,M,H)", lwd = 3, 
-          cex.lab = 2.5, cex.axis = 2.5)
-  legend("bottomleft", c("P", "M", "H"), lwd = 3, col = 1:2, lty = 1:2, cex = 1.5)
-  
-  # We now add some noise to the values of the curves at a reduced set of observation
-  # times:
-  
-  hes1times <- seq(0, 240, by=7.5)
-  nobs <- length(hes1times)
-  out <- lsoda(x0, times = hes1times, hes1.ode, Hes1pars)
-  hes1compdata <- out[, 2:4] + 0.0 * matrix(rnorm(3 * nobs), nobs, 3)
-  
-  # In order to run the profiling proceedures, we need to define some objects.
-  
-  # The following code will define a basis
-  
-  hes1range <- c(0, 240)
-  breaks <- seq(0, 240, 3.75)  ### 3.75 is one break between each time point, for 64 total breaks.
-  norder <- 4
-  hes1basis <- create.bspline.basis(range = hes1range, norder = norder, breaks = breaks)
-  
-  # And this will smooth the data
-  hes1fdPar <- fdPar(hes1basis, int2Lfd(2), 1)
-  
-  DEfd0 <- smooth.basis(hes1times, hes1compdata, hes1fdPar)$fd
-  
-  # and produce a plot of how well this agrees with the smooth
-  par(mfrow = c(2, 1), mar = c(5, 5, 2, 1))
-  plotfit.fd(hes1compdata, hes1times, DEfd0, cex.axis = 2.5, cex.lab = 2.5, lwd = 2, cex = 1.5)
-  
-  
-  # We can now extract the coefficients, which we will also require
-  
-  coefs0 <- DEfd0$coef
-  colnames(coefs0) <- Hes1varnames
-  
-  # CollocInfer requires the right hand side function to be defined somewhat
-  # differently to lsoda. Here we allow a matrix of values as input
-  
-  hes1.fun <- function(times, x, p, more) {
-    dx <- x
-    dx[,"P"] <- -p["theta1"] * exp(x[,"H"]) + p["theta2"] * exp(x[,"M"])/exp(x[,"P"]) - p["theta3"] 
-    dx[,"M"] <- -p["theta4"]  + p["theta5"]/(1 + exp(x[,"P"])^2)/exp(x[,"M"])
-    dx[,"H"] <- -p["theta1"] * exp(x[,"P"]) + p["theta6"]/(1 + exp(x[,"P"])^2)/exp(x[,"H"]) - p["theta7"]
-    
-    return(dx)
-  }
-  
-  
-  # Now we can choose a trade-off parameter and set up the objects that the
-  # profiling functions will use.
-  
-  lambda <- 1000
-  
-  profile.obj <- LS.setup(pars = Hes1pars, fn = hes1.fun, lambda = lambda, times = hes1times, 
-                          coefs = coefs0, basisvals = hes1basis)
-  
-  proc <- profile.obj$proc
-  lik <- profile.obj$lik
-  
-  ## Gradient matching can be obtained thr ParsMatchOpt and produces useful initial
-  ## parameter estimates
-  
-  Pres0 <- ParsMatchOpt(Hes1pars, coefs0, proc)
-  pars1 <- Pres0$pars  ### rough guess for initial parameters  (based on complete data)
-  
-  # Profile.LS will do both setup and profiling
-  # Ores2.2 <- Profile.LS(hes1.fun, hes1compdata, hes1times, Hes1pars, coefs0, hes1basis, lambda)
-  save.image("~/Workspace/DynamicSys/ramsay-prep.rda")
-}else{
-  load("~/Workspace/DynamicSys/ramsay-prep.rda")
-}
 
 #### all possible data files
 rda_files <- read.table("~/Workspace/DynamicSys/good_hes1_list.txt", sep="\n")
@@ -135,16 +25,124 @@ if(length(args) == 0){
 
 ##### Read incomplete dataset
 f <- rda_files[rda_it]
-if (file.exists(paste0(rdaDir, "ramsay-optimation-", f))){
-  quit(save = "no")
-}
+# if (file.exists(paste0(rdaDir, "ramsay-optimation-", f))){
+#   quit(save = "no")
+# }
 
 print(f)
 load(paste0(rdaDir, f), envir = envhes1log)
 
 data2 <-  envhes1log$xsim.obs
 data2 <-  as.matrix(data2[,-1])
+
+
+### smoothing based on the observed data but assume truth on the missing component -----
+Hes1varnames <- c("P", "M", "H")
+Hes1parnames <- c(paste0("theta",1:7))
 colnames(data2) <- Hes1varnames
+
+# and initial conditions and parameters
+
+x0 = log(c(1.438575, 2.037488, 17.90385))
+names(x0) <- Hes1varnames
+
+Hes1pars <-  c(0.022, 0.3, 0.031, 0.028, 0.5, 20, 0.3)
+names(Hes1pars) <- Hes1parnames
+
+
+# The following is a function specifying the model in a form that
+# lsoda works with
+
+hes1.ode <- function(times, x, p) {
+  dx <- x
+  dimnames(dx) <- dimnames(x)
+  
+  dx["P"] <- -p["theta1"] * exp(x["H"]) + p["theta2"] * exp(x["M"])/exp(x["P"]) - p["theta3"] 
+  dx["M"] <- -p["theta4"]  + p["theta5"]/(1 + exp(x["P"])^2)/exp(x["M"])
+  dx["H"] <- -p["theta1"] * exp(x["P"]) + p["theta6"]/(1 + exp(x["P"])^2)/exp(x["H"]) - p["theta7"]
+  
+  return(list(dx))
+}
+
+# We need the times at which we will solve the system
+
+times <- seq(0, 60*4, by = 0.01)
+
+# And now we can create solutions to the equations
+
+out <- lsoda(x0, times = times, hes1.ode, Hes1pars)
+
+par(mar = c(5, 5, 1, 1))
+matplot(out[, 1], exp(out[, 2:4]), type = "l", xlab = "time", ylab = "(P,M,H)", lwd = 3, 
+        cex.lab = 2.5, cex.axis = 2.5)
+legend("bottomleft", c("P", "M", "H"), lwd = 3, col = 1:2, lty = 1:2, cex = 1.5)
+
+# We now add some noise to the values of the curves at a reduced set of observation
+# times:
+
+hes1times <- seq(0, 240, by=7.5)
+nobs <- length(hes1times)
+out <- lsoda(x0, times = hes1times, hes1.ode, Hes1pars)
+hes1compdata <- out[, 2:4] + 0.0 * matrix(rnorm(3 * nobs), nobs, 3)
+hes1compdata[is.finite(data2)] <- data2[is.finite(data2)]
+
+# In order to run the profiling proceedures, we need to define some objects.
+
+# The following code will define a basis
+
+hes1range <- c(0, 240)
+breaks <- seq(0, 240, 3.75)  ### 3.75 is one break between each time point, for 64 total breaks.
+norder <- 4
+hes1basis <- create.bspline.basis(range = hes1range, norder = norder, breaks = breaks)
+
+# And this will smooth the data
+hes1fdPar <- fdPar(hes1basis, int2Lfd(2), 1)
+
+DEfd0 <- smooth.basis(hes1times, hes1compdata, hes1fdPar)$fd
+
+# and produce a plot of how well this agrees with the smooth
+par(mfrow = c(2, 1), mar = c(5, 5, 2, 1))
+plotfit.fd(hes1compdata, hes1times, DEfd0, cex.axis = 2.5, cex.lab = 2.5, lwd = 2, cex = 1.5)
+
+
+# We can now extract the coefficients, which we will also require
+
+coefs0 <- DEfd0$coef
+colnames(coefs0) <- Hes1varnames
+
+# CollocInfer requires the right hand side function to be defined somewhat
+# differently to lsoda. Here we allow a matrix of values as input
+
+hes1.fun <- function(times, x, p, more) {
+  dx <- x
+  dx[,"P"] <- -p["theta1"] * exp(x[,"H"]) + p["theta2"] * exp(x[,"M"])/exp(x[,"P"]) - p["theta3"] 
+  dx[,"M"] <- -p["theta4"]  + p["theta5"]/(1 + exp(x[,"P"])^2)/exp(x[,"M"])
+  dx[,"H"] <- -p["theta1"] * exp(x[,"P"]) + p["theta6"]/(1 + exp(x[,"P"])^2)/exp(x[,"H"]) - p["theta7"]
+  
+  return(dx)
+}
+
+
+# Now we can choose a trade-off parameter and set up the objects that the
+# profiling functions will use.
+
+lambda <- 1000
+
+profile.obj <- LS.setup(pars = Hes1pars, fn = hes1.fun, lambda = lambda, times = hes1times, 
+                        coefs = coefs0, basisvals = hes1basis)
+
+proc <- profile.obj$proc
+lik <- profile.obj$lik
+
+## Gradient matching can be obtained thr ParsMatchOpt and produces useful initial
+## parameter estimates
+
+Pres0 <- ParsMatchOpt(Hes1pars, coefs0, proc)
+pars1 <- Pres0$pars  ### rough guess for initial parameters  (based on complete data)
+
+# Profile.LS will do both setup and profiling
+# Ores2.2 <- Profile.LS(hes1.fun, hes1compdata, hes1times, Hes1pars, coefs0, hes1basis, lambda)
+
 
 ### reset smoothing for missing component
 coefs0.2 <- coefs0
