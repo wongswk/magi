@@ -76,8 +76,8 @@ hes1logmodel <- list(
   fOde=gpds:::hes1logmodelODE,
   fOdeDx=gpds:::hes1logmodelDx,
   fOdeDtheta=gpds:::hes1logmodelDtheta,
-  thetaLowerBound=c(rep(0,6), 0.3 - 1e-6),
-  thetaUpperBound=c(rep(Inf,6), 0.3 + 1e-6)
+  thetaLowerBound=c(rep(0,6), 0.3 - 1e-4),
+  thetaUpperBound=c(rep(Inf,6), 0.3 + 1e-4)
 )
 
 samplesCpp <- gpds:::solveGpdsRcpp(
