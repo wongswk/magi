@@ -262,6 +262,46 @@ print(xtable(coverage), include.rownames=FALSE)
 
 print(xtable(cbind(t(tab), t(coverage))))
 
+
+# theta posterior of Ramsay
+ramsayPostTheta <- sapply(ramsayPostTheta, identity, simplify = "array")
+
+ramsay_mean_est <- rbind(
+  apply(ramsayPostTheta, 1, mean)
+)
+ramsay_sd_est <- rbind(
+  apply(ramsayPostTheta, 1, sd)
+)
+
+ramsey_tab <- c("Ramsey", tablizeEstErr(ramsay_mean_est[1,],ramsay_sd_est[1,]))
+print(xtable(cbind(c("truth", pram.true$theta), t(tab), t(coverage), ramsey_tab)))
+
+
+# posterior summary based on median and inter-quartile-range
+iqr <- function(x) quantile(x, 0.75) - quantile(x, 0.25)
+mean_est <- rbind(
+  apply(oursPostTheta[,1,], 1, median)
+)
+sd_est <- rbind(
+  apply(oursPostTheta[,1,], 1, iqr)
+)
+tab <- rbind(
+  c("Ours", tablizeEstErr(mean_est[1,],sd_est[1,]))
+)
+tab <- data.frame(tab)
+colnames(tab) <- c("Method", letters[1:7])
+rownames(tab) <- NULL
+ramsay_mean_est <- rbind(
+  apply(ramsayPostTheta, 1, median)
+)
+ramsay_sd_est <- rbind(
+  apply(ramsayPostTheta, 1, iqr)
+)
+ramsey_tab <- c("Ramsey", tablizeEstErr(ramsay_mean_est[1,],ramsay_sd_est[1,]))
+print(xtable(cbind(c("truth", pram.true$theta), t(tab), t(coverage), ramsey_tab)))
+
+
+
 # X posterior mean plot
 oursPostX <- sapply(oursPostX, identity, simplify = "array")
 
