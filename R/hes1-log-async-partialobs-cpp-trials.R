@@ -11,7 +11,7 @@ if(!exists("config")){
     loglikflag = "withmeanBand",
     bandsize = 20,
     hmcSteps = 500,
-    n.iter = 4e4,
+    n.iter = 2e2,
     burninRatio = 0.50,
     stepSizeFactor = 0.01,
     filllevel = 0,
@@ -72,15 +72,15 @@ xsim <- insertNaN(xsim.obs,config$filllevel)
 
 # cpp inference ----------------------------
 hes1logmodelODE_restricted <- function(theta, x){
-  gpds:::hes1logmodelODE(c(theta, 20, 0.3), x)
+  gpds:::hes1logmodelODE(c(theta, 0.3), x)
 }
 
 hes1logmodelDx_restricted <- function(theta, x){
-  gpds:::hes1logmodelDx(c(theta, 20, 0.3), x)
+  gpds:::hes1logmodelDx(c(theta, 0.3), x)
 }
 
 hes1logmodelDtheta_restricted <- function(theta, x){
-  gpds:::hes1logmodelDtheta(c(theta, 20, 0.3), x)[,1:5,]
+  gpds:::hes1logmodelDtheta(c(theta, 0.3), x)[,1:6,]
 }
 
 hes1logmodel <- list(
@@ -88,8 +88,8 @@ hes1logmodel <- list(
   fOde=hes1logmodelODE_restricted,
   fOdeDx=hes1logmodelDx_restricted,
   fOdeDtheta=hes1logmodelDtheta_restricted,
-  thetaLowerBound=c(rep(0,5)),
-  thetaUpperBound=c(rep(Inf,5))
+  thetaLowerBound=c(rep(0,6)),
+  thetaUpperBound=c(rep(Inf,6))
 )
 
 samplesCpp <- gpds:::solveGpdsRcpp(
@@ -151,13 +151,13 @@ modelODE_restricted <- function(t, state, parameters) {
 
 odemodel <- list(times=times, modelODE=modelODE_restricted, xtrue=xtrue)
 
-outDir <- "../results/cpp/hes1-log-fix-fg/"
+outDir <- "../results/cpp/hes1-log-fix-g/"
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 
 identifier <- paste0(Sys.time(), "-", system("git rev-parse HEAD", intern=TRUE))
 
 param_restricted <- pram.true
-param_restricted$theta <- param_restricted$theta[1:5]
+param_restricted$theta <- param_restricted$theta[1:6]
 
 gpds:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-async-partialobs-fixedsigma-", identifier,".pdf"), 
