@@ -11,7 +11,7 @@ if(!exists("config")){
     loglikflag = "withmeanBand",
     bandsize = 20,
     hmcSteps = 500,
-    n.iter = 2e4,
+    n.iter = 4e4,
     burninRatio = 0.50,
     stepSizeFactor = 0.01,
     filllevel = 0,
@@ -145,13 +145,21 @@ gpode$fode <- aperm(gpode$fode, c(3,1,2))
 
 dotxtrue = gpds:::hes1logmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
-odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
+modelODE_restricted <- function(t, state, parameters) {
+  list(as.vector(hes1logmodelODE_restricted(parameters, t(state))))
+}
 
-outDir <- "../results/cpp/"
+odemodel <- list(times=times, modelODE=modelODE_restricted, xtrue=xtrue)
+
+outDir <- "../results/cpp/hes1-log-fix-fg/"
+dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 
 identifier <- paste0(Sys.time(), "-", system("git rev-parse HEAD", intern=TRUE))
 
+param_restricted <- pram.true
+param_restricted$theta <- param_restricted$theta[1:5]
+
 gpds:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-async-partialobs-fixedsigma-", identifier,".pdf"), 
-  xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+  xtrue, dotxtrue, xsim, gpode, param_restricted, config, odemodel)
 save.image(paste0(outDir, config$modelName,"-",config$seed,"-async-partialobs-fixedsigma-", identifier,".rda"))
