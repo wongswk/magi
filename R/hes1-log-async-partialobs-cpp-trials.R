@@ -71,13 +71,25 @@ matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, ad
 xsim <- insertNaN(xsim.obs,config$filllevel)
 
 # cpp inference ----------------------------
+hes1logmodelODE_restricted <- function(theta, x){
+  gpds:::hes1logmodelODE(c(theta, 20, 0.3), x)
+}
+
+hes1logmodelDx_restricted <- function(theta, x){
+  gpds:::hes1logmodelDx(c(theta, 20, 0.3), x)
+}
+
+hes1logmodelDtheta_restricted <- function(theta, x){
+  gpds:::hes1logmodelDtheta(c(theta, 20, 0.3), x)[,1:5,]
+}
+
 hes1logmodel <- list(
   # name="Hes1-log",
-  fOde=gpds:::hes1logmodelODE,
-  fOdeDx=gpds:::hes1logmodelDx,
-  fOdeDtheta=gpds:::hes1logmodelDtheta,
-  thetaLowerBound=c(rep(0,6), 0.3 - 1e-4),
-  thetaUpperBound=c(rep(Inf,6), 0.3 + 1e-4)
+  fOde=hes1logmodelODE_restricted,
+  fOdeDx=hes1logmodelDx_restricted,
+  fOdeDtheta=hes1logmodelDtheta_restricted,
+  thetaLowerBound=c(rep(0,5)),
+  thetaUpperBound=c(rep(Inf,5))
 )
 
 samplesCpp <- gpds:::solveGpdsRcpp(
