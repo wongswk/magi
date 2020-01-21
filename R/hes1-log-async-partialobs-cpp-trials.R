@@ -145,7 +145,7 @@ gpode <- list(theta=t(samplesCpp[thetaId, -(1:burnin)]),
               lglik=samplesCpp[llikId,-(1:burnin)],
               sigma = t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]))
 gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
-  with(gpode, gpds:::hes1logmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
+  with(gpode, hes1logmodelODE_restricted(theta[t,], xsampled[t,,])), simplify = "array")
 gpode$fode <- aperm(gpode$fode, c(3,1,2))
 
 dotxtrue = gpds:::hes1logmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
