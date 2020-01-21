@@ -11,7 +11,7 @@ if(!exists("config")){
     loglikflag = "withmeanBand",
     bandsize = 20,
     hmcSteps = 500,
-    n.iter = 2e4,
+    n.iter = 5e4,
     burninRatio = 0.50,
     stepSizeFactor = 0.01,
     filllevel = 0,
@@ -71,30 +71,25 @@ matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, ad
 xsim <- insertNaN(xsim.obs,config$filllevel)
 
 # cpp inference ----------------------------
-# hes1logmodelODE_restricted <- function(theta, x){
-#   gpds:::hes1logmodelODE(c(theta[1:5], 20, theta[6]), x)
-# }
-# 
-# hes1logmodelDx_restricted <- function(theta, x){
-#   gpds:::hes1logmodelDx(c(theta[1:5], 20, theta[6]), x)
-# }
-# 
-# hes1logmodelDtheta_restricted <- function(theta, x){
-#   gpds:::hes1logmodelDtheta(c(theta[1:5], 20, theta[6]), x)[,1:6,]
-# }
+hes1logmodelODE_restricted <- function(theta, x){
+  gpds:::hes1logmodelODE(c(theta[1:5], 20, theta[6]), x)
+}
 
-hes1logmodelODE_restricted = gpds:::hes1logmodelODE
-hes1logmodelDx_restricted = gpds:::hes1logmodelDx
-hes1logmodelDtheta_restricted = gpds:::hes1logmodelDtheta
+hes1logmodelDx_restricted <- function(theta, x){
+  gpds:::hes1logmodelDx(c(theta[1:5], 20, theta[6]), x)
+}
 
+hes1logmodelDtheta_restricted <- function(theta, x){
+  gpds:::hes1logmodelDtheta(c(theta[1:5], 20, theta[6]), x)[,1:6,]
+}
 
 hes1logmodel <- list(
   # name="Hes1-log",
   fOde=hes1logmodelODE_restricted,
   fOdeDx=hes1logmodelDx_restricted,
   fOdeDtheta=hes1logmodelDtheta_restricted,
-  thetaLowerBound=c(rep(0,7)),
-  thetaUpperBound=c(rep(Inf,7))
+  thetaLowerBound=c(rep(0,6)),
+  thetaUpperBound=c(rep(Inf,6))
 )
 
 samplesCpp <- gpds:::solveGpdsRcpp(
@@ -156,13 +151,13 @@ modelODE_restricted <- function(t, state, parameters) {
 
 odemodel <- list(times=times, modelODE=modelODE_restricted, xtrue=xtrue)
 
-outDir <- "../results/cpp/hes1-log-nofix/"
+outDir <- "../results/cpp/hes1-log-fix-f/"
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 
 identifier <- paste0(Sys.time(), "-", system("git rev-parse HEAD", intern=TRUE))
 
 param_restricted <- pram.true
-# param_restricted$theta <- c(param_restricted$theta[1:5], 0.3)
+param_restricted$theta <- c(param_restricted$theta[1:5], 0.3)
 
 gpds:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-async-partialobs-fixedsigma-", identifier,".pdf"), 
