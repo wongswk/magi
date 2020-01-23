@@ -92,12 +92,18 @@ hes1logmodel <- list(
   thetaUpperBound=c(rep(Inf,5))
 )
 
+# use the phi from hes1-log-async-partialobs-cpp.R with seed 1365546660
+phiExogenous <- rbind(
+  c(2.1282, 0.3872, 0.4645),
+  c(65.1345, 35.9814, 22.4503)
+)
+
 samplesCpp <- gpds:::solveGpdsRcpp(
   yFull = data.matrix(xsim[,-1]),
   odeModel = hes1logmodel,
   tvecFull = xsim$time,
   sigmaExogenous = pram.true$sigma,
-  phiExogenous = matrix(numeric(0)),
+  phiExogenous = phiExogenous,
   xInitExogenous = matrix(numeric(0)),
   muExogenous = matrix(numeric(0)),
   dotmuExogenous = matrix(numeric(0)),
