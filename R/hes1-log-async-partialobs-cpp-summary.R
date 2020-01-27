@@ -5,12 +5,12 @@ rdaDir <- "../results/cpp/hes1-log-fix-fg/"   ## where ours rda saved
 pdf_files <- list.files(rdaDir)
 pdf_files <- pdf_files[grep("Hes1-log-.*\\.pdf", pdf_files)]
 rda_files <- gsub("\\.pdf", ".rda", pdf_files)
-write.table(rda_files, file="good_hes1_list.txt", row.names = FALSE, col.names = FALSE, quote = FALSE)
-for (f in files){
-  paste0(strsplit(f, "\\.")[[1]][1], ".rda")
-}
-
-rda_files <- read.table("~/Workspace/DynamicSys/good_hes1_list.txt", sep="\n")
+# write.table(rda_files, file="good_hes1_list.txt", row.names = FALSE, col.names = FALSE, quote = FALSE)
+# for (f in files){
+#   paste0(strsplit(f, "\\.")[[1]][1], ".rda")
+# }
+# 
+# rda_files <- read.table("~/Workspace/DynamicSys/good_hes1_list.txt", sep="\n")
 
 config <- list()
 config$modelName <- "Hes1-log"
@@ -71,24 +71,24 @@ oursPostTheta <- list()
 oursPostExpX <- list()
 oursExpXdesolvePM <- list()
 
-rda_files <- as.character(unlist(rda_files))
-for (f in rda_files) {
+library(parallel)
+outStorage <- mclapply(rda_files, function(f){
   show(f)
-  load(paste0(rdaDir, f))
-  ours[[f]] <- rmsePostSamples(xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
-  oursPostX[[f]] <- cbind(
+  load(paste0(rdaDir, f), envir = .GlobalEnv)
+  ours_f <- rmsePostSamples(xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+  oursPostX_f <- cbind(
     apply(gpode$xsampled, 2:3, mean), 
     apply(gpode$xsampled, 2:3, function(x) quantile(x, 0.025)),
     apply(gpode$xsampled, 2:3, function(x) quantile(x, 0.975))
   )
-  oursPostTheta[[f]] <- cbind(
+  oursPostTheta_f <- cbind(
     apply(gpode$theta, 2, mean), 
     apply(gpode$theta, 2, function(x) quantile(x, 0.025)),
     apply(gpode$theta, 2, function(x) quantile(x, 0.975))
   )
   
   xsampledexp <- exp(gpode$xsampled)
-  oursPostExpX[[f]] <- cbind(
+  oursPostExpX_f <- cbind(
     apply(xsampledexp, 2:3, mean), 
     apply(xsampledexp, 2:3, function(x) quantile(x, 0.025)),
     apply(xsampledexp, 2:3, function(x) quantile(x, 0.975))
@@ -97,7 +97,23 @@ for (f in rda_files) {
   ttheta <- colMeans(gpode$theta)
   exptx0 <- colMeans(xsampledexp[,1,])
   xdesolvePM <- deSolve::ode(y = log(exptx0), times = times, func = odemodel$modelODE, parms = ttheta)
-  oursExpXdesolvePM[[f]] <- exp(xdesolvePM)
+  oursExpXdesolvePM_f <- exp(xdesolvePM)
+  list(
+    ours_f=ours_f,
+    oursPostX_f=oursPostX_f,
+    oursPostTheta_f=oursPostTheta_f,
+    oursPostExpX_f=oursPostExpX_f,
+    oursExpXdesolvePM_f=oursExpXdesolvePM_f
+  )
+}, mc.cores = 32)
+
+rda_files <- as.character(unlist(rda_files))
+for (f in 1:length(rda_files)) {
+  ours[[f]] <- outStorage[[f]]$ours_f
+  oursPostX[[f]] <- outStorage[[f]]$oursPostX_f
+  oursPostTheta[[f]] <- outStorage[[f]]$oursPostTheta_f
+  oursPostExpX[[f]] <- outStorage[[f]]$oursPostExpX_f
+  oursExpXdesolvePM[[f]] <- outStorage[[f]]$oursExpXdesolvePM_f
 }
 
 ramsayPostX0 <- list()
@@ -117,6 +133,8 @@ for (f in rda_files){
   
 save.image(file=paste0(rdaDir,"hes1log_summary.rda"))
 
+load(paste0(rdaDir, rda_files[1]), envir = .GlobalEnv)
+
 library(gpds)
 library(xtable)
 
@@ -124,14 +142,7 @@ library(xtable)
 rmse.table <- round(apply(sapply(ours, function(x) x$rmseOdePM), 1, mean), digits=4)
 print(rmse.table)
 
-rowId <- sapply(xsim.obs$time, function(x) which(abs(x-xtrue$time) < 1e-6))
-for (i in 1:length(ours)) {
-  xdesolveTRUE.obs <- ours[[i]]$xdesolveTRUE[rowId,-1]
-  xdesolvePM.obs <- ours[[i]]$xdesolvePM[rowId,-1]
-  ours[[i]]$rmseOdePM <- sqrt(apply((xdesolvePM.obs - xdesolveTRUE.obs)^2, 2, mean, na.rm=TRUE))   # compared to true traj
-}
-rmse.table <- round(apply(sapply(ours, function(x) x$rmseOdePM), 1, mean), digits=4)
-print(rmse.table)
+rowId <- sapply(xsim$time, function(x) which(abs(x-times) < 1e-6))
 
 for (i in 1:length(ours)) {
   xdesolveTRUE.obs <- ours[[i]]$xdesolveTRUE[rowId,-1]
@@ -234,7 +245,7 @@ tab <- rbind(
   c("Ours", tablizeEstErr(mean_est[1,],sd_est[1,]))
 )
 tab <- data.frame(tab)
-colnames(tab) <- c("Method", letters[1:7])
+colnames(tab) <- c("Method", letters[1:5])
 rownames(tab) <- NULL
 library(xtable)
 print(xtable(tab), include.rownames=FALSE)
@@ -246,11 +257,11 @@ coverage <- rbind(
   printr(rowMeans((oursPostTheta[,2,] <= pram.true$theta) & (pram.true$theta <= oursPostTheta[,3,])))
 )
 coverage <- cbind(c("Ours"), coverage)
-colnames(coverage) <- c("Method", letters[1:7])
+colnames(coverage) <- c("Method", letters[1:5])
 print(xtable(coverage), include.rownames=FALSE)
 
 print(xtable(cbind(t(tab), t(coverage))))
-print(xtable(cbind(c("truth", pram.true$theta), t(tab), t(coverage))))
+print(xtable(cbind(c("truth", param_restricted$theta), t(tab), t(coverage))))
 
 
 # theta posterior of Ramsay
@@ -325,7 +336,7 @@ for (i in 1:(ncol(xsim)-1)) {
 dev.off()
 
 
-xdesolveTRUE <- deSolve::ode(y = pram.true$x0, times = xsim$time, func = odemodel$modelODE, parms = pram.true$theta)
+xdesolveTRUE <- deSolve::ode(y = pram.true$x0, times = xsim$time, func = odemodel$modelODE, parms = param_restricted$theta)
 xdesolveTRUE[,-1] <- exp(xdesolveTRUE[,-1])
   
 oursPostExpX <- sapply(oursPostExpX, identity, simplify = "array")
