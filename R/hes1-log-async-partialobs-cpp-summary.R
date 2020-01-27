@@ -1,7 +1,8 @@
 # Summarize the results
 library(gpds)
 
-pdf_files <- list.files("~/Workspace/DynamicSys/results/cpp/good/")
+rdaDir <- "../results/cpp/hes1-log-fix-fg/"   ## where ours rda saved
+pdf_files <- list.files(rdaDir)
 pdf_files <- pdf_files[grep("Hes1-log-.*\\.pdf", pdf_files)]
 rda_files <- gsub("\\.pdf", ".rda", pdf_files)
 write.table(rda_files, file="good_hes1_list.txt", row.names = FALSE, col.names = FALSE, quote = FALSE)
@@ -13,21 +14,9 @@ rda_files <- read.table("~/Workspace/DynamicSys/good_hes1_list.txt", sep="\n")
 
 config <- list()
 config$modelName <- "Hes1-log"
-config$noise <- c(0.15,0.15,0.1)
-rdaDir <- "~/Workspace/DynamicSys/results/cpp/"   ## where ours rda saved
+config$noise <- c(0.15,0.15,0.15)
 
-hes1logmodel <- list(
-  name="Hes1-log",
-  fOde=gpds:::hes1logmodelODE,
-  fOdeDx=gpds:::hes1logmodelDx,
-  fOdeDtheta=gpds:::hes1logmodelDtheta,
-  thetaLowerBound=rep(0,7),
-  thetaUpperBound=rep(Inf,7)
-)
 
-hes1modelODE <- function(t, state, parameters) {
-  list(as.vector(gpds:::hes1modelODE(parameters, t(state))))
-}
 
 ## Helper function adapted from Visualization to extract trajectories and RMSE
 rmsePostSamples <- function(xtrue, dotxtrue, xsim, gpode, param, config, odemodel=NULL){
@@ -107,8 +96,8 @@ for (f in rda_files) {
   
   ttheta <- colMeans(gpode$theta)
   exptx0 <- colMeans(xsampledexp[,1,])
-  xdesolvePM <- deSolve::ode(y = exptx0, times = times, func = hes1modelODE, parms = ttheta)
-  oursExpXdesolvePM[[f]] <- xdesolvePM
+  xdesolvePM <- deSolve::ode(y = log(exptx0), times = times, func = odemodel$modelODE, parms = ttheta)
+  oursExpXdesolvePM[[f]] <- exp(xdesolvePM)
 }
 
 ramsayPostX0 <- list()
@@ -261,6 +250,7 @@ colnames(coverage) <- c("Method", letters[1:7])
 print(xtable(coverage), include.rownames=FALSE)
 
 print(xtable(cbind(t(tab), t(coverage))))
+print(xtable(cbind(c("truth", pram.true$theta), t(tab), t(coverage))))
 
 
 # theta posterior of Ramsay
