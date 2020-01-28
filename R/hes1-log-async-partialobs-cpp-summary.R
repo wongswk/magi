@@ -1,7 +1,7 @@
 # Summarize the results
 library(gpds)
 
-rdaDir <- "../results/cpp/hes1-log-fix-g/"   ## where ours rda saved
+rdaDir <- "../results/cpp/hes1-log-fix-f/"   ## where ours rda saved
 pdf_files <- list.files(rdaDir)
 pdf_files <- pdf_files[grep("Hes1-log-.*\\.pdf", pdf_files)]
 rda_files <- gsub("\\.pdf", ".rda", pdf_files)
@@ -72,28 +72,38 @@ oursPostExpX <- list()
 oursExpXdesolvePM <- list()
 
 library(parallel)
+
+lglik_convergence <- mclapply(rda_files, function(f){
+  show(f)
+  load(paste0(rdaDir, f), envir = .GlobalEnv)
+  idx <- 1:length(gpode$lglik)
+  summary(lm(gpode$lglik ~ idx))$r.squared
+}, mc.cores = 32)
+lglik_convergence = unlist(lglik_convergence)
+rda_files = rda_files[order(lglik_convergence)][1:256]
+
 outStorage <- mclapply(rda_files, function(f){
   show(f)
   load(paste0(rdaDir, f), envir = .GlobalEnv)
-  ours_f <- rmsePostSamples(xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+  ours_f <- rmsePostSamples(xtrue, dotxtrue, xsim, gpode, param_restricted, config, odemodel)
   oursPostX_f <- cbind(
-    apply(gpode$xsampled, 2:3, mean), 
+    apply(gpode$xsampled, 2:3, mean),
     apply(gpode$xsampled, 2:3, function(x) quantile(x, 0.025)),
     apply(gpode$xsampled, 2:3, function(x) quantile(x, 0.975))
   )
   oursPostTheta_f <- cbind(
-    apply(gpode$theta, 2, mean), 
+    apply(gpode$theta, 2, mean),
     apply(gpode$theta, 2, function(x) quantile(x, 0.025)),
     apply(gpode$theta, 2, function(x) quantile(x, 0.975))
   )
-  
+
   xsampledexp <- exp(gpode$xsampled)
   oursPostExpX_f <- cbind(
-    apply(xsampledexp, 2:3, mean), 
+    apply(xsampledexp, 2:3, mean),
     apply(xsampledexp, 2:3, function(x) quantile(x, 0.025)),
     apply(xsampledexp, 2:3, function(x) quantile(x, 0.975))
   )
-  
+
   ttheta <- colMeans(gpode$theta)
   exptx0 <- colMeans(xsampledexp[,1,])
   xdesolvePM <- deSolve::ode(y = log(exptx0), times = times, func = odemodel$modelODE, parms = ttheta)
