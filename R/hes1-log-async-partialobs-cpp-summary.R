@@ -1,7 +1,7 @@
 # Summarize the results
 library(gpds)
 
-rdaDir <- "../results/cpp/hes1-log-fix-fg/"   ## where ours rda saved
+rdaDir <- "../results/cpp/hes1-log-fix-g/"   ## where ours rda saved
 pdf_files <- list.files(rdaDir)
 pdf_files <- pdf_files[grep("Hes1-log-.*\\.pdf", pdf_files)]
 rda_files <- gsub("\\.pdf", ".rda", pdf_files)
@@ -245,7 +245,7 @@ tab <- rbind(
   c("Ours", tablizeEstErr(mean_est[1,],sd_est[1,]))
 )
 tab <- data.frame(tab)
-colnames(tab) <- c("Method", letters[1:5])
+colnames(tab) <- c("Method", letters[1:6])
 rownames(tab) <- NULL
 library(xtable)
 print(xtable(tab), include.rownames=FALSE)
@@ -257,7 +257,7 @@ coverage <- rbind(
   printr(rowMeans((oursPostTheta[,2,] <= pram.true$theta) & (pram.true$theta <= oursPostTheta[,3,])))
 )
 coverage <- cbind(c("Ours"), coverage)
-colnames(coverage) <- c("Method", letters[1:5])
+colnames(coverage) <- c("Method", letters[1:6])
 print(xtable(coverage), include.rownames=FALSE)
 
 print(xtable(cbind(t(tab), t(coverage))))
