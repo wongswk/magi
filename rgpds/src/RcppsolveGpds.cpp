@@ -56,9 +56,11 @@ arma::cube solveGpdsRcpp(
     }else if(modelName == "Hes1-log"){
         modelC = OdeSystem(hes1logmodelODE, hes1logmodelDx, hes1logmodelDtheta, arma::zeros(7), arma::ones(7)*INFINITY);
     }else if(modelName == "HIV"){
-        modelC = OdeSystem(HIVmodelODE, HIVmodelDx, HIVmodelDtheta, {-INFINITY, 0,0,0,0,0, -INFINITY,-INFINITY,-INFINITY}, arma::ones(9)*INFINITY);
+        modelC = OdeSystem(HIVmodelODE, HIVmodelDx, HIVmodelDtheta, {-10, 0,0,0,0,0, -10,-10,-10}, arma::ones(9)*10);
     }else if(modelName == "PTrans"){
         modelC = OdeSystem(ptransmodelODE, ptransmodelDx, ptransmodelDtheta, arma::zeros(6), arma::ones(6)*4);
+    }else if(modelName == "Hes1-log-fixg"){
+        modelC = OdeSystem(hes1logmodelODEfixg, hes1logmodelDxfixg, hes1logmodelDthetafixg, arma::zeros(6), arma::ones(6)*INFINITY);
     }else{
         const Rcpp::Function & fOdeR = as<const Function>(odeModel["fOde"]);
         const Rcpp::Function & fOdeDxR = as<const Function>(odeModel["fOdeDx"]);
