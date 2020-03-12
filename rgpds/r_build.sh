@@ -42,6 +42,7 @@ rsync -az src/rcppgpds/*.h src/
 
 rm -r src/rcppgpds/
 
+rm NAMESPACE
 Rscript -e "devtools::document();"
 Rscript -e "pkgbuild:::compile_rcpp_attributes(); Rcpp::compileAttributes(); devtools::document(); devtools::install();"
 
