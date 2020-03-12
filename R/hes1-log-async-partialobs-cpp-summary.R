@@ -1,9 +1,10 @@
 # Summarize the results
 library(gpds)
 
-rdaDir <- "../results/cpp/hes1-log-fix-f/"   ## where ours rda saved
+rdaDir <- "../results/cpp/hes1-log-fix-g/"   ## where ours rda saved
+# rdaDir <- "../results/cpp/Hes1-logfixg-samuel/"   ## where ours rda saved
 pdf_files <- list.files(rdaDir)
-pdf_files <- pdf_files[grep("Hes1-log-.*\\.pdf", pdf_files)]
+pdf_files <- pdf_files[grep("Hes1-log.*\\.pdf", pdf_files)]
 rda_files <- gsub("\\.pdf", ".rda", pdf_files)
 # write.table(rda_files, file="good_hes1_list.txt", row.names = FALSE, col.names = FALSE, quote = FALSE)
 # for (f in files){
@@ -144,6 +145,9 @@ for (f in rda_files){
 save.image(file=paste0(rdaDir,"hes1log_summary.rda"))
 
 load(paste0(rdaDir, rda_files[1]), envir = .GlobalEnv)
+if (!exists("param_restricted")){
+  param_restricted <- pram.true
+}
 
 library(gpds)
 library(xtable)
