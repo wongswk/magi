@@ -264,7 +264,7 @@ print(xtable(t(tab)))
 
 # theta posterior credible interval coverage table 
 coverage <- rbind(
-  printr(rowMeans((oursPostTheta[,2,] <= pram.true$theta) & (pram.true$theta <= oursPostTheta[,3,])))
+  printr(rowMeans((oursPostTheta[,2,] <= param_restricted$theta) & (param_restricted$theta <= oursPostTheta[,3,])))
 )
 coverage <- cbind(c("Ours"), coverage)
 colnames(coverage) <- c("Method", letters[1:6])
