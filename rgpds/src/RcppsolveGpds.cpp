@@ -61,6 +61,8 @@ arma::cube solveGpdsRcpp(
         modelC = OdeSystem(ptransmodelODE, ptransmodelDx, ptransmodelDtheta, arma::zeros(6), arma::ones(6)*4);
     }else if(modelName == "Hes1-log-fixg"){
         modelC = OdeSystem(hes1logmodelODEfixg, hes1logmodelDxfixg, hes1logmodelDthetafixg, arma::zeros(6), arma::ones(6)*INFINITY);
+    }else if(modelName == "Hes1-log-fixf"){
+        modelC = OdeSystem(hes1logmodelODEfixf, hes1logmodelDxfixf, hes1logmodelDthetafixf, arma::zeros(6), arma::ones(6)*INFINITY);
     }else{
         const Rcpp::Function & fOdeR = as<const Function>(odeModel["fOde"]);
         const Rcpp::Function & fOdeDxR = as<const Function>(odeModel["fOdeDx"]);
