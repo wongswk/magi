@@ -19,6 +19,10 @@ arma::mat hes1logmodelODEfixg(const arma::vec &, const arma::mat &);
 arma::cube hes1logmodelDxfixg(const arma::vec &, const arma::mat &);
 arma::cube hes1logmodelDthetafixg(const arma::vec &, const arma::mat &);
 
+arma::mat hes1logmodelODEfixf(const arma::vec &, const arma::mat &);
+arma::cube hes1logmodelDxfixf(const arma::vec &, const arma::mat &);
+arma::cube hes1logmodelDthetafixf(const arma::vec &, const arma::mat &);
+
 arma::mat HIVmodelODE(const arma::vec &, const arma::mat &);
 arma::cube HIVmodelDx(const arma::vec &, const arma::mat &);
 arma::cube HIVmodelDtheta(const arma::vec &, const arma::mat &);
