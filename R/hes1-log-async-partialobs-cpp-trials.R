@@ -80,7 +80,7 @@ hes1logmodelDx_restricted <- function(theta, x){
 }
 
 hes1logmodelDtheta_restricted <- function(theta, x){
-  gpds:::hes1logmodelDtheta(c(theta[1:5], 20, theta[6]), x)[,1:6,]
+  gpds:::hes1logmodelDtheta(c(theta[1:5], 20, theta[6]), x)[,c(1:5,7),]
 }
 
 hes1logmodel <- list(
@@ -97,6 +97,32 @@ phiExogenous <- rbind(
   c(2.1282, 0.3872, 0.4645),
   c(65.1345, 35.9814, 22.4503)
 )
+
+hes1logmodelcpp <- list(
+  name="Hes1-log-fixf",
+  fOde=gpds:::hes1logmodelODEfixf,
+  fOdeDx=gpds:::hes1logmodelDxfixf,
+  fOdeDtheta=gpds:::hes1logmodelDthetafixf,
+  #thetaLowerBound=rep(0,7),
+  #thetaUpperBound=rep(Inf,7)
+  thetaLowerBound=rep(0,6),
+  thetaUpperBound=rep(Inf,6)
+)
+
+param_restricted <- pram.true
+param_restricted$theta <- c(param_restricted$theta[1:5], 0.3)
+
+out_r <- hes1logmodel$fOde(param_restricted$theta, data.matrix(xtrue)[,-1])
+out_cpp <- hes1logmodelcpp$fOde(param_restricted$theta, data.matrix(xtrue)[,-1])
+testthat::expect_equal(out_r, out_cpp)
+
+out_r <- hes1logmodel$fOdeDx(param_restricted$theta, data.matrix(xtrue)[,-1])
+out_cpp <- hes1logmodelcpp$fOdeDx(param_restricted$theta, data.matrix(xtrue)[,-1])
+testthat::expect_equal(out_r, out_cpp)
+
+out_r <- hes1logmodel$fOdeDtheta(param_restricted$theta, data.matrix(xtrue)[,-1])
+out_cpp <- hes1logmodelcpp$fOdeDtheta(param_restricted$theta, data.matrix(xtrue)[,-1])
+testthat::expect_equal(out_r, out_cpp)
 
 samplesCpp <- gpds:::solveGpdsRcpp(
   yFull = data.matrix(xsim[,-1]),
