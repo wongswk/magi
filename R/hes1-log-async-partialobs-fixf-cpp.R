@@ -11,7 +11,7 @@ if(!exists("config")){
     loglikflag = "withmeanBand",
     bandsize = 20,
     hmcSteps = 500,
-    n.iter = 2e4,
+    n.iter = 5e4,
     burninRatio = 0.50,
     stepSizeFactor = 0.01,
     filllevel = 0,
@@ -140,7 +140,9 @@ dotxtrue = gpds:::hes1logmodelODEfixf(pram.true$theta, data.matrix(xtrue[,-1]))
 
 odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 
-outDir <- "../results/cpp/"
+outDir <- "../results/cpp/hes1-log-fix-f-cpp/"
+dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
+
 
 gpds:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-fixf.pdf"), 
