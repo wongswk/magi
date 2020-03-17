@@ -99,7 +99,6 @@ phiExogenous <- rbind(
 )
 
 hes1logmodelcpp <- list(
-  name="Hes1-log-fixf-noname",
   fOde=gpds:::hes1logmodelODEfixf,
   fOdeDx=gpds:::hes1logmodelDxfixf,
   fOdeDtheta=gpds:::hes1logmodelDthetafixf,
@@ -129,7 +128,35 @@ testthat::expect_equal(out_r, out_cpp)
 set.seed(config$seed)
 runif(2)
 
-# cpp has bug
+# cpp without name has bug
+samplesCpp <- gpds:::solveGpdsRcpp(
+  yFull = data.matrix(xsim[,-1]),
+  odeModel = hes1logmodelcpp,
+  tvecFull = xsim$time,
+  sigmaExogenous = pram.true$sigma,
+  phiExogenous = phiExogenous,
+  xInitExogenous = matrix(numeric(0)),
+  muExogenous = matrix(numeric(0)),
+  dotmuExogenous = matrix(numeric(0)),
+  priorTemperatureLevel = config$priorTemperature,
+  priorTemperatureDeriv = config$priorTemperature,
+  kernel = config$kernel,
+  nstepsHmc = config$hmcSteps,
+  burninRatioHmc = config$burninRatio,
+  niterHmc = config$n.iter,
+  stepSizeFactorHmc = config$stepSizeFactor,
+  nEpoch = config$max.epoch,
+  bandSize = config$bandsize,
+  useFrequencyBasedPrior = config$useFrequencyBasedPrior,
+  useBand = config$useBand,
+  useMean = config$useMean,
+  useScalerSigma = config$useScalerSigma,
+  useFixedSigma = config$useFixedSigma,
+  verbose = TRUE)
+
+
+# cpp with name is fine
+hes1logmodelcpp$name = "Hes1-log-fixf"
 samplesCpp <- gpds:::solveGpdsRcpp(
   yFull = data.matrix(xsim[,-1]),
   odeModel = hes1logmodelcpp,
