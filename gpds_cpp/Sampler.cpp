@@ -17,7 +17,8 @@ void Sampler::sampleChian(const arma::vec &xthetasigmaInit, const arma::vec &ste
     xth.col(0) = xthetasigmaInit;
     const unsigned int burnin = static_cast<unsigned int>(niter * burninRatio);
     for (int t = 1; t < niter; t++){
-        const arma::vec & rstep = arma::randu(stepLow.size()) % stepLow + stepLow;
+        arma::vec stepRandom = arma::randu(stepLow.size());
+        const arma::vec & rstep = stepRandom % stepLow + stepLow;
         hmcstate hmcpostsample = sampleSingle(xth.col(t-1), rstep);
         xth.col(t) = hmcpostsample.final;
         accepts(t) = static_cast<double>(hmcpostsample.acc);
@@ -36,9 +37,13 @@ void Sampler::sampleChian(const arma::vec &xthetasigmaInit, const arma::vec &ste
             }
         }
         lliklist(t) = hmcpostsample.lprvalue;
-        if (verbose && (t % 100 == 0)){
+
+        if (verbose && (t % 100 == 1)){
             std::cout << "t = " << t << "; acceptance rate = " << acceptRate << "; theta = "
                       << xth.submat(arma::span(yobs.size(), yobs.size() + model.thetaSize - 1), arma::span(t, t)).t();
+            std::cout << "t = " << t << "; rstep = " << rstep.subvec(0, 4).t();
+            std::cout << "t = " << t << "stepRandom = " << stepRandom.subvec(0, 4).t();  // confirmed with seed setting
+            std::cout << "t = " << t << "; hmcpostsample.lprvalue = " << hmcpostsample.lprvalue << "\n";
         }
     }
 }
