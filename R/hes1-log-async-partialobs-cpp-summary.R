@@ -1,7 +1,7 @@
 # Summarize the results
 library(gpds)
 
-rdaDir <- "../results/cpp/hes1-log-fix-g/"   ## where ours rda saved
+rdaDir <- "../results/cpp/hes1-log-fix-f-cpp/"   ## where ours rda saved
 # rdaDir <- "../results/cpp/Hes1-logfixg-samuel/"   ## where ours rda saved
 pdf_files <- list.files(rdaDir)
 pdf_files <- pdf_files[grep("Hes1-log.*\\.pdf", pdf_files)]
@@ -86,6 +86,10 @@ rda_files = rda_files[order(lglik_convergence)][1:256]
 outStorage <- mclapply(rda_files, function(f){
   show(f)
   load(paste0(rdaDir, f), envir = .GlobalEnv)
+  if (!exists("param_restricted")){
+    param_restricted <- pram.true
+  }
+  
   ours_f <- rmsePostSamples(xtrue, dotxtrue, xsim, gpode, param_restricted, config, odemodel)
   oursPostX_f <- cbind(
     apply(gpode$xsampled, 2:3, mean),
@@ -116,7 +120,7 @@ outStorage <- mclapply(rda_files, function(f){
     oursPostExpX_f=oursPostExpX_f,
     oursExpXdesolvePM_f=oursExpXdesolvePM_f
   )
-}, mc.cores = 32)
+}, mc.cores = 64)
 
 rda_files <- as.character(unlist(rda_files))
 for (f in 1:length(rda_files)) {
