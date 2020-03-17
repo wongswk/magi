@@ -71,7 +71,7 @@ hmcstate basic_hmcC(const std::function<lp (vec)> & lpr,
   
   // Compute the kinetic energy at the start of the trajectory
   vec initialp = randn<vec>(initial.size());
-  std::cout << "HMC initialp = " << initialp.subvec(0, 4).t();
+//  std::cout << "HMC initialp = " << initialp.subvec(0, 4).t();
   double kineticinitial = sum(square(initialp)) / 2.0;
   
   // Compute the trajectory by the leapfrog method
@@ -146,7 +146,7 @@ hmcstate basic_hmcC(const std::function<lp (vec)> & lpr,
   int acc = 0;
 
   arma::vec accSample = randu(1);
-  std::cout << "HMC accSample = " << accSample;
+//  std::cout << "HMC accSample = " << accSample;
 
   if (as_scalar(accSample) < apr) { // ACCEPT
     finalq = q;
