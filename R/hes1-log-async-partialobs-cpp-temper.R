@@ -144,3 +144,5 @@ system(paste("mkdir -p", outDir))
 gpds:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-async-partialobs-fixedsigma.pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+
+save.image(paste0(outDir, config$modelName,"-",config$seed,"-7param-fixedphi-temper.rda"))
