@@ -79,6 +79,8 @@ hes1logmodel <- list(
   thetaUpperBound=rep(Inf,7)
 )
 
+
+## fixed phi ----------------------------
 phiExogenous <- rbind(
   c(2.1282, 0.3872, 0.4645),
   c(65.1345, 35.9814, 22.4503)
@@ -138,11 +140,143 @@ dotxtrue = gpds:::hes1logmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
 odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 
-outDir <- "../results/cpp/7param-fixedphi-temper/"
+outDir <- "../results/cpp/7param/fixedphi-temper/"
 system(paste("mkdir -p", outDir))
 
 gpds:::plotPostSamplesFlex(
-  paste0(outDir, config$modelName,"-",config$seed,"-async-partialobs-fixedsigma.pdf"), 
+  paste0(outDir, config$modelName,"-",config$seed,"-7param-fixedphi-temper.pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 
 save.image(paste0(outDir, config$modelName,"-",config$seed,"-7param-fixedphi-temper.rda"))
+
+
+## variable phi ----------------------------
+
+samplesCpp <- gpds:::solveGpdsRcpp(
+  yFull = data.matrix(xsim[,-1]),
+  odeModel = hes1logmodel,
+  tvecFull = xsim$time,
+  sigmaExogenous = pram.true$sigma,
+  phiExogenous = matrix(numeric(0)),
+  xInitExogenous = matrix(numeric(0)),
+  muExogenous = matrix(numeric(0)),
+  dotmuExogenous = matrix(numeric(0)),
+  priorTemperatureLevel = config$priorTemperature,
+  priorTemperatureDeriv = config$priorTemperature,
+  priorTemperatureObs = 1/16,
+  kernel = config$kernel,
+  nstepsHmc = config$hmcSteps,
+  burninRatioHmc = config$burninRatio,
+  niterHmc = config$n.iter,
+  stepSizeFactorHmc = config$stepSizeFactor,
+  nEpoch = config$max.epoch,
+  bandSize = config$bandsize,
+  useFrequencyBasedPrior = config$useFrequencyBasedPrior,
+  useBand = config$useBand,
+  useMean = config$useMean,
+  useScalerSigma = config$useScalerSigma,
+  useFixedSigma = config$useFixedSigma,
+  verbose = TRUE)
+
+samplesCpp <- samplesCpp[,,1]
+out <- samplesCpp[-1,1,drop=FALSE]
+xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=ncol(xsim[,-1]))
+thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + length(hes1logmodel$thetaLowerBound)), 1]
+sigmaCpp <- tail(out[, 1], ncol(xsim[,-1]))
+
+matplot(xsim$time, xCpp, type="l", add=TRUE, lty=2)
+
+llikId <- 1
+xId <- (max(llikId)+1):(max(llikId)+length(data.matrix(xsim[,-1])))
+thetaId <- (max(xId)+1):(max(xId)+length(hes1logmodel$thetaLowerBound))
+sigmaId <- (max(thetaId)+1):(max(thetaId)+ncol(xsim[,-1]))
+
+
+burnin <- as.integer(config$n.iter*config$burninRatio)
+gpode <- list(theta=t(samplesCpp[thetaId, -(1:burnin)]),
+              xsampled=array(t(samplesCpp[xId, -(1:burnin)]),
+                             dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
+              lglik=samplesCpp[llikId,-(1:burnin)],
+              sigma = t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]))
+gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
+  with(gpode, gpds:::hes1logmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
+gpode$fode <- aperm(gpode$fode, c(3,1,2))
+
+dotxtrue = gpds:::hes1logmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
+
+odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
+
+outDir <- "../results/cpp/7param/variablephi-temper/"
+system(paste("mkdir -p", outDir))
+
+gpds:::plotPostSamplesFlex(
+  paste0(outDir, config$modelName,"-",config$seed,"-7param-variablephi-temper.pdf"), 
+  xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+
+save.image(paste0(outDir, config$modelName,"-",config$seed,"-7param-variablephi-temper.rda"))
+
+
+## no tempering ----------------------------
+
+samplesCpp <- gpds:::solveGpdsRcpp(
+  yFull = data.matrix(xsim[,-1]),
+  odeModel = hes1logmodel,
+  tvecFull = xsim$time,
+  sigmaExogenous = pram.true$sigma,
+  phiExogenous = matrix(numeric(0)),
+  xInitExogenous = matrix(numeric(0)),
+  muExogenous = matrix(numeric(0)),
+  dotmuExogenous = matrix(numeric(0)),
+  priorTemperatureLevel = config$priorTemperature,
+  priorTemperatureDeriv = config$priorTemperature,
+  priorTemperatureObs = 1,
+  kernel = config$kernel,
+  nstepsHmc = config$hmcSteps,
+  burninRatioHmc = config$burninRatio,
+  niterHmc = config$n.iter,
+  stepSizeFactorHmc = config$stepSizeFactor,
+  nEpoch = config$max.epoch,
+  bandSize = config$bandsize,
+  useFrequencyBasedPrior = config$useFrequencyBasedPrior,
+  useBand = config$useBand,
+  useMean = config$useMean,
+  useScalerSigma = config$useScalerSigma,
+  useFixedSigma = config$useFixedSigma,
+  verbose = TRUE)
+
+samplesCpp <- samplesCpp[,,1]
+out <- samplesCpp[-1,1,drop=FALSE]
+xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=ncol(xsim[,-1]))
+thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + length(hes1logmodel$thetaLowerBound)), 1]
+sigmaCpp <- tail(out[, 1], ncol(xsim[,-1]))
+
+matplot(xsim$time, xCpp, type="l", add=TRUE, lty=2)
+
+llikId <- 1
+xId <- (max(llikId)+1):(max(llikId)+length(data.matrix(xsim[,-1])))
+thetaId <- (max(xId)+1):(max(xId)+length(hes1logmodel$thetaLowerBound))
+sigmaId <- (max(thetaId)+1):(max(thetaId)+ncol(xsim[,-1]))
+
+
+burnin <- as.integer(config$n.iter*config$burninRatio)
+gpode <- list(theta=t(samplesCpp[thetaId, -(1:burnin)]),
+              xsampled=array(t(samplesCpp[xId, -(1:burnin)]),
+                             dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
+              lglik=samplesCpp[llikId,-(1:burnin)],
+              sigma = t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]))
+gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
+  with(gpode, gpds:::hes1logmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
+gpode$fode <- aperm(gpode$fode, c(3,1,2))
+
+dotxtrue = gpds:::hes1logmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
+
+odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
+
+outDir <- "../results/cpp/7param/variablephi-notemper/"
+system(paste("mkdir -p", outDir))
+
+gpds:::plotPostSamplesFlex(
+  paste0(outDir, config$modelName,"-",config$seed,"-7param-variablephi-notemper.pdf"), 
+  xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+
+save.image(paste0(outDir, config$modelName,"-",config$seed,"-7param-variablephi-notemper.rda"))
