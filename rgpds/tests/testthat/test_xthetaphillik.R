@@ -114,6 +114,7 @@ testthat::test_that("xthetaphisigmallik differs to loglikOrig by constant (the p
 
 
 testthat::test_that("xthetaphisigmallik derivatives", {
+  set.seed(123)
   xlatentTest <- data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]) * rexp(length(fn.true[,1:2]))
   thetaTest <- pram.true$abc * rexp(length(pram.true$abc))
   phiTest <- cbind(pram.true$vphi, pram.true$rphi) * exp(rnorm(4))
@@ -144,7 +145,7 @@ testthat::test_that("xthetaphisigmallik derivatives", {
          out$value)/delta
   }
   x <- (gradNum - out$grad[1:length(xlatentTest)])/abs(gradNum)
-  testthat::expect_true(all(abs(x) < 5e-2)) # gradient is self-consistent
+  testthat::expect_true(all(abs(x) < 5e-3)) # gradient is self-consistent
   
   # theta
   gradNum <- c()
