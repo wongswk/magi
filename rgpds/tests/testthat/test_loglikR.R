@@ -229,7 +229,7 @@ testthat::test_that("xthetallik_rescaledC compare to prior tempered xthetallik",
   out <- gpds::xthetallik_rescaledC(dataInputWithMissing, curCovV, curCovR, cursigma, xthInit)
   pTemp <- nrow(dataInput)/nrow(na.omit(dataInputWithMissing))
   out2 <- gpds::xthetallikC(dataInputWithMissing, curCovV, curCovR, cursigma, xthInit,
-                            useBand = FALSE, priorTemperature = pTemp)
+                            useBand = FALSE, priorTemperature = c(pTemp, pTemp, 1))
   testthat::expect_equal(out, out2)
 })
 
@@ -239,7 +239,7 @@ testthat::test_that("prior tempered xthetallik is the same as rescaling phi", {
   
   pTemp <- nrow(dataInput)/nrow(na.omit(dataInputWithMissing))
   out2 <- gpds::xthetallikC(dataInputWithMissing, curCovV, curCovR, cursigma, xthInit,
-                            useBand = FALSE, priorTemperature = pTemp)
+                            useBand = FALSE, priorTemperature = c(pTemp, pTemp, 1))
   
   
   phiV <- marlikmap$par[1:2]
