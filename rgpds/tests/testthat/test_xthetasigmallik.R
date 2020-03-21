@@ -115,12 +115,14 @@ testthat::test_that("xthetasigmallik derivatives", {
   xlatentTest <- data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]) * rexp(length(fn.true[,1:2]))
   thetaTest <- pram.true$abc * rexp(length(pram.true$abc))
   sigmaTest <- rep(pram.true$sigma * exp(rnorm(1)), 2)
+  priorTemperatureTest <- rexp(3)
   
-  out <<- xthetasigmallikRcpp(xlatentTest,
+  out <- xthetasigmallikRcpp(xlatentTest,
                               thetaTest,
                               sigmaTest,
                               dataInput,
-                              list(curCovV, curCovR))
+                              list(curCovV, curCovR),
+                              priorTemperatureInput=priorTemperatureTest)
   out$value
   
   delta <- 1e-6
@@ -135,7 +137,8 @@ testthat::test_that("xthetasigmallik derivatives", {
                            thetaTest,
                            sigmaTest,
                            dataInput,
-                           list(curCovV, curCovR))$value -
+                           list(curCovV, curCovR),
+                           priorTemperatureInput=priorTemperatureTest)$value -
          out$value)/delta
   }
   x <- (gradNum - out$grad[1:length(xlatentTest)])/abs(gradNum)
@@ -151,7 +154,8 @@ testthat::test_that("xthetasigmallik derivatives", {
                            thetaTest1,
                            sigmaTest,
                            dataInput,
-                           list(curCovV, curCovR))$value -
+                           list(curCovV, curCovR),
+                           priorTemperatureInput=priorTemperatureTest)$value -
          out$value)/delta
   }
   x <- (gradNum - out$grad[(length(xlatentTest)+1):(length(xlatentTest)+length(thetaTest))])/abs(gradNum)
@@ -168,7 +172,8 @@ testthat::test_that("xthetasigmallik derivatives", {
                            thetaTest,
                            sigmaTest1,
                            dataInput,
-                           list(curCovV, curCovR))$value -
+                           list(curCovV, curCovR),
+                           priorTemperatureInput=priorTemperatureTest)$value -
          out$value)/delta
   }
   x <- (gradNum - tail(out$grad, 2))/abs(gradNum)
@@ -181,18 +186,26 @@ testthat::test_that("xthetasigmallik derivatives", {
                                    thetaTest,
                                    sigmaTest[1],
                                    dataInput,
-                                   list(curCovV, curCovR))
+                                   list(curCovV, curCovR),
+                                   priorTemperatureInput=priorTemperatureTest)
     
   gradNum <- 
     (xthetasigmallikRcpp(xlatentTest,
                          thetaTest,
                          sigmaTest1,
                          dataInput,
-                         list(curCovV, curCovR))$value -
+                         list(curCovV, curCovR),
+                         priorTemperatureInput=priorTemperatureTest)$value -
        out1sigma$value)/delta
   
   x <- (gradNum - tail(out1sigma$grad, 1))/abs(gradNum)
   testthat::expect_true(all(abs(x) < 5e-3)) # gradient is self-consistent
+  
+  out <<- xthetasigmallikRcpp(xlatentTest,
+                              thetaTest,
+                              sigmaTest,
+                              dataInput,
+                              list(curCovV, curCovR))
 })
 
 testthat::test_that("xthetasigmallik with band approx or mean component", {

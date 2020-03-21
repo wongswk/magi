@@ -158,6 +158,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives, withmean useBand", {
   thetaTest <- pram.true$abc * rexp(length(pram.true$abc))
   sigmaTest <- rep(pram.true$sigma * exp(rnorm(1)), 2)
   phi1Test <- c(pram.true$vphi[1], pram.true$rphi[1]) * exp(rnorm(2))
+  priorTemperature <- rexp(3)
   
   nophi1Cov[[1]]$mu <- curCovV$mu <- sin(1:nrow(fn.sim))
   nophi1Cov[[1]]$dotmu <- curCovV$dotmu <- cos(1:nrow(fn.sim))
@@ -170,6 +171,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives, withmean useBand", {
                                   sigmaTest,
                                   dataInput,
                                   nophi1Cov,
+                                  priorTemperatureInput = priorTemperature,
                                   useMean = TRUE,
                                   useBand = TRUE)
   
@@ -187,6 +189,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives, withmean useBand", {
                                sigmaTest,
                                dataInput,
                                nophi1Cov,
+                               priorTemperatureInput = priorTemperature,
                                useMean = TRUE,
                                useBand = TRUE)$value -
          out$value)/delta
@@ -206,6 +209,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives, withmean useBand", {
                                sigmaTest,
                                dataInput,
                                nophi1Cov,
+                               priorTemperatureInput = priorTemperature,
                                useMean = TRUE,
                                useBand = TRUE)$value -
          out$value)/delta
@@ -225,6 +229,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives, withmean useBand", {
                                sigmaTest,
                                dataInput,
                                nophi1Cov,
+                               priorTemperatureInput = priorTemperature,
                                useMean = TRUE,
                                useBand = TRUE)$value -
          out$value)/delta
@@ -245,6 +250,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives, withmean useBand", {
                                sigmaTest1,
                                dataInput,
                                nophi1Cov,
+                               priorTemperatureInput = priorTemperature,
                                useMean = TRUE,
                                useBand = TRUE)$value -
          out$value)/delta
@@ -261,6 +267,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives, withmean useBand", {
                                       sigmaTest[1],
                                       dataInput,
                                       nophi1Cov,
+                                      priorTemperatureInput = priorTemperature,
                                       useMean = TRUE,
                                       useBand = TRUE)
   
@@ -271,6 +278,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives, withmean useBand", {
                              sigmaTest1,
                              dataInput,
                              nophi1Cov,
+                             priorTemperatureInput = priorTemperature,
                              useMean = TRUE,
                              useBand = TRUE)$value -
        out1sigma$value)/delta
