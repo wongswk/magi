@@ -64,13 +64,16 @@ lp xthetasigmallik( const mat & xlatent,
     return ret;
   }
   
-  arma::vec priorTemperature(2);
+  arma::vec priorTemperature(3);
   if(priorTemperatureInput.n_rows == 1){
     priorTemperature.fill(as_scalar(priorTemperatureInput));
   }else if(priorTemperatureInput.n_rows == 2){
-    priorTemperature = priorTemperatureInput;
+    priorTemperature.subvec(0, 1) = priorTemperatureInput;
+    priorTemperature(2) = 1.0;
+  }else if(priorTemperatureInput.n_rows == 3){
+      priorTemperature = priorTemperatureInput;
   }else{
-    throw std::invalid_argument("priorTemperatureInput must be scaler or 2-vector");
+    throw std::invalid_argument("priorTemperatureInput must be scaler, 2-vector or 3-vector");
   }
   
   vec sigma(yobs.n_cols);
@@ -111,7 +114,9 @@ lp xthetasigmallik( const mat & xlatent,
   
   fitLevelError(find_nonfinite(fitLevelError)).fill(0.0);
   res.col(0) = -0.5 * sum(square( fitLevelError )).t() / sigmaSq - log(sigma) % nobs;
+  res.col(0) /= priorTemperature(2);
   vec sigmaGradient = sum(square( fitLevelError )).t() / (sigmaSq % sigma) - nobs / sigma;
+  sigmaGradient /= priorTemperature(2);
   
   mat KinvfitDerivError(n, pdimension);
   mat CinvX(n, pdimension);
