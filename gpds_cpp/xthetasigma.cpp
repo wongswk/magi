@@ -187,6 +187,7 @@ lp xthetasigmallik( const mat & xlatent,
   ret.gradient.subvec(0, eachDimensionC2.n_rows-1) = -sum(eachDimensionC2, 1) / priorTemperature(0);
   ret.gradient.subvec(0, n*pdimension-1) -= vectorise(CinvX) / priorTemperature(1);
   fitLevelError.each_row() /= sigmaSq.t();
+  fitLevelError /= priorTemperature(2);
   ret.gradient.subvec(0, n*pdimension-1) -= vectorise(fitLevelError);
   
   return ret;

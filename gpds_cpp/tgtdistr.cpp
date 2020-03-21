@@ -475,6 +475,7 @@ lp xthetallik( const vec & xtheta,
   }
   fitLevelError(find_nonfinite(fitLevelError)).fill(0.0);
   res.col(0) = -0.5 * sum(square( fitLevelError )).t() / square(sigma);
+  res.col(0) /= priorTemperature(2);
   
   mat KinvfitDerivError(n, pdimension);
   mat CinvX(n, pdimension);
@@ -534,6 +535,7 @@ lp xthetallik( const vec & xtheta,
   ret.gradient.subvec(0, n*pdimension-1) -= vectorise(CinvX) / priorTemperature(1);
   rowvec sigmaSq = square(sigma.t());
   fitLevelError.each_row() /= sigmaSq;
+  fitLevelError /= priorTemperature(2);
   ret.gradient.subvec(0, n*pdimension-1) -= vectorise(fitLevelError);
   
   return ret;

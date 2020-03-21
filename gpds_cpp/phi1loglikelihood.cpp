@@ -117,7 +117,9 @@ lp xthetaphi1sigmallik( const mat & xlatent,
   
   fitLevelError(find_nonfinite(fitLevelError)).fill(0.0);
   res.col(0) = -0.5 * sum(square( fitLevelError )).t() / sigmaSq - log(sigma) % nobs;
+  res.col(0) /= priorTemperature(2);
   vec sigmaGradient = sum(square( fitLevelError )).t() / (sigmaSq % sigma) - nobs / sigma;
+  sigmaGradient /= priorTemperature(2);
   
   mat KinvfitDerivError(n, pdimension);
   mat CinvX(n, pdimension);
@@ -190,6 +192,7 @@ lp xthetaphi1sigmallik( const mat & xlatent,
   ret.gradient.subvec(0, eachDimensionC2.n_rows-1) = -sum(eachDimensionC2.each_row() / phi1.t(), 1) / priorTemperature(0);
   ret.gradient.subvec(0, n*pdimension-1) -= vectorise(CinvX.each_row() / phi1.t()) / priorTemperature(1);
   fitLevelError.each_row() /= sigmaSq.t();
+  fitLevelError /= priorTemperature(2);
   ret.gradient.subvec(0, n*pdimension-1) -= vectorise(fitLevelError);
   
   ret.gradient.subvec(eachDimensionC2.n_rows, eachDimensionC2.n_rows + phi1.size() - 1) = 
