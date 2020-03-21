@@ -201,11 +201,6 @@ testthat::test_that("xthetasigmallik derivatives", {
   x <- (gradNum - tail(out1sigma$grad, 1))/abs(gradNum)
   testthat::expect_true(all(abs(x) < 5e-3)) # gradient is self-consistent
   
-  out <<- xthetasigmallikRcpp(xlatentTest,
-                              thetaTest,
-                              sigmaTest,
-                              dataInput,
-                              list(curCovV, curCovR))
 })
 
 testthat::test_that("xthetasigmallik with band approx or mean component", {
