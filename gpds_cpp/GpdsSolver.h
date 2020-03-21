@@ -69,6 +69,7 @@ public:
                const arma::mat & dotmuExogenous = arma::mat(),
                const double priorTemperatureLevel = 1,
                const double priorTemperatureDeriv = 1,
+               const double priorTemperatureObs = 1,
                std::string kernel = "generalMatern",
                const int nstepsHmc = 500,
                const double burninRatioHmc = 0.5,

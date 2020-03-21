@@ -71,10 +71,11 @@ lp xthetasigmallik( const mat & xlatent,
     priorTemperature.subvec(0, 1) = priorTemperatureInput;
     priorTemperature(2) = 1.0;
   }else if(priorTemperatureInput.n_rows == 3){
-      priorTemperature = priorTemperatureInput;
+    priorTemperature = priorTemperatureInput;
   }else{
     throw std::invalid_argument("priorTemperatureInput must be scaler, 2-vector or 3-vector");
   }
+
   
   vec sigma(yobs.n_cols);
   bool sigmaIsScaler = (sigmaInput.size() == 1);

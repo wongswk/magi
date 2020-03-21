@@ -438,16 +438,19 @@ lp xthetallik( const vec & xtheta,
   if (fOdeModel.checkBound(xlatent, theta, &ret)) {
     return ret;
   }
-  
-  arma::vec priorTemperature(2);
+
+  arma::vec priorTemperature(3);
   if(priorTemperatureInput.n_rows == 1){
     priorTemperature.fill(as_scalar(priorTemperatureInput));
   }else if(priorTemperatureInput.n_rows == 2){
+    priorTemperature.subvec(0, 1) = priorTemperatureInput;
+    priorTemperature(2) = 1.0;
+  }else if(priorTemperatureInput.n_rows == 3){
     priorTemperature = priorTemperatureInput;
   }else{
-    throw std::invalid_argument("priorTemperatureInput must be scaler or 2-vector");
+    throw std::invalid_argument("priorTemperatureInput must be scaler, 2-vector or 3-vector");
   }
-  
+
   const mat & fderiv = fOdeModel.fOde(theta, xlatent);
   const cube & fderivDx = fOdeModel.fOdeDx(theta, xlatent);
   const cube & fderivDtheta = fOdeModel.fOdeDtheta(theta, xlatent);

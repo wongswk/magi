@@ -64,17 +64,21 @@ lp xthetaphi1sigmallik( const mat & xlatent,
   lp ret;
   if (fOdeModel.checkBound(xlatent, theta, &ret)) {
     return ret;
+
   }
-  
-  arma::vec priorTemperature(2);
-  if(priorTemperatureInput.n_rows == 1){
-    priorTemperature.fill(as_scalar(priorTemperatureInput));
-  }else if(priorTemperatureInput.n_rows == 2){
-    priorTemperature = priorTemperatureInput;
-  }else{
-    throw std::invalid_argument("priorTemperatureInput must be scaler or 2-vector");
-  }
-  
+
+    arma::vec priorTemperature(3);
+    if(priorTemperatureInput.n_rows == 1){
+        priorTemperature.fill(as_scalar(priorTemperatureInput));
+    }else if(priorTemperatureInput.n_rows == 2){
+        priorTemperature.subvec(0, 1) = priorTemperatureInput;
+        priorTemperature(2) = 1.0;
+    }else if(priorTemperatureInput.n_rows == 3){
+        priorTemperature = priorTemperatureInput;
+    }else{
+        throw std::invalid_argument("priorTemperatureInput must be scaler, 2-vector or 3-vector");
+    }
+
   vec sigma(yobs.n_cols);
   bool sigmaIsScaler = (sigmaInput.size() == 1);
   if (sigmaIsScaler){
