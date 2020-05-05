@@ -14,6 +14,7 @@ public:
     const arma::vec & sigmaExogenous;
     const arma::mat & phiExogenous;
     const arma::mat & xInitExogenous;
+    const arma::vec & thetaInitExogenous;
     const arma::mat & muExogenous;
     const arma::mat & dotmuExogenous;
 
@@ -65,6 +66,7 @@ public:
                const arma::vec & sigmaExogenous = arma::vec(),
                const arma::mat & phiExogenous = arma::mat(),
                const arma::mat & xInitExogenous = arma::mat(),
+               const arma::vec & thetaInitExogenous = arma::vec(),
                const arma::mat & muExogenous = arma::mat(),
                const arma::mat & dotmuExogenous = arma::mat(),
                const double priorTemperatureLevel = 1,

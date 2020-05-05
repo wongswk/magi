@@ -11,6 +11,7 @@ GpdsSolver::GpdsSolver(const arma::mat & yFull,
                        const arma::vec & sigmaExogenous,
                        const arma::mat & phiExogenous,
                        const arma::mat & xInitExogenous,
+                       const arma::vec & thetaInitExogenous,
                        const arma::mat & muExogenous,
                        const arma::mat & dotmuExogenous,
                        const double priorTemperatureLevel,
@@ -35,6 +36,7 @@ GpdsSolver::GpdsSolver(const arma::mat & yFull,
         sigmaExogenous(sigmaExogenous),
         phiExogenous(phiExogenous),
         xInitExogenous(xInitExogenous),
+        thetaInitExogenous(thetaInitExogenous),
         muExogenous(muExogenous),
         dotmuExogenous(dotmuExogenous),
         priorTemperature({priorTemperatureLevel, priorTemperatureDeriv, priorTemperatureObs}),
@@ -270,13 +272,17 @@ void GpdsSolver::initTheta() {
         sigmaUsed = sigmaInit;
     }
 
-    thetaInit = optimizeThetaInit(yFull,
-                                  odeModel,
-                                  covAllDimensions,
-                                  sigmaUsed,
-                                  priorTemperature,
-                                  xInit,
-                                  useBand);
+    if (!thetaInitExogenous.empty()){
+        thetaInit = thetaInitExogenous;
+    }else{
+        thetaInit = optimizeThetaInit(yFull,
+                                      odeModel,
+                                      covAllDimensions,
+                                      sigmaUsed,
+                                      priorTemperature,
+                                      xInit,
+                                      useBand);
+    }
 }
 
 void GpdsSolver::initMissingComponent() {
