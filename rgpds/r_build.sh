@@ -44,8 +44,7 @@ rm -r src/rcppgpds/
 
 rm NAMESPACE
 touch NAMESPACE
-Rscript -e "devtools::document();"
-Rscript -e "pkgbuild:::compile_rcpp_attributes(); Rcpp::compileAttributes(); devtools::document(); devtools::install();"
+MAKE="make -j$CPU" Rscript -e "pkgbuild:::compile_rcpp_attributes(); Rcpp::compileAttributes(); devtools::document(); devtools::install();"
 
 LIB_PYGPDS_SOURCE=$(cd "$PROJECT"/gpds_cpp && ls -- *.cpp)
 LIB_PYGPDS_HEADERS=$(cd "$PROJECT"/gpds_cpp && ls -- *.h)
