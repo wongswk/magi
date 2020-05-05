@@ -22,7 +22,9 @@ target_include_directories(pygpds SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../i
 target_include_directories(pygpds SYSTEM PUBLIC
         /usr/local/Cellar/python/3.6.4_4/Frameworks/Python.framework/Versions/3.6/include/python3.6m
         /usr/local/Cellar/python/3.6.5_1/Frameworks/Python.framework/Versions/3.6/include/python3.6m
-        /usr/include/python3.6m/)
+        /usr/include/python3.6m/
+        /usr/local/Frameworks/Python.framework/Headers
+        )
 
 add_dependencies(pygpds cgpds)
 
