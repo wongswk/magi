@@ -18,7 +18,7 @@ arma::cube r2armacube(const SEXP & x){
 }
 
 // [[Rcpp::export]]
-arma::cube solveGpdsRcpp(
+Rcpp::List solveGpdsRcpp(
         const arma::mat & yFull,
         const List & odeModel,
         const arma::vec & tvecFull,
@@ -132,8 +132,10 @@ arma::cube solveGpdsRcpp(
     //return yFull;
     solver.initMissingComponent();
     solver.sampleInEpochs();
-    return solver.llikxthetasigmaSamples;
+
+    Rcpp::List ret = Rcpp::List::create(Rcpp::Named("llikxthetasigmaSamples")=solver.llikxthetasigmaSamples,
+                                        Rcpp::Named("phi")=solver.phiAllDimensions);
+
+    return ret;
 
 }
-
-
