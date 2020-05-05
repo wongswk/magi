@@ -2,9 +2,10 @@ Package: gpds
 Type: Package
 Title: Gaussian Process for Dynamical System inference
 Version: 0.2
-Date: 2019-08-14
+Date: 2020-05-05
 Author: Shihao Yang, Samuel Wong
-Maintainer: Shihao Yang <shihaoyang@g.harvard.edu>
+Maintainer: Shihao Yang <shihao.yang@isye.gatech.edu>
+Encoding: UTF-8
 Description: ODE parameter inference using Gaussian Process
 License: MIT + file LICENSE
 VignetteBuilder: knitr
@@ -16,7 +17,7 @@ Imports:
     grid,
     deSolve
 LinkingTo: Rcpp, RcppArmadillo
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.0
 Suggests: 
     testthat,
     mvtnorm,
