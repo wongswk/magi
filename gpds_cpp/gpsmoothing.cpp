@@ -438,8 +438,11 @@ public:
             phiFull(phiFullInput),
             missingComponentDim(missingComponentDimInput) {
         Eigen::VectorXd lb(missingComponentDim.size() * 2);
+        Eigen::VectorXd ub(missingComponentDim.size() * 2);
         lb.fill(1e-4);
+        ub.fill(1e3);
         this->setLowerBound(lb);
+        this->setUpperBound(ub);
     }
 };
 
