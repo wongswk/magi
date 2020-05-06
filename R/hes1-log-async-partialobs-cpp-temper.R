@@ -147,6 +147,10 @@ odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 outDir <- "../results/cpp/7param/fixedphi-temper/"
 system(paste("mkdir -p", outDir))
 
+for(j in 1:(ncol(xsim)-1)){
+  config[[paste0("phiD", j)]] <- paste(round(phiUsed[,j], 2), collapse = "; ")
+}
+
 gpds:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-7param-fixedphi-temper.pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
@@ -217,6 +221,10 @@ odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 outDir <- "../results/cpp/7param/variablephi-temper-coldstart/"
 system(paste("mkdir -p", outDir))
 
+for(j in 1:(ncol(xsim)-1)){
+  config[[paste0("phiD", j)]] <- paste(round(phiUsed[,j], 2), collapse = "; ")
+}
+
 gpds:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-7param-variablephi-temper-coldstart.pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
@@ -286,6 +294,10 @@ odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 
 outDir <- "../results/cpp/7param/variablephi-notemper/"
 system(paste("mkdir -p", outDir))
+
+for(j in 1:(ncol(xsim)-1)){
+  config[[paste0("phiD", j)]] <- paste(round(phiUsed[,j], 2), collapse = "; ")
+}
 
 gpds:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-7param-variablephi-notemper.pdf"), 
@@ -359,6 +371,10 @@ odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 
 outDir <- "../results/cpp/7param/variablephi-temper-warmstart/"
 system(paste("mkdir -p", outDir))
+
+for(j in 1:(ncol(xsim)-1)){
+  config[[paste0("phiD", j)]] <- paste(round(phiUsed[,j], 2), collapse = "; ")
+}
 
 gpds:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-7param-variablephi-temper-warmstart.pdf"), 
