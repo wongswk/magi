@@ -93,6 +93,7 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   sigmaExogenous = pram.true$sigma,
   phiExogenous = phiExogenous,
   xInitExogenous = matrix(numeric(0)),
+  thetaInitExogenous = matrix(numeric(0)),
   muExogenous = matrix(numeric(0)),
   dotmuExogenous = matrix(numeric(0)),
   priorTemperatureLevel = config$priorTemperature,
@@ -111,6 +112,9 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   useScalerSigma = config$useScalerSigma,
   useFixedSigma = config$useFixedSigma,
   verbose = TRUE)
+
+phiUsed <- samplesCpp$phi
+samplesCpp <- samplesCpp$llikxthetasigmaSamples
 
 samplesCpp <- samplesCpp[,,1]
 out <- samplesCpp[-1,1,drop=FALSE]
@@ -159,6 +163,7 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   sigmaExogenous = pram.true$sigma,
   phiExogenous = matrix(numeric(0)),
   xInitExogenous = matrix(numeric(0)),
+  thetaInitExogenous = matrix(numeric(0)),
   muExogenous = matrix(numeric(0)),
   dotmuExogenous = matrix(numeric(0)),
   priorTemperatureLevel = config$priorTemperature,
@@ -177,6 +182,9 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   useScalerSigma = config$useScalerSigma,
   useFixedSigma = config$useFixedSigma,
   verbose = TRUE)
+
+phiUsed <- samplesCpp$phi
+samplesCpp <- samplesCpp$llikxthetasigmaSamples
 
 samplesCpp <- samplesCpp[,,1]
 out <- samplesCpp[-1,1,drop=FALSE]
@@ -225,6 +233,7 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   sigmaExogenous = pram.true$sigma,
   phiExogenous = matrix(numeric(0)),
   xInitExogenous = matrix(numeric(0)),
+  thetaInitExogenous = matrix(numeric(0)),
   muExogenous = matrix(numeric(0)),
   dotmuExogenous = matrix(numeric(0)),
   priorTemperatureLevel = config$priorTemperature,
@@ -243,6 +252,9 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   useScalerSigma = config$useScalerSigma,
   useFixedSigma = config$useFixedSigma,
   verbose = TRUE)
+
+phiUsed <- samplesCpp$phi
+samplesCpp <- samplesCpp$llikxthetasigmaSamples
 
 samplesCpp <- samplesCpp[,,1]
 out <- samplesCpp[-1,1,drop=FALSE]
@@ -284,13 +296,17 @@ save.image(paste0(outDir, config$modelName,"-",config$seed,"-7param-variablephi-
 ## tempered with warm start ----------------------------
 
 xInit <- apply(gpode$xsampled, 2:3, mean)
+thetaInit <- colMeans(gpode$theta)
+phiNoTemperOptimized <- phiUsed
+
 samplesCpp <- gpds:::solveGpdsRcpp(
   yFull = data.matrix(xsim[,-1]),
   odeModel = hes1logmodel,
   tvecFull = xsim$time,
   sigmaExogenous = pram.true$sigma,
-  phiExogenous = matrix(numeric(0)),
+  phiExogenous = phiNoTemperOptimized,
   xInitExogenous = xInit,
+  thetaInitExogenous = thetaInit,
   muExogenous = matrix(numeric(0)),
   dotmuExogenous = matrix(numeric(0)),
   priorTemperatureLevel = config$priorTemperature,
@@ -309,6 +325,9 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   useScalerSigma = config$useScalerSigma,
   useFixedSigma = config$useFixedSigma,
   verbose = TRUE)
+
+phiUsed <- samplesCpp$phi
+samplesCpp <- samplesCpp$llikxthetasigmaSamples
 
 samplesCpp <- samplesCpp[,,1]
 out <- samplesCpp[-1,1,drop=FALSE]
