@@ -37,3 +37,5 @@ __pycache__
 package/boost*
 rgpds/man
 gpds_cpp/gpds_main
+rgpds/src/*.o
+
