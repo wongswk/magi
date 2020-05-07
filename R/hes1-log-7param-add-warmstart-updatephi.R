@@ -120,3 +120,10 @@ parallel::mclapply(common_seeds, function(each_seed){
   save(list=ls(), file=paste0(outDir, config$modelName,"-",config$seed,"-7param-variablephi-temper-warmstart-updatephi.rda"))
   
 }, mc.cores = 64)
+
+for (each_seed in common_seeds){
+  load(paste0("../results/cpp/7param/variablephi-temper-warmstart-updatephi/Hes1-log-",each_seed,"-7param-variablephi-temper-warmstart-updatephi.rda"))
+  gpds:::plotPostSamplesFlex(
+    paste0(outDir, config$modelName,"-",config$seed,"-7param-variablephi-temper-warmstart-updatephi.pdf"),
+    xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+}

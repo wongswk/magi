@@ -24,7 +24,8 @@ for(i in 1:length(subdirs)){
 # rdaDir <- "../results/cpp/7param/variablephi-temper-warmstart/"
 # rdaDir <- "../results/cpp/7param/fixedphi-temper/"
 # rdaDir <- "../results/cpp/7param/variablephi-notemper/"
-rdaDir <- "../results/cpp/7param/variablephi-temper-coldstart/"
+# rdaDir <- "../results/cpp/7param/variablephi-temper-coldstart/"
+rdaDir <- "../results/cpp/7param/variablephi-temper-warmstart-updatephi/"
 
 pdf_files <- list.files(rdaDir)
 rda_files <- pdf_files[grep("Hes1-log.*\\.rda", pdf_files)]
