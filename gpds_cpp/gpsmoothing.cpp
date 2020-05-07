@@ -439,8 +439,26 @@ public:
             missingComponentDim(missingComponentDimInput) {
         Eigen::VectorXd lb(missingComponentDim.size() * 2);
         Eigen::VectorXd ub(missingComponentDim.size() * 2);
-        lb.fill(1e-4);
-        ub.fill(1e3);
+
+        const double maxDist = (arma::max(tvecInput) - arma::min(tvecInput));
+        const double maxScale = arma::max(arma::abs(yobs(arma::find_finite(yobs))));
+
+        arma::vec priorFactor = arma::zeros(2);
+        for (unsigned j = 0; j < yobs.n_cols; j++){
+            if (arma::any(missingComponentDim == j)){
+                continue;
+            }
+            priorFactor += calcFrequencyBasedPrior(yobs);
+        }
+        priorFactor /= (yobs.n_cols - missingComponentDim.size());
+        std::cout << "average priorFactor in PhiOptim =\n" << priorFactor << "\n";
+
+        for(unsigned i = 0; i < missingComponentDim.size(); i++){
+            ub[2*i] = maxScale * 5;
+            lb[2*i] = maxScale * 1e-3;
+            ub[2*i+1] = maxDist * 5;
+            lb[2*i+1] = maxDist * priorFactor(0) * 0.5;
+        }
         this->setLowerBound(lb);
         this->setUpperBound(ub);
     }
