@@ -136,7 +136,7 @@ public:
         priorFactor = arma::zeros(2);
         if(useFrequencyBasedPrior){
             for (unsigned j = 0; j < yobs.n_cols; j++){
-                priorFactor += calcFrequencyBasedPrior(yobs);
+                priorFactor += calcFrequencyBasedPrior(yobs.col(j));
             }
             priorFactor /= yobs.n_cols;
             std::cout << "priorFactor =\n" << priorFactor << "\n";
@@ -448,7 +448,8 @@ public:
             if (arma::any(missingComponentDim == j)){
                 continue;
             }
-            priorFactor += calcFrequencyBasedPrior(yobs);
+            const arma::vec & yobsThisDim = yobs.col(j);
+            priorFactor += calcFrequencyBasedPrior(yobsThisDim(arma::find_finite(yobsThisDim)));
         }
         priorFactor /= (yobs.n_cols - missingComponentDim.size());
         std::cout << "average priorFactor in PhiOptim =\n" << priorFactor << "\n";
@@ -457,7 +458,7 @@ public:
             ub[2*i] = maxScale * 5;
             lb[2*i] = maxScale * 1e-3;
             ub[2*i+1] = maxDist * 5;
-            lb[2*i+1] = maxDist * priorFactor(0) * 0.5;
+            lb[2*i+1] = std::min(maxDist * priorFactor(0) * 0.5, maxDist * 0.05);
         }
         this->setLowerBound(lb);
         this->setUpperBound(ub);
