@@ -26,6 +26,10 @@ for(i in 1:length(subdirs)){
 # rdaDir <- "../results/cpp/7param/variablephi-notemper/"
 # rdaDir <- "../results/cpp/7param/variablephi-temper-coldstart/"
 rdaDir <- "../results/cpp/7param/variablephi-temper-warmstart-updatephi/"
+for (rdaDir in subdirs){
+rm(list=setdiff(ls(), c("rdaDir", "subdirs")))
+rdaDir <- paste0(rdaDir, "/")
+print(rdaDir)
 
 pdf_files <- list.files(rdaDir)
 rda_files <- pdf_files[grep("Hes1-log.*\\.rda", pdf_files)]
@@ -109,7 +113,6 @@ library(parallel)
 # rda_files = rda_files[order(lglik_convergence)][1:256]
 
 outStorage <- mclapply(rda_files, function(f){
-  show(f)
   load(paste0(rdaDir, f), envir = .GlobalEnv)
   if (!exists("param_restricted")){
     param_restricted <- pram.true
@@ -291,8 +294,6 @@ tab <- data.frame(tab)
 colnames(tab) <- c("Method", letters[1:7])
 rownames(tab) <- NULL
 library(xtable)
-print(xtable(tab), include.rownames=FALSE)
-print(xtable(t(tab)))
 
 
 # theta posterior credible interval coverage table 
@@ -301,48 +302,7 @@ coverage <- rbind(
 )
 coverage <- cbind(c("Ours"), coverage)
 colnames(coverage) <- c("Method", letters[1:7])
-print(xtable(coverage), include.rownames=FALSE)
-
-print(xtable(cbind(t(tab), t(coverage))))
 print(xtable(cbind(c("truth", param_restricted$theta), t(tab), t(coverage))))
-
-
-# # theta posterior of Ramsay
-# ramsayPostTheta <- sapply(ramsayPostTheta, identity, simplify = "array")
-# 
-# ramsay_mean_est <- rbind(
-#   apply(ramsayPostTheta, 1, mean)
-# )
-# ramsay_sd_est <- rbind(
-#   apply(ramsayPostTheta, 1, sd)
-# )
-# 
-# ramsey_tab <- c("Ramsey", tablizeEstErr(ramsay_mean_est[1,],ramsay_sd_est[1,]))
-# print(xtable(cbind(c("truth", pram.true$theta), t(tab), t(coverage), ramsey_tab)))
-# 
-# 
-# # posterior summary based on median and inter-quartile-range
-# iqr <- function(x) quantile(x, 0.75) - quantile(x, 0.25)
-# mean_est <- rbind(
-#   apply(oursPostTheta[,1,], 1, median)
-# )
-# sd_est <- rbind(
-#   apply(oursPostTheta[,1,], 1, iqr)
-# )
-# tab <- rbind(
-#   c("Ours", tablizeEstErr(mean_est[1,],sd_est[1,]))
-# )
-# tab <- data.frame(tab)
-# colnames(tab) <- c("Method", letters[1:7])
-# rownames(tab) <- NULL
-# ramsay_mean_est <- rbind(
-#   apply(ramsayPostTheta, 1, median)
-# )
-# ramsay_sd_est <- rbind(
-#   apply(ramsayPostTheta, 1, iqr)
-# )
-# ramsey_tab <- c("Ramsey", tablizeEstErr(ramsay_mean_est[1,],ramsay_sd_est[1,]))
-# print(xtable(cbind(c("truth", pram.true$theta), t(tab), t(coverage), ramsey_tab)))
 
 
 
@@ -471,42 +431,4 @@ legend("center", c("truth", "median posterior mean", "median reconstructed traje
        border=c(0, 0, 0, "skyblue", "grey80"), angle=c(NA,NA,NA,-45,45), x.intersp=c(2.5,2.5,2.5,0, 0),  bty = "n", cex=1.8)
 dev.off()
 
-
-# ramsayXdesolvePM <- sapply(ramsayXdesolvePM, identity, simplify = "array")
-# 
-# pdf(width = 20, height = 5, file=paste0(rdaDir, "/posteriorExpxHes1Ramsay.pdf"))
-# par(mfrow=c(1, ncol(xsim)+1))
-# 
-# matplot(xtrue[, "time"], exp(xtrue[, -1]), type="l", lty=1, col=c(4,6,"goldenrod1"), xlab="time", ylab=NA)
-# matplot(xsim.obs$time, exp(xsim.obs[,-1]), type="p", col=c(4,6,"goldenrod1"), pch=20, add = TRUE)
-# mtext('sample observations', cex=1.5)
-# legend("topright", c("true P", "true M", "true H", "observed P", "observed M"), 
-#        lty=c(1,1,1,NA,NA), pch=c(NA,NA,NA,20,20), col=c(4,6,"goldenrod1"), cex=1.5)
-# 
-# for (i in 1:(ncol(xsim)-1)) {
-#   ourEst <- apply(ramsayXdesolvePM[id,i+1,], 1, quantile, probs = 0.5, na.rm=TRUE)
-#   # use 0.25 and 0.75 to check if outliers have significant effect on the inference, turns out no outlier issue
-#   ourUB <- apply(ramsayXdesolvePM[id,i+1,], 1, quantile, probs = 0.025, na.rm=TRUE)
-#   ourLB <- apply(ramsayXdesolvePM[id,i+1,], 1, quantile, probs = 0.975, na.rm=TRUE)
-#   
-#   ourEst <- exp(ourEst)
-#   ourUB <- exp(ourUB)
-#   ourLB <- exp(ourLB)
-#   
-#   times <- xdesolveTRUE[,1]
-#   
-#   plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
-#   mtext(compnames[i], cex=1.5)
-#   polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
-#           col = "skyblue", border = "skyblue", lty = 1, density = 10, angle = -45)
-#   
-#   lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
-#   lines(times, ourEst, col="forestgreen", lwd=3)
-# }
-# par(mar=rep(0,4))
-# plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
-# legend("center", c("truth",  "median reconstructed trajectory", 
-#                    "CI on reconstructed trajectory"), lty=c(1,1,0), lwd=c(4,3,0),
-#        col = c("red", "forestgreen", NA), density=c(NA, NA, 40), fill=c(0, 0, "skyblue"),
-#        border=c(0, 0, "skyblue"), angle=c(NA,NA,-45), x.intersp=c(2.5,2.5, 0),  bty = "n", cex=1.8)
-# dev.off()
+}
