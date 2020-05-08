@@ -441,6 +441,7 @@ public:
         Eigen::VectorXd ub(missingComponentDim.size() * 2);
 
         const double maxDist = (arma::max(tvecInput) - arma::min(tvecInput));
+        const double minDist = arma::min(arma::abs(arma::diff(tvecInput)));
         const double maxScale = arma::max(arma::abs(yobs(arma::find_finite(yobs))));
 
         arma::vec priorFactor = arma::zeros(2);
@@ -458,7 +459,7 @@ public:
             ub[2*i] = maxScale * 5;
             lb[2*i] = maxScale * 1e-3;
             ub[2*i+1] = maxDist * 5;
-            lb[2*i+1] = std::min(maxDist * priorFactor(0) * 0.5, maxDist * 0.05);
+            lb[2*i+1] = std::min(maxDist * priorFactor(0) * 0.5, minDist);
         }
         this->setLowerBound(lb);
         this->setUpperBound(ub);
