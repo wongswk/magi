@@ -6,10 +6,15 @@ while true; do
   Rscript R/hes1-log-fullobs-cpp.R
 
 sleep 2400
-for i in {1..60}
-do
-  Rscript R/hes1-log-async-partialobs-cpp-temper.R &
+
+for dummy in {1..12}; do
+  for i in {1..60}; do
+    Rscript R/hes1-log-async-partialobs-cpp-temper.R &
+  done
+  Rscript R/hes1-log-async-partialobs-cpp-temper.R
+  sleep 300
 done
+
 
 sleep 10800
 for i in {1..60}
