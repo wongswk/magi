@@ -185,7 +185,15 @@ library(gpds)
 library(xtable)
 
 # Average the posterior mean RMSEs for the different seeds
+rmse.obs.all <- sapply(ours, function(x) x$rmseOdePM)
+round(rowMeans(rmse.obs.all), digits=4)
+pdf(paste0(rdaDir, "/RMSE on observation without tempering.pdf"))
+hist(rmse.obs.all[1,], breaks=50, main="RMSE on observation without tempering")
+mtext("component 1: P")
+hist(rmse.obs.all[2,], breaks=50, main="RMSE on observation without tempering")
+mtext("component 2: M")
 rmse.table <- round(apply(sapply(ours, function(x) x$rmseOdePM), 1, mean), digits=4)
+dev.off()
 print(rmse.table)
 
 rowId <- sapply(xsim$time, function(x) which(abs(x-times) < 1e-6))
