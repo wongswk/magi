@@ -5,8 +5,8 @@
 #SBATCH -p serial_requeue # Partition
 #SBATCH --mem 8000 # Memory request
 #SBATCH -t 0-03:20 # (D-HH:MM)
-#SBATCH -o /n/scratchlfs02/kou_lab/shihaoyang/dynamic_sys/DynamicSystemFixFG_%a.out # Standard output
-#SBATCH -e /n/scratchlfs02/kou_lab/shihaoyang/dynamic_sys/DynamicSystemFixFG_%a.err # Standard error
+#SBATCH -o $SCRATCH/kou_lab/shihaoyang/dynamic_sys/DynamicSystemFixFG_%a.out # Standard output
+#SBATCH -e $SCRATCH/kou_lab/shihaoyang/dynamic_sys/DynamicSystemFixFG_%a.err # Standard error
 
 # if (( $SLURM_ARRAY_TASK_ID % 4 == 0 ))
 # then
