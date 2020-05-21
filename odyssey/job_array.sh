@@ -4,9 +4,9 @@
 #SBATCH -N 1 # All cores on one machine
 #SBATCH -p serial_requeue # Partition
 #SBATCH --mem 8000 # Memory request
-#SBATCH -t 1-01:20 # (D-HH:MM)
-#SBATCH -o /n/scratchlfs02/kou_lab/shihaoyang/dynamic_sys/DynamicSystemFixFG_%a.out # Standard output
-#SBATCH -e /n/scratchlfs02/kou_lab/shihaoyang/dynamic_sys/DynamicSystemFixFG_%a.err # Standard error
+#SBATCH -t 0-03:20 # (D-HH:MM)
+#SBATCH -o $SCRATCH/kou_lab/shihaoyang/dynamic_sys/DynamicSystemFixFG_%a.out # Standard output
+#SBATCH -e $SCRATCH/kou_lab/shihaoyang/dynamic_sys/DynamicSystemFixFG_%a.err # Standard error
 
 # if (( $SLURM_ARRAY_TASK_ID % 4 == 0 ))
 # then
@@ -31,4 +31,4 @@
 # Rscript R/largeParameterExperiment.R ${SLURM_ARRAY_TASK_ID}
 # Rscript R/fn-ramsay.R ${SLURM_ARRAY_TASK_ID}
 # Rscript R/addRamsayFN.R ${SLURM_ARRAY_TASK_ID}
-Rscript R/hes1-log-async-partialobs-cpp-trials.R
+Rscript R/hes1-log-async-partialobs-cpp-temper.R
