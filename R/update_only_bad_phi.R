@@ -8,12 +8,16 @@ subdirs <- list.dirs(rdaDir)[-1]
 env_all <- list()
 env_all$notemper <- new.env()
 env_all$warmstart <- new.env()
-env_all$updatephi <- new.env()
-# env_all$reoptimizephi <- new.env()
-
 load(paste0(rdaDir, "/variablephi-notemper/hes1log_summary.rda"), envir = env_all$notemper)
 load(paste0(rdaDir, "/variablephi-temper-warmstart/hes1log_summary.rda"), envir = env_all$warmstart)
-load(paste0(rdaDir, "/variablephi-temper-warmstart-updatephi/hes1log_summary.rda"), envir = env_all$updatephi)
+
+
+for (updateDir in subdirs){
+updateDir <- paste0(updateDir, "/")
+print(updateDir)
+
+env_all$updatephi <- new.env()
+load(paste0(updateDir, "/hes1log_summary.rda"), envir = env_all$updatephi)
 # load(paste0(rdaDir, "/variablephi-temper-warmstart-reoptimizephi/hes1log_summary.rda"), envir = env_all$reoptimizephi)
 
 all_seeds <- sapply(env_all, function(x) gsub(".*log-([0-9]+)-7param.*", "\\1", x$rda_files))
@@ -64,7 +68,7 @@ xdesolveTRUE[,-1] <- exp(xdesolveTRUE[,-1])
 ylim_lower <- c(1.5, 0.5, 0)
 ylim_upper <- c(9.0, 3.1, 19)
 
-pdf(width = 20, height = 5, file=paste0(rdaDir, "/posteriorExpxHes1HybridOursIllustration.pdf"))
+pdf(width = 20, height = 5, file=paste0(updateDir, "/posteriorExpxHes1HybridOursIllustration.pdf"))
 par(mfrow=c(1, ncol(xsim)+1))
 
 matplot(xtrue[, "time"], exp(xtrue[, -1]), type="l", lty=1, col=c(4,6,"goldenrod1"), xlab="time", ylab=NA)
@@ -158,6 +162,9 @@ colnames(coverage) <- c("Method", letters[1:7])
 
 tab <- cbind(c("truth", pram.true$theta), t(tab), t(coverage))
 
+sink(paste0(updateDir, "updatePhiResult.txt"))
 print(rmse_orig)
 print(tab)
 print(xtable(tab))
+sink()
+}
