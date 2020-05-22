@@ -18,9 +18,10 @@ parallel::mclapply(common_seeds, function(each_seed){
   
   load(paste0("../results/cpp/7param/variablephi-notemper/Hes1-log-",each_seed,"-7param-variablephi-notemper.rda"))
   
+
   xInit <- apply(gpode$xsampled, 2:3, mean)
   thetaInit <- colMeans(gpode$theta)
-  phiNoTemperOptimized <- phiUsed
+  phiUpdateMissing <- phiUsed
   
   phiNewInit <- gpds:::solveGpdsRcpp(
     yFull = xInit,
@@ -49,12 +50,14 @@ parallel::mclapply(common_seeds, function(each_seed){
     useFixedSigma = config$useFixedSigma,
     verbose = TRUE)
   
+  phiUpdateMissing[,3] <- phiNewInit$phi[,3]
+  
   samplesCpp <- gpds:::solveGpdsRcpp(
     yFull = data.matrix(xsim[,-1]),
     odeModel = hes1logmodel,
     tvecFull = xsim$time,
     sigmaExogenous = pram.true$sigma,
-    phiExogenous = phiNewInit$phi,
+    phiExogenous = phiUpdateMissing,
     xInitExogenous = xInit,
     thetaInitExogenous = thetaInit,
     muExogenous = matrix(numeric(0)),
@@ -106,18 +109,15 @@ parallel::mclapply(common_seeds, function(each_seed){
   
   odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
   
-  outDir <- "../results/cpp/7param/variablephi-temper-warmstart-updatephi/"
+  outDir <- "../results/cpp/7param/variablephi-temper-warmstart-updatemissingphi/"
   system(paste("mkdir -p", outDir))
   
   for(j in 1:(ncol(xsim)-1)){
     config[[paste0("phiD", j)]] <- paste(round(phiUsed[,j], 2), collapse = "; ")
   }
   
-  # gpds:::plotPostSamplesFlex(
-  #   paste0(outDir, config$modelName,"-",config$seed,"-7param-variablephi-temper-warmstart-updatephi.pdf"), 
-  #   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
-  
-  save(list=ls(), file=paste0(outDir, config$modelName,"-",config$seed,"-7param-variablephi-temper-warmstart-updatephi.rda"))
+
+  save(list=ls(), file=paste0(outDir, config$modelName,"-",config$seed,"-7param-variablephi-temper-warmstart-updatemissingphi.rda"))
   
 }, mc.cores = 64)
 

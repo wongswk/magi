@@ -11,13 +11,13 @@ for (i in 2:length(all_seeds)){
   common_seeds <- intersect(common_seeds, all_seeds[[i]])  
 }
 
-for(i in 1:length(subdirs)){
-  to_delete <- all_files[[i]][rowSums(sapply(common_seeds, function(s) grepl(s, all_files[[i]]))) == 0]
-  to_delete <- paste0(subdirs[i], "/", to_delete)
-  for(each_d in to_delete){
-    system(paste0("rm ", each_d))  
-  }
-}
+# for(i in 1:length(subdirs)){
+#   to_delete <- all_files[[i]][rowSums(sapply(common_seeds, function(s) grepl(s, all_files[[i]]))) == 0]
+#   to_delete <- paste0(subdirs[i], "/", to_delete)
+#   for(each_d in to_delete){
+#     system(paste0("rm ", each_d))  
+#   }
+# }
 
 # read results ------------------------------------------
 
@@ -189,6 +189,7 @@ ramsayRmseOrig <- list()
 #   ramsayPostX0[[f]] <- env_ramsay$best.pars.x0
 # }
 
+print(paste0(rdaDir,"hes1log_summary.rda"))
 save.image(file=paste0(rdaDir,"hes1log_summary.rda"))
 
 load(paste0(rdaDir, rda_files[1]), envir = .GlobalEnv)
