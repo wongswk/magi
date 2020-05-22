@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -J gpdsFixFG # A single job name for the array
-#SBATCH -n 1 # Number of cores
-#SBATCH -N 64 # All cores on one machine
+#SBATCH -n 64 # Number of cores
+#SBATCH -N 1 # All cores on one machine
 #SBATCH -p serial_requeue # Partition
 #SBATCH --mem 256000 # Memory request
 #SBATCH -t 1-03:20 # (D-HH:MM)
