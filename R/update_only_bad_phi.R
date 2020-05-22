@@ -1,7 +1,8 @@
 library(gpds)
+library(xtable)
 
 # remove results that don't have common seed
-rdaDir <- "/Volumes/TimeMachineBackup/Workspace/DynamicSys/results/cpp/7param-917321ad09779c5bd6932651b8291acc4c236d22/"
+rdaDir <- "../results/cpp/7param/"
 subdirs <- list.dirs(rdaDir)[-1]
 
 env_all <- list()
@@ -39,10 +40,12 @@ oursPostExpX[id_to_update] <- env_all$updatephi$oursPostExpX[id_to_update]
 oursExpXdesolvePM <- env_all$warmstart$oursExpXdesolvePM
 oursExpXdesolvePM[id_to_update] <- env_all$updatephi$oursExpXdesolvePM[id_to_update]
 
+oursPostTheta <- env_all$warmstart$oursPostTheta
+oursPostTheta[id_to_update] <- env_all$updatephi$oursPostTheta[id_to_update]
 
 load(paste0(rdaDir, "/variablephi-notemper/", env_all$notemper$rda_files[1]), envir = .GlobalEnv)
-rm(env_all)
-save.image(paste0(rdaDir, "Hes1Hybri.rda"))
+# rm(env_all)
+# save.image(paste0(rdaDir, "Hes1Hybri.rda"))
 
 rowId <- sapply(xsim$time, function(x) which(abs(x-times) < 1e-6))
 for (i in 1:length(ours)) {
@@ -125,3 +128,36 @@ legend("center", c("truth", "median posterior mean", "median reconstructed traje
        col = c("red", "forestgreen", "black", NA, NA), density=c(NA, NA, NA, 40, 40), fill=c(0, 0, 0, "skyblue", "grey80"),
        border=c(0, 0, 0, "skyblue", "grey80"), angle=c(NA,NA,NA,-45,45), x.intersp=c(2.5,2.5,2.5,0, 0),  bty = "n", cex=1.8)
 dev.off()
+
+oursPostTheta <- sapply(oursPostTheta, identity, simplify = "array")
+
+printr <- function(x) format(round(x, 4), nsmall=4)
+tablizeEstErr <- function(est, err){
+  paste(format(round(est, 4), nsmall=4), "\\pm", format(round(err, 4), nsmall=4))
+}
+
+mean_est <- rbind(
+  rowMeans(oursPostTheta[,1,])
+)
+
+sd_est <- rbind(
+  apply(oursPostTheta[,1,], 1, sd)
+)
+
+tab <- rbind(
+  c("Ours", tablizeEstErr(mean_est[1,],sd_est[1,]))
+)
+tab <- data.frame(tab)
+colnames(tab) <- c("Method", letters[1:7])
+rownames(tab) <- NULL
+coverage <- rbind(
+  printr(rowMeans((oursPostTheta[,2,] <= pram.true$theta) & (pram.true$theta <= oursPostTheta[,3,])))
+)
+coverage <- cbind(c("Ours"), coverage)
+colnames(coverage) <- c("Method", letters[1:7])
+
+tab <- cbind(c("truth", pram.true$theta), t(tab), t(coverage))
+
+print(rmse_orig)
+print(tab)
+print(xtable(tab))
