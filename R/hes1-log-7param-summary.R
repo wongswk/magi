@@ -22,10 +22,25 @@ for(i in 1:length(subdirs)){
 # read results ------------------------------------------
 
 # rdaDir <- "../results/cpp/7param/variablephi-temper-warmstart/"
-# rdaDir <- "../results/cpp/7param/fixedphi-temper/"
-# rdaDir <- "../results/cpp/7param/variablephi-notemper/"
-# rdaDir <- "../results/cpp/7param/variablephi-temper-coldstart/"
-rdaDir <- "../results/cpp/7param/variablephi-temper-warmstart-updatephi/"
+# rdaDirAll <- c(
+#   "../results/cpp/7param//fixedphi-temper",
+#   "../results/cpp/7param//variablephi-notemper",
+#   "../results/cpp/7param//variablephi-temper-coldstart",
+#   "../results/cpp/7param//variablephi-temper-warmstart",
+#   "../results/cpp/7param//variablephi-temper-warmstart-reoptimizephi",
+#   "../results/cpp/7param//variablephi-temper-warmstart-updatemissingphi",
+#   "../results/cpp/7param//variablephi-temper-warmstart-updatemissingphi-map-postmean",
+#   "../results/cpp/7param//variablephi-temper-warmstart-updatephi",
+#   "../results/cpp/7param//variablephi-temper-warmstart-updatephi-map-postmean",
+#   "../results/cpp/7param//variablephi-temper-warmstart-updatephi-posterior-sample"
+# )
+args <- commandArgs(trailingOnly = TRUE)
+args <- as.numeric(args)
+if(length(args) > 0){
+  subdirs <- subdirs[args]
+}
+
+
 for (rdaDir in subdirs){
 rm(list=setdiff(ls(), c("rdaDir", "subdirs")))
 rdaDir <- paste0(rdaDir, "/")
