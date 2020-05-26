@@ -4,8 +4,8 @@ library(gpds)
 config <- list()
 config$modelName <- "HIV"
 config$noise <- rep(0.3, 5)
-#rdaDir <- "HIV-9obs-fill3/"   ## where ours & Dondel rda saved
-rdaDir <- "HIV-5obs-fill4/"   ## where ours & Dondel rda saved
+rdaDir <- "../comparison/results/HIV-9obs-fill3/"   ## where ours & Dondel rda saved
+#rdaDir <- "../comparison/results/HIV-5obs-fill4/"   ## where ours & Dondel rda saved
 outDirWenk <- rdaDir   ## where all the seeds are in separate folders with Wenk's output
 
 seeds <- list.files(outDirWenk, pattern='^\\d+$')  ## get the list of seeds ran
@@ -60,7 +60,8 @@ rmsePostSamples <- function(xtrue, dotxtrue, xsim, gpode, param, config, odemode
     )
     
     CIlimits<- apply(gpode$theta,2, function(x) quantile(x, c(0.025, 0.975)))
-    thetaIn <- ifelse( CIlimits[2,] > pram.true$theta && CIlimits[1,] < pram.true$theta, 1, 0)
+    #thetaIn <- ifelse( CIlimits[2,] > pram.true$theta && CIlimits[1,] < pram.true$theta, 1, 0)
+    thetaIn <- ifelse( CIlimits[2,] > pram.true$theta, ifelse(CIlimits[1,] < pram.true$theta, 1, 0),0)
     CIs <- rbind(ttheta, CIlimits, thetaIn)
     
     config$rmse <- rmselist
@@ -147,7 +148,8 @@ apply(sapply(CI.table, function(x) x[4,]),1,mean) # coverage per parameter
 avgest <- apply(sapply(CI.table, function(x) x[1,]),1, mean)  ## avg point estimates
 SEest <- apply(sapply(CI.table, function(x) x[1,]),1, sd)  ## SE of estimates
 widthest <- apply(sapply(CI.table, function(x) x[3,] - x[2,]),1,mean) # width per parameter
-signif(cbind(avgest,SEest,widthest),digits=2)[c(1,7:9,2:6),]
+#signif(cbind(avgest,SEest,widthest),digits=2)[c(1,7:9,2:6),]
+round(cbind(avgest,SEest,widthest),digits=4)[c(1,7:9,2:6),]
 
 #par.summary <- cbind(avgest,SEest,widthest)[c(1,7:9,2:6),]
 #t( t(par.summary) * 10^ c(0,0,3,3,3,3,0,0,0) )
