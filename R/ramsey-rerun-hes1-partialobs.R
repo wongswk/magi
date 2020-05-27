@@ -170,6 +170,7 @@ Fres3 <- FitMatchOpt(coefs0.2, 3, pars1, proc)  # col 3 is hidden/missing state
 
 ### Now run profiling with default lambda = 1000 
 Ores <- Profile.LS(hes1.fun, data2, hes1times, pars1, Fres3$coefs, hes1basis, lambda)
+Ores$pars <- pmax(Ores$pars, 1e-3)  # need positive parameters to run numerical solver
 def.pars <- Ores$pars  ### parameter estimate.  (with fixed lambda, which might not be ideal)
 
 t.fd <- fd(Ores$coefs, hes1basis)
@@ -209,6 +210,7 @@ temp.coefs <- Fres3$coefs
 for (ilam in 1:length(lambdas)) {
   print(paste("lambda = ", lambdas[ilam]))
   t.Ores <- Profile.LS(hes1.fun, data2, hes1times, temp.pars, temp.coefs, hes1basis, lambdas[ilam])
+  t.Ores$pars <- pmax(t.Ores$pars, 1e-3)  # need positive parameters to run numerical solver
   all.Ores[[ilam]] <- t.Ores
   print(t.Ores$pars)
   temp.pars <- t.Ores$pars
