@@ -163,6 +163,8 @@ colnames(coverage) <- c("Method", letters[1:7])
 tab <- cbind(c("truth", pram.true$theta), t(tab), t(coverage))
 
 sink(paste0(updateDir, "updatePhiResult.txt"))
+print("length(ours)=")
+print(length(ours))
 print(rmse_orig)
 print(tab)
 print(xtable(tab))
