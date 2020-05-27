@@ -28,7 +28,7 @@ envhes1log <- new.env()
 args <- commandArgs(trailingOnly = TRUE)
 args <- as.numeric(args)
 if(length(args) == 0){
-  rda_it = 2
+  rda_it = 1
 }else{
   rda_it = args
 }
@@ -39,6 +39,10 @@ each_seed <- common_seeds[rda_it]
 # if (file.exists(paste0(rdaDir, "ramsay-optimation-", f))){
 #   quit(save = "no")
 # }
+
+dir.create("../results/cpp/7param/ramsay", showWarnings = FALSE)
+pdf(paste0("../results/cpp/7param/ramsay/Hes1-log-",each_seed,"-7param-ramsay.pdf"))
+sink(paste0("../results/cpp/7param/ramsay/Hes1-log-",each_seed,"-7param-ramsay.txt"))
 
 print(each_seed)
 load(paste0("../results/cpp/7param/variablephi-notemper/Hes1-log-",each_seed,"-7param-variablephi-notemper.rda"), envir = envhes1log)
@@ -252,4 +256,5 @@ xdesolveRamsay <- deSolve::ode(y = best.pars.x0, times = times, func = modelODE,
 rmse_log <- sqrt(colMeans((out[,-1] - xdesolveRamsay[match(out[,1], xdesolveRamsay[,1]),-1])^2))
 rmse_orig <- sqrt(colMeans((exp(out[,-1]) - exp(xdesolveRamsay[match(out[,1], xdesolveRamsay[,1]),-1]))^2))
 
-save(list=setdiff(ls(), "envhes1log"), file = paste0(rdaDir, "ramsay-optimation-", f))
+save(list=setdiff(ls(), "envhes1log"), file = paste0("../results/cpp/7param/ramsay/Hes1-log-",each_seed,"-7param-ramsay.rda"))
+dev.off()
