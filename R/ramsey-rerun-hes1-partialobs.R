@@ -41,6 +41,9 @@ each_seed <- common_seeds[rda_it]
 # }
 
 dir.create("../results/cpp/7param/ramsay", showWarnings = FALSE)
+dir.create(paste0("../", each_seed), showWarnings = FALSE)
+setwd(paste0("../", each_seed))
+
 pdf(paste0("../results/cpp/7param/ramsay/Hes1-log-",each_seed,"-7param-ramsay.pdf"))
 sink(paste0("../results/cpp/7param/ramsay/Hes1-log-",each_seed,"-7param-ramsay.txt"))
 
@@ -260,3 +263,5 @@ rmse_orig <- sqrt(colMeans((exp(out[,-1]) - exp(xdesolveRamsay[match(out[,1], xd
 
 save(list=setdiff(ls(), "envhes1log"), file = paste0("../results/cpp/7param/ramsay/Hes1-log-",each_seed,"-7param-ramsay.rda"))
 dev.off()
+setwd("../dynamic-systems/")
+system(paste0(" rm -r ../", each_seed))
