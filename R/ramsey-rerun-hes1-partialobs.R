@@ -4,9 +4,19 @@ library(CollocInfer)
 
 
 #### all possible data files
-rda_files <- read.table("~/Workspace/DynamicSys/good_hes1_list.txt", sep="\n")
-rda_files <- as.character(unlist(rda_files))
-rdaDir <- "~/Workspace/DynamicSys/results/cpp/"   ## where ours rda saved
+
+rdaDir <- "../results/cpp/7param/"
+subdirs <- list.dirs(rdaDir)[-1]
+subdirs <- c("../results/cpp/7param//fixedphi-temper", "../results/cpp/7param//variablephi-notemper", 
+             "../results/cpp/7param//variablephi-temper-coldstart", "../results/cpp/7param//variablephi-temper-warmstart")
+all_files <- lapply(subdirs, list.files)
+all_files <- lapply(all_files, function(x) x[grep(".*log-([0-9]+)-7param.*", x)])
+all_seeds <- lapply(all_files, function(x) gsub(".*log-([0-9]+)-7param.*", "\\1", x))
+common_seeds <- all_seeds[[1]]
+for (i in 2:length(all_seeds)){
+  common_seeds <- intersect(common_seeds, all_seeds[[i]])  
+}
+
 envhes1log <- new.env()
 
 # for (f in rda_files){
@@ -18,19 +28,20 @@ envhes1log <- new.env()
 args <- commandArgs(trailingOnly = TRUE)
 args <- as.numeric(args)
 if(length(args) == 0){
-  rda_it = 1
+  rda_it = 2
 }else{
   rda_it = args
 }
 
 ##### Read incomplete dataset
-f <- rda_files[rda_it]
+each_seed <- common_seeds[rda_it]
+
 # if (file.exists(paste0(rdaDir, "ramsay-optimation-", f))){
 #   quit(save = "no")
 # }
 
-print(f)
-load(paste0(rdaDir, f), envir = envhes1log)
+print(each_seed)
+load(paste0("../results/cpp/7param/variablephi-notemper/Hes1-log-",each_seed,"-7param-variablephi-notemper.rda"), envir = envhes1log)
 
 data2 <-  envhes1log$xsim.obs
 data2 <-  as.matrix(data2[,-1])
@@ -83,7 +94,7 @@ legend("bottomleft", c("P", "M", "H"), lwd = 3, col = 1:2, lty = 1:2, cex = 1.5)
 hes1times <- seq(0, 240, by=7.5)
 nobs <- length(hes1times)
 out <- lsoda(x0, times = hes1times, hes1.ode, Hes1pars)
-hes1compdata <- out[, 2:4] + 0.15 * matrix(rnorm(3 * nobs), nobs, 3)
+hes1compdata <- out[, 2:4] + 0.0 * matrix(rnorm(3 * nobs), nobs, 3)
 hes1compdata[is.finite(data2)] <- data2[is.finite(data2)]
 
 # In order to run the profiling proceedures, we need to define some objects.
