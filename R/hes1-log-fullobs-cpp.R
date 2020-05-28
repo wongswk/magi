@@ -192,7 +192,7 @@ save.image(paste0(outDir, config$modelName,"-",config$seed,"-fullobs-variablephi
 outDir <- "../results/cpp/fullobs/variablephi-temper-warmstart/"
 if (!file.exists(paste0(outDir, config$modelName,"-",config$seed,"-fullobs-variablephi-temper-warmstart.rda"))){
   
-load(paste0(outDir, config$modelName,"-",config$seed,"-fullobs-variablephi-notemper.rda"))
+load(paste0("../results/cpp/fullobs/variablephi-notemper/", config$modelName,"-",config$seed,"-fullobs-variablephi-notemper.rda"))
 xInit <- apply(gpode$xsampled, 2:3, mean)
 thetaInit <- colMeans(gpode$theta)
 phiNoTemperOptimized <- phiUsed
