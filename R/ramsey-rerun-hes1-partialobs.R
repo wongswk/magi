@@ -6,7 +6,7 @@ library(CollocInfer)
 #### all possible data files
 
 rdaDir <- "../results/cpp/7param/"
-subdirs <- list.dirs(rdaDir)[-1]
+
 subdirs <- c("../results/cpp/7param//fixedphi-temper", "../results/cpp/7param//variablephi-notemper", 
              "../results/cpp/7param//variablephi-temper-coldstart", "../results/cpp/7param//variablephi-temper-warmstart")
 all_files <- lapply(subdirs, list.files)

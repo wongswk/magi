@@ -470,6 +470,7 @@ if(summarize_ramsey){
     ramsayPostTheta[[f]] <- env_ramsay$best.pars
     ramsayPostX0[[f]] <- env_ramsay$best.pars.x0
   }
+  print(length(rda_files))
   
   rmse_ramsay_orig <- round(apply(sapply(ramsayRmseOrig, identity), 1, mean, na.rm=TRUE), digits=4)
   print(rmse_ramsay_orig)
@@ -488,8 +489,7 @@ if(summarize_ramsey){
   
   # ramsey_tab <- c("Ramsey", tablizeEstErr(ramsay_mean_est[1,],ramsay_sd_est[1,]))
   # print(xtable(cbind(c("truth", pram.true$theta), t(tab), t(coverage), ramsey_tab)))
-  load(paste0(rdaDir, rda_files[1]), envir = .GlobalEnv)
-  
+
   ramsayXdesolvePM <- sapply(ramsayXdesolvePM, identity, simplify = "array")
   
   pdf(width = 20, height = 5, file=paste0(rdaDir, "/posteriorExpxHes1Ramsay.pdf"))
