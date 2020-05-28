@@ -174,20 +174,6 @@ for (f in 1:length(rda_files)) {
   oursExpXdesolvePM[[f]] <- outStorage[[f]]$oursExpXdesolvePM_f
 }
 
-ramsayPostX0 <- list()
-ramsayPostTheta <- list()
-ramsayXdesolvePM <- list()
-ramsayRmseLog <- list()
-ramsayRmseOrig <- list()
-# for (f in rda_files){
-#   env_ramsay <- new.env()
-#   load(paste0(rdaDir, "ramsay-optimation-", f), envir = env_ramsay)
-#   ramsayXdesolvePM[[f]] <- env_ramsay$xdesolveRamsay
-#   ramsayRmseLog[[f]] <- env_ramsay$rmse_log
-#   ramsayRmseOrig[[f]] <- env_ramsay$rmse_orig
-#   ramsayPostTheta[[f]] <- env_ramsay$best.pars
-#   ramsayPostX0[[f]] <- env_ramsay$best.pars.x0
-# }
 
 print(paste0(rdaDir,"hes1log_summary.rda"))
 save.image(file=paste0(rdaDir,"hes1log_summary.rda"))
@@ -455,4 +441,99 @@ legend("center", c("truth", "median posterior mean", "median reconstructed traje
        border=c(0, 0, 0, "skyblue", "grey80"), angle=c(NA,NA,NA,-45,45), x.intersp=c(2.5,2.5,2.5,0, 0),  bty = "n", cex=1.8)
 dev.off()
 
+}
+
+
+## ramsey summary ----------------------------------------------------------------------------------------------------------------
+summarize_ramsey <- FALSE
+if(summarize_ramsey){
+  rdaDir <- "../results/cpp/7param/ramsay/"
+  pdf_files <- list.files(rdaDir)
+  rda_files <- pdf_files[grep("Hes1-log.*\\.rda", pdf_files)]
+  pdf_files <- pdf_files[grep("Hes1-log.*\\.pdf", pdf_files)]
+  
+  ramsayPostX0 <- list()
+  ramsayPostTheta <- list()
+  ramsayXdesolvePM <- list()
+  ramsayRmseLog <- list()
+  ramsayRmseOrig <- list()
+  for (f in rda_files){
+    env_ramsay <- new.env()
+    load(paste0(rdaDir, "/", f), envir = env_ramsay)
+    ramsayXdesolvePM[[f]] <- env_ramsay$xdesolveRamsay
+    ramsayRmseLog[[f]] <- env_ramsay$rmse_log
+    ramsayRmseOrig[[f]] <- env_ramsay$rmse_orig
+    ramsayPostTheta[[f]] <- env_ramsay$best.pars
+    ramsayPostX0[[f]] <- env_ramsay$best.pars.x0
+  }
+  
+  rmse_ramsay_orig <- round(apply(sapply(ramsayRmseOrig, identity), 1, mean, na.rm=TRUE), digits=4)
+  print(rmse_ramsay_orig)
+  
+  # theta posterior of Ramsay
+  ramsayPostTheta <- sapply(ramsayPostTheta, identity, simplify = "array")
+  
+  ramsay_mean_est <- rbind(
+    apply(ramsayPostTheta, 1, mean)
+  )
+  ramsay_sd_est <- rbind(
+    apply(ramsayPostTheta, 1, sd)
+  )
+  print(ramsay_mean_est)
+  print(ramsay_sd_est)
+  
+  # ramsey_tab <- c("Ramsey", tablizeEstErr(ramsay_mean_est[1,],ramsay_sd_est[1,]))
+  # print(xtable(cbind(c("truth", pram.true$theta), t(tab), t(coverage), ramsey_tab)))
+  load(paste0(rdaDir, rda_files[1]), envir = .GlobalEnv)
+  
+  ramsayXdesolvePM <- sapply(ramsayXdesolvePM, identity, simplify = "array")
+  
+  f <- list.files("../results/cpp/7param/variablephi-notemper/")
+  f <- f[grep("Hes1-log.*\\.rda", f)]
+  load(paste0("../results/cpp/7param/variablephi-notemper/", f[1]))
+  
+  pdf(width = 20, height = 5, file=paste0(rdaDir, "/posteriorExpxHes1Ramsay.pdf"))
+  par(mfrow=c(1, ncol(xsim)+1))
+  
+  matplot(xtrue[, "time"], exp(xtrue[, -1]), type="l", lty=1, col=c(4,6,"goldenrod1"), xlab="time", ylab=NA)
+  matplot(xsim.obs$time, exp(xsim.obs[,-1]), type="p", col=c(4,6,"goldenrod1"), pch=20, add = TRUE)
+  mtext('sample observations', cex=1.5)
+  legend("topright", c("true P", "true M", "true H", "observed P", "observed M"), 
+         lty=c(1,1,1,NA,NA), pch=c(NA,NA,NA,20,20), col=c(4,6,"goldenrod1"), cex=1.5)
+  
+  id <- seq(1, dim(ramsayXdesolvePM)[1], by=50)
+  xdesolveTRUE <- deSolve::ode(y = pram.true$x0, times = times, func = odemodel$modelODE, parms = pram.true$theta)
+  xdesolveTRUE[,-1] <- exp(xdesolveTRUE[,-1])
+  xdesolveTRUE <- xdesolveTRUE[id,]
+  compnames <- c("P", "M", "H")
+  ylim_lower <- c(1.5, 0.5, 0)
+  ylim_upper <- c(9.0, 3.1, 19)
+  
+  for (i in 1:(ncol(xsim)-1)) {
+    ourEst <- apply(ramsayXdesolvePM[id,i+1,], 1, quantile, probs = 0.5, na.rm=TRUE)
+    # use 0.25 and 0.75 to check if outliers have significant effect on the inference, turns out no outlier issue
+    ourUB <- apply(ramsayXdesolvePM[id,i+1,], 1, quantile, probs = 0.025, na.rm=TRUE)
+    ourLB <- apply(ramsayXdesolvePM[id,i+1,], 1, quantile, probs = 0.975, na.rm=TRUE)
+    
+    ourEst <- exp(ourEst)
+    ourUB <- exp(ourUB)
+    ourLB <- exp(ourLB)
+    
+    times <- xdesolveTRUE[,1]
+    
+    plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+    mtext(compnames[i], cex=1.5)
+    polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
+            col = "skyblue", border = "skyblue", lty = 1, density = 10, angle = -45)
+    
+    lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
+    lines(times, ourEst, col="forestgreen", lwd=3)
+  }
+  par(mar=rep(0,4))
+  plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
+  legend("center", c("truth",  "median reconstructed trajectory", 
+                     "CI on reconstructed trajectory"), lty=c(1,1,0), lwd=c(4,3,0),
+         col = c("red", "forestgreen", NA), density=c(NA, NA, 40), fill=c(0, 0, "skyblue"),
+         border=c(0, 0, "skyblue"), angle=c(NA,NA,-45), x.intersp=c(2.5,2.5, 0),  bty = "n", cex=1.8)
+  dev.off()
 }
