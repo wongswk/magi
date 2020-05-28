@@ -447,6 +447,10 @@ dev.off()
 ## ramsey summary ----------------------------------------------------------------------------------------------------------------
 summarize_ramsey <- FALSE
 if(summarize_ramsey){
+  f <- list.files("../results/cpp/7param/variablephi-notemper/")
+  f <- f[grep("Hes1-log.*\\.rda", f)]
+  load(paste0("../results/cpp/7param/variablephi-notemper/", f[1]))
+  
   rdaDir <- "../results/cpp/7param/ramsay/"
   pdf_files <- list.files(rdaDir)
   rda_files <- pdf_files[grep("Hes1-log.*\\.rda", pdf_files)]
@@ -487,10 +491,6 @@ if(summarize_ramsey){
   load(paste0(rdaDir, rda_files[1]), envir = .GlobalEnv)
   
   ramsayXdesolvePM <- sapply(ramsayXdesolvePM, identity, simplify = "array")
-  
-  f <- list.files("../results/cpp/7param/variablephi-notemper/")
-  f <- f[grep("Hes1-log.*\\.rda", f)]
-  load(paste0("../results/cpp/7param/variablephi-notemper/", f[1]))
   
   pdf(width = 20, height = 5, file=paste0(rdaDir, "/posteriorExpxHes1Ramsay.pdf"))
   par(mfrow=c(1, ncol(xsim)+1))
