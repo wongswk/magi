@@ -1,4 +1,33 @@
 #### run with priorTempered phase 1 --------------------------------------------
+library(deSolve)
+library(CollocInfer)
+
+
+#### all possible data files
+
+rdaDir <- "../results/cpp/7param/"
+subdirs <- list.dirs(rdaDir)[-1]
+subdirs <- c("../results/cpp/7param//fixedphi-temper", "../results/cpp/7param//variablephi-notemper", 
+             "../results/cpp/7param//variablephi-temper-coldstart", "../results/cpp/7param//variablephi-temper-warmstart")
+all_files <- lapply(subdirs, list.files)
+all_files <- lapply(all_files, function(x) x[grep(".*log-([0-9]+)-7param.*", x)])
+all_seeds <- lapply(all_files, function(x) gsub(".*log-([0-9]+)-7param.*", "\\1", x))
+common_seeds <- all_seeds[[1]]
+for (i in 2:length(all_seeds)){
+  common_seeds <- intersect(common_seeds, all_seeds[[i]])  
+}
+
+args <- commandArgs(trailingOnly = TRUE)
+args <- as.numeric(args)
+if(length(args) == 0){
+  rda_it = 1
+}else{
+  rda_it = args
+}
+
+each_seed <- common_seeds[rda_it]
+
+
 library(gpds)
 # set up configuration if not already exist ------------------------------------
 if(!exists("config")){
@@ -6,7 +35,7 @@ if(!exists("config")){
     nobs = 33,
     noise = c(0.15,0.15,0.15),
     kernel = "generalMatern",
-    seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+    seed = as.integer(each_seed),
     npostplot = 50,
     loglikflag = "withmeanBand",
     bandsize = 20,
@@ -14,7 +43,7 @@ if(!exists("config")){
     n.iter = 2e4,
     burninRatio = 0.50,
     stepSizeFactor = 0.01,
-    filllevel = 1,
+    filllevel = 0,
     modelName = "Hes1-log",
     async = FALSE,
     max.epoch = 1,
@@ -25,12 +54,13 @@ if(!exists("config")){
     useFixedSigma = TRUE
   )
 }
+rm(list=setdiff(ls(), "config"))
 
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
 config$priorTemperature <- config$ndis / config$nobs
 
 # initialize global parameters, true x, simulated x ----------------------------
-outDir <- "../results/cpp/"
+outDir <- "../results/cpp/fullobs/"
 system(paste("mkdir -p", outDir))
 
 pram.true <- list(
@@ -70,7 +100,6 @@ matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, ad
 
 xsim <- insertNaN(xsim.obs,config$filllevel)
 
-# cpp inference ----------------------------
 hes1logmodel <- list(
   name="Hes1-log",
   fOde=gpds:::hes1logmodelODE,
@@ -80,6 +109,8 @@ hes1logmodel <- list(
   thetaUpperBound=rep(Inf,7)
 )
 
+
+## no tempering ----------------------------
 samplesCpp <- gpds:::solveGpdsRcpp(
   yFull = data.matrix(xsim[,-1]),
   odeModel = hes1logmodel,
@@ -87,10 +118,12 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   sigmaExogenous = pram.true$sigma,
   phiExogenous = matrix(numeric(0)),
   xInitExogenous = matrix(numeric(0)),
+  thetaInitExogenous = matrix(numeric(0)),
   muExogenous = matrix(numeric(0)),
   dotmuExogenous = matrix(numeric(0)),
   priorTemperatureLevel = config$priorTemperature,
   priorTemperatureDeriv = config$priorTemperature,
+  priorTemperatureObs = 1,
   kernel = config$kernel,
   nstepsHmc = config$hmcSteps,
   burninRatioHmc = config$burninRatio,
@@ -104,6 +137,9 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   useScalerSigma = config$useScalerSigma,
   useFixedSigma = config$useFixedSigma,
   verbose = TRUE)
+
+phiUsed <- samplesCpp$phi
+samplesCpp <- samplesCpp$llikxthetasigmaSamples
 
 samplesCpp <- samplesCpp[,,1]
 out <- samplesCpp[-1,1,drop=FALSE]
@@ -133,11 +169,165 @@ dotxtrue = gpds:::hes1logmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
 odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 
-outDir <- "../results/cpp/"
+outDir <- "../results/cpp/fullobs/variablephi-notemper/"
+system(paste("mkdir -p", outDir))
 
-identifier <- paste0(Sys.time(), "-", system("git rev-parse HEAD", intern=TRUE))
+for(j in 1:(ncol(xsim)-1)){
+  config[[paste0("phiD", j)]] <- paste(round(phiUsed[,j], 2), collapse = "; ")
+}
 
 gpds:::plotPostSamplesFlex(
-  paste0(outDir, config$modelName,"-",config$seed,"-fullobs-fixedsigma-", identifier,".pdf"), 
+  paste0(outDir, config$modelName,"-",config$seed,"-fullobs-variablephi-notemper.pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
-save.image(paste0(outDir, config$modelName,"-",config$seed,"-fullobs-fixedsigma-", identifier,".rda"))
+
+save.image(paste0(outDir, config$modelName,"-",config$seed,"-fullobs-variablephi-notemper.rda"))
+
+## tempered with warm start ----------------------------
+
+xInit <- apply(gpode$xsampled, 2:3, mean)
+thetaInit <- colMeans(gpode$theta)
+phiNoTemperOptimized <- phiUsed
+
+samplesCpp <- gpds:::solveGpdsRcpp(
+  yFull = data.matrix(xsim[,-1]),
+  odeModel = hes1logmodel,
+  tvecFull = xsim$time,
+  sigmaExogenous = pram.true$sigma,
+  phiExogenous = phiNoTemperOptimized,
+  xInitExogenous = xInit,
+  thetaInitExogenous = thetaInit,
+  muExogenous = matrix(numeric(0)),
+  dotmuExogenous = matrix(numeric(0)),
+  priorTemperatureLevel = config$priorTemperature,
+  priorTemperatureDeriv = config$priorTemperature,
+  priorTemperatureObs = 1/16,
+  kernel = config$kernel,
+  nstepsHmc = config$hmcSteps,
+  burninRatioHmc = config$burninRatio,
+  niterHmc = config$n.iter,
+  stepSizeFactorHmc = config$stepSizeFactor,
+  nEpoch = config$max.epoch,
+  bandSize = config$bandsize,
+  useFrequencyBasedPrior = config$useFrequencyBasedPrior,
+  useBand = config$useBand,
+  useMean = config$useMean,
+  useScalerSigma = config$useScalerSigma,
+  useFixedSigma = config$useFixedSigma,
+  verbose = TRUE)
+
+phiUsed <- samplesCpp$phi
+samplesCpp <- samplesCpp$llikxthetasigmaSamples
+
+samplesCpp <- samplesCpp[,,1]
+out <- samplesCpp[-1,1,drop=FALSE]
+xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=ncol(xsim[,-1]))
+thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + length(hes1logmodel$thetaLowerBound)), 1]
+sigmaCpp <- tail(out[, 1], ncol(xsim[,-1]))
+
+matplot(xsim$time, xCpp, type="l", add=TRUE, lty=2)
+
+llikId <- 1
+xId <- (max(llikId)+1):(max(llikId)+length(data.matrix(xsim[,-1])))
+thetaId <- (max(xId)+1):(max(xId)+length(hes1logmodel$thetaLowerBound))
+sigmaId <- (max(thetaId)+1):(max(thetaId)+ncol(xsim[,-1]))
+
+
+burnin <- as.integer(config$n.iter*config$burninRatio)
+gpode <- list(theta=t(samplesCpp[thetaId, -(1:burnin)]),
+              xsampled=array(t(samplesCpp[xId, -(1:burnin)]),
+                             dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
+              lglik=samplesCpp[llikId,-(1:burnin)],
+              sigma = t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]))
+gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
+  with(gpode, gpds:::hes1logmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
+gpode$fode <- aperm(gpode$fode, c(3,1,2))
+
+dotxtrue = gpds:::hes1logmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
+
+odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
+
+outDir <- "../results/cpp/fullobs/variablephi-temper-warmstart/"
+system(paste("mkdir -p", outDir))
+
+for(j in 1:(ncol(xsim)-1)){
+  config[[paste0("phiD", j)]] <- paste(round(phiUsed[,j], 2), collapse = "; ")
+}
+
+gpds:::plotPostSamplesFlex(
+  paste0(outDir, config$modelName,"-",config$seed,"-fullobs-variablephi-temper-warmstart.pdf"), 
+  xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+
+save.image(paste0(outDir, config$modelName,"-",config$seed,"-fullobs-variablephi-temper-warmstart.rda"))
+
+## tempered with cold start ----------------------------
+
+samplesCpp <- gpds:::solveGpdsRcpp(
+  yFull = data.matrix(xsim[,-1]),
+  odeModel = hes1logmodel,
+  tvecFull = xsim$time,
+  sigmaExogenous = pram.true$sigma,
+  phiExogenous = matrix(numeric(0)),
+  xInitExogenous = matrix(numeric(0)),
+  thetaInitExogenous = matrix(numeric(0)),
+  muExogenous = matrix(numeric(0)),
+  dotmuExogenous = matrix(numeric(0)),
+  priorTemperatureLevel = config$priorTemperature,
+  priorTemperatureDeriv = config$priorTemperature,
+  priorTemperatureObs = 1/16,
+  kernel = config$kernel,
+  nstepsHmc = config$hmcSteps,
+  burninRatioHmc = config$burninRatio,
+  niterHmc = config$n.iter,
+  stepSizeFactorHmc = config$stepSizeFactor,
+  nEpoch = config$max.epoch,
+  bandSize = config$bandsize,
+  useFrequencyBasedPrior = config$useFrequencyBasedPrior,
+  useBand = config$useBand,
+  useMean = config$useMean,
+  useScalerSigma = config$useScalerSigma,
+  useFixedSigma = config$useFixedSigma,
+  verbose = TRUE)
+
+phiUsed <- samplesCpp$phi
+samplesCpp <- samplesCpp$llikxthetasigmaSamples
+
+samplesCpp <- samplesCpp[,,1]
+out <- samplesCpp[-1,1,drop=FALSE]
+xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=ncol(xsim[,-1]))
+thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + length(hes1logmodel$thetaLowerBound)), 1]
+sigmaCpp <- tail(out[, 1], ncol(xsim[,-1]))
+
+matplot(xsim$time, xCpp, type="l", add=TRUE, lty=2)
+
+llikId <- 1
+xId <- (max(llikId)+1):(max(llikId)+length(data.matrix(xsim[,-1])))
+thetaId <- (max(xId)+1):(max(xId)+length(hes1logmodel$thetaLowerBound))
+sigmaId <- (max(thetaId)+1):(max(thetaId)+ncol(xsim[,-1]))
+
+
+burnin <- as.integer(config$n.iter*config$burninRatio)
+gpode <- list(theta=t(samplesCpp[thetaId, -(1:burnin)]),
+              xsampled=array(t(samplesCpp[xId, -(1:burnin)]),
+                             dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
+              lglik=samplesCpp[llikId,-(1:burnin)],
+              sigma = t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]))
+gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
+  with(gpode, gpds:::hes1logmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
+gpode$fode <- aperm(gpode$fode, c(3,1,2))
+
+dotxtrue = gpds:::hes1logmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
+
+odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
+
+outDir <- "../results/cpp/fullobs/variablephi-temper-coldstart/"
+system(paste("mkdir -p", outDir))
+
+for(j in 1:(ncol(xsim)-1)){
+  config[[paste0("phiD", j)]] <- paste(round(phiUsed[,j], 2), collapse = "; ")
+}
+
+gpds:::plotPostSamplesFlex(
+  paste0(outDir, config$modelName,"-",config$seed,"-fullobs-variablephi-temper-coldstart.pdf"), 
+  xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+
+save.image(paste0(outDir, config$modelName,"-",config$seed,"-fullobs-variablephi-temper-coldstart.rda"))
