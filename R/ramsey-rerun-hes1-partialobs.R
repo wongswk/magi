@@ -36,11 +36,12 @@ if(length(args) == 0){
 ##### Read incomplete dataset
 each_seed <- common_seeds[rda_it]
 
-# if (file.exists(paste0(rdaDir, "ramsay-optimation-", f))){
-#   quit(save = "no")
-# }
+if (file.exists(paste0("../results/cpp/7param/ramsay/Hes1-log-",each_seed,"-7param-ramsay.rda"))){
+  quit(save = "no")
+}
 
 dir.create("../results/cpp/7param/ramsay", showWarnings = FALSE)
+system(paste0(" rm -r ../", each_seed))
 dir.create(paste0("../", each_seed), showWarnings = FALSE)
 setwd(paste0("../", each_seed))
 
