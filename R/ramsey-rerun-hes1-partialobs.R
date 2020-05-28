@@ -17,6 +17,8 @@ for (i in 2:length(all_seeds)){
   common_seeds <- intersect(common_seeds, all_seeds[[i]])  
 }
 
+common_seeds <- unique(all_seeds[[1]])
+
 envhes1log <- new.env()
 
 # for (f in rda_files){
