@@ -111,6 +111,9 @@ hes1logmodel <- list(
 
 
 ## no tempering ----------------------------
+outDir <- "../results/cpp/fullobs/variablephi-notemper/"
+if (!file.exists(paste0(outDir, config$modelName,"-",config$seed,"-fullobs-variablephi-notemper.rda"))){
+
 samplesCpp <- gpds:::solveGpdsRcpp(
   yFull = data.matrix(xsim[,-1]),
   odeModel = hes1logmodel,
@@ -181,9 +184,13 @@ gpds:::plotPostSamplesFlex(
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 
 save.image(paste0(outDir, config$modelName,"-",config$seed,"-fullobs-variablephi-notemper.rda"))
+}
 
 ## tempered with warm start ----------------------------
-
+outDir <- "../results/cpp/fullobs/variablephi-temper-warmstart/"
+if (!file.exists(paste0(outDir, config$modelName,"-",config$seed,"-fullobs-variablephi-temper-warmstart.rda"))){
+  
+load(paste0(outDir, config$modelName,"-",config$seed,"-fullobs-variablephi-notemper.rda"))
 xInit <- apply(gpode$xsampled, 2:3, mean)
 thetaInit <- colMeans(gpode$theta)
 phiNoTemperOptimized <- phiUsed
@@ -258,9 +265,12 @@ gpds:::plotPostSamplesFlex(
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 
 save.image(paste0(outDir, config$modelName,"-",config$seed,"-fullobs-variablephi-temper-warmstart.rda"))
+}
 
 ## tempered with cold start ----------------------------
-
+outDir <- "../results/cpp/fullobs/variablephi-temper-coldstart/"
+if (!file.exists(paste0(outDir, config$modelName,"-",config$seed,"-fullobs-variablephi-temper-coldstart.rda"))){
+  
 samplesCpp <- gpds:::solveGpdsRcpp(
   yFull = data.matrix(xsim[,-1]),
   odeModel = hes1logmodel,
@@ -331,3 +341,4 @@ gpds:::plotPostSamplesFlex(
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 
 save.image(paste0(outDir, config$modelName,"-",config$seed,"-fullobs-variablephi-temper-coldstart.rda"))
+}
