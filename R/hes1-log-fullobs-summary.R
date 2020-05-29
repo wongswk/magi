@@ -182,6 +182,15 @@ for (rdaDir in subdirs){
   print(paste0(rdaDir,"hes1log_summary.rda"))
   save.image(file=paste0(rdaDir,"hes1log_summary.rda"))
   
+  oursPostThetaCube <- sapply(oursPostTheta, identity, simplify = "array")
+  theta3 <- oursPostThetaCube[3,1,]
+  
+  ours <- ours[which(theta3 < 500)]
+  oursPostX <- oursPostX[which(theta3 < 500)]
+  oursPostTheta <- oursPostTheta[which(theta3 < 500)]
+  oursPostExpX <- oursPostExpX[which(theta3 < 500)]
+  oursExpXdesolvePM <- oursExpXdesolvePM[which(theta3 < 500)]
+  
   sink(paste0(rdaDir, "/result.txt"))
   
   load(paste0(rdaDir, rda_files[1]), envir = .GlobalEnv)
