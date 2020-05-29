@@ -182,6 +182,8 @@ for (f in 1:length(rda_files)) {
 print(paste0(rdaDir,"hes1log_summary.rda"))
 save.image(file=paste0(rdaDir,"hes1log_summary.rda"))
 
+sink(rdaDir, "/result.txt")
+
 load(paste0(rdaDir, rda_files[1]), envir = .GlobalEnv)
 if (!exists("param_restricted")){
   param_restricted <- pram.true
@@ -445,6 +447,7 @@ legend("center", c("truth", "median posterior mean", "median reconstructed traje
        border=c(0, 0, 0, "skyblue", "grey80"), angle=c(NA,NA,NA,-45,45), x.intersp=c(2.5,2.5,2.5,0, 0),  bty = "n", cex=1.8)
 dev.off()
 
+sink()
 }
 
 

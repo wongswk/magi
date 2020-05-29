@@ -11,6 +11,9 @@ env_all$warmstart <- new.env()
 load(paste0(rdaDir, "/variablephi-notemper/hes1log_summary.rda"), envir = env_all$notemper)
 load(paste0(rdaDir, "/variablephi-temper-warmstart/hes1log_summary.rda"), envir = env_all$warmstart)
 
+subdirs <- c("../results/for_paper/7param//variablephi-notemper", 
+             "../results/for_paper/7param//variablephi-temper-warmstart", 
+             "../results/for_paper/7param//variablephi-temper-warmstart-updatephi")
 
 for (updateDir in subdirs){
 updateDir <- paste0(updateDir, "/")
