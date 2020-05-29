@@ -182,7 +182,7 @@ for (f in 1:length(rda_files)) {
 print(paste0(rdaDir,"hes1log_summary.rda"))
 save.image(file=paste0(rdaDir,"hes1log_summary.rda"))
 
-sink(rdaDir, "/result.txt")
+sink(paste0(rdaDir, "/result.txt"))
 
 load(paste0(rdaDir, rda_files[1]), envir = .GlobalEnv)
 if (!exists("param_restricted")){
