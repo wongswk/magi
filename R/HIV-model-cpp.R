@@ -1,12 +1,8 @@
-#### run with priorTempered phase 1 --------------------------------------------
 library(gpds)
-#where to save results
-outDir <- "comparison/results/"
-
 # set up configuration if not already exist ------------------------------------
 if(!exists("config")){
   config <- list(
-    nobs = 9,  # also set xsim below if changing nobs
+    nobs = 9,  # also set xsim (lines 60-61) below if changing nobs to 5
     noise = rep(0.3,4),
     kernel = "generalMatern",
     seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
@@ -25,8 +21,9 @@ if(!exists("config")){
     useFixedSigma = FALSE,
     linearizexInit = TRUE,
     useExoSigma = TRUE,
+    useMean = TRUE,
+    useBand = TRUE,
     max.epoch = 1
-    
   )
 }
 
@@ -37,21 +34,9 @@ if(config$temperPrior){
   config$priorTemperature <- 1
 }
 
-if(config$loglikflag == "withmeanBand"){
-  config$useMean = TRUE
-  config$useBand = TRUE
-}else if(config$loglikflag == "band"){
-  config$useMean = FALSE
-  config$useBand = TRUE
-}else if(config$loglikflag == "withmean"){
-  config$useMean = TRUE
-  config$useBand = FALSE
-}else if(config$loglikflag == "usual"){
-  config$useMean = FALSE
-  config$useBand = FALSE
-}
-
 # initialize global parameters, true x, simulated x ----------------------------
+outDir <- "../results/cpp/"
+system(paste("mkdir -p", outDir))
 pram.true <- list(
   theta = c(0.015, 1.51e-3, 1.11e-3, 4.4e-4, 4.15e-3, 1.1e-3, -2.29e-2, 7.13e-03, 5.68e-04),
   x0 = log(c(3.35e7, 134000, 25000, 9000)),
@@ -94,7 +79,7 @@ if (config$useExoSigma) {
   exoSigma = numeric(0)
 }
 
-if (config$linearizexInit) {
+if (config$linearizexInit) {  ## linear interpolation for X initializiation
   exoxInit <- sapply(2:ncol(xsim.obs), function(j)
     approx(xsim.obs[, "time"], xsim.obs[, j], xsim[, "time"])$y)
 } else {
@@ -103,7 +88,7 @@ if (config$linearizexInit) {
 
 # cpp inference ----------------------------
 HIVmodel <- list(
-  name= paste0(config$modelName,"test"),
+  name= config$modelName,
   fOde=gpds:::HIVmodelODE,
   fOdeDx=gpds:::HIVmodelDx,
   fOdeDtheta=gpds:::HIVmodelDtheta,
@@ -116,12 +101,14 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   odeModel = HIVmodel,
   tvecFull = xsim$time,
   sigmaExogenous = exoSigma,
-  phiExogenous = matrix(nrow=0,ncol=0),
+  phiExogenous = matrix(numeric(0)),
   xInitExogenous = exoxInit,
-  muExogenous = matrix(nrow=0,ncol=0),
-  dotmuExogenous = matrix(nrow=0,ncol=0),
+  thetaInitExogenous = matrix(numeric(0)),
+  muExogenous = matrix(numeric(0)),
+  dotmuExogenous = matrix(numeric(0)),
   priorTemperatureLevel = config$priorTemperature,
   priorTemperatureDeriv = config$priorTemperature,
+  priorTemperatureObs = 1,
   kernel = config$kernel,
   nstepsHmc = config$hmcSteps,
   burninRatioHmc = config$burninRatio,
@@ -135,6 +122,8 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   useScalerSigma = config$useScalerSigma,
   useFixedSigma = config$useFixedSigma,
   verbose = TRUE)
+
+samplesCpp <- samplesCpp$llikxthetasigmaSamples
 
 samplesCpp <- samplesCpp[,,1]
 
@@ -169,5 +158,5 @@ gpds:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 
-system( paste0("mkdir ", config$seed) )  
+#system( paste0("mkdir ", config$seed) )  
 save(xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel, file= paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".rda"))

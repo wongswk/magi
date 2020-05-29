@@ -1,8 +1,4 @@
-#### run with priorTempered phase 1 --------------------------------------------
 library(gpds)
-#where to save results
-outDir <- "comparison/results/"
-
 # set up configuration if not already exist ------------------------------------
 if(!exists("config")){
   config <- list(
@@ -28,6 +24,8 @@ if(!exists("config")){
     useFixedSigma = FALSE,
     linearizexInit = TRUE,
     useExoSigma = TRUE,
+    useMean = TRUE,
+    useBand = TRUE,    
     max.epoch = 1
   )
 }
@@ -40,21 +38,9 @@ if(config$temperPrior){
   config$priorTemperature <- 1
 }
 
-if(config$loglikflag == "withmeanBand"){
-  config$useMean = TRUE
-  config$useBand = TRUE
-}else if(config$loglikflag == "band"){
-  config$useMean = FALSE
-  config$useBand = TRUE
-}else if(config$loglikflag == "withmean"){
-  config$useMean = TRUE
-  config$useBand = FALSE
-}else if(config$loglikflag == "usual"){
-  config$useMean = FALSE
-  config$useBand = FALSE
-}
-
 # initialize global parameters, true x, simulated x ----------------------------
+outDir <- "../results/cpp/"
+system(paste("mkdir -p", outDir))
 pram.true <- list(
   theta=c(0.07, 0.6,0.05,0.3,0.017,0.3),
   x0 = c(1,0,1,0,0),
@@ -98,7 +84,7 @@ for (i in 1:length(fillC)) {
 }
 
 if (config$useExoSigma) {
-  exoSigma = rep(0.001, ncol(xsim)-1) #config$noise
+  exoSigma = rep(0.001, ncol(xsim)-1)
 } else {
   exoSigma = numeric(0)
 }
@@ -126,12 +112,14 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   odeModel = ptransmodel,
   tvecFull = xsim$time,
   sigmaExogenous = exoSigma,
-  phiExogenous = matrix(nrow=0,ncol=0),
+  phiExogenous = matrix(numeric(0)),
   xInitExogenous = exoxInit,
-  muExogenous = matrix(nrow=0,ncol=0),
-  dotmuExogenous = matrix(nrow=0,ncol=0),
+  thetaInitExogenous = matrix(numeric(0)),
+  muExogenous = matrix(numeric(0)),
+  dotmuExogenous = matrix(numeric(0)),
   priorTemperatureLevel = config$priorTemperature,
   priorTemperatureDeriv = config$priorTemperature,
+  priorTemperatureObs = 1,
   kernel = config$kernel,
   nstepsHmc = config$hmcSteps,
   burninRatioHmc = config$burninRatio,
@@ -145,6 +133,8 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   useScalerSigma = config$useScalerSigma,
   useFixedSigma = config$useFixedSigma,
   verbose = TRUE)
+
+samplesCpp <- samplesCpp$llikxthetasigmaSamples
 
 samplesCpp <- samplesCpp[,,1]
 
