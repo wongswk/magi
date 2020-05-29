@@ -2,7 +2,7 @@ library(gpds)
 library(xtable)
 
 # remove results that don't have common seed
-rdaDir <- "../results/cpp/7param/"
+rdaDir <- "../results/for_paper/7param/"
 subdirs <- list.dirs(rdaDir)[-1]
 
 env_all <- list()

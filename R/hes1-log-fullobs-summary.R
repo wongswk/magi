@@ -167,7 +167,7 @@ for (rdaDir in subdirs){
       oursPostExpX_f=oursPostExpX_f,
       oursExpXdesolvePM_f=oursExpXdesolvePM_f
     )
-  }, mc.cores = 48)
+  }, mc.cores = 64)
   
   rda_files <- as.character(unlist(rda_files))
   for (f in 1:length(rda_files)) {
