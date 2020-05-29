@@ -113,10 +113,12 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   sigmaExogenous = exoSigma,
   phiExogenous = matrix(nrow=0,ncol=0),
   xInitExogenous = matrix(nrow=0,ncol=0),
+  thetaInitExogenous = matrix(nrow=0,ncol=0),
   muExogenous = matrix(nrow=0,ncol=0),
   dotmuExogenous = matrix(nrow=0,ncol=0),
   priorTemperatureLevel = config$priorTemperature,
   priorTemperatureDeriv = config$priorTemperature,
+  priorTemperatureObs = 1,
   kernel = config$kernel,
   nstepsHmc = config$hmcSteps,
   burninRatioHmc = config$burninRatio,
@@ -130,6 +132,9 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   useScalerSigma = config$useScalerSigma,
   useFixedSigma = config$useFixedSigma,
   verbose = TRUE)
+
+phiUsed <- samplesCpp$phi
+samplesCpp <- samplesCpp$llikxthetasigmaSamples
 
 samplesCpp <- samplesCpp[,,1]
 
@@ -159,6 +164,10 @@ gpode$fode <- aperm(gpode$fode, c(3,1,2))
 dotxtrue = gpds:::fnmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
 odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
+
+for(j in 1:(ncol(xsim)-1)){
+  config[[paste0("phiD", j)]] <- paste(round(phiUsed[,j], 2), collapse = "; ")
+}
 
 gpds:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".pdf"), 

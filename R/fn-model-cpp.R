@@ -1,25 +1,34 @@
 #### run with priorTempered phase 1 --------------------------------------------
 library(gpds)
+#where to save results
+PROJECT_DIR = getwd()
+outDir <- "comparison/results/"
+dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
+
 # set up configuration if not already exist ------------------------------------
 if(!exists("config")){
   config <- list(
     nobs = 41,
-    noise = c(0.15, 0.07) * 2,
+    noise = c(0.2, 0.2),
     kernel = "generalMatern",
-    seed = 1365546660, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+    seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     loglikflag = "withmeanBand",
     bandsize = 20,
-    hmcSteps = 500,
-    n.iter = 10000,
+    hmcSteps = 100,
+    n.iter = 20001,
+    n.iter.Wenk = 300000,
+    n.iter.Dondel = 300000,
     burninRatio = 0.50,
     stepSizeFactor = 0.06,
     filllevel = 2,
+    t.end = 20,
     modelName = "FN",
     temperPrior = TRUE,
     useFrequencyBasedPrior = TRUE,
     useScalerSigma = FALSE,
     useFixedSigma = FALSE,
-    max.epoch = 10
+    useExoSigma = TRUE,
+    max.epoch = 1
   )
 }
 
@@ -53,7 +62,7 @@ pram.true <- list(
   sigma=config$noise
 )
 
-times <- seq(0,20,length=241)
+times <- seq(0,config$t.end,length=241)
 
 modelODE <- function(t, state, parameters) {
   list(as.vector(gpds:::fnmodelODE(parameters, t(state))))
@@ -81,6 +90,11 @@ matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
 
 xsim <- insertNaN(xsim.obs,config$filllevel)
 
+if (config$useExoSigma) {
+  exoSigma = config$noise
+} else {
+  exoSigma = numeric(0)
+}
 
 # cpp inference ----------------------------
 fnmodel <- list(
@@ -88,20 +102,23 @@ fnmodel <- list(
   fOdeDx=gpds:::fnmodelDx,
   fOdeDtheta=gpds:::fnmodelDtheta,
   thetaLowerBound=c(0,0,0),
-  thetaUpperBound=c(Inf,Inf,Inf)
+  thetaUpperBound=c(Inf,Inf,Inf),
+  name="FN"
 )
 
-samplesCpp <- gpds:::solveGpds(
+samplesCpp <- gpds:::solveGpdsRcpp(
   yFull = data.matrix(xsim[,-1]),
   odeModel = fnmodel,
   tvecFull = xsim$time,
-  sigmaExogenous = numeric(0),
-  phiExogenous = matrix(numeric(0)),
-  xInitExogenous = matrix(numeric(0)),
-  muExogenous = matrix(numeric(0)),
-  dotmuExogenous = matrix(numeric(0)),
+  sigmaExogenous = exoSigma,
+  phiExogenous = matrix(nrow=0,ncol=0),
+  xInitExogenous = matrix(nrow=0,ncol=0),
+  thetaInitExogenous = matrix(nrow=0,ncol=0),
+  muExogenous = matrix(nrow=0,ncol=0),
+  dotmuExogenous = matrix(nrow=0,ncol=0),
   priorTemperatureLevel = config$priorTemperature,
   priorTemperatureDeriv = config$priorTemperature,
+  priorTemperatureObs = 1,
   kernel = config$kernel,
   nstepsHmc = config$hmcSteps,
   burninRatioHmc = config$burninRatio,
@@ -116,11 +133,15 @@ samplesCpp <- gpds:::solveGpds(
   useFixedSigma = config$useFixedSigma,
   verbose = TRUE)
 
-out <- samplesCpp[-1,1,1]
-xCpp <- matrix(out[1:length(data.matrix(xsim[,-1]))], ncol=2)
-stopifnot(abs(sum(out)*1e5 - 6879957.07974693) < 1e-4)
-thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + 3)]
-sigmaCpp <- tail(out, 2)
+phiUsed <- samplesCpp$phi
+samplesCpp <- samplesCpp$llikxthetasigmaSamples
+
+samplesCpp <- samplesCpp[,,1]
+
+out <- samplesCpp[-1,1,drop=FALSE]
+xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=ncol(xsim[,-1]))
+thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + length(fnmodel$thetaLowerBound)), 1]
+sigmaCpp <- tail(out[, 1], ncol(xsim[,-1]))
 
 matplot(xsim$time, xCpp, type="l", add=TRUE)
 
@@ -131,21 +152,25 @@ sigmaId <- (max(thetaId)+1):(max(thetaId)+ncol(xsim[,-1]))
 
 
 burnin <- as.integer(config$n.iter*config$burninRatio)
-odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
-outDir <- "../results/cpp/"
+gpode <- list(theta=t(samplesCpp[thetaId, -(1:burnin)]),
+              xsampled=array(t(samplesCpp[xId, -(1:burnin)]),
+                             dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
+              lglik=samplesCpp[llikId,-(1:burnin)],
+              sigma = t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]))
+gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
+  with(gpode, gpds:::fnmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
+gpode$fode <- aperm(gpode$fode, c(3,1,2))
+
 dotxtrue = gpds:::fnmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
-for(iEpoch in 1:config$max.epoch){
-  gpode <- list(theta=t(samplesCpp[thetaId, -(1:burnin), iEpoch]),
-                xsampled=array(t(samplesCpp[xId, -(1:burnin), iEpoch]),
-                               dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
-                lglik=samplesCpp[llikId,-(1:burnin), iEpoch],
-                sigma = t(samplesCpp[sigmaId, -(1:burnin), iEpoch]))
-  gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
-    with(gpode, gpds:::fnmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
-  gpode$fode <- aperm(gpode$fode, c(3,1,2))
-  
-  gpds:::plotPostSamplesFlex(
-    paste0(outDir, config$kernel,"-",config$seed,"-priorTempered-phase",iEpoch,".pdf"), 
-    xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
+
+for(j in 1:(ncol(xsim)-1)){
+  config[[paste0("phiD", j)]] <- paste(round(phiUsed[,j], 2), collapse = "; ")
 }
+
+gpds:::plotPostSamplesFlex(
+  paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".pdf"), 
+  xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+
+save(xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel, file= paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".rda"))
