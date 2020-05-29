@@ -2,8 +2,12 @@
 library(gpds)
 
 # remove results that don't have common seed
-rdaDir <- "../results/cpp/7param/"
-subdirs <- list.dirs(rdaDir)[-1]
+rdaDir <- "../results/for_paper/7param/"
+subdirs <- c(
+  "../results/for_paper/7param//variablephi-notemper",
+  "../results/for_paper/7param//variablephi-temper-warmstart",
+  "../results/for_paper/7param//variablephi-temper-warmstart-updatephi",
+)
 all_files <- lapply(subdirs, list.files)
 all_seeds <- lapply(all_files, function(x) gsub(".*log-([0-9]+)-7param.*", "\\1", x))
 common_seeds <- all_seeds[[1]]
@@ -21,18 +25,18 @@ for (i in 2:length(all_seeds)){
 
 # read results ------------------------------------------
 
-# rdaDir <- "../results/cpp/7param/variablephi-temper-warmstart/"
+# rdaDir <- "../results/for_paper/7param/variablephi-temper-warmstart/"
 # rdaDirAll <- c(
-#   "../results/cpp/7param//fixedphi-temper",
-#   "../results/cpp/7param//variablephi-notemper",
-#   "../results/cpp/7param//variablephi-temper-coldstart",
-#   "../results/cpp/7param//variablephi-temper-warmstart",
-#   "../results/cpp/7param//variablephi-temper-warmstart-reoptimizephi",
-#   "../results/cpp/7param//variablephi-temper-warmstart-updatemissingphi",
-#   "../results/cpp/7param//variablephi-temper-warmstart-updatemissingphi-map-postmean",
-#   "../results/cpp/7param//variablephi-temper-warmstart-updatephi",
-#   "../results/cpp/7param//variablephi-temper-warmstart-updatephi-map-postmean",
-#   "../results/cpp/7param//variablephi-temper-warmstart-updatephi-posterior-sample"
+#   "../results/for_paper/7param//fixedphi-temper",
+#   "../results/for_paper/7param//variablephi-notemper",
+#   "../results/for_paper/7param//variablephi-temper-coldstart",
+#   "../results/for_paper/7param//variablephi-temper-warmstart",
+#   "../results/for_paper/7param//variablephi-temper-warmstart-reoptimizephi",
+#   "../results/for_paper/7param//variablephi-temper-warmstart-updatemissingphi",
+#   "../results/for_paper/7param//variablephi-temper-warmstart-updatemissingphi-map-postmean",
+#   "../results/for_paper/7param//variablephi-temper-warmstart-updatephi",
+#   "../results/for_paper/7param//variablephi-temper-warmstart-updatephi-map-postmean",
+#   "../results/for_paper/7param//variablephi-temper-warmstart-updatephi-posterior-sample"
 # )
 args <- commandArgs(trailingOnly = TRUE)
 args <- as.numeric(args)
@@ -447,11 +451,11 @@ dev.off()
 ## ramsey summary ----------------------------------------------------------------------------------------------------------------
 summarize_ramsey <- FALSE
 if(summarize_ramsey){
-  f <- list.files("../results/cpp/7param/variablephi-notemper/")
+  f <- list.files("../results/for_paper/7param/variablephi-notemper/")
   f <- f[grep("Hes1-log.*\\.rda", f)]
-  load(paste0("../results/cpp/7param/variablephi-notemper/", f[1]))
+  load(paste0("../results/for_paper/7param/variablephi-notemper/", f[1]))
   
-  rdaDir <- "../results/cpp/7param/ramsay/"
+  rdaDir <- "../results/for_paper/7param/ramsay/"
   pdf_files <- list.files(rdaDir)
   rda_files <- pdf_files[grep("Hes1-log.*\\.rda", pdf_files)]
   pdf_files <- pdf_files[grep("Hes1-log.*\\.pdf", pdf_files)]

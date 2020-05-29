@@ -2,10 +2,10 @@
 library(gpds)
 
 # remove results that don't have common seed
-rdaDir <- "../results/cpp/fullobs/"
-subdirs <- c("../results/cpp/fullobs//variablephi-notemper", 
-             "../results/cpp/fullobs//variablephi-temper-coldstart", 
-             "../results/cpp/fullobs//variablephi-temper-warmstart")
+rdaDir <- "../results/for_paper/fullobs/"
+subdirs <- c("../results/for_paper/fullobs//variablephi-notemper", 
+             "../results/for_paper/fullobs//variablephi-temper-coldstart", 
+             "../results/for_paper/fullobs//variablephi-temper-warmstart")
 
 all_files <- lapply(subdirs, list.files)
 all_seeds <- lapply(all_files, function(x) gsub(".*log-([0-9]+)-fullobs.*", "\\1", x))
@@ -25,18 +25,18 @@ for (i in 2:length(all_seeds)){
 # read results ------------------------------------------
 
 
-# rdaDir <- "../results/cpp/fullobs/variablephi-temper-warmstart/"
+# rdaDir <- "../results/for_paper/fullobs/variablephi-temper-warmstart/"
 # rdaDirAll <- c(
-#   "../results/cpp/fullobs//fixedphi-temper",
-#   "../results/cpp/fullobs//variablephi-notemper",
-#   "../results/cpp/fullobs//variablephi-temper-coldstart",
-#   "../results/cpp/fullobs//variablephi-temper-warmstart",
-#   "../results/cpp/fullobs//variablephi-temper-warmstart-reoptimizephi",
-#   "../results/cpp/fullobs//variablephi-temper-warmstart-updatemissingphi",
-#   "../results/cpp/fullobs//variablephi-temper-warmstart-updatemissingphi-map-postmean",
-#   "../results/cpp/fullobs//variablephi-temper-warmstart-updatephi",
-#   "../results/cpp/fullobs//variablephi-temper-warmstart-updatephi-map-postmean",
-#   "../results/cpp/fullobs//variablephi-temper-warmstart-updatephi-posterior-sample"
+#   "../results/for_paper/fullobs//fixedphi-temper",
+#   "../results/for_paper/fullobs//variablephi-notemper",
+#   "../results/for_paper/fullobs//variablephi-temper-coldstart",
+#   "../results/for_paper/fullobs//variablephi-temper-warmstart",
+#   "../results/for_paper/fullobs//variablephi-temper-warmstart-reoptimizephi",
+#   "../results/for_paper/fullobs//variablephi-temper-warmstart-updatemissingphi",
+#   "../results/for_paper/fullobs//variablephi-temper-warmstart-updatemissingphi-map-postmean",
+#   "../results/for_paper/fullobs//variablephi-temper-warmstart-updatephi",
+#   "../results/for_paper/fullobs//variablephi-temper-warmstart-updatephi-map-postmean",
+#   "../results/for_paper/fullobs//variablephi-temper-warmstart-updatephi-posterior-sample"
 # )
 args <- commandArgs(trailingOnly = TRUE)
 args <- as.numeric(args)
@@ -93,7 +93,7 @@ for (rdaDir in subdirs){
         ttheta <- gpode$theta[mapId,]
         tx0 <- gpode$xsampled[mapId,1,]
         deSolve::ode(y = tx0, times = odemodel$times, func = odemodel$modelODE, parms = ttheta)
-      }, mc.cores = 8)
+      }, mc.cores = 1)
       
       rmseTrue <- sqrt(apply((xdesolveTRUE.obs - xsim[,-1])^2, 2, mean, na.rm=TRUE))
       rmseWholeGpode <- sqrt(apply((xpostmean - xsim[,-1])^2, 2, mean, na.rm=TRUE))
@@ -167,7 +167,7 @@ for (rdaDir in subdirs){
       oursPostExpX_f=oursPostExpX_f,
       oursExpXdesolvePM_f=oursExpXdesolvePM_f
     )
-  }, mc.cores = 64)
+  }, mc.cores = 48)
   
   rda_files <- as.character(unlist(rda_files))
   for (f in 1:length(rda_files)) {
@@ -451,11 +451,11 @@ for (rdaDir in subdirs){
 ## ramsey summary ----------------------------------------------------------------------------------------------------------------
 summarize_ramsey <- FALSE
 if(summarize_ramsey){
-  f <- list.files("../results/cpp/fullobs/variablephi-notemper/")
+  f <- list.files("../results/for_paper/fullobs/variablephi-notemper/")
   f <- f[grep("Hes1-log.*\\.rda", f)]
-  load(paste0("../results/cpp/fullobs/variablephi-notemper/", f[1]))
+  load(paste0("../results/for_paper/fullobs/variablephi-notemper/", f[1]))
   
-  rdaDir <- "../results/cpp/fullobs/ramsay/"
+  rdaDir <- "../results/for_paper/fullobs/ramsay/"
   pdf_files <- list.files(rdaDir)
   rda_files <- pdf_files[grep("Hes1-log.*\\.rda", pdf_files)]
   pdf_files <- pdf_files[grep("Hes1-log.*\\.pdf", pdf_files)]
