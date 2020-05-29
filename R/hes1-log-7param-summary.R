@@ -6,7 +6,7 @@ rdaDir <- "../results/for_paper/7param/"
 subdirs <- c(
   "../results/for_paper/7param//variablephi-notemper",
   "../results/for_paper/7param//variablephi-temper-warmstart",
-  "../results/for_paper/7param//variablephi-temper-warmstart-updatephi",
+  "../results/for_paper/7param//variablephi-temper-warmstart-updatephi"
 )
 all_files <- lapply(subdirs, list.files)
 all_seeds <- lapply(all_files, function(x) gsub(".*log-([0-9]+)-7param.*", "\\1", x))
