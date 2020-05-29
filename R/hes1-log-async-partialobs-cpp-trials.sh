@@ -15,6 +15,25 @@ for dummy in {1..12}; do
   sleep 300
 done
 
+for dummy in {1..12}; do
+  for i in {1..60}; do
+    Rscript  R/fn-model-cpp.R &
+  done
+  Rscript  R/fn-model-cpp.R
+  sleep 60
+done
+
+iseed=1
+for dummy in {1..12}; do
+  for i in {1..60}; do
+    Rscript R/ramsey-rerun-hes1-partialobs.R $iseed &
+    ((iseed=iseed+1))
+  done
+  Rscript R/ramsey-rerun-hes1-partialobs.R $iseed
+  ((iseed=iseed+1))
+  sleep 300
+done
+
 
 sleep 10800
 for i in {1..60}
