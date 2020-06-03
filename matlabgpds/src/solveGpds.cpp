@@ -13,28 +13,30 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   const vec sigmaExogenous = armaGetPrVec(prhs[3]);
   const mat phiExogenous = armaGetPr(prhs[4]);
   const mat xInitExogenous= armaGetPr(prhs[5]);
-  const mat muExogenous= armaGetPr(prhs[6]);
-  const mat dotmuExogenous= armaGetPr(prhs[7]);
+  const mat thetaInitExogenous= armaGetPr(prhs[6]);
+  const mat muExogenous= armaGetPr(prhs[7]);
+  const mat dotmuExogenous= armaGetPr(prhs[8]);
 
-  const double priorTemperatureLevel = mxGetScalar(prhs[8]);
-  const double priorTemperatureDeriv = mxGetScalar(prhs[9]);
+  const double priorTemperatureLevel = mxGetScalar(prhs[9]);
+  const double priorTemperatureDeriv = mxGetScalar(prhs[10]);
+  const double priorTemperatureObs = mxGetScalar(prhs[11]);
 
   char *str1;
-  str1 = mxArrayToString(prhs[10]);
+  str1 = mxArrayToString(prhs[12]);
   string kernel = str1;
   
-  const int nstepsHmc = mxGetScalar(prhs[11]);
-  const double burninRatioHmc = mxGetScalar(prhs[12]);
-  const unsigned int niterHmc = mxGetScalar(prhs[13]);
-  const double stepSizeFactorHmc = mxGetScalar(prhs[14]);
-  const int nEpoch = mxGetScalar(prhs[15]);
-  const int bandSize = mxGetScalar(prhs[16]);
-  bool useFrequencyBasedPrior = mxGetLogicals(prhs[17])[0];
-  bool useBand = mxGetLogicals(prhs[18])[0];
-  bool useMean = mxGetLogicals(prhs[19])[0];
-  bool useScalerSigma = mxGetLogicals(prhs[20])[0];
-  bool useFixedSigma = mxGetLogicals(prhs[21])[0];
-  bool verbose = mxGetLogicals(prhs[22])[0];    
+  const int nstepsHmc = mxGetScalar(prhs[13]);
+  const double burninRatioHmc = mxGetScalar(prhs[14]);
+  const unsigned int niterHmc = mxGetScalar(prhs[15]);
+  const double stepSizeFactorHmc = mxGetScalar(prhs[16]);
+  const int nEpoch = mxGetScalar(prhs[17]);
+  const int bandSize = mxGetScalar(prhs[18]);
+  bool useFrequencyBasedPrior = mxGetLogicals(prhs[19])[0];
+  bool useBand = mxGetLogicals(prhs[20])[0];
+  bool useMean = mxGetLogicals(prhs[21])[0];
+  bool useScalerSigma = mxGetLogicals(prhs[22])[0];
+  bool useFixedSigma = mxGetLogicals(prhs[23])[0];
+  bool verbose = mxGetLogicals(prhs[24])[0];    
 
   mxArray *fOde_matlab = const_cast<mxArray *>(mxGetField(prhs[1], 0, "fOde"));
   mxArray *fOdeDx_matlab = const_cast<mxArray *>(mxGetField(prhs[1], 0, "fOdeDx"));
@@ -133,10 +135,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           sigmaExogenous,
           phiExogenous,
           xInitExogenous,
+          thetaInitExogenous,
           muExogenous,
           dotmuExogenous,
           priorTemperatureLevel,
           priorTemperatureDeriv,
+          priorTemperatureObs,
           kernel,
           nstepsHmc,
           burninRatioHmc,
@@ -164,17 +168,25 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       std::cout << "thetaInit = \n" << solver.thetaInit << "\n";
   }
   
+  solver.initMissingComponent();
   solver.sampleInEpochs();
   
   cube ret = solver.llikxthetasigmaSamples;
+  mat retphi = solver.phiAllDimensions;
 
   mwSize dimensions[3];
   dimensions[0] = ret.n_rows;
   dimensions[1] = ret.n_cols;
   dimensions[2] = ret.n_slices;
+  
+  mwSize phidim[2];
+  phidim[0] = retphi.n_rows;
+  phidim[1] = retphi.n_cols;
 
   plhs[0] = mxCreateNumericArray(3, dimensions, mxDOUBLE_CLASS, mxREAL);
+  plhs[1] = mxCreateNumericArray(2, phidim, mxDOUBLE_CLASS, mxREAL);
   armaSetCubePr(plhs[0], ret);
+  armaSetPr(plhs[1], retphi);
   
 
 }
