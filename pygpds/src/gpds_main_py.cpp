@@ -2,36 +2,33 @@
 // Created by Shihao Yang on 6/5/20.
 //
 
-#include <armadillo>
-#include <classDefinition.h>
+#include "gpds_main_py.h"
 
-
-// [[Rcpp::export]]
 GpdsSolver solveGpdsPy(const arma::mat & yFull,
                       const OdeSystem & odeModel,
                       const arma::vec & tvecFull,
-                      const arma::vec & sigmaExogenous = arma::vec(),
-                      const arma::mat & phiExogenous = arma::mat(),
-                      const arma::mat & xInitExogenous = arma::mat(),
-                      const arma::vec & thetaInitExogenous = arma::vec(),
-                      const arma::mat & muExogenous = arma::mat(),
-                      const arma::mat & dotmuExogenous = arma::mat(),
-                      const double priorTemperatureLevel = 1,
-                      const double priorTemperatureDeriv = 1,
-                      const double priorTemperatureObs = 1,
-                      std::string kernel = "generalMatern",
-                      const int nstepsHmc = 500,
-                      const double burninRatioHmc = 0.5,
-                      const unsigned int niterHmc = 10000,
-                      const double stepSizeFactorHmc = 1,
-                      const int nEpoch = 10,
-                      const int bandSize = 20,
-                      bool useFrequencyBasedPrior = false,
-                      bool useBand = true,
-                      bool useMean = true,
-                      bool useScalerSigma = false,
-                      bool useFixedSigma = false,
-                      bool verbose = false) {
+                      const arma::vec & sigmaExogenous ,
+                      const arma::mat & phiExogenous ,
+                      const arma::mat & xInitExogenous ,
+                      const arma::vec & thetaInitExogenous ,
+                      const arma::mat & muExogenous ,
+                      const arma::mat & dotmuExogenous ,
+                      const double priorTemperatureLevel ,
+                      const double priorTemperatureDeriv ,
+                      const double priorTemperatureObs ,
+                      std::string kernel ,
+                      const int nstepsHmc ,
+                      const double burninRatioHmc ,
+                      const unsigned int niterHmc ,
+                      const double stepSizeFactorHmc ,
+                      const int nEpoch ,
+                      const int bandSize ,
+                      bool useFrequencyBasedPrior ,
+                      bool useBand ,
+                      bool useMean ,
+                      bool useScalerSigma ,
+                      bool useFixedSigma ,
+                      bool verbose) {
 
     GpdsSolver solver(yFull,
                       odeModel,
@@ -67,5 +64,5 @@ GpdsSolver solveGpdsPy(const arma::mat & yFull,
     solver.initMissingComponent();
     solver.sampleInEpochs();
 //    return solver.llikxthetasigmaSamples;
-    reutrn solver;
+    return solver;
 }

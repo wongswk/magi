@@ -3,6 +3,8 @@
 //
 
 #ifndef GPDS_MULTI_LANG_GPDS_MAIN_PY_H
+#include <classDefinition.h>
+#include <GpdsSolver.h>
 #define GPDS_MULTI_LANG_GPDS_MAIN_PY_H
 
 GpdsSolver solveGpdsPy(const arma::mat & yFull,
