@@ -409,6 +409,7 @@ PYBIND11_MODULE(pygpds, macro)
         .def_readwrite("name", &OdeSystem::name)
         .def_readwrite("thetaLowerBound", &OdeSystem::thetaLowerBound)
         .def_readwrite("thetaUpperBound", &OdeSystem::thetaUpperBound)
+        .def_readwrite("thetaSize", &OdeSystem::thetaSize)
         .def_readwrite("xLowerBound", &OdeSystem::xLowerBound)
         .def_readwrite("xUpperBound", &OdeSystem::xUpperBound);
 
