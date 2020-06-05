@@ -11,6 +11,7 @@
 #include <tgtdistr.h>
 #include <hmc.h>
 #include <classDefinition.h>
+#include "gpds_main_py.h"
 
 
 namespace py = pybind11;
@@ -426,5 +427,43 @@ PYBIND11_MODULE(pygpds, macro)
         py::arg("ub"),
         py::arg("nsteps"),
         py::arg("traj"));
+
+    py::class_< GpdsSolver >(macro, "GpdsSolver")
+        .def_readwrite("phiAllDimensions", &GpdsSolver::phiAllDimensions)
+        .def_readwrite("sigmaInit", &GpdsSolver::sigmaInit)
+        .def_readwrite("xInit", &GpdsSolver::xInit)
+        .def_readwrite("thetaInit", &GpdsSolver::thetaInit)
+        .def_readwrite("llikxthetasigmaSamples", &GpdsSolver::llikxthetasigmaSamples);
+
+    macro.def(
+        "solveGpdsPy",
+        &solveGpdsPy,
+        "",
+        py::arg("yFull"),
+        py::arg("odeModel"),
+        py::arg("tvecFull"),
+        py::arg("sigmaExogenous"),
+        py::arg("phiExogenous"),
+        py::arg("xInitExogenous"),
+        py::arg("thetaInitExogenous"),
+        py::arg("muExogenous"),
+        py::arg("dotmuExogenous"),
+        py::arg("priorTemperatureLevel"),
+        py::arg("priorTemperatureDeriv"),
+        py::arg("priorTemperatureObs"),
+        py::arg("kernel"),
+        py::arg("nstepsHmc"),
+        py::arg("burninRatioHmc"),
+        py::arg("niterHmc"),
+        py::arg("stepSizeFactorHmc"),
+        py::arg("nEpoch"),
+        py::arg("bandSize"),
+        py::arg("useFrequencyBasedPrior"),
+        py::arg("useBand"),
+        py::arg("useMean"),
+        py::arg("useScalerSigma"),
+        py::arg("useFixedSigma"),
+        py::arg("verbose"));
+
 }
 
