@@ -1,7 +1,8 @@
+cmake_minimum_required(VERSION 3.17)
 
 set(pybind11_DIR ${CMAKE_CURRENT_LIST_DIR}/../include/pybind11/)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -flto -O3 -W -Wall -Werror -Wformat=2 -Wnull-dereference -Wold-style-cast -pedantic -fprofile-arcs -ftest-coverage -fPIC ")
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_COMPILER g++-6)
 
 file(GLOB LIB_PYGPDS_HEADERS "src/*.h")
@@ -17,6 +18,8 @@ else ()
     set(SUFFIX .cpython-36m-x86_64-linux-gnu.so)
 endif ()
 
+find_package (Python3 COMPONENTS NumPy)
+
 target_include_directories(pygpds PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../gpds_cpp/)
 target_include_directories(pygpds SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include/)
 target_include_directories(pygpds SYSTEM PUBLIC
@@ -26,7 +29,8 @@ target_include_directories(pygpds SYSTEM PUBLIC
         /usr/local/Frameworks/Python.framework/Headers
         )
 
-add_dependencies(pygpds cgpds)
+target_include_directories(pygpds SYSTEM PUBLIC ${Python3_NumPy_INCLUDE_DIRS})
+
 
 set_target_properties(pygpds PROPERTIES PREFIX "" SUFFIX "${SUFFIX}")
 set_target_properties(pygpds PROPERTIES OUTPUT_NAME "pygpds")

@@ -15,3 +15,6 @@
 	path = package/eigen-git-mirror
 	url = https://github.com/eigenteam/eigen-git-mirror.git
 	ignore = dirty
+[submodule "package/Arma_Wrapper"]
+	path = package/Arma_Wrapper
+	url = https://gitlab.com/sangrey/Arma_Wrapper.git
