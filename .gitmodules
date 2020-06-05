@@ -17,4 +17,5 @@
 	ignore = dirty
 [submodule "package/Arma_Wrapper"]
 	path = package/Arma_Wrapper
+	ignore = dirty
 	url = https://gitlab.com/sangrey/Arma_Wrapper.git
