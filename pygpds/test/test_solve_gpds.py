@@ -19,7 +19,7 @@ class SolveGpdsTest(unittest.TestCase):
             Rdt = -1.0/theta[2] * ( V - theta[0] + theta[1] * R)
             result = np.stack([Vdt, Rdt], axis=1)
 
-            return ArmaMatrix(result)
+            return ArmaMatrix(result.T.copy())
 
         def fOdeDx(theta, x):
             theta = vector(theta)
@@ -33,7 +33,7 @@ class SolveGpdsTest(unittest.TestCase):
             resultDx[:,1,0] = theta[2]
             resultDx[:,0,1] = -1.0 / theta[2]
             resultDx[:,1,1] = -1.0*theta[1]/theta[2]
-            return ArmaCube(resultDx)
+            return ArmaCube(resultDx.T.copy())
 
         def fOdeDtheta(theta, x):
             theta = vector(theta)
@@ -49,7 +49,7 @@ class SolveGpdsTest(unittest.TestCase):
             resultDtheta[:,1,1] = -R / theta[2]
             resultDtheta[:,2,1] = 1.0/pow(theta[2], 2) * ( V - theta[0] + theta[1] * R)
 
-            return ArmaCube(resultDtheta)
+            return ArmaCube(resultDtheta.T.copy())
 
         fn_system.fOde = fOde
         fn_system.fOdeDx = fOdeDx
@@ -76,7 +76,7 @@ class SolveGpdsTest(unittest.TestCase):
         yFull.fill(np.nan)
         yFull[np.linspace(0, 80, num=41).astype(int),:] = ydata
         result_solver = solveGpdsPy(
-            yFull=ArmaMatrix(yFull),
+            yFull=ArmaMatrix(yFull).t(),
             odeModel=fn_system,
             tvecFull=ArmaVector(tvecFull),
             sigmaExogenous=ArmaVector(np.ndarray(0)),
@@ -101,3 +101,5 @@ class SolveGpdsTest(unittest.TestCase):
             useScalerSigma = False,
             useFixedSigma = False,
             verbose = True)
+        phiUsed = matrix(result_solver.phiAllDimensions)
+        samplesCpp = matrix(result_solver.llikxthetasigmaSamples.slice(0))
