@@ -55,7 +55,7 @@ modelODE <- function(t, state, parameters) {
 
 xtrue <- deSolve::ode(y = pram.true$x0, times = times, func = modelODE, parms = pram.true$theta)
 xtrue <- data.frame(xtrue)
-matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=1)
+#matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=1)
 
 xtrueFunc <- lapply(2:ncol(xtrue), function(j)
   approxfun(xtrue[, "time"], xtrue[, j]))
@@ -69,9 +69,9 @@ for(j in 1:(ncol(xsim)-1)){
 }
 
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
-matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
+#matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
 
-matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
+#matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
 
 #xsim <- insertNaN(xsim.obs,config$filllevel)
 fillC <- seq(0, config$t.end, by = config$linfillspace)
@@ -107,6 +107,8 @@ ptransmodel <- list(
   thetaUpperBound=rep(4,6)
 )
 
+OursStartTime <- proc.time()[3]
+
 samplesCpp <- gpds:::solveGpdsRcpp(
   yFull = data.matrix(xsim[,-1]),
   odeModel = ptransmodel,
@@ -134,6 +136,8 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   useFixedSigma = config$useFixedSigma,
   verbose = TRUE)
 
+OursTimeUsed <- proc.time()[3] - OursStartTime
+
 samplesCpp <- samplesCpp$llikxthetasigmaSamples
 
 samplesCpp <- samplesCpp[,,1]
@@ -143,7 +147,7 @@ xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=ncol(xsim[,-1]))
 thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + length(ptransmodel$thetaLowerBound)), 1]
 sigmaCpp <- tail(out[, 1], ncol(xsim[,-1]))
 
-matplot(xsim$time, xCpp, type="l", add=TRUE)
+#matplot(xsim$time, xCpp, type="l", add=TRUE)
 
 llikId <- 1
 xId <- (max(llikId)+1):(max(llikId)+length(data.matrix(xsim[,-1])))
@@ -199,8 +203,12 @@ log_prior <- function(params) {
            dunif(params[6],0,4,log=TRUE)))
 }
 
+DondelStartTime <- proc.time()[3]
+
 agm.result =agm(data=dataTest,time=timeTest,ode.system=VG_func, numberOfParameters=length(pram.true$theta),
                 noise.sd = config$noise[1], logPrior = log_prior, maxIterations = config$n.iter.Dondel, showProgress = TRUE)
+
+DondelTimeUsed <- proc.time()[3] - DondelStartTime
 
 #### Use our plotting codes
 config$n.iter.Dondel <- config$n.iter.Dondel / 25
@@ -229,6 +237,9 @@ save(agm.result, file=paste0(outDir, config$modelName,"-Dondel-",config$seed,"-n
 
 ### Wenk
 #### Set up a place to store Python Wenk temporary output  ### Remember to set Noise and Iterations in Python!
+
+WenkStartTime <- proc.time()[3]
+
 system( paste0("mkdir ", config$seed) )  
 Sys.setenv(PYTHONPATH="../comparison/")
 system( paste0("cd ", config$seed, "; python3 ../comparison/FGPGM/mainFiles/ProteinTransduction/createExperiments.py" ))
@@ -237,6 +248,10 @@ write.table(as.matrix(xsim.obs[,2:ncol(xsim)]), row.names = F, col.names = F, fi
 
 system( paste0("cd ", config$seed, "; python3 ../comparison/FGPGM/mainFiles/ProteinTransduction/getHyperparams.py" ))
 system( paste0("cd ", config$seed, "; python3 ../comparison/FGPGM/mainFiles/ProteinTransduction/doFGPGM.py" ))
+
+WenkTimeUsed <- proc.time()[3] - WenkStartTime
+
+cat(OursTimeUsed, DondelTimeUsed, WenkTimeUsed, file=paste0(outDir, config$modelName, "-time-", config$seed,"-noise", config$noise[1], ".txt"))
 
 dataDir <- paste0(config$seed, "/")
 
