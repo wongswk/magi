@@ -106,6 +106,8 @@ fnmodel <- list(
   name="FN"
 )
 
+OursStartTime <- proc.time()[3]
+
 samplesCpp <- gpds:::solveGpdsRcpp(
   yFull = data.matrix(xsim[,-1]),
   odeModel = fnmodel,
@@ -132,6 +134,8 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   useScalerSigma = config$useScalerSigma,
   useFixedSigma = config$useFixedSigma,
   verbose = TRUE)
+
+OursTimeUsed <- proc.time()[3] - OursStartTime
 
 phiUsed <- samplesCpp$phi
 samplesCpp <- samplesCpp$llikxthetasigmaSamples
@@ -194,8 +198,12 @@ log_prior <- function(params) {
            dunif(params[3],0,10,log=TRUE)))
 }
 
+DondelStartTime <- proc.time()[3]
+
 agm.result =agm(data=dataTest,time=timeTest,ode.system=FN_func, numberOfParameters=length(pram.true$theta),
                 noise.sd = config$noise[1], logPrior = log_prior, maxIterations = config$n.iter.Dondel, showProgress = TRUE)
+
+DondelTimeUsed <- proc.time()[3] - DondelStartTime
 
 #### Use our plotting codes
 config$n.iter.Dondel <- config$n.iter.Dondel / 25
@@ -223,6 +231,7 @@ gpds:::plotPostSamplesFlex(
 save(agm.result, file=paste0(outDir, config$modelName,"-Dondel-",config$seed,"-noise", config$noise[1], ".rda"))
 
 ### Wenk
+WenkStartTime <- proc.time()[3]
 #### Set up a place to store Python Wenk temporary output  ### Remember to set Noise and Iterations in Python!
 setwd(outDir)
 system( paste0("mkdir ", config$seed) )  
@@ -235,6 +244,10 @@ write.table(as.matrix(xsim.obs[,2:ncol(xsim)]), row.names = F, col.names = F, fi
 system( paste0("cd ", config$seed, "; python3 ", PROJECT_DIR, "/comparison/FGPGM/mainFiles/FitzHughNagumo/getHyperparams.py" ))
 system( paste0("cd ", config$seed, "; python3 ", PROJECT_DIR, "/comparison/FGPGM/mainFiles/FitzHughNagumo/doFGPGM.py",
                " --nSamples ", sprintf("%d", config$n.iter.Wenk)))
+
+WenkTimeUsed <- proc.time()[3] - WenkStartTime
+
+cat(OursTimeUsed, DondelTimeUsed, WenkTimeUsed, file=paste0(outDir, config$modelName, "-time-", config$seed,"-noise", config$noise[1], ".txt"))
 
 dataDir <- paste0(config$seed, "/")
 
