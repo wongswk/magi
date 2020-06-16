@@ -249,7 +249,7 @@ WenkTimeUsed <- proc.time()[3] - WenkStartTime
 
 cat(OursTimeUsed, DondelTimeUsed, WenkTimeUsed, file=paste0(outDir, config$modelName, "-time-", config$seed,"-noise", config$noise[1], ".txt"))
 
-dataDir <- paste0(config$seed, "/")
+dataDir <- paste0('comparison/results/', config$seed, "/")
 
 ## use our plot codes
 samplesCpp <- as.matrix(read.table(paste0(dataDir, "MCMCMatrix.csv")))
