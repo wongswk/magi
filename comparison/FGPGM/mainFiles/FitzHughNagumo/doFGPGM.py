@@ -76,7 +76,7 @@ propStds = np.concatenate([stateStds, paramStds])
 
 newStates, newParams = FM.getFGPGMResults(GPPosteriorInit=True,
                                           blockNegStates=False,
-                                          debug=True,
+                                          debug=False,
                                           theta0=theta0,
                                           thetaMagnitudes=np.zeros_like(theta0),
                                           nSamples=args.nSamples,
