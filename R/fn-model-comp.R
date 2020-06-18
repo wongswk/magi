@@ -247,7 +247,7 @@ system( paste0("cd ", config$seed, "; python3 ", PROJECT_DIR, "/comparison/FGPGM
 
 WenkTimeUsed <- proc.time()[3] - WenkStartTime
 
-cat(OursTimeUsed, DondelTimeUsed, WenkTimeUsed, file=paste0(outDir, config$modelName, "-time-", config$seed,"-noise", config$noise[1], ".txt"))
+save(OursTimeUsed, DondelTimeUsed, WenkTimeUsed, file=paste0(outDir, config$modelName, "-time-", config$seed,"-noise", config$noise[1], ".rda"))
 
 dataDir <- paste0('comparison/results/', config$seed, "/")
 
