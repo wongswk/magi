@@ -5,17 +5,15 @@ library(CollocInfer)
 
 #### all possible data files
 
-# rdaDir <- "../results/cpp/fullobs/"
- 
-subdirs <- c("../comparison/results/HIV-9obs-fill3")
-#              "../results/cpp/fullobs//variablephi-temper-coldstart", "../results/cpp/fullobs//variablephi-temper-warmstart")
+#subdirs <- c("../comparison/results/HIV-9obs-fill3")
+subdirs <- c("../comparison/results/HIV-5obs-fill4")
 all_files <- lapply(subdirs, list.files)
 all_files <- lapply(all_files, function(x) x[grep(".*HIV-([0-9]+)-noise.*rda", x)])
 
 all_seeds <- lapply(all_files, function(x) gsub(".*HIV-([0-9]+)-noise.*rda", "\\1", x))
 
 all_seeds <- all_seeds[[1]]
-# common_seeds <- all_seeds[[1]]
+common_seeds <- all_seeds
 # for (i in 2:length(all_seeds)){
 #   common_seeds <- intersect(common_seeds, all_seeds[[i]])  
 # }
@@ -45,10 +43,10 @@ envHIV <- new.env()
 ##### Read dataset
 each_seed <- common_seeds[rda_it]
 
-# if (file.exists(paste0("../results/cpp/fullobs/ramsay/Hes1-log-",each_seed,"-fullobs-ramsay.rda"))){
-#   quit(save = "no")
-# }
-# 
+if (file.exists(paste0(subdirs[1], "/ramsay/HIV-",each_seed,"-ramsay.rda"))) {
+  next
+}
+#
 
 
 # system(paste0(" rm -r ../fullobs", each_seed))
@@ -115,7 +113,9 @@ legend("bottomleft", HIVvarnames, lwd = 3, col = 1:2, lty = 1:2, cex = 1.5)
 # We now add some noise to the values of the curves at a reduced set of observation
 # times:
 
-HIVtimes <- c(70,82, 94,106,115,127,139,151,163)-70
+#HIVtimes <- c(70,82, 94,106,115,127,139,151,163)-70   # n=9
+HIVtimes <- c(70,94,115,139,163) - 70  #n=5
+
 nobs <- length(HIVtimes)
 out <- lsoda(x0, times = HIVtimes, HIV.ode, HIVpars)
 HIVdata <- data2  ## read from rda so noise already added for that seed
@@ -166,7 +166,7 @@ HIV.fun <- function(times, x, p, more) {
 # Now we can choose a trade-off parameter and set up the objects that the
 # profiling functions will use.
 
-lambda <- 1000
+lambda <- 10000
 
 profile.obj <- LS.setup(pars = HIVpars, fn = HIV.fun, lambda = lambda, times = HIVtimes, 
                         coefs = coefs0, basisvals = HIVbasis)
@@ -205,7 +205,8 @@ CIs
 
 #### We can run with lambda ladder to find optimal tuning parameter
 
-whichtimes <- cbind(1:6, 4:9)  ### break up data for tuning lambda based on forward prediction error
+#whichtimes <- cbind(1:6, 4:9)  ### break up data for tuning lambda based on forward prediction error
+whichtimes <- cbind(1:4, 2:5)  ### break up data for tuning lambda based on forward prediction error
 
 FPE <- forward.prediction.error(HIVtimes, data2, Ores$coefs, lik, 
                                 proc, Ores$pars, whichtimes)  # based on default lambda = 1000
@@ -214,7 +215,7 @@ FPE <- forward.prediction.error(HIVtimes, data2, Ores$coefs, lik,
 par(mar = c(5, 5, 1, 1))
 matplot(HIVtimes, data2, pch = HIVvarnames, cex = 1.5, cex.lab = 2.5, cex.axis = 2.5)
 
-lambdas <- 10^(3:7)
+lambdas <- 10^(4:7)
 FPEs <- 0 * lambdas
 all.pars <- matrix(NA, nrow = length(lambdas), ncol = length(pars1))
 all.x0 <- matrix(NA, nrow = length(lambdas), ncol = length(x0))
@@ -277,5 +278,104 @@ save(list=setdiff(ls(), "envHIV"), file = paste0(subdirs[1], "/ramsay/HIV-",each
 #dev.off()
 #setwd("../dynamic-systems/")
 
+}
+
+
+### Get all results
+
+## ramsey summary ----------------------------------------------------------------------------------------------------------------
+#library(xtable)
+summarize_ramsey <- FALSE
+if(summarize_ramsey){
+  #f <- list.files(paste0(subdirs[1], "/ramsay/"))
+  #f <- f[grep("HIV.*\\.rda", f)]
+  #load(paste0(subdirs[1], "/ramsay/", f[1]))
+  
+  rdaDir <- paste0(subdirs[1], "/ramsay/")
+  rda_files <- list.files(rdaDir)
+  rda_files <- rda_files[grep("HIV.*\\.rda", rda_files)]
+  #pdf_files <- pdf_files[grep("Hes1-log.*\\.pdf", pdf_files)]
+  seeds <- gsub(".*log-([0-9]+)-fullobs.*", "\\1", rda_files)
+  
+  ramsayPostX0 <- list()
+  ramsayPostTheta <- list()
+  ramsayXdesolvePM <- list()
+  ramsayRmseLog <- list()
+  ramsayRmseOrig <- list()
+  for (f in rda_files){
+    env_ramsay <- new.env()
+    load(paste0(rdaDir, "/", f), envir = env_ramsay)
+    ramsayXdesolvePM[[f]] <- env_ramsay$xdesolveRamsay
+    ramsayRmseLog[[f]] <- env_ramsay$rmse_log
+    ramsayRmseOrig[[f]] <- env_ramsay$rmse_orig
+    ramsayPostTheta[[f]] <- env_ramsay$best.pars
+    ramsayPostX0[[f]] <- env_ramsay$best.pars.x0
+  }
+  print(length(rda_files))
+  
+  rmse_ramsay_log <- round(apply(sapply(ramsayRmseLog, identity), 1, mean, na.rm=TRUE), digits=4)
+  print(rmse_ramsay_log)
+  
+  # theta posterior of Ramsay
+  ramsayPostTheta <- sapply(ramsayPostTheta, identity, simplify = "array")
+  
+  ramsay_mean_est <- rbind(
+    apply(ramsayPostTheta, 1, mean)
+  )
+  ramsay_sd_est <- rbind(
+    apply(ramsayPostTheta, 1, sd)
+  )
+  print(ramsay_mean_est)
+  print(ramsay_sd_est)
+  
+  #ramsey_tab <- c("Ramsey", tablizeEstErr(ramsay_mean_est[1,],ramsay_sd_est[1,]))
+  #print(xtable(cbind(c("truth", pram.true$theta), t(tab), t(coverage), ramsey_tab)))
+  
+  ramsayXdesolvePM <- sapply(ramsayXdesolvePM, identity, simplify = "array")
+  
+  # pdf(width = 20, height = 5, file=paste0(rdaDir, "/posteriorExpxHes1Ramsay.pdf"))
+  # par(mfrow=c(1, ncol(xsim)+1))
+  # 
+  # matplot(xtrue[, "time"], exp(xtrue[, -1]), type="l", lty=1, col=c(4,6,"goldenrod1"), xlab="time", ylab=NA)
+  # matplot(xsim.obs$time, exp(xsim.obs[,-1]), type="p", col=c(4,6,"goldenrod1"), pch=20, add = TRUE)
+  # mtext('sample observations', cex=1.5)
+  # legend("topright", c("true P", "true M", "true H", "observed P", "observed M"), 
+  #        lty=c(1,1,1,NA,NA), pch=c(NA,NA,NA,20,20), col=c(4,6,"goldenrod1"), cex=1.5)
+  # 
+  # id <- seq(1, dim(ramsayXdesolvePM)[1], by=50)
+  # xdesolveTRUE <- deSolve::ode(y = pram.true$x0, times = times, func = odemodel$modelODE, parms = pram.true$theta)
+  # xdesolveTRUE[,-1] <- exp(xdesolveTRUE[,-1])
+  # xdesolveTRUE <- xdesolveTRUE[id,]
+  # compnames <- c("P", "M", "H")
+  # ylim_lower <- c(1.5, 0.5, 0)
+  # ylim_upper <- c(9.0, 3.1, 19)
+  # 
+  # for (i in 1:(ncol(xsim)-1)) {
+  #   ourEst <- apply(ramsayXdesolvePM[id,i+1,], 1, quantile, probs = 0.5, na.rm=TRUE)
+  #   # use 0.25 and 0.75 to check if outliers have significant effect on the inference, turns out no outlier issue
+  #   ourUB <- apply(ramsayXdesolvePM[id,i+1,], 1, quantile, probs = 0.025, na.rm=TRUE)
+  #   ourLB <- apply(ramsayXdesolvePM[id,i+1,], 1, quantile, probs = 0.975, na.rm=TRUE)
+  #   
+  #   ourEst <- exp(ourEst)
+  #   ourUB <- exp(ourUB)
+  #   ourLB <- exp(ourLB)
+  #   
+  #   times <- xdesolveTRUE[,1]
+  #   
+  #   plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+  #   mtext(compnames[i], cex=1.5)
+  #   polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
+  #           col = "skyblue", border = "skyblue", lty = 1, density = 10, angle = -45)
+  #   
+  #   lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
+  #   lines(times, ourEst, col="forestgreen", lwd=3)
+  # }
+  # par(mar=rep(0,4))
+  # plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
+  # legend("center", c("truth",  "median reconstructed trajectory", 
+  #                    "CI on reconstructed trajectory"), lty=c(1,1,0), lwd=c(4,3,0),
+  #        col = c("red", "forestgreen", NA), density=c(NA, NA, 40), fill=c(0, 0, "skyblue"),
+  #        border=c(0, 0, "skyblue"), angle=c(NA,NA,-45), x.intersp=c(2.5,2.5, 0),  bty = "n", cex=1.8)
+  # dev.off()
 }
 
