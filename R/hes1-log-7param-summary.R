@@ -491,8 +491,11 @@ if(summarize_ramsey){
   ramsay_sd_est <- rbind(
     apply(ramsayPostTheta, 1, sd)
   )
+  theta_rmse <- sqrt(rowMeans((ramsayPostTheta - pram.true$theta)^2))
+  
   print(ramsay_mean_est)
   print(ramsay_sd_est)
+  print(round(theta_rmse, 3))
   
   # ramsey_tab <- c("Ramsey", tablizeEstErr(ramsay_mean_est[1,],ramsay_sd_est[1,]))
   # print(xtable(cbind(c("truth", pram.true$theta), t(tab), t(coverage), ramsey_tab)))
