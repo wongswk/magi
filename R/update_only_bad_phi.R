@@ -133,7 +133,7 @@ for (i in 1:(ncol(xsim)-1)) {
 }
 par(mar=rep(0,4))
 plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
-legend("center", c("truth", "median posterior mean", "interval estimate"), lty=c(1,1,0), lwd=c(4,3,0),
+legend("center", c("truth", "median of all recovered systems", "2.5% to 97.5% percentile\nof all recovered systems"), lty=c(1,1,0), lwd=c(4,3,0),
        col = c("red", "forestgreen", NA), density=c(NA, NA, 40), fill=c(0, 0,"skyblue"),
        border=c(0, 0, "skyblue"), angle=c(NA,NA,-45), x.intersp=c(2.5,2.5,0),  bty = "n", cex=1.8)
 dev.off()
@@ -232,6 +232,9 @@ coverage <- cbind(c("Ours"), coverage)
 colnames(coverage) <- c("Method", letters[1:7])
 
 tab <- cbind(c("truth", pram.true$theta), t(tab), t(coverage))
+tab <- cbind(tab, c("theta rmse", printr(theta_rmse)))
+
+theta_rmse <- sqrt(rowMeans((oursPostTheta[,1,] - pram.true$theta)^2))
 
 sink(paste0(updateDir, "updatePhiResult.txt"))
 print("length(ours)=")
