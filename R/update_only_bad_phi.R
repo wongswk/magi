@@ -74,7 +74,7 @@ ylim_lower <- c(1.5, 0.5, 0)
 ylim_upper <- c(9.0, 3.1, 19)
 
 pdf(width = 20, height = 5, file=paste0(updateDir, "/posteriorExpxHes1HybridOursIllustrationNoNumSolver.pdf"))
-par(mfrow=c(1, ncol(xsim)+1))
+layout(rbind(c(1,2,3,4), c(5,5,5,5)), heights = c(5,1))
 
 matplot(xtrue[, "time"], exp(xtrue[, -1]), type="l", lty=1, col=c(4,6,"grey50"), xlab="time", ylab=NA)
 matplot(xsim.obs$time, exp(xsim.obs[,-1]), type="p", col=c(4,6,"grey50"), pch=20, add = TRUE)
@@ -133,9 +133,9 @@ for (i in 1:(ncol(xsim)-1)) {
 }
 par(mar=rep(0,4))
 plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
-legend("center", c("truth", "median of all recovered systems", "2.5% to 97.5% percentile\nof all recovered systems"), lty=c(1,1,0), lwd=c(4,3,0),
+legend("center", c("truth", "median of all inferred trajectories", "2.5% to 97.5% percentile of all inferred trajectories"), lty=c(1,1,0), lwd=c(4,3,0),
        col = c("red", "forestgreen", NA), density=c(NA, NA, 40), fill=c(0, 0,"skyblue"),
-       border=c(0, 0, "skyblue"), angle=c(NA,NA,-45), x.intersp=c(2.5,2.5,0),  bty = "n", cex=1.8)
+       border=c(0, 0, "skyblue"), angle=c(NA,NA,-45), cex=1.8, horiz=TRUE)
 dev.off()
 
 pdf(width = 20, height = 5, file=paste0(updateDir, "/posteriorExpxHes1HybridOursIllustration.pdf"))
@@ -232,9 +232,9 @@ coverage <- cbind(c("Ours"), coverage)
 colnames(coverage) <- c("Method", letters[1:7])
 
 tab <- cbind(c("truth", pram.true$theta), t(tab), t(coverage))
-tab <- cbind(tab, c("theta rmse", printr(theta_rmse)))
 
 theta_rmse <- sqrt(rowMeans((oursPostTheta[,1,] - pram.true$theta)^2))
+tab <- cbind(tab, c("theta rmse", printr(theta_rmse)))
 
 sink(paste0(updateDir, "updatePhiResult.txt"))
 print("length(ours)=")
