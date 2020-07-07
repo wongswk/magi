@@ -203,8 +203,8 @@ polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
 lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
 lines(times, ourEst, col="forestgreen", lwd=3)
 
-zoomin_x <- c(82, 89)
-zoomin_y <- c(1.7, 2.1)
+zoomin_x <- c(85, 89)
+zoomin_y <- c(1.80, 2.05)
 polygon(c(times[zoomin_x], rev(times[zoomin_x])), rep(zoomin_y, each=2),
         col = NA, border = 1)
 
@@ -244,8 +244,8 @@ polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
 lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
 lines(times, ourEst, col="forestgreen", lwd=3)
 
-zoomin_x <- c(72, 82)
-zoomin_y <- c(0.7, 1.15)
+zoomin_x <- c(73, 79)
+zoomin_y <- c(0.9, 1.10)
 polygon(c(times[zoomin_x], rev(times[zoomin_x])), rep(zoomin_y, each=2),
         col = NA, border = 1)
 
@@ -275,7 +275,7 @@ lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(ourEst), col="forestgreen", lwd
 
 par(mar=rep(0,4))
 plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
-legend("center", c("truth", "median of all recovered systems", "2.5% to 97.5% percentile\nof all recovered systems"), lty=c(1,1,0), lwd=c(4,3,0),
+legend("center", c("truth", "median of all inferred trajectories", "2.5% to 97.5% percentile\nof all inferred trajectories"), lty=c(1,1,0), lwd=c(4,3,0),
        col = c("red", "forestgreen", NA), fill=c(0, 0, "skyblue"), pch=c(NA, NA, 15), x.intersp=c(2.5,2.5,0),
        border=c(0, 0, "skyblue"), bty = "n", cex=1.8)
 dev.off()
