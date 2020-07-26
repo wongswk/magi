@@ -138,6 +138,7 @@ library(parallel)
 # rda_files = rda_files[order(lglik_convergence)][1:256]
 
 outStorage <- mclapply(rda_files, function(f){
+tryCatch({
   load(paste0(rdaDir, f), envir = .GlobalEnv)
   if (!exists("param_restricted")){
     param_restricted <- pram.true
@@ -173,7 +174,16 @@ outStorage <- mclapply(rda_files, function(f){
     oursPostExpX_f=oursPostExpX_f,
     oursExpXdesolvePM_f=oursExpXdesolvePM_f
   )
+}, error = function(e) {
+  return(as.character(e))
+})
 }, mc.cores = 64)
+
+valid_result_id <- sapply(1:length(rda_files), function(f) length(outStorage[[f]]) > 1)
+error_msg <- outStorage[!valid_result_id]
+error_file <- rda_files[!valid_result_id]
+outStorage <- outStorage[valid_result_id]
+rda_files <- rda_files[valid_result_id]
 
 rda_files <- as.character(unlist(rda_files))
 for (f in 1:length(rda_files)) {
