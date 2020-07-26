@@ -3,8 +3,6 @@ library(deSolve)
 
 #### all possible data files
 
-rdaDir <- "../results/for_paper/7param/"
-
 subdirs <- c("../results/for_paper/7param//variablephi-notemper", 
              "../results/for_paper/7param//variablephi-temper-warmstart",
              "../results/for_paper/7param//variablephi-temper-warmstart-updatephi")
