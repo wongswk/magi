@@ -8,6 +8,12 @@ subdirs <- c(
   "../results/for_paper/7param//variablephi-temper-warmstart",
   "../results/for_paper/7param//variablephi-temper-warmstart-updatephi"
 )
+
+subdirs <- c(
+  "../results/for_paper/7param//variablephi-heating",
+  "../results/for_paper/7param//variablephi-cool-0p33-warmstart-updatephi"
+)
+
 all_files <- lapply(subdirs, list.files)
 all_seeds <- lapply(all_files, function(x) gsub(".*log-([0-9]+)-7param.*", "\\1", x))
 common_seeds <- all_seeds[[1]]
