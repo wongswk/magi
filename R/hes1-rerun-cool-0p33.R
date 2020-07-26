@@ -5,7 +5,7 @@ library(deSolve)
 
 subdirs <- c("../results/for_paper/7param//variablephi-notemper", 
              "../results/for_paper/7param//variablephi-temper-warmstart",
-             "../results/for_paper/7param//variablephi-temper-warmstart")
+             "../results/for_paper/7param//variablephi-temper-warmstart-updatephi")
 all_files <- lapply(subdirs, list.files)
 all_files <- lapply(all_files, function(x) x[grep(".*log-([0-9]+)-7param.*", x)])
 all_seeds <- lapply(all_files, function(x) gsub(".*log-([0-9]+)-7param.*", "\\1", x))
@@ -84,7 +84,6 @@ xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=ncol(xsim[,-1]))
 thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + length(hes1logmodel$thetaLowerBound)), 1]
 sigmaCpp <- tail(out[, 1], ncol(xsim[,-1]))
 
-matplot(xsim$time, xCpp, type="l", add=TRUE, lty=2)
 
 llikId <- 1
 xId <- (max(llikId)+1):(max(llikId)+length(data.matrix(xsim[,-1])))
@@ -106,7 +105,7 @@ dotxtrue = gpds:::hes1logmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
 odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 
-outDir <- "../results/cpp/7param/variablephi-temper-warmstart/"
+outDir <- "../results/for_paper/7param/variablephi-cool-0p33-warmstart/"
 system(paste("mkdir -p", outDir))
 
 for(j in 1:(ncol(xsim)-1)){
@@ -114,7 +113,7 @@ for(j in 1:(ncol(xsim)-1)){
 }
 
 gpds:::plotPostSamplesFlex(
-  paste0(outDir, config$modelName,"-",config$seed,"-7param-variablephi-temper-warmstart.pdf"), 
+  paste0(outDir, config$modelName,"-",config$seed,"-7param-variablephi-cool-0p33-warmstart.pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 
-save.image(paste0(outDir, config$modelName,"-",config$seed,"-7param-variablephi-temper-warmstart.rda"))
+save.image(paste0(outDir, config$modelName,"-",config$seed,"-7param-variablephi-cool-0p33-warmstart.rda"))
