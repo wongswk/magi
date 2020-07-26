@@ -54,6 +54,7 @@ if(length(args) > 0){
 for (rdaDir in subdirs){
 rm(list=setdiff(ls(), c("rdaDir", "subdirs")))
 rdaDir <- paste0(rdaDir, "/")
+rdaDirSummary <- rdaDir
 print(rdaDir)
 
 pdf_files <- list.files(rdaDir)
@@ -139,7 +140,7 @@ library(parallel)
 
 outStorage <- mclapply(rda_files, function(f){
 tryCatch({
-  load(paste0(rdaDir, f), envir = .GlobalEnv)
+  load(paste0(rdaDirSummary, f), envir = .GlobalEnv)
   if (!exists("param_restricted")){
     param_restricted <- pram.true
   }
