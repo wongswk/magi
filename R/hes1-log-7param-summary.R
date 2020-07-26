@@ -202,6 +202,7 @@ save.image(file=paste0(rdaDir,"hes1log_summary.rda"))
 sink(paste0(rdaDir, "/result.txt"))
 
 load(paste0(rdaDir, rda_files[1]), envir = .GlobalEnv)
+rdaDir <- rdaDirSummary
 if (!exists("param_restricted")){
   param_restricted <- pram.true
 }
