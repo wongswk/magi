@@ -11,6 +11,7 @@ subdirs <- c(
 
 subdirs <- c(
   "../results/for_paper/7param//variablephi-heating",
+  "../results/for_paper/7param//variablephi-cool-0p33-warmstart",
   "../results/for_paper/7param//variablephi-cool-0p33-warmstart-updatephi"
 )
 
