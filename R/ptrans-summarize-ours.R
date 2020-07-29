@@ -7,7 +7,9 @@ config$noise <- rep(0.001, 5)
 #rdaDir <- "../DynSysResults/PTrans-noise0.01/results/"   ## where ours & Dondel rda saved
 #outDirWenk <- "../DynSysResults/PTrans-noise0.01/"   ## where all the seeds are in separate folders with Wenk's output
 
-rdaDir <- "../results/cpp/"
+rdaDir <- "../results/ptrans-temper/temperature111/"
+#rdaDir <- "../results/ptrans-temper/temperature-warm/"
+#rdaDir <- "../results/ptrans-temper/temperature-cool/"
 outDirWenk <- rdaDir
 
 #seeds <- list.files(outDirWenk, pattern='^\\d+$')  ## get the list of seeds ran
@@ -172,9 +174,10 @@ save(ours,oursPostX, oursPostTheta, Wenk,Dondel, file=paste0(outDirWenk,"compare
 ##########  end recalculation
 
 # Average the posterior mean RMSEs for the different seeds
-rmse.table <- rbind( round(apply(sapply(ours, function(x) x$rmseOdePM), 1, mean), digits=4),
-  round(apply(sapply(Wenk, function(x) x$rmseOdePM), 1, mean), digits=4),
-  round(apply(sapply(Dondel, function(x) x$rmseOdePM), 1, mean), digits=4))
+# rmse.table <- rbind( round(apply(sapply(ours, function(x) x$rmseOdePM), 1, mean), digits=4),
+#   round(apply(sapply(Wenk, function(x) x$rmseOdePM), 1, mean), digits=4),
+#   round(apply(sapply(Dondel, function(x) x$rmseOdePM), 1, mean), digits=4))
+rmse.table <- round(apply(sapply(ours, function(x) x$rmseOdePM), 1, mean), digits=4)
 
 # Make the figures comparing Wenk and Ours using ODE solver results
 # use the same axis limits for both methods for easier visual comparison
