@@ -320,7 +320,7 @@ gpds:::plotPostSamplesFlex(
 save(xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel, OursTimeUsed, file= paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1],"-fill", config$linfillspace, ".rda"))
 
 
-### cool tempering (1,1,13) --------------------------------------------------------------
+### cool tempering (1,1,1/13) --------------------------------------------------------------
 outDir <- "../results/ptrans-temper/temperature-cool/"
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 config$priorTemperature <- 1
