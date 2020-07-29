@@ -9,7 +9,7 @@ if(!exists("config")){
     loglikflag = "withmeanBand",
     bandsize = 40,
     hmcSteps = 100,
-    n.iter = 2001,
+    n.iter = 20001,
     n.iter.Wenk = 300000,
     n.iter.Dondel = 300000,
     burninRatio = 0.50,
