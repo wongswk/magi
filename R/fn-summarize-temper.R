@@ -11,7 +11,7 @@ subdirs <- c(
   "../results/fn-temper/liX-temperature441/"
 )
 
-rdaDir <- "../results/fn-temper/gpX-temperature441/"
+rdaDir <- "../results/fn-temper/liX-temperature111o4/"
 
 args <- commandArgs(trailingOnly = TRUE)
 args <- as.numeric(args)
@@ -75,18 +75,15 @@ rmsePostSamples <- function(xtrue, dotxtrue, xsim, gpode, param, config, odemode
     config$rmse <- rmselist
     return( list(xdesolveTRUE = xdesolveTRUE, xdesolvePM = xdesolvePM, rmseOdePM = rmseOdePM))
   }
-  
 }
 
 
 #### Grab the data for each seed and save in a list
 j <- 0
 ours <- list()
-
 oursPostX <- list()
-
 oursPostTheta <- list()
-
+oursPostSigma <- list()
 
 library(parallel)
 result_list <- mclapply(seeds, function(i){
@@ -103,13 +100,19 @@ result_list <- mclapply(seeds, function(i){
     apply(gpode$theta, 2, function(x) quantile(x, 0.025)),
     apply(gpode$theta, 2, function(x) quantile(x, 0.975))
   )
-  return(list(ours_j=ours_j, oursPostX_j=oursPostX_j, oursPostTheta_j=oursPostTheta_j))
-}, mc.cores = 64)
+  oursPostSigma_j <- cbind(
+    apply(gpode$sigma, 2, mean), 
+    apply(gpode$sigma, 2, function(x) quantile(x, 0.025)),
+    apply(gpode$sigma, 2, function(x) quantile(x, 0.975))
+  )
+  return(list(ours_j=ours_j, oursPostX_j=oursPostX_j, oursPostTheta_j=oursPostTheta_j, oursPostSigma_j=oursPostSigma_j))
+}, mc.cores = 32)
 
 for (j in 1:length(result_list)) {
   ours[[j]] <- result_list[[j]]$ours_j
   oursPostX[[j]] <- result_list[[j]]$oursPostX_j
   oursPostTheta[[j]] <- result_list[[j]]$oursPostTheta_j
+  oursPostSigma[[j]] <- result_list[[j]]$oursPostSigma_j
 }
 
 load(paste0(rdaDir, config$modelName,"-",seeds[1],"-noise", config$noise[1], ".rda"))
@@ -156,7 +159,7 @@ for (i in 1:(ncol(xsim)-1)) {
 dev.off()
 
 
-# theta posterior mean table 
+# theta posterior mean table ----
 oursPostTheta <- sapply(oursPostTheta, identity, simplify = "array")
 
 mean_est <- rbind(
@@ -193,18 +196,65 @@ print(xtable(tab), include.rownames=FALSE)
 coverage <- rbind(
   printr(rowMeans((oursPostTheta[,2,] <= pram.true$theta) & (pram.true$theta <= oursPostTheta[,3,])))
 )
-coverage <- cbind(c("Ours"), coverage)
+coverage <- cbind(c("coverage"), coverage)
 colnames(coverage) <- c("Method", "a", "b", "c")
 print(xtable(coverage), include.rownames=FALSE)
 
 rmse_theta <- rbind(
   printr(apply(oursPostTheta[,1,] - pram.true$theta, 1, function(x) sqrt(mean(x^2))), 4)
 )
-rmse_theta <- cbind(c("Ours"), rmse_theta)
+rmse_theta <- cbind(c("rmse theta"), rmse_theta)
 colnames(rmse_theta) <- c("Method", "a", "b", "c")
 print(xtable(rmse_theta), include.rownames=FALSE)
 
-# X posterior mean plot
+# sigma posterior mean table and coverage ----
+oursPostSigma <- sapply(oursPostSigma, identity, simplify = "array")
+
+mean_est <- rbind(
+  rowMeans(oursPostSigma[,1,])
+)
+
+sd_est <- rbind(
+  apply(oursPostSigma[,1,], 1, sd)
+)
+
+rmse_est <- rbind(
+  apply(oursPostSigma[,1,] - config$noise, 1, function(x) sqrt(mean(x^2)))
+)
+
+
+digit_precision = 2
+printr <- function(x, precision=digit_precision) format(round(x, precision), nsmall=precision)
+tablizeEstErr <- function(est, err){
+  paste(format(round(est, digit_precision), nsmall=digit_precision), "\\pm", format(round(err, digit_precision), nsmall=digit_precision))
+}
+
+tab <- rbind(
+  c("Ours Sigma", tablizeEstErr(mean_est[1,],sd_est[1,]))
+)
+tab <- data.frame(tab)
+colnames(tab) <- c("Method", "sigma1", "sigma2")
+rownames(tab) <- NULL
+library(xtable)
+print(xtable(tab), include.rownames=FALSE)
+
+# sigma posterior credible interval coverage table
+coverage <- rbind(
+  printr(rowMeans((oursPostSigma[,2,] <= config$noise) & (config$noise <= oursPostSigma[,3,])))
+)
+coverage <- cbind(c("Sigma coverage"), coverage)
+colnames(coverage) <- c("Method", "sigma1", "sigma2")
+print(xtable(coverage), include.rownames=FALSE)
+
+rmse_sigma <- rbind(
+  printr(apply(oursPostSigma[,1,] - config$noise, 1, function(x) sqrt(mean(x^2))), 4)
+)
+rmse_sigma <- cbind(c("RMSE sigma"), rmse_sigma)
+colnames(rmse_sigma) <- c("Method", "sgima1", "sigma2")
+print(xtable(rmse_sigma), include.rownames=FALSE)
+
+
+# X posterior mean plot ----
 oursPostX <- sapply(oursPostX, identity, simplify = "array")
 
 xdesolveTRUE <- deSolve::ode(y = pram.true$x0, times = xsim$time, func = odemodel$modelODE, parms = pram.true$theta)
