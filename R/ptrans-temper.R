@@ -22,7 +22,7 @@ if(!exists("config")){
     useScalerSigma = FALSE,
     useFixedSigma = FALSE,
     linearizexInit = TRUE,
-    useExoSigma = TRUE,
+    #useExoSigma = FALSE,
     useMean = TRUE,
     useBand = TRUE,    
     max.epoch = 1
@@ -83,11 +83,11 @@ for (i in 1:length(fillC)) {
     xsim[i,2:ncol(xsim)] = xsim.obs[loc,2:ncol(xsim)];
 }
 
-if (config$useExoSigma) {
-  exoSigma = rep(0.001, ncol(xsim)-1)  ## initialize with an arbitrary small value of sigma
-} else {
-  exoSigma = numeric(0)
-}
+# if (config$useExoSigma) {
+#   exoSigma = rep(0.001, ncol(xsim)-1)  ## initialize with an arbitrary small value of sigma
+# } else {
+#   exoSigma = matrix(numeric(0))
+# }
 
 if (config$linearizexInit) {
   exoxInit <- sapply(2:ncol(xsim.obs), function(j)
@@ -109,109 +109,109 @@ ptransmodel <- list(
 
 
 ### no tempering (1,1,1) --------------------------------------------------------------
-outDir <- "../results/ptrans-temper/temperature111/"
-dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
-config$priorTemperature <- 1
-config$priorTemperatureObs <- 1
-
-OursStartTime <- proc.time()[3]
-
-### Optimize phi first using equally spaced intervals of 1, i.e., 0,1...,100.
-samplesCpp <- gpds:::solveGpdsRcpp(
-  yFull = exoxInit[xsim$time %in% 0:100,],
-  odeModel = ptransmodel,
-  tvecFull = 0:100,
-  sigmaExogenous = exoSigma,
-  phiExogenous = matrix(numeric(0)),
-  xInitExogenous = matrix(numeric(0)),
-  thetaInitExogenous = matrix(numeric(0)),
-  muExogenous = matrix(numeric(0)),
-  dotmuExogenous = matrix(numeric(0)),
-  priorTemperatureLevel = config$priorTemperature,
-  priorTemperatureDeriv = config$priorTemperature,
-  priorTemperatureObs = config$priorTemperatureObs,
-  kernel = config$kernel,
-  nstepsHmc = config$hmcSteps,
-  burninRatioHmc = config$burninRatio,
-  niterHmc = 2,
-  stepSizeFactorHmc = config$stepSizeFactor,
-  nEpoch = config$max.epoch,
-  bandSize = config$bandsize,
-  useFrequencyBasedPrior = config$useFrequencyBasedPrior,
-  useBand = config$useBand,
-  useMean = config$useMean,
-  useScalerSigma = config$useScalerSigma,
-  useFixedSigma = config$useFixedSigma,
-  verbose = TRUE)
-
-phiUsed <- samplesCpp$phi
-
-
-samplesCpp <- gpds:::solveGpdsRcpp(
-  yFull = data.matrix(xsim[,-1]),
-  odeModel = ptransmodel,
-  tvecFull = xsim$time,
-  sigmaExogenous = exoSigma,
-  phiExogenous = phiUsed,
-  xInitExogenous = exoxInit,
-  thetaInitExogenous = matrix(numeric(0)),
-  muExogenous = matrix(numeric(0)),
-  dotmuExogenous = matrix(numeric(0)),
-  priorTemperatureLevel = config$priorTemperature,
-  priorTemperatureDeriv = config$priorTemperature,
-  priorTemperatureObs = config$priorTemperatureObs,
-  kernel = config$kernel,
-  nstepsHmc = config$hmcSteps,
-  burninRatioHmc = config$burninRatio,
-  niterHmc = config$n.iter,
-  stepSizeFactorHmc = config$stepSizeFactor,
-  nEpoch = config$max.epoch,
-  bandSize = config$bandsize,
-  useFrequencyBasedPrior = config$useFrequencyBasedPrior,
-  useBand = config$useBand,
-  useMean = config$useMean,
-  useScalerSigma = config$useScalerSigma,
-  useFixedSigma = config$useFixedSigma,
-  verbose = TRUE)
-
-OursTimeUsed <- proc.time()[3] - OursStartTime
-
-samplesCpp <- samplesCpp$llikxthetasigmaSamples
-
-samplesCpp <- samplesCpp[,,1]
-
-out <- samplesCpp[-1,1,drop=FALSE]
-xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=ncol(xsim[,-1]))
-thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + length(ptransmodel$thetaLowerBound)), 1]
-sigmaCpp <- tail(out[, 1], ncol(xsim[,-1]))
-
-#matplot(xsim$time, xCpp, type="l", add=TRUE)
-
-llikId <- 1
-xId <- (max(llikId)+1):(max(llikId)+length(data.matrix(xsim[,-1])))
-thetaId <- (max(xId)+1):(max(xId)+length(ptransmodel$thetaLowerBound))
-sigmaId <- (max(thetaId)+1):(max(thetaId)+ncol(xsim[,-1]))
-
-
-burnin <- as.integer(config$n.iter*config$burninRatio)
-gpode <- list(theta=t(samplesCpp[thetaId, -(1:burnin)]),
-              xsampled=array(t(samplesCpp[xId, -(1:burnin)]),
-                             dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
-              lglik=samplesCpp[llikId,-(1:burnin)],
-              sigma = t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]))
-gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
-  with(gpode, gpds:::ptransmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
-gpode$fode <- aperm(gpode$fode, c(3,1,2))
-
-dotxtrue = gpds:::ptransmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
-
-odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
-
-gpds:::plotPostSamplesFlex(
-  paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".pdf"), 
-  xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
-
-save(xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel, OursTimeUsed, file= paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1],"-fill", config$linfillspace, ".rda"))
+# outDir <- "../results/ptrans-temper/temperature111/"
+# dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
+# config$priorTemperature <- 1
+# config$priorTemperatureObs <- 1
+# 
+# OursStartTime <- proc.time()[3]
+# 
+# ### Optimize phi first using equally spaced intervals of 1, i.e., 0,1...,100.
+# samplesCpp <- gpds:::solveGpdsRcpp(
+#   yFull = exoxInit[xsim$time %in% 0:100,],
+#   odeModel = ptransmodel,
+#   tvecFull = 0:100,
+#   sigmaExogenous = exoSigma,
+#   phiExogenous = matrix(numeric(0)),
+#   xInitExogenous = matrix(numeric(0)),
+#   thetaInitExogenous = matrix(numeric(0)),
+#   muExogenous = matrix(numeric(0)),
+#   dotmuExogenous = matrix(numeric(0)),
+#   priorTemperatureLevel = config$priorTemperature,
+#   priorTemperatureDeriv = config$priorTemperature,
+#   priorTemperatureObs = config$priorTemperatureObs,
+#   kernel = config$kernel,
+#   nstepsHmc = config$hmcSteps,
+#   burninRatioHmc = config$burninRatio,
+#   niterHmc = 2,
+#   stepSizeFactorHmc = config$stepSizeFactor,
+#   nEpoch = config$max.epoch,
+#   bandSize = config$bandsize,
+#   useFrequencyBasedPrior = config$useFrequencyBasedPrior,
+#   useBand = config$useBand,
+#   useMean = config$useMean,
+#   useScalerSigma = config$useScalerSigma,
+#   useFixedSigma = config$useFixedSigma,
+#   verbose = TRUE)
+# 
+# phiUsed <- samplesCpp$phi
+# 
+# 
+# samplesCpp <- gpds:::solveGpdsRcpp(
+#   yFull = data.matrix(xsim[,-1]),
+#   odeModel = ptransmodel,
+#   tvecFull = xsim$time,
+#   sigmaExogenous = exoSigma,
+#   phiExogenous = phiUsed,
+#   xInitExogenous = exoxInit,
+#   thetaInitExogenous = matrix(numeric(0)),
+#   muExogenous = matrix(numeric(0)),
+#   dotmuExogenous = matrix(numeric(0)),
+#   priorTemperatureLevel = config$priorTemperature,
+#   priorTemperatureDeriv = config$priorTemperature,
+#   priorTemperatureObs = config$priorTemperatureObs,
+#   kernel = config$kernel,
+#   nstepsHmc = config$hmcSteps,
+#   burninRatioHmc = config$burninRatio,
+#   niterHmc = config$n.iter,
+#   stepSizeFactorHmc = config$stepSizeFactor,
+#   nEpoch = config$max.epoch,
+#   bandSize = config$bandsize,
+#   useFrequencyBasedPrior = config$useFrequencyBasedPrior,
+#   useBand = config$useBand,
+#   useMean = config$useMean,
+#   useScalerSigma = config$useScalerSigma,
+#   useFixedSigma = config$useFixedSigma,
+#   verbose = TRUE)
+# 
+# OursTimeUsed <- proc.time()[3] - OursStartTime
+# 
+# samplesCpp <- samplesCpp$llikxthetasigmaSamples
+# 
+# samplesCpp <- samplesCpp[,,1]
+# 
+# out <- samplesCpp[-1,1,drop=FALSE]
+# xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=ncol(xsim[,-1]))
+# thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + length(ptransmodel$thetaLowerBound)), 1]
+# sigmaCpp <- tail(out[, 1], ncol(xsim[,-1]))
+# 
+# #matplot(xsim$time, xCpp, type="l", add=TRUE)
+# 
+# llikId <- 1
+# xId <- (max(llikId)+1):(max(llikId)+length(data.matrix(xsim[,-1])))
+# thetaId <- (max(xId)+1):(max(xId)+length(ptransmodel$thetaLowerBound))
+# sigmaId <- (max(thetaId)+1):(max(thetaId)+ncol(xsim[,-1]))
+# 
+# 
+# burnin <- as.integer(config$n.iter*config$burninRatio)
+# gpode <- list(theta=t(samplesCpp[thetaId, -(1:burnin)]),
+#               xsampled=array(t(samplesCpp[xId, -(1:burnin)]),
+#                              dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
+#               lglik=samplesCpp[llikId,-(1:burnin)],
+#               sigma = t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]))
+# gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
+#   with(gpode, gpds:::ptransmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
+# gpode$fode <- aperm(gpode$fode, c(3,1,2))
+# 
+# dotxtrue = gpds:::ptransmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
+# 
+# odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
+# 
+# gpds:::plotPostSamplesFlex(
+#   paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".pdf"), 
+#   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+# 
+# save(xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel, OursTimeUsed, file= paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1],"-fill", config$linfillspace, ".rda"))
 
 
 ### warm tempering (13,13,1) --------------------------------------------------------------
@@ -227,7 +227,8 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   yFull = exoxInit[xsim$time %in% 0:100,],
   odeModel = ptransmodel,
   tvecFull = 0:100,
-  sigmaExogenous = exoSigma,
+  #sigmaExogenous = exoSigma,
+  sigmaExogenous = matrix(numeric(0)),
   phiExogenous = matrix(numeric(0)),
   xInitExogenous = matrix(numeric(0)),
   thetaInitExogenous = matrix(numeric(0)),
@@ -252,12 +253,18 @@ samplesCpp <- gpds:::solveGpdsRcpp(
 
 phiUsed <- samplesCpp$phi
 
+samplesCpp <- samplesCpp$llikxthetasigmaSamples
+samplesCpp <- samplesCpp[,,1]
+out <- samplesCpp[-1,1,drop=FALSE]
+sigmaUsed <- tail(out[, 1], ncol(xsim[,-1]))
+show(sigmaUsed)
+
 
 samplesCpp <- gpds:::solveGpdsRcpp(
   yFull = data.matrix(xsim[,-1]),
   odeModel = ptransmodel,
   tvecFull = xsim$time,
-  sigmaExogenous = exoSigma,
+  sigmaExogenous = sigmaUsed,
   phiExogenous = phiUsed,
   xInitExogenous = exoxInit,
   thetaInitExogenous = matrix(numeric(0)),
@@ -321,108 +328,108 @@ save(xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel, OursTimeUsed, fi
 
 
 ### cool tempering (1,1,1/13) --------------------------------------------------------------
-outDir <- "../results/ptrans-temper/temperature-cool/"
-dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
-config$priorTemperature <- 1
-config$priorTemperatureObs <- config$nobs / config$ndis
-
-OursStartTime <- proc.time()[3]
-
-### Optimize phi first using equally spaced intervals of 1, i.e., 0,1...,100.
-samplesCpp <- gpds:::solveGpdsRcpp(
-  yFull = exoxInit[xsim$time %in% 0:100,],
-  odeModel = ptransmodel,
-  tvecFull = 0:100,
-  sigmaExogenous = exoSigma,
-  phiExogenous = matrix(numeric(0)),
-  xInitExogenous = matrix(numeric(0)),
-  thetaInitExogenous = matrix(numeric(0)),
-  muExogenous = matrix(numeric(0)),
-  dotmuExogenous = matrix(numeric(0)),
-  priorTemperatureLevel = config$priorTemperature,
-  priorTemperatureDeriv = config$priorTemperature,
-  priorTemperatureObs = config$priorTemperatureObs,
-  kernel = config$kernel,
-  nstepsHmc = config$hmcSteps,
-  burninRatioHmc = config$burninRatio,
-  niterHmc = 2,
-  stepSizeFactorHmc = config$stepSizeFactor,
-  nEpoch = config$max.epoch,
-  bandSize = config$bandsize,
-  useFrequencyBasedPrior = config$useFrequencyBasedPrior,
-  useBand = config$useBand,
-  useMean = config$useMean,
-  useScalerSigma = config$useScalerSigma,
-  useFixedSigma = config$useFixedSigma,
-  verbose = TRUE)
-
-phiUsed <- samplesCpp$phi
-
-
-samplesCpp <- gpds:::solveGpdsRcpp(
-  yFull = data.matrix(xsim[,-1]),
-  odeModel = ptransmodel,
-  tvecFull = xsim$time,
-  sigmaExogenous = exoSigma,
-  phiExogenous = phiUsed,
-  xInitExogenous = exoxInit,
-  thetaInitExogenous = matrix(numeric(0)),
-  muExogenous = matrix(numeric(0)),
-  dotmuExogenous = matrix(numeric(0)),
-  priorTemperatureLevel = config$priorTemperature,
-  priorTemperatureDeriv = config$priorTemperature,
-  priorTemperatureObs = config$priorTemperatureObs,
-  kernel = config$kernel,
-  nstepsHmc = config$hmcSteps,
-  burninRatioHmc = config$burninRatio,
-  niterHmc = config$n.iter,
-  stepSizeFactorHmc = config$stepSizeFactor,
-  nEpoch = config$max.epoch,
-  bandSize = config$bandsize,
-  useFrequencyBasedPrior = config$useFrequencyBasedPrior,
-  useBand = config$useBand,
-  useMean = config$useMean,
-  useScalerSigma = config$useScalerSigma,
-  useFixedSigma = config$useFixedSigma,
-  verbose = TRUE)
-
-OursTimeUsed <- proc.time()[3] - OursStartTime
-
-samplesCpp <- samplesCpp$llikxthetasigmaSamples
-
-samplesCpp <- samplesCpp[,,1]
-
-out <- samplesCpp[-1,1,drop=FALSE]
-xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=ncol(xsim[,-1]))
-thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + length(ptransmodel$thetaLowerBound)), 1]
-sigmaCpp <- tail(out[, 1], ncol(xsim[,-1]))
-
-#matplot(xsim$time, xCpp, type="l", add=TRUE)
-
-llikId <- 1
-xId <- (max(llikId)+1):(max(llikId)+length(data.matrix(xsim[,-1])))
-thetaId <- (max(xId)+1):(max(xId)+length(ptransmodel$thetaLowerBound))
-sigmaId <- (max(thetaId)+1):(max(thetaId)+ncol(xsim[,-1]))
-
-
-burnin <- as.integer(config$n.iter*config$burninRatio)
-gpode <- list(theta=t(samplesCpp[thetaId, -(1:burnin)]),
-              xsampled=array(t(samplesCpp[xId, -(1:burnin)]),
-                             dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
-              lglik=samplesCpp[llikId,-(1:burnin)],
-              sigma = t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]))
-gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
-  with(gpode, gpds:::ptransmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
-gpode$fode <- aperm(gpode$fode, c(3,1,2))
-
-dotxtrue = gpds:::ptransmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
-
-odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
-
-gpds:::plotPostSamplesFlex(
-  paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".pdf"), 
-  xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
-
-save(xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel, OursTimeUsed, file= paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1],"-fill", config$linfillspace, ".rda"))
-
-
+# outDir <- "../results/ptrans-temper/temperature-cool/"
+# dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
+# config$priorTemperature <- 1
+# config$priorTemperatureObs <- config$nobs / config$ndis
+# 
+# OursStartTime <- proc.time()[3]
+# 
+# ### Optimize phi first using equally spaced intervals of 1, i.e., 0,1...,100.
+# samplesCpp <- gpds:::solveGpdsRcpp(
+#   yFull = exoxInit[xsim$time %in% 0:100,],
+#   odeModel = ptransmodel,
+#   tvecFull = 0:100,
+#   sigmaExogenous = exoSigma,
+#   phiExogenous = matrix(numeric(0)),
+#   xInitExogenous = matrix(numeric(0)),
+#   thetaInitExogenous = matrix(numeric(0)),
+#   muExogenous = matrix(numeric(0)),
+#   dotmuExogenous = matrix(numeric(0)),
+#   priorTemperatureLevel = config$priorTemperature,
+#   priorTemperatureDeriv = config$priorTemperature,
+#   priorTemperatureObs = config$priorTemperatureObs,
+#   kernel = config$kernel,
+#   nstepsHmc = config$hmcSteps,
+#   burninRatioHmc = config$burninRatio,
+#   niterHmc = 2,
+#   stepSizeFactorHmc = config$stepSizeFactor,
+#   nEpoch = config$max.epoch,
+#   bandSize = config$bandsize,
+#   useFrequencyBasedPrior = config$useFrequencyBasedPrior,
+#   useBand = config$useBand,
+#   useMean = config$useMean,
+#   useScalerSigma = config$useScalerSigma,
+#   useFixedSigma = config$useFixedSigma,
+#   verbose = TRUE)
+# 
+# phiUsed <- samplesCpp$phi
+# 
+# 
+# samplesCpp <- gpds:::solveGpdsRcpp(
+#   yFull = data.matrix(xsim[,-1]),
+#   odeModel = ptransmodel,
+#   tvecFull = xsim$time,
+#   sigmaExogenous = exoSigma,
+#   phiExogenous = phiUsed,
+#   xInitExogenous = exoxInit,
+#   thetaInitExogenous = matrix(numeric(0)),
+#   muExogenous = matrix(numeric(0)),
+#   dotmuExogenous = matrix(numeric(0)),
+#   priorTemperatureLevel = config$priorTemperature,
+#   priorTemperatureDeriv = config$priorTemperature,
+#   priorTemperatureObs = config$priorTemperatureObs,
+#   kernel = config$kernel,
+#   nstepsHmc = config$hmcSteps,
+#   burninRatioHmc = config$burninRatio,
+#   niterHmc = config$n.iter,
+#   stepSizeFactorHmc = config$stepSizeFactor,
+#   nEpoch = config$max.epoch,
+#   bandSize = config$bandsize,
+#   useFrequencyBasedPrior = config$useFrequencyBasedPrior,
+#   useBand = config$useBand,
+#   useMean = config$useMean,
+#   useScalerSigma = config$useScalerSigma,
+#   useFixedSigma = config$useFixedSigma,
+#   verbose = TRUE)
+# 
+# OursTimeUsed <- proc.time()[3] - OursStartTime
+# 
+# samplesCpp <- samplesCpp$llikxthetasigmaSamples
+# 
+# samplesCpp <- samplesCpp[,,1]
+# 
+# out <- samplesCpp[-1,1,drop=FALSE]
+# xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=ncol(xsim[,-1]))
+# thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + length(ptransmodel$thetaLowerBound)), 1]
+# sigmaCpp <- tail(out[, 1], ncol(xsim[,-1]))
+# 
+# #matplot(xsim$time, xCpp, type="l", add=TRUE)
+# 
+# llikId <- 1
+# xId <- (max(llikId)+1):(max(llikId)+length(data.matrix(xsim[,-1])))
+# thetaId <- (max(xId)+1):(max(xId)+length(ptransmodel$thetaLowerBound))
+# sigmaId <- (max(thetaId)+1):(max(thetaId)+ncol(xsim[,-1]))
+# 
+# 
+# burnin <- as.integer(config$n.iter*config$burninRatio)
+# gpode <- list(theta=t(samplesCpp[thetaId, -(1:burnin)]),
+#               xsampled=array(t(samplesCpp[xId, -(1:burnin)]),
+#                              dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
+#               lglik=samplesCpp[llikId,-(1:burnin)],
+#               sigma = t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]))
+# gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
+#   with(gpode, gpds:::ptransmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
+# gpode$fode <- aperm(gpode$fode, c(3,1,2))
+# 
+# dotxtrue = gpds:::ptransmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
+# 
+# odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
+# 
+# gpds:::plotPostSamplesFlex(
+#   paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".pdf"), 
+#   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+# 
+# save(xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel, OursTimeUsed, file= paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1],"-fill", config$linfillspace, ".rda"))
+# 
+# 
