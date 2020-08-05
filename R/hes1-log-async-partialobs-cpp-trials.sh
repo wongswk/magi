@@ -46,3 +46,11 @@ do
   echo "Number: $i"
   Rscript R/ramsey-rerun-hes1-partialobs.R $i
 done
+
+for dummy in {1..3}; do
+  for i in {1..60}; do
+    Rscript R/fn-temper.R &
+  done
+  Rscript R/fn-temper.R
+  sleep 180
+done
