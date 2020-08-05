@@ -151,19 +151,22 @@ tryCatch({
   oursPostX_f <- cbind(
     apply(gpode$xsampled, 2:3, mean),
     apply(gpode$xsampled, 2:3, function(x) quantile(x, 0.025)),
-    apply(gpode$xsampled, 2:3, function(x) quantile(x, 0.975))
+    apply(gpode$xsampled, 2:3, function(x) quantile(x, 0.975)),
+    apply(gpode$xsampled, 2:3, median)
   )
   oursPostTheta_f <- cbind(
     apply(gpode$theta, 2, mean),
     apply(gpode$theta, 2, function(x) quantile(x, 0.025)),
-    apply(gpode$theta, 2, function(x) quantile(x, 0.975))
+    apply(gpode$theta, 2, function(x) quantile(x, 0.975)),
+    apply(gpode$theta, 2, median)
   )
   
   xsampledexp <- exp(gpode$xsampled)
   oursPostExpX_f <- cbind(
     apply(xsampledexp, 2:3, mean),
     apply(xsampledexp, 2:3, function(x) quantile(x, 0.025)),
-    apply(xsampledexp, 2:3, function(x) quantile(x, 0.975))
+    apply(xsampledexp, 2:3, function(x) quantile(x, 0.975)),
+    apply(xsampledexp, 2:3, median)
   )
   
   ttheta <- colMeans(gpode$theta)
