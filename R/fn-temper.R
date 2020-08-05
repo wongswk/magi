@@ -27,7 +27,7 @@ if(!exists("config")){
     useFrequencyBasedPrior = TRUE,
     useScalerSigma = FALSE,
     useFixedSigma = FALSE,
-    useExoSigma = TRUE,
+    useExoSigma = FALSE,
     max.epoch = 1
   )
 }
