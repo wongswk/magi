@@ -121,6 +121,19 @@ public:
             numparam(numparamInput),
             sigmaExogenScalar(sigmaExogenScalarInput),
             useFrequencyBasedPrior(useFrequencyBasedPriorInput) {
+        unsigned int phiDim;
+        if(kernelInput == "generalMatern") {
+            phiDim = 2;
+        }else if(kernelInput == "matern") {
+            phiDim = 2;
+        }else if(kernelInput == "compact1") {
+            phiDim = 2;
+        }else if(kernelInput == "periodicMatern"){
+            phiDim = 3;
+        }else{
+            throw std::invalid_argument("kernelInput invalid");
+        }
+
         Eigen::VectorXd lb(numparam);
         lb.fill(1e-4);
         this->setLowerBound(lb);
@@ -131,6 +144,13 @@ public:
 
         Eigen::VectorXd ub(numparam);
         ub.fill(10 * maxScale);
+        for(unsigned i = 0; i < yobsInput.n_cols; i++) {
+            const arma::uvec finite_elem = arma::find_finite(yobs.col(i));
+            if (finite_elem.size() > 0){
+                ub[phiDim * i] = arma::max(arma::abs((yobs.col(i).eval().elem(finite_elem))));
+            }
+            ub[phiDim * i + 1] = maxDist;
+        }
         this->setUpperBound(ub);
 
         priorFactor = arma::zeros(2);
