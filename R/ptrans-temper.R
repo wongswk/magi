@@ -18,7 +18,7 @@ if(!exists("config")){
     t.end = 100,
     modelName = "PTrans",
     temperPrior = TRUE,
-    useFrequencyBasedPrior = TRUE,
+    useFrequencyBasedPrior = FALSE,
     useScalerSigma = FALSE,
     useFixedSigma = FALSE,
     linearizexInit = TRUE,
@@ -224,9 +224,9 @@ OursStartTime <- proc.time()[3]
 
 ### Optimize phi first using equally spaced intervals of 1, i.e., 0,1...,100.
 samplesCpp <- gpds:::solveGpdsRcpp(
-  yFull = exoxInit[xsim$time %in% 0:100,],
+  yFull = data.matrix(xsim.obs[,-1]),
   odeModel = ptransmodel,
-  tvecFull = 0:100,
+  tvecFull = xsim.obs$time,
   #sigmaExogenous = exoSigma,
   sigmaExogenous = matrix(numeric(0)),
   phiExogenous = matrix(numeric(0)),
