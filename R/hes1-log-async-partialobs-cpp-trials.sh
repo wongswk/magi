@@ -54,3 +54,11 @@ for dummy in {1..3}; do
   Rscript R/fn-temper.R
   sleep 180
 done
+
+for dummy in {1..3}; do
+  for i in {1..60}; do
+    Rscript R/ptrans-temper.R &
+  done
+  Rscript R/ptrans-temper.R
+  sleep 180
+done
