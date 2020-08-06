@@ -321,6 +321,21 @@ sd_est <- rbind(
   apply(oursPostTheta[,1,], 1, sd)
 )
 
+median_est1 <- rbind(
+  apply(oursPostTheta[,4,], 1, median)
+)
+
+median_est2 <- rbind(
+  apply(oursPostTheta[,4,], 1, mean)
+)
+
+median_sd <- rbind(
+  apply(oursPostTheta[,4,], 1, sd)
+)
+
+tab_median <- cbind(letters[1:7], round(t(median_est1), 3), round(t(median_est2), 3), round(t(median_sd), 3))
+colnames(tab_median) <- c("theta", "meidan of posterior median", "mean of posterior median", "sd of posterior median")
+
 printr <- function(x) format(round(x, 4), nsmall=4)
 tablizeEstErr <- function(est, err){
   paste(format(round(est, 4), nsmall=4), "\\pm", format(round(err, 4), nsmall=4))
@@ -333,6 +348,9 @@ tab <- data.frame(tab)
 colnames(tab) <- c("Method", letters[1:7])
 rownames(tab) <- NULL
 library(xtable)
+print("tab_median")
+print(xtable(tab_median))
+
 
 
 # theta posterior credible interval coverage table 
@@ -466,6 +484,53 @@ par(mar=rep(0,4))
 plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
 legend("center", c("truth", "median posterior mean", "median reconstructed trajectory", 
                    "CI on posterior mean", "CI on reconstructed trajectory"), lty=c(1,1,1,0,0), lwd=c(4,3,3,0,0),
+       col = c("red", "forestgreen", "black", NA, NA), density=c(NA, NA, NA, 40, 40), fill=c(0, 0, 0, "skyblue", "grey80"),
+       border=c(0, 0, 0, "skyblue", "grey80"), angle=c(NA,NA,NA,-45,45), x.intersp=c(2.5,2.5,2.5,0, 0),  bty = "n", cex=1.8)
+dev.off()
+
+pdf(width = 20, height = 5, file=paste0(rdaDir, "/posteriorExpMedianHes1Ours.pdf"))
+par(mfrow=c(1, ncol(xsim)+1))
+
+matplot(xtrue[, "time"], exp(xtrue[, -1]), type="l", lty=1, col=c(4,6,"goldenrod1"), xlab="time", ylab=NA)
+matplot(xsim.obs$time, exp(xsim.obs[,-1]), type="p", col=c(4,6,"goldenrod1"), pch=20, add = TRUE)
+mtext('sample observations', cex=1.5)
+legend("topright", c("true P", "true M", "true H", "observed P", "observed M"), 
+       lty=c(1,1,1,NA,NA), pch=c(NA,NA,NA,20,20), col=c(4,6,"goldenrod1"), cex=1.5)
+
+for (i in 1:(ncol(xsim)-1)) {
+  ourEst <- apply(oursPostExpX[,9+i,], 1, quantile, probs = 0.5)
+  ourUB <- apply(oursPostExpX[,9+i,], 1, quantile, probs = 0.025)
+  ourLB <- apply(oursPostExpX[,9+i,], 1, quantile, probs = 0.975)
+  
+  ourEst <- exp(getMeanCurve(xsim$time, log(ourEst), xdesolveTRUE[,1], 
+                             t(phiVisualization[,i]), 0, 
+                             kerneltype=config$kernel, deriv = FALSE))
+  ourUB <- exp(getMeanCurve(xsim$time, log(ourUB), xdesolveTRUE[,1], 
+                            t(phiVisualization[,i]), 0, 
+                            kerneltype=config$kernel, deriv = FALSE))
+  ourLB <- exp(getMeanCurve(xsim$time, log(ourLB), xdesolveTRUE[,1], 
+                            t(phiVisualization[,i]), 0, 
+                            kerneltype=config$kernel, deriv = FALSE))
+  
+  
+  times <- xdesolveTRUE[,1]
+  
+  plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+  mtext(compnames[i], cex=1.5)
+  polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
+          col = "skyblue", border = "skyblue", lty = 1, density = 10, angle = -45)
+  
+  polygon(c(times, rev(times)), c(ourExpXdesolveUB[,i], rev(ourExpXdesolveLB[,i])),
+          col = "grey80", border = "grey80", lty = 1, density = 10, angle = 45)
+  
+  lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
+  lines(times, ourExpXdesolveMed[,i], lwd=3)
+  lines(times, ourEst, col="forestgreen", lwd=3)
+}
+par(mar=rep(0,4))
+plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
+legend("center", c("truth", "median posterior median", "median reconstructed trajectory", 
+                   "CI on posterior median", "CI on reconstructed trajectory"), lty=c(1,1,1,0,0), lwd=c(4,3,3,0,0),
        col = c("red", "forestgreen", "black", NA, NA), density=c(NA, NA, NA, 40, 40), fill=c(0, 0, 0, "skyblue", "grey80"),
        border=c(0, 0, 0, "skyblue", "grey80"), angle=c(NA,NA,NA,-45,45), x.intersp=c(2.5,2.5,2.5,0, 0),  bty = "n", cex=1.8)
 dev.off()
