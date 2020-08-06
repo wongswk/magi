@@ -121,15 +121,14 @@ public:
             numparam(numparamInput),
             sigmaExogenScalar(sigmaExogenScalarInput),
             useFrequencyBasedPrior(useFrequencyBasedPriorInput) {
-        std::cout << "kernelInput in PhiGaussianProcessSmoothing is " << kernelInput << "\n";
         unsigned int phiDim;
-        if(kernelInput == "generalMatern") {
+        if(kernel == "generalMatern") {
             phiDim = 2;
-        }else if(kernelInput == "matern") {
+        }else if(kernel == "matern") {
             phiDim = 2;
-        }else if(kernelInput == "compact1") {
+        }else if(kernel == "compact1") {
             phiDim = 2;
-        }else if(kernelInput == "periodicMatern"){
+        }else if(kernel == "periodicMatern"){
             phiDim = 3;
         }else{
             throw std::invalid_argument("kernelInput invalid");
@@ -172,7 +171,6 @@ arma::vec gpsmooth(const arma::mat & yobsInput,
                    std::string kernelInput,
                    const double sigmaExogenScalar = -1,
                    bool useFrequencyBasedPrior = false) {
-    std::cout << "kernelInput in gpsmooth is " << kernelInput << "\n";
     unsigned int phiDim;
     if(kernelInput == "generalMatern") {
         phiDim = 2;
