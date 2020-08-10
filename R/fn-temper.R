@@ -5,13 +5,22 @@ PROJECT_DIR = getwd()
 outDir <- "../results/fn-temper/"
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 
+args <- commandArgs(trailingOnly = TRUE)
+args <- as.numeric(args)
+if(length(args) > 0){
+  seed <- readRDS("../results/fn-seeds-100rep-paper.rds")[args]
+}else{
+  seed <- (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9
+}
+
+
 # set up configuration if not already exist ------------------------------------
 if(!exists("config")){
   config <- list(
     nobs = 41,
     noise = c(0.2, 0.2),
     kernel = "generalMatern",
-    seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+    seed = seed,
     loglikflag = "withmeanBand",
     bandsize = 20,
     hmcSteps = 100,
@@ -93,7 +102,7 @@ matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
 xsim <- insertNaN(xsim.obs,config$filllevel)
 
 if (config$useExoSigma) {
-  exoSigma = apply(xsim.obs[,-1], 2, function(x) 0.001*(max(x) - min(x)))
+  exoSigma = apply(xsim.obs[,-1], 2, function(x) 0.002*(max(x) - min(x)))
 } else {
   exoSigma = numeric(0)
 }
