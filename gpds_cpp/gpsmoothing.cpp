@@ -147,7 +147,7 @@ public:
         for(unsigned i = 0; i < yobsInput.n_cols; i++) {
             const arma::uvec finite_elem = arma::find_finite(yobs.col(i));
             if (finite_elem.size() > 0){
-                ub[phiDim * i] = 100 * arma::max(arma::abs((yobs.col(i).eval().elem(finite_elem))));
+                //ub[phiDim * i] = 100 * arma::max(arma::abs((yobs.col(i).eval().elem(finite_elem))));
             }
             ub[phiDim * i + 1] = maxDist;
         }
