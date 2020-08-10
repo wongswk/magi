@@ -22,7 +22,7 @@ if(!exists("config")){
     useScalerSigma = FALSE,
     useFixedSigma = FALSE,
     linearizexInit = TRUE,
-    #useExoSigma = FALSE,
+    useExoSigma = TRUE,
     useMean = TRUE,
     useBand = TRUE,    
     max.epoch = 1
@@ -83,11 +83,11 @@ for (i in 1:length(fillC)) {
     xsim[i,2:ncol(xsim)] = xsim.obs[loc,2:ncol(xsim)];
 }
 
-# if (config$useExoSigma) {
-#   exoSigma = rep(0.001, ncol(xsim)-1)  ## initialize with an arbitrary small value of sigma
-# } else {
-#   exoSigma = matrix(numeric(0))
-# }
+if (config$useExoSigma) {
+  exoSigma = apply(xsim.obs[,-1], 2, function(x) 0.001*(max(x) - min(x))) ## initialize with an arbitrary small value of sigma
+} else {
+  exoSigma = matrix(numeric(0))
+}
 
 if (config$linearizexInit) {
   exoxInit <- sapply(2:ncol(xsim.obs), function(j)
@@ -227,8 +227,7 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   yFull = exoxInit[xsim$time %in% 0:100,],
   odeModel = ptransmodel,
   tvecFull = 0:100,
-  #sigmaExogenous = exoSigma,
-  sigmaExogenous = matrix(numeric(0)),
+  sigmaExogenous = exoSigma,
   phiExogenous = matrix(numeric(0)),
   xInitExogenous = matrix(numeric(0)),
   thetaInitExogenous = matrix(numeric(0)),
