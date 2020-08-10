@@ -218,11 +218,12 @@ for (i in 1:length(Dondel)) {
 
 
 # Average the posterior mean RMSEs for the different seeds
-rmse.table <- rbind( round(apply(sapply(ours, function(x) x$rmseOdePM), 1, mean), digits=4),
-                     round(apply(sapply(Ramsay, function(x) x$rmseOdePM), 1, mean), digits=4),
-                     round(apply(sapply(Wenk, function(x) x$rmseOdePM), 1, mean), digits=4),
-                     round(apply(sapply(Dondel, function(x) x$rmseOdePM), 1, mean), digits=4))
-print(rmse.table)
+rmse.table <- rbind( round(apply(sapply(ours, function(x) x$rmseOdePM), 1, mean), digits=3),
+                     round(apply(sapply(Ramsay, function(x) x$rmseOdePM), 1, mean), digits=3),
+                     round(apply(sapply(Wenk, function(x) x$rmseOdePM), 1, mean), digits=3),
+                     round(apply(sapply(Dondel, function(x) x$rmseOdePM), 1, mean), digits=3))
+print("trajectory RMSE")
+print(cbind(c("ours", "ramsay", "wenk", "dondel"), rmse.table))
 
 # Make the figures comparing Wenk and Ours using ODE solver results
 # use the same axis limits for both methods for easier visual comparison
@@ -346,9 +347,9 @@ colnames(coverage) <- c("Method", "a", "b", "c")
 print(xtable(coverage), include.rownames=FALSE)
 
 rmse_theta <- rbind(
-  printr(apply(oursPostTheta[,1,] - pram.true$theta, 1, function(x) sqrt(mean(x^2))), 4),
-  printr(apply(WenkPostTheta[,1,] - pram.true$theta, 1, function(x) sqrt(mean(x^2))), 4),
-  printr(apply(DondelPostTheta[,1,] - pram.true$theta, 1, function(x) sqrt(mean(x^2))), 4)
+  printr(apply(oursPostTheta[,1,] - pram.true$theta, 1, function(x) sqrt(mean(x^2))), 3),
+  printr(apply(WenkPostTheta[,1,] - pram.true$theta, 1, function(x) sqrt(mean(x^2))), 3),
+  printr(apply(DondelPostTheta[,1,] - pram.true$theta, 1, function(x) sqrt(mean(x^2))), 3)
 )
 rmse_theta <- cbind(c("Ours", "Wenk", "Dondel"), rmse_theta)
 colnames(rmse_theta) <- c("Method", "a", "b", "c")
@@ -361,6 +362,7 @@ print(xtable(inference), include.rownames=FALSE)
 inference <- cbind(t(tab[,-1]), t(coverage[,-1]))[,c(1,4,2,5,3,6)]
 print(xtable(inference))
 
+print("main table below")
 inference <- cbind(t(tab[,-1]), t(rmse_theta[,-1]))[,c(1,4,2,5,3,6)]
 print(xtable(inference))
 
