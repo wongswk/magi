@@ -222,6 +222,7 @@ rmse.table <- rbind( round(apply(sapply(ours, function(x) x$rmseOdePM), 1, mean)
                      round(apply(sapply(Ramsay, function(x) x$rmseOdePM), 1, mean), digits=3),
                      round(apply(sapply(Wenk, function(x) x$rmseOdePM), 1, mean), digits=3),
                      round(apply(sapply(Dondel, function(x) x$rmseOdePM), 1, mean), digits=3))
+sink(paste0(outDirWenk, "/result.txt"))
 print("trajectory RMSE")
 print(cbind(c("ours", "ramsay", "wenk", "dondel"), rmse.table))
 
@@ -413,4 +414,4 @@ for (i in 1:(ncol(xsim)-1)) {
   lines(times, ourEst, col="forestgreen")
 }
 dev.off()
-
+sink()
