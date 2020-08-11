@@ -197,7 +197,21 @@ void GpdsSolver::setupPhiSigma() {
 
     for(unsigned j = 0; j < ydim; j++){
         covAllDimensions[j] = kernelCov(phiAllDimensions.col(j), distSignedFull, 3);
+
+        // Workaround for phi1 getting too large and matrix inverse failing
+        while (covAllDimensions[j].Cinv.n_rows == 0 || covAllDimensions[j].Kinv.n_rows == 0) {
+          cout << "Cinv or Kinv failed for component " << j << " with phi1 = " << phiAllDimensions(0,j) << " and phi2 = " << phiAllDimensions(1,j) << endl;
+          phiAllDimensions(0,j) *= 0.8;
+          covAllDimensions[j] = kernelCov(phiAllDimensions.col(j), distSignedFull, 3);
+        }
+        
         covAllDimensions[j].addBandCov(bandSize);
+        
+        // Diagnostic information
+        cout << "Component " << j << " Cinv max element: " << arma::max(arma::max(arma::abs(covAllDimensions[j].Cinv))) << ", Kinv max element: " << arma::max(arma::max(arma::abs(covAllDimensions[j].Kinv))) << endl;
+        cout << "Component " << j << " Cinv min element: " << arma::min(arma::min(arma::abs(covAllDimensions[j].Cinv))) << ", Kinv min element: " << arma::min(arma::min(arma::abs(covAllDimensions[j].Kinv))) << endl;
+
+        
     }
 }
 
