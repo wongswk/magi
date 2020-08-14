@@ -11,7 +11,7 @@ subdirs <- c(
   "../results/fn-temper/liX-temperature441/"
 )
 
-rdaDir <- "../results/fn-temper/liX-temperature111o4/"
+rdaDir <- "../results/fn-temper/liX-temperature441/"
 
 args <- commandArgs(trailingOnly = TRUE)
 args <- as.numeric(args)
@@ -274,7 +274,7 @@ polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
 lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
 lines(times, ourEst, col="forestgreen", lwd=3)
 
-zoomin_x <- c(85, 89)
+zoomin_x <- c(80, 89)
 zoomin_y <- c(1.80, 2.05)
 polygon(c(times[zoomin_x], rev(times[zoomin_x])), rep(zoomin_y, each=2),
         col = NA, border = 1)
@@ -299,8 +299,12 @@ zoomtrans_x <- function(x) {
 }
 polygon(c(zoomtrans_x(times[zoomin_id]), rev(zoomtrans_x(times[zoomin_id]))), c(zoomtrans_y(ourUB), rev(zoomtrans_y(ourLB))),
         col = "skyblue", border = NA)
+
 lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(xdesolveTRUE[,1+i]), col="red", lwd=4)
 lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(ourEst), col="forestgreen", lwd=3)
+
+polygon(c(times[zoomout_x], rev(times[zoomout_x])), rep(c(min(zoomout_y)-0.01, min(zoomout_y)-100), each=2),
+        col = "white", border = NA)
 
 i = 2
 ourEst <- apply(oursPostX[,i,], 1, quantile, probs = 0.5)
