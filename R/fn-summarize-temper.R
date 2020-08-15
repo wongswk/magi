@@ -268,24 +268,13 @@ ourLB <- apply(oursPostX[,i,], 1, quantile, probs = 0.975)
 times <- xsim$time
 
 plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
-mtext(compnames[i], cex=2)
-polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
-        col = "skyblue", border = NA)
-lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
-lines(times, ourEst, col="forestgreen", lwd=3)
 
-zoomin_x <- c(80, 89)
-zoomin_y <- c(1.80, 2.05)
-polygon(c(times[zoomin_x], rev(times[zoomin_x])), rep(zoomin_y, each=2),
-        col = NA, border = 1)
+zoomin_x <- c(76, 82)
+zoomin_y <- c(-0.1, 1.5)
 
 zoomout_x <- c(80, 116)
 zoomout_y <- c(-2.5, -0.4)
-polygon(c(times[zoomout_x], rev(times[zoomout_x])), rep(zoomout_y, each=2),
-        col = NA, border = 1)
 
-lines(times[c(zoomin_x[1], zoomout_x[1])], c(zoomin_y[1], zoomout_y[2]))
-lines(times[c(zoomin_x[2], zoomout_x[2])], c(zoomin_y[1], zoomout_y[2]))
 zoomout_id <- zoomout_x[1]:zoomout_x[2]
 zoomin_id <- zoomin_x[1]:zoomin_x[2]
 zoomtrans_y <- function(y) {
@@ -305,6 +294,24 @@ lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(ourEst), col="forestgreen", lwd
 
 polygon(c(times[zoomout_x], rev(times[zoomout_x])), rep(c(min(zoomout_y)-0.01, min(zoomout_y)-100), each=2),
         col = "white", border = NA)
+polygon(c(times[zoomout_x + c(-1,1)], rev(times[zoomout_x + c(-1,1)])), rep(c(max(zoomout_y)+0.01, max(zoomout_y)+2), each=2),
+        col = "white", border = NA)
+
+
+mtext(compnames[i], cex=2)
+polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
+        col = "skyblue", border = NA)
+lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
+lines(times, ourEst, col="forestgreen", lwd=3)
+
+polygon(c(times[zoomin_x], rev(times[zoomin_x])), rep(zoomin_y, each=2),
+        col = NA, border = 1)
+polygon(c(times[zoomout_x], rev(times[zoomout_x])), rep(zoomout_y, each=2),
+        col = NA, border = 1)
+
+lines(times[c(zoomin_x[1], zoomout_x[1])], c(zoomin_y[1], zoomout_y[2]))
+lines(times[c(zoomin_x[2], zoomout_x[2])], c(zoomin_y[1], zoomout_y[2]))
+
 
 i = 2
 ourEst <- apply(oursPostX[,i,], 1, quantile, probs = 0.5)
