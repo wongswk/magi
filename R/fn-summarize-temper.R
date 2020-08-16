@@ -361,3 +361,103 @@ legend("center", c("truth", "median of all inferred trajectories", "2.5% to 97.5
        col = c("red", "forestgreen", NA), fill=c(0, 0, "skyblue"), pch=c(NA, NA, 15), x.intersp=c(2.5,2.5,0),
        border=c(0, 0, "skyblue"), bty = "n", cex=1.8)
 dev.off()
+
+
+pdf(width = 10, height = 5, file=paste0(rdaDir, "posteriorxOursSingleColumn.pdf"))
+# single column plot ----
+layout(1)
+i = 1
+ourEst <- apply(oursPostX[,i,], 1, quantile, probs = 0.5)
+ourUB <- apply(oursPostX[,i,], 1, quantile, probs = 0.025)
+ourLB <- apply(oursPostX[,i,], 1, quantile, probs = 0.975)
+times <- xsim$time
+
+plot(times, ourEst, type="n", xlab="time", ylab=NA, ylim=c(ylim_lower[i], ylim_upper[i]))
+text(-0.4, 1, "R")
+text(-0.4, -1, "V")
+
+zoomin_x <- c(74, 79)
+zoomin_y <- c(-0.5, 0.9)
+
+zoomout_x <- c(80, 116)
+zoomout_y <- c(-2.6, -1.05)
+
+zoomout_id <- zoomout_x[1]:zoomout_x[2]
+zoomin_id <- zoomin_x[1]:zoomin_x[2]
+zoomtrans_y <- function(y) {
+  y <- y[zoomin_id]
+  (y - zoomin_y[1])/diff(zoomin_y) * diff(zoomout_y) + zoomout_y[1]
+}
+zoomtrans_x <- function(x) {
+  zoomin_x <- times[zoomin_x]
+  zoomout_x <- times[zoomout_x]
+  (x - zoomin_x[1])/diff(zoomin_x) * diff(zoomout_x) + zoomout_x[1]
+}
+polygon(c(zoomtrans_x(times[zoomin_id]), rev(zoomtrans_x(times[zoomin_id]))), c(zoomtrans_y(ourUB), rev(zoomtrans_y(ourLB))),
+        col = "skyblue", border = NA)
+
+lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(xdesolveTRUE[,1+i]), col="red", lwd=4)
+lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(ourEst), col="forestgreen", lwd=3)
+
+polygon(c(times[zoomout_x], rev(times[zoomout_x])), rep(c(min(zoomout_y)-0.01, min(zoomout_y)-100), each=2),
+        col = "white", border = NA)
+polygon(c(times[zoomout_x + c(-1,1)], rev(times[zoomout_x + c(-1,1)])), rep(c(max(zoomout_y)+0.01, max(zoomout_y)+2), each=2),
+        col = "white", border = NA)
+
+
+polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
+        col = "skyblue", border = NA)
+lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
+lines(times, ourEst, col="forestgreen", lwd=3)
+
+polygon(c(times[zoomin_x], rev(times[zoomin_x])), rep(zoomin_y, each=2),
+        col = NA, border = 1)
+polygon(c(times[zoomout_x], rev(times[zoomout_x])), rep(zoomout_y, each=2),
+        col = NA, border = 1)
+
+lines(times[c(zoomin_x[1], zoomout_x[1])], c(zoomin_y[1], zoomout_y[2]))
+lines(times[c(zoomin_x[2], zoomout_x[2])], c(zoomin_y[1], zoomout_y[2]))
+
+
+i = 2
+ourEst <- apply(oursPostX[,i,], 1, quantile, probs = 0.5)
+ourUB <- apply(oursPostX[,i,], 1, quantile, probs = 0.025)
+ourLB <- apply(oursPostX[,i,], 1, quantile, probs = 0.975)
+times <- xsim$time
+
+mtext("FN system", cex=2)
+polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
+        col = "skyblue", border = NA)
+lines(times, xdesolveTRUE[,1+i], col="red", lwd=4, lty=2)
+lines(times, ourEst, col="forestgreen", lwd=3, lty=2)
+
+zoomin_x <- c(74, 79)
+zoomin_y <- c(0.9, 1.10)
+
+polygon(c(times[zoomin_x], rev(times[zoomin_x])), rep(zoomin_y, each=2),
+        col = NA, border = 1)
+
+zoomout_x <- c(40, 77)
+zoomout_y <- c(1.3, 2.5)
+
+polygon(c(times[zoomout_x], rev(times[zoomout_x])), rep(zoomout_y, each=2),
+        col = NA, border = 1)
+
+lines(times[c(zoomin_x[1], zoomout_x[1])], c(zoomin_y[2], zoomout_y[1]))
+lines(times[c(zoomin_x[2], zoomout_x[2])], c(zoomin_y[2], zoomout_y[1]))
+zoomout_id <- zoomout_x[1]:zoomout_x[2]
+zoomin_id <- zoomin_x[1]:zoomin_x[2]
+zoomtrans_y <- function(y) {
+  y <- y[zoomin_id]
+  (y - zoomin_y[1])/diff(zoomin_y) * diff(zoomout_y) + zoomout_y[1]
+}
+zoomtrans_x <- function(x) {
+  zoomin_x <- times[zoomin_x]
+  zoomout_x <- times[zoomout_x]
+  (x - zoomin_x[1])/diff(zoomin_x) * diff(zoomout_x) + zoomout_x[1]
+}
+polygon(c(zoomtrans_x(times[zoomin_id]), rev(zoomtrans_x(times[zoomin_id]))), c(zoomtrans_y(ourUB), rev(zoomtrans_y(ourLB))),
+        col = "skyblue", border = NA)
+lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(xdesolveTRUE[,1+i]), col="red", lwd=4, lty=2)
+lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(ourEst), col="forestgreen", lwd=3, lty=2)
+dev.off()
