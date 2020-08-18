@@ -300,8 +300,8 @@ void GpdsSolver::initTheta() {
 }
 
 void GpdsSolver::initMissingComponent() {
-    const unsigned int nSGD = 0;  // skip sgd, not useful, and produce unstable result due to delay eval of arma
-    double learningRate = 1e-8;
+    const unsigned int nSGD = 100000;  // skip sgd, not useful, and produce unstable result due to delay eval of arma
+    double learningRate = 1e-6;
     const arma::uvec & nobsEachDim = arma::sum(indicatorMatWithObs, 0).t();
     const arma::uvec & missingComponentDim = arma::find(nobsEachDim < 3);
     if(missingComponentDim.empty()){
@@ -363,7 +363,7 @@ void GpdsSolver::initMissingComponent() {
                                      odeModel);
     arma::mat xInitOld = xInit;
     arma::mat thetaInitOld = thetaInit;
-//    arma::mat phiAllDimensionsOld = phiAllDimensions;
+    arma::mat phiAllDimensionsOld = phiAllDimensions;
 
     std::stringstream ss;
 
@@ -383,7 +383,7 @@ void GpdsSolver::initMissingComponent() {
             learningRate *= 0.1;
             xInit = xInitOld;
             thetaInit = thetaInitOld;
-//            phiAllDimensions = phiAllDimensionsOld;
+            phiAllDimensions = phiAllDimensionsOld;
 
             if (verbose) {
                 std::cout << "initMissingComponent iteration " << iSGD << "; roll back:\n"
@@ -396,7 +396,7 @@ void GpdsSolver::initMissingComponent() {
 
         xInitOld = xInit;
         thetaInitOld = thetaInit;
-//        phiAllDimensionsOld = phiAllDimensions;
+        phiAllDimensionsOld = phiAllDimensions;
         llikOld = llik;
 
         if(learningRate < 1e-14){
@@ -409,18 +409,18 @@ void GpdsSolver::initMissingComponent() {
         for (auto iPtr = missingComponentDim.begin(); iPtr < missingComponentDim.end(); iPtr++){
             xInit.col(*iPtr) += learningRate * llik.gradient.subvec(
                     xInit.n_rows * (*iPtr), xInit.n_rows * (*iPtr + 1) - 1);
-//            phiAllDimensions.col(*iPtr) += learningRate * llik.gradient.subvec(
-//                    xInit.size() + thetaInit.size() + phiAllDimensions.n_rows * (*iPtr),
-//                    xInit.size() + thetaInit.size() + phiAllDimensions.n_rows * (*iPtr) + 1);
+            phiAllDimensions.col(*iPtr) += learningRate * llik.gradient.subvec(
+                    xInit.size() + thetaInit.size() + phiAllDimensions.n_rows * (*iPtr),
+                    xInit.size() + thetaInit.size() + phiAllDimensions.n_rows * (*iPtr) + 1);
         }
         thetaInit = arma::max(thetaInit, odeModel.thetaLowerBound + 1e-6);
         thetaInit = arma::min(thetaInit, odeModel.thetaUpperBound - 1e-6);
-//        phiAllDimensions = arma::max(phiAllDimensions, arma::ones(arma::size(phiAllDimensions)) * 1e-6);
+        phiAllDimensions = arma::max(phiAllDimensions, arma::ones(arma::size(phiAllDimensions)) * 1e-6);
 
         if (verbose) {
-            std::cout << "initMissingComponent iteration " << iSGD
+            std::cout << "\ninitMissingComponent iteration " << iSGD
                       << "; xthetaphisigmallik = " << llik.value
-//                      << "; phi missing dim = \n" << phiAllDimensions.cols(missingComponentDim)
+                      << "; phi missing dim = \n" << phiAllDimensions.cols(missingComponentDim).t()
                       << "\n";
         }
     }
