@@ -551,6 +551,7 @@ public:
                     xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * id,
                     xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * (id + 1) - 1);
         }
+//        cout << "inside evaluation of value\n";
 
         const lp & out = xthetaphisigmallik( xInit,
                                              thetaInit,
@@ -624,6 +625,7 @@ public:
                         -out.gradient(xInit.size() + thetaInit.size() + phiAllDimensions.n_rows * missingComponentDim(id) + j);
             }
         }
+//        cout << "after gradient assignment =\n" << grad.transpose();
     }
 
     XmissingThetaPhiOptim(const arma::mat & yobsInput,
@@ -646,7 +648,9 @@ public:
             phiAllDimensions(phiFullInput),
             missingComponentDim(missingComponentDimInput) {
         Eigen::VectorXd lb(xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * missingComponentDim.size());
+        lb.fill(-INFINITY);
         Eigen::VectorXd ub(xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * missingComponentDim.size());
+        ub.fill(INFINITY);
 
         for (unsigned j = 0; j < thetaInit.size(); j++){
             lb[xInit.n_rows * missingComponentDim.size() + j] = fOdeModel.thetaLowerBound(j) + 1e-6;
@@ -676,6 +680,8 @@ public:
         }
         this->setLowerBound(lb);
         this->setUpperBound(ub);
+//        std::cout << "finish set up of the problem\n";
+//        std::cout << "ub = \n" << ub << "lb = \n" << lb;
     }
 };
 
@@ -708,7 +714,10 @@ arma::mat optimizeXmissingThetaPhi(const arma::mat & yobsInput,
         }
     }
 
+//    std::cout << "inside optimizeXmissingThetaPhi\n"
+//    << "init xThetaPhi = " << xThetaPhi;
+
     solver.minimize(objective, xThetaPhi);
-    const arma::vec & xThetaPhiArgmin = arma::mat(xThetaPhi.data(), xInitInput.n_rows * missingComponentDim.size() + thetaInitInput.size() + phiInitInput.n_rows * missingComponentDim.size(), false, false);
+    const arma::vec & xThetaPhiArgmin = arma::vec(xThetaPhi.data(), xInitInput.n_rows * missingComponentDim.size() + thetaInitInput.size() + phiInitInput.n_rows * missingComponentDim.size(), false, false);
     return xThetaPhiArgmin;
 }
