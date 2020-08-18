@@ -523,6 +523,7 @@ public:
     arma::vec thetaInit;
     const arma::uvec & missingComponentDim;
     arma::mat phiAllDimensions;
+    const double SCALE = 1;
 
     double value(const Eigen::VectorXd & xthetaphiInput) override {
         if ((xthetaphiInput.array() < this->lowerBound().array()).any()){
@@ -560,7 +561,7 @@ public:
                                              yobs,
                                              tvec,
                                              fOdeModel);
-        return -out.value;
+        return -out.value*SCALE;
     }
 
     void gradient(const Eigen::VectorXd & xthetaphiInput, Eigen::VectorXd & grad) override {
@@ -603,13 +604,15 @@ public:
                     xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * (id + 1) - 1);
         }
 
-        const lp & out = xthetaphisigmallik( xInit,
+        lp out = xthetaphisigmallik( xInit,
                                              thetaInit,
                                              phiAllDimensions,
                                              sigmaAllDimensions,
                                              yobs,
                                              tvec,
                                              fOdeModel);
+        out.gradient *= SCALE;
+        out.value *= SCALE;
 
         for (unsigned id = 0; id < missingComponentDim.size(); id++){
             for (unsigned j = 0; j < xInit.n_rows; j++){
