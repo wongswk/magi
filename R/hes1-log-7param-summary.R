@@ -11,7 +11,6 @@ subdirs <- c(
 
 subdirs <- c(
   "../results/for_paper/7param//variablephi-heating",
-  "../results/for_paper/7param//variablephi-heating-updatephi",
   "../results/for_paper/7param//variablephi-cool-0p33-warmstart",
   "../results/for_paper/7param//variablephi-cool-0p33-warmstart-updatephi"
 )
@@ -565,6 +564,7 @@ if(summarize_ramsey){
     ramsayPostTheta[[f]] <- env_ramsay$best.pars
     ramsayPostX0[[f]] <- env_ramsay$best.pars.x0
   }
+  sink(paste0(rdaDir, "/result.txt"))
   print(length(rda_files))
   
   rmse_ramsay_orig <- round(apply(sapply(ramsayRmseOrig, identity), 1, mean, na.rm=TRUE), digits=4)
@@ -634,4 +634,5 @@ if(summarize_ramsey){
          col = c("red", "forestgreen", NA), density=c(NA, NA, 40), fill=c(0, 0, "skyblue"),
          border=c(0, 0, "skyblue"), angle=c(NA,NA,-45), x.intersp=c(2.5,2.5, 0),  bty = "n", cex=1.8)
   dev.off()
+  sink()
 }
