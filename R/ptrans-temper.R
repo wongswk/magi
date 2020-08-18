@@ -22,7 +22,7 @@ if(!exists("config")){
     useScalerSigma = FALSE,
     useFixedSigma = FALSE,
     linearizexInit = TRUE,
-    useExoSigma = TRUE,
+    useExoSigma = FALSE,
     useMean = TRUE,
     useBand = TRUE,    
     max.epoch = 1
@@ -83,11 +83,11 @@ for (i in 1:length(fillC)) {
     xsim[i,2:ncol(xsim)] = xsim.obs[loc,2:ncol(xsim)];
 }
 
-if (config$useExoSigma) {
-  exoSigma = apply(xsim.obs[,-1], 2, function(x) 0.001*(max(x) - min(x))) ## initialize with an arbitrary small value of sigma
-} else {
-  exoSigma = matrix(numeric(0))
-}
+# if (config$useExoSigma) {
+#   exoSigma = apply(xsim.obs[,-1], 2, function(x) 0.002*(max(x) - min(x))) ## initialize with an arbitrary small value of sigma
+# } else {
+#  exoSigma = matrix(numeric(0))
+# }
 
 if (config$linearizexInit) {
   exoxInit <- sapply(2:ncol(xsim.obs), function(j)
@@ -227,7 +227,43 @@ samplesCpp <- gpds:::solveGpdsRcpp(
   yFull = exoxInit[xsim$time %in% 0:100,],
   odeModel = ptransmodel,
   tvecFull = 0:100,
-  sigmaExogenous = exoSigma,
+  sigmaExogenous = matrix(numeric(0)),
+  phiExogenous = matrix(numeric(0)),
+  xInitExogenous = matrix(numeric(0)),
+  thetaInitExogenous = matrix(numeric(0)),
+  muExogenous = matrix(numeric(0)),
+  dotmuExogenous = matrix(numeric(0)),
+  priorTemperatureLevel = config$priorTemperature,
+  priorTemperatureDeriv = config$priorTemperature,
+  priorTemperatureObs = config$priorTemperatureObs,
+  kernel = config$kernel,
+  nstepsHmc = config$hmcSteps,
+  burninRatioHmc = config$burninRatio,
+  niterHmc = 2,
+  stepSizeFactorHmc = config$stepSizeFactor,
+  nEpoch = config$max.epoch,
+  bandSize = config$bandsize,
+  useFrequencyBasedPrior = config$useFrequencyBasedPrior,
+  useBand = config$useBand,
+  useMean = config$useMean,
+  useScalerSigma = config$useScalerSigma,
+  useFixedSigma = config$useFixedSigma,
+  verbose = TRUE)
+
+phiUsed <- samplesCpp$phi
+
+samplesCpp <- samplesCpp$llikxthetasigmaSamples
+samplesCpp <- samplesCpp[,,1]
+out <- samplesCpp[-1,1,drop=FALSE]
+sigmaUsed <- tail(out[, 1], ncol(xsim[,-1]))
+show(sigmaUsed)
+
+## NEW (Aug 11) ----- plug in sigma estimate and re-estimate phi
+samplesCpp <- gpds:::solveGpdsRcpp(
+  yFull = exoxInit[xsim$time %in% 0:100,],
+  odeModel = ptransmodel,
+  tvecFull = 0:100,
+  sigmaExogenous = sigmaUsed,
   phiExogenous = matrix(numeric(0)),
   xInitExogenous = matrix(numeric(0)),
   thetaInitExogenous = matrix(numeric(0)),
@@ -259,6 +295,7 @@ sigmaUsed <- tail(out[, 1], ncol(xsim[,-1]))
 show(sigmaUsed)
 
 
+
 samplesCpp <- gpds:::solveGpdsRcpp(
   yFull = data.matrix(xsim[,-1]),
   odeModel = ptransmodel,
@@ -288,6 +325,7 @@ samplesCpp <- gpds:::solveGpdsRcpp(
 
 OursTimeUsed <- proc.time()[3] - OursStartTime
 
+phiUsed <- samplesCpp$phi
 samplesCpp <- samplesCpp$llikxthetasigmaSamples
 
 samplesCpp <- samplesCpp[,,1]
@@ -323,7 +361,7 @@ gpds:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 
-save(xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel, OursTimeUsed, file= paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1],"-fill", config$linfillspace, ".rda"))
+save(xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel, OursTimeUsed, phiUsed, file= paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1],"-fill", config$linfillspace, ".rda"))
 
 
 ### cool tempering (1,1,1/13) --------------------------------------------------------------
