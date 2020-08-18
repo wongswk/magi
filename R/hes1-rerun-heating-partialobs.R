@@ -104,8 +104,9 @@ for(j in 1:(ncol(xsim)-1)){
   config[[paste0("phiD", j)]] <- paste(round(phiUsed[,j], 2), collapse = "; ")
 }
 
+save.image(paste0(outDir, config$modelName,"-",config$seed,"-7param-variablephi-heating.rda"))
+
 gpds:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-7param-variablephi-heating.pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 
-save.image(paste0(outDir, config$modelName,"-",config$seed,"-7param-variablephi-heating.rda"))
