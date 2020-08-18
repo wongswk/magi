@@ -709,6 +709,6 @@ arma::mat optimizeXmissingThetaPhi(const arma::mat & yobsInput,
     }
 
     solver.minimize(objective, xThetaPhi);
-    const arma::mat & xThetaPhiArgmin = arma::mat(xThetaPhi.data(), 2, missingComponentDim.size(), false, false);
+    const arma::vec & xThetaPhiArgmin = arma::mat(xThetaPhi.data(), xInitInput.n_rows * missingComponentDim.size() + thetaInitInput.size() + phiInitInput.n_rows * missingComponentDim.size(), false, false);
     return xThetaPhiArgmin;
 }

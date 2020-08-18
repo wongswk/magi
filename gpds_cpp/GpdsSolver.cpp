@@ -300,7 +300,7 @@ void GpdsSolver::initTheta() {
 }
 
 void GpdsSolver::initMissingComponent() {
-    const unsigned int nSGD = 100000;  // skip sgd, not useful, and produce unstable result due to delay eval of arma
+    const unsigned int nSGD = 10;  // skip sgd, not useful, and produce unstable result due to delay eval of arma
     double learningRate = 1e-6;
     const arma::uvec & nobsEachDim = arma::sum(indicatorMatWithObs, 0).t();
     const arma::uvec & missingComponentDim = arma::find(nobsEachDim < 3);
@@ -425,6 +425,41 @@ void GpdsSolver::initMissingComponent() {
         }
     }
 
+    const arma::vec & xthetaphi = optimizeXmissingThetaPhi(yFull,
+                                                           tvecFull,
+                                                           odeModel,
+                                                           sigmaInit,
+                                                           priorTemperature,
+                                                           xInit,
+                                                           thetaInit,
+                                                           phiAllDimensions,
+                                                           missingComponentDim);
+    for (unsigned id = 0; id < missingComponentDim.size(); id++){
+        xInit.col(missingComponentDim(id)) = xthetaphi.subvec(
+                xInit.n_rows * (id), xInit.n_rows * (id + 1) - 1);
+    }
+
+    thetaInit = xthetaphi.subvec(
+            xInit.n_rows * missingComponentDim.size(), xInit.n_rows * missingComponentDim.size() + thetaInit.size() - 1);
+
+    for (unsigned id = 0; id < missingComponentDim.size(); id++){
+        phiAllDimensions.col(missingComponentDim(id)) = xthetaphi.subvec(
+                xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * id,
+                xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * (id + 1) - 1);
+    }
+
+    const lp & llik = xthetaphisigmallik( xInit,
+                                          thetaInit,
+                                          phiAllDimensions,
+                                          sigmaInit,
+                                          yFull,
+                                          tvecFull,
+                                          odeModel);
+
+    std::cout << "\nafter optimization "
+              << "; xthetaphisigmallik = " << llik.value
+              << "; phi missing dim = \n" << phiAllDimensions.cols(missingComponentDim).t()
+              << "\n";
 }
 
 void GpdsSolver::doHMC(int iEpoch) {
