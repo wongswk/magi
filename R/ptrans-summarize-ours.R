@@ -7,14 +7,14 @@ config$noise <- rep(0.001, 5)
 #rdaDir <- "../DynSysResults/PTrans-noise0.01/results/"   ## where ours & Dondel rda saved
 #outDirWenk <- "../DynSysResults/PTrans-noise0.01/"   ## where all the seeds are in separate folders with Wenk's output
 
-rdaDir <- "../results/ptrans-temper/temperature111/"
-#rdaDir <- "../results/ptrans-temper/temperature-warm/"
+# rdaDir <- "../results/ptrans-temper/temperature111/"
+rdaDir <- "../results/ptrans-temper/temperature-warm/"
 #rdaDir <- "../results/ptrans-temper/temperature-cool/"
 outDirWenk <- rdaDir
 
 #seeds <- list.files(outDirWenk, pattern='^\\d+$')  ## get the list of seeds ran
 
-seeds <- list.files(outDirWenk, pattern='*rda$')
+seeds <- list.files(outDirWenk, pattern='.*PTrans.*rda$')
 seeds <- unlist(lapply(seeds, function(x) gsub(".*PTrans-([0-9]+).*rda", "\\1", x)))
 
 ptransmodel <- list(
@@ -247,8 +247,8 @@ for (i in 1:(ncol(xsim)-1)) {
   mtext(compnames[i], cex=2)
   polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
           col = "skyblue", border = NA)
-  lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
-  lines(times, ourEst, col="forestgreen", lwd=3)
+  lines(times, xdesolveTRUE[,1+i], col="red", lwd=0.5)
+  lines(times, ourEst, col="forestgreen", lwd=0.5)
 }
 # par(mar=rep(0,4))
 # plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
