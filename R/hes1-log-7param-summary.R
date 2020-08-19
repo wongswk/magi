@@ -11,9 +11,9 @@ subdirs <- c(
 
 subdirs <- c(
   "../results/for_paper/7param//variablephi-notemper",
-  "../results/for_paper/7param//variablephi-heating"
+  # "../results/for_paper/7param//variablephi-heating",
   # "../results/for_paper/7param//variablephi-cool-0p33-warmstart",
-  # "../results/for_paper/7param//variablephi-cool-0p33-warmstart-updatephi"
+  "../results/for_paper/7param//variablephi-cool-0p33-warmstart-updatephi"
 )
 
 all_files <- lapply(subdirs, list.files)
@@ -592,7 +592,7 @@ if(summarize_ramsey){
   ramsayXdesolvePM <- sapply(ramsayXdesolvePM, identity, simplify = "array")
   
   pdf(width = 20, height = 5, file=paste0(rdaDir, "/posteriorExpxHes1Ramsay.pdf"))
-  par(mfrow=c(1, ncol(xsim)+1))
+  layout(rbind(c(1,2,3,4), c(5,5,5,5)), heights = c(5,1))
   
   matplot(xtrue[, "time"], exp(xtrue[, -1]), type="l", lty=1, col=c(4,6,"goldenrod1"), xlab="time", ylab=NA)
   matplot(xsim.obs$time, exp(xsim.obs[,-1]), type="p", col=c(4,6,"goldenrod1"), pch=20, add = TRUE)
@@ -623,17 +623,16 @@ if(summarize_ramsey){
     plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
     mtext(compnames[i], cex=1.5)
     polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
-            col = "skyblue", border = "skyblue", lty = 1, density = 10, angle = -45)
+            col = "skyblue", border = NA)
     
     lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
     lines(times, ourEst, col="forestgreen", lwd=3)
   }
   par(mar=rep(0,4))
   plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
-  legend("center", c("truth",  "median reconstructed trajectory", 
-                     "CI on reconstructed trajectory"), lty=c(1,1,0), lwd=c(4,3,0),
-         col = c("red", "forestgreen", NA), density=c(NA, NA, 40), fill=c(0, 0, "skyblue"),
-         border=c(0, 0, "skyblue"), angle=c(NA,NA,-45), x.intersp=c(2.5,2.5, 0),  bty = "n", cex=1.8)
+  legend("center", c("truth", "median of all inferred trajectories", "95% interval from the 2.5 and 97.5 percentile of all inferred trajectories"), lty=c(1,1,0), lwd=c(4,3,0),
+         col = c("red", "forestgreen", NA), fill=c(0, 0,"skyblue"), text.width=c(0, 0.4, 0.05), bty = "n",
+         border=c(0, 0, "skyblue"), pch=c(NA, NA, 15), cex=1.8, horiz=TRUE)  
   dev.off()
   sink()
 }
