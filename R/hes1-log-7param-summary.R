@@ -594,11 +594,11 @@ if(summarize_ramsey){
   pdf(width = 20, height = 5, file=paste0(rdaDir, "/posteriorExpxHes1Ramsay.pdf"))
   layout(rbind(c(1,2,3,4), c(5,5,5,5)), heights = c(5,1))
   
-  matplot(xtrue[, "time"], exp(xtrue[, -1]), type="l", lty=1, col=c(4,6,"goldenrod1"), xlab="time", ylab=NA)
-  matplot(xsim.obs$time, exp(xsim.obs[,-1]), type="p", col=c(4,6,"goldenrod1"), pch=20, add = TRUE)
+  matplot(xtrue[, "time"], exp(xtrue[, -1]), type="l", lty=1, col=c(4,6,"grey50"), xlab="time", ylab=NA)
+  matplot(xsim.obs$time, exp(xsim.obs[,-1]), type="p", col=c(4,6,"grey50"), pch=20, add = TRUE)
   mtext('sample observations', cex=1.5)
   legend("topright", c("true P", "true M", "true H", "observed P", "observed M"), 
-         lty=c(1,1,1,NA,NA), pch=c(NA,NA,NA,20,20), col=c(4,6,"goldenrod1"), cex=1.5)
+         lty=c(1,1,1,NA,NA), pch=c(NA,NA,NA,20,20), col=c(4,6,"grey50"), cex=1.5)
   
   id <- seq(1, dim(ramsayXdesolvePM)[1], by=50)
   xdesolveTRUE <- deSolve::ode(y = pram.true$x0, times = times, func = odemodel$modelODE, parms = pram.true$theta)
@@ -621,7 +621,11 @@ if(summarize_ramsey){
     times <- xdesolveTRUE[,1]
     
     plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
-    mtext(compnames[i], cex=1.5)
+    if (i == 3){
+      mtext(paste(compnames[i], "component (Unobserved)"), cex=1.5)  
+    }else{
+      mtext(paste(compnames[i], "component (Partially Observed)"), cex=1.5)  
+    }
     polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
             col = "skyblue", border = NA)
     

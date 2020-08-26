@@ -117,7 +117,7 @@ for (updateDir in subdirs){
     
     plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
     if (i == 3){
-      mtext(paste(compnames[i], "component (Hidden)"), cex=1.5)  
+      mtext(paste(compnames[i], "component (Unobserved)"), cex=1.5)  
     }else{
       mtext(paste(compnames[i], "component (Partially Observed)"), cex=1.5)  
     }
