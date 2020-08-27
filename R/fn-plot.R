@@ -2,6 +2,8 @@ library(gpds)
 
 load("../results-from-backup/compare-withRamsay.rda")
 
+showBlackMedian <- FALSE
+
 ####### Recalculate RMSE against true trajectory (load compare.rda first)
 rowId <- sapply(xsim.obs$time, function(x) which(abs(x-xtrue$time) < 1e-6))
 for (i in 1:length(ours)) {
@@ -51,7 +53,9 @@ for (i in 1:(ncol(xsim)-1)) {
   polygon(c(times, rev(times)), c(ourUB[,i], rev(ourLB[,i])),
           col = "grey80", border = NA)
   lines(times, ours[[1]]$xdesolveTRUE[,1+i], col="red", lwd=4)
-  lines(times, ourMed[,i], lwd=3)
+  if(showBlackMedian){
+    lines(times, ourMed[,i], lwd=3)
+  }
   if(i==1){
     mtext("V", cex=2)
   }else{
@@ -76,7 +80,10 @@ for (i in 1:(ncol(xsim)-1)) {
   polygon(c(times, rev(times)), c(RamsayUB[,i], rev(RamsayLB[,i])),
           col = "grey80", border = NA)
   lines(times, Ramsay[[1]]$xdesolveTRUE[,1+i], col="red", lwd=1)
-  lines(times, RamsayMed[,i])
+  if(showBlackMedian){
+    lines(times, RamsayMed[,i])
+  }
+  
   if(i==1){
     mtext("V", cex=2)
   }else{
@@ -101,7 +108,9 @@ for (i in 1:(ncol(xsim)-1)) {
   polygon(c(times, rev(times)), c(WenkUB[,i], rev(WenkLB[,i])),
           col = "grey80", border = NA)
   lines(times, Wenk[[1]]$xdesolveTRUE[,1+i], col="red", lwd=4)
-  lines(times, WenkMed[,i], lwd=3)
+  if(showBlackMedian){
+    lines(times, WenkMed[,i], lwd=3)  
+  }
   if(i==1){
     mtext("V", cex=2)
   }else{
@@ -115,9 +124,15 @@ dev.off()
 pdf(width = 20, height = 1.2, file=paste0(outDirWenk, "legendGrey.pdf"))
 par(mar=rep(0,4))
 plot(c(0,1), c(0,1) ,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
-legend("center", c("truth", "median of all reconstructed trajectories", "95% interval from the 2.5 and 97.5 percentile of all reconstructed trajectories"), lty=c(1,1,0), lwd=c(4,3,0),
-       col = c("red", "black", NA), fill=c(0, 0, "grey80"), pch=c(NA, NA, 15), x.intersp=c(2.5,2.5,0),
-       border=c(0, 0, "grey80"), bty = "n", cex=1.8)
+if(showBlackMedian){
+  legend("center", c("truth", "median of all reconstructed trajectories", "95% interval from the 2.5 and 97.5 percentile of all reconstructed trajectories"), lty=c(1,1,0), lwd=c(4,3,0),
+         col = c("red", "black", NA), fill=c(0, 0, "grey80"), pch=c(NA, NA, 15), x.intersp=c(2.5,2.5,0),
+         border=c(0, 0, "grey80"), bty = "n", cex=1.8)
+}else{
+  legend("center", c("truth", "95% interval from the 2.5 and 97.5 percentile of all reconstructed trajectories"), lty=c(1,0), lwd=c(4,0),
+         col = c("red", NA), fill=c(0, "grey80"), pch=c(NA, 15), x.intersp=c(2.5,0),
+         border=c(0, "grey80"), bty = "n", cex=1.8)
+}
 dev.off()
 
 
@@ -133,7 +148,9 @@ for (i in 1:(ncol(xsim)-1)) {
   polygon(c(times, rev(times)), c(DondelUB[,i], rev(DondelLB[,i])),
           col = "grey80", border = NA)
   lines(times, Dondel[[1]]$xdesolveTRUE[,1+i], col="red", lwd=4)
-  lines(times, DondelMed[,i], lwd=3)
+  if(showBlackMedian){
+    lines(times, DondelMed[,i], lwd=3)
+  }
   if(i==1){
     mtext("V", cex=2)
   }else{
