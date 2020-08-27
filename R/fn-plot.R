@@ -188,6 +188,40 @@ rmse_est <- rbind(
   apply(RamsayPostTheta[,1,] - pram.true$theta, 1, function(x) sqrt(mean(x^2)))
 )
 
+hist_breaks = list(
+  a=seq(0.14, 0.38, 0.02),
+  b=seq(0.0, 0.7, 0.05),
+  c=seq(1.5, 3.5, 0.1)
+)
+layout(t(1:3))
+for(j in 1:3){
+  hist(c(oursPostTheta[j,1,], WenkPostTheta[j,1,], DondelPostTheta[j,1,]), breaks = hist_breaks[[j]], probability = TRUE, main=letters[j], cex.main=2, xlab=NA)
+  abline(v=pram.true$theta[j], col=2, lwd=4)
+}
+
+pdf(width = 20, height = 5, file=paste0(outDirWenk, "plotThetaOurs.pdf"))
+layout(t(1:3))
+for(j in 1:3){
+  hist(oursPostTheta[j,1,], breaks = hist_breaks[[j]], probability = TRUE, main=letters[j], cex.main=2, xlab=NA)
+  abline(v=pram.true$theta[j], col=2, lwd=4)
+}
+dev.off()
+pdf(width = 20, height = 5, file=paste0(outDirWenk, "plotThetaWenk.pdf"))
+layout(t(1:3))
+for(j in 1:3){
+  hist(WenkPostTheta[j,1,], breaks = hist_breaks[[j]], probability = TRUE, main=letters[j], cex.main=2, xlab=NA)
+  abline(v=pram.true$theta[j], col=2, lwd=4)
+}
+dev.off()
+pdf(width = 20, height = 5, file=paste0(outDirWenk, "plotThetaDondel.pdf"))
+layout(t(1:3))
+for(j in 1:3){
+  hist(DondelPostTheta[j,1,], breaks = hist_breaks[[j]], probability = TRUE, main=letters[j], cex.main=2, xlab=NA)
+  abline(v=pram.true$theta[j], col=2, lwd=4)
+}
+dev.off()
+
+
 
 digit_precision = 2
 printr <- function(x, precision=digit_precision) format(round(x, precision), nsmall=precision)
@@ -363,4 +397,46 @@ plot(c(0,1), c(0,1) ,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot 
 text(0.5, 0.5, "Dondelinger", cex=2, font=2)
 plot(c(0,1), c(0,1) ,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
 text(0.5, 0.5, "Ramsay", cex=2, font=2)
+dev.off()
+
+
+# update with FN-tempered result -----------------------------------
+load("../results/fn-temper/liX-temperature441/phi1max100y-noExoSigma-original-100seed/fn-ours-all.rda")
+
+print(rdaDir)
+rmse.table <- rbind( round(apply(sapply(ours, function(x) x$rmseOdePM), 1, mean), digits=4))
+print(rmse.table)
+
+# Make the figures comparing Wenk and Ours using ODE solver results
+# use the same axis limits for both methods for easier visual comparison
+ylim_lower <- c(-2.5,-1.5)
+ylim_upper <- c(2.5,1.5)
+# names of components to use on y-axis label
+compnames <- c("V", "R")
+
+desolveOurs <- sapply(ours, function(x) x$xdesolvePM[,-1], simplify = "array")
+ourLB <- apply(desolveOurs, c(1,2), function(x) quantile(x, 0.025))
+ourMed <- apply(desolveOurs, c(1,2), function(x) quantile(x, 0.5))
+ourUB <- apply(desolveOurs, c(1,2), function(x) quantile(x, 0.975))
+
+times <- ours[[1]]$xdesolveTRUE[,1]
+
+pdf(width = 20, height = 5, file=paste0(outDirWenk, "plotOurs.pdf"))
+par(mfrow=c(1, ncol(xsim)-1))
+for (i in 1:(ncol(xsim)-1)) {
+  plot(times, ours[[1]]$xdesolveTRUE[,1+i], type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+  polygon(c(times, rev(times)), c(ourUB[,i], rev(ourLB[,i])),
+          col = "grey80", border = NA)
+  lines(times, ours[[1]]$xdesolveTRUE[,1+i], col="red", lwd=4)
+  # lines(times, ourMed[,i])
+}
+dev.off()
+
+oursPostTheta <- sapply(oursPostTheta, identity, simplify = "array")
+pdf(width = 20, height = 5, file=paste0(outDirWenk, "plotThetaOurs.pdf"))
+layout(t(1:3))
+for(j in 1:3){
+  hist(oursPostTheta[j,1,], breaks = hist_breaks[[j]], probability = TRUE, main=letters[j], cex.main=2, xlab=NA)
+  abline(v=pram.true$theta[j], col=2, lwd=4)
+}
 dev.off()
