@@ -195,9 +195,11 @@ rmse.table <- round(apply(sapply(Dondel, function(x) x$rmseOdePM), 1, mean), dig
 
 # Make the figures comparing Wenk and Ours using ODE solver results
 # use the same axis limits for both methods for easier visual comparison
+
+showBlackMedian <- FALSE
+
 ylim_lower <- c(0,0,0.3,0,0)
-#ylim_upper <- c(1, 0.25, 1, 0.4, 0.65)
-ylim_upper <- c(1, 1, 1.3, 0.4, 0.65)
+ylim_upper <- c(1, 0.5, 1.1, 0.4, 0.65)
 # names of components to use on y-axis label
 compnames <- c("S", "Sd", "R", "RS", "Rpp")
 
@@ -229,11 +231,14 @@ times <- Dondel[[1]]$xdesolveTRUE[,1]
 pdf(width = 20, height = 5, file=paste0(outDirWenk, "plotDondel.pdf"))
 par(mfrow=c(1, ncol(xsim)-1))
 for (i in 1:(ncol(xsim)-1)) {
-  plot(times, Dondel[[1]]$xdesolveTRUE[,1+i], type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+  plot(times, Dondel[[1]]$xdesolveTRUE[,1+i], type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]), cex.axis=1.2)
   polygon(c(times, rev(times)), c(DondelUB[,i], rev(DondelLB[,i])),
           col = "grey80", border = NA)
   lines(times, Dondel[[1]]$xdesolveTRUE[,1+i], col="red", lwd=1)
-  lines(times, DondelMed[,i])
+  if(showBlackMedian){
+    lines(times, DondelMed[,i])
+  }
+  mtext(compnames[i], cex=2)
 }
 dev.off()
 

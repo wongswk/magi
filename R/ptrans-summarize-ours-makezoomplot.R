@@ -3,15 +3,13 @@ library(gpds)
 
 config <- list()
 config$modelName <- "PTrans"
-config$noise <- rep(0.01, 5)
-#rdaDir <- "../DynSysResults/PTrans-noise0.01/results/"   ## where ours & Dondel rda saved
-#outDirWenk <- "../DynSysResults/PTrans-noise0.01/"   ## where all the seeds are in separate folders with Wenk's output
+config$noise <- rep(0.001, 5)
 
-# rdaDir <- "../results/ptrans-temper/temperature111/"
+#rdaDir <- "../results/ptrans-temper/temperature111/"
 #rdaDir <- "../results/ptrans-temper/temperature-warm/"
 #rdaDir <- "../results/ptrans-temper/temperature-cool/"
-#rdaDir <- "../results/ptrans-temper/low-noise-estphitwice/"
-rdaDir <- "../results/ptrans-temper/high-noise-estphitwice/"
+rdaDir <- "../results/ptrans-temper/low-noise-estphi/"
+#rdaDir <- "../results/ptrans-temper/high-noise-estphi/"
 outDirWenk <- rdaDir
 
 #seeds <- list.files(outDirWenk, pattern='^\\d+$')  ## get the list of seeds ran
@@ -185,8 +183,9 @@ rmse.table <- round(apply(sapply(ours, function(x) x$rmseOdePM), 1, mean), digit
 
 # Make the figures comparing Wenk and Ours using ODE solver results
 # use the same axis limits for both methods for easier visual comparison
+showBlackMedian <- FALSE
 ylim_lower <- c(0,0,0.3,0,0)
-ylim_upper <- c(1, 0.25, 1, 0.4, 0.65)
+ylim_upper <- c(1, 0.5, 1.1, 0.4, 0.65)
 # names of components to use on y-axis label
 compnames <- c("S", "Sd", "R", "RS", "Rpp")
 
@@ -200,11 +199,14 @@ times <- ours[[1]]$xdesolveTRUE[,1]
 pdf(width = 20, height = 5, file=paste0(outDirWenk, "plotOurs.pdf"))
 par(mfrow=c(1, ncol(xsim)-1))
 for (i in 1:(ncol(xsim)-1)) {
-  plot(times, ours[[1]]$xdesolveTRUE[,1+i], type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+  plot(times, ours[[1]]$xdesolveTRUE[,1+i], type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]), cex.axis=1.2)
   polygon(c(times, rev(times)), c(ourUB[,i], rev(ourLB[,i])),
           col = "grey80", border = NA)
   lines(times, ours[[1]]$xdesolveTRUE[,1+i], col="red", lwd=1)
-  lines(times, ourMed[,i])
+  if(showBlackMedian){
+    lines(times, ourMed[,i])
+  }
+  mtext(compnames[i], cex=2)
 }
 dev.off()
 
