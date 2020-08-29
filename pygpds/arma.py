@@ -82,11 +82,11 @@ def solve_gpds(
         verbose = True):
 
     sigmaExogenous = ArmaVector(np.ndarray(0)) if sigmaExogenous.size == 0 else ArmaVector(sigmaExogenous)
-    phiExogenous = ArmaMatrix(np.ndarray([0, 0])) if phiExogenous.size == 0 else ArmaMatrix(phiExogenous)
-    xInitExogenous = ArmaMatrix(np.ndarray([0, 0])) if xInitExogenous.size == 0 else ArmaMatrix(xInitExogenous)
+    phiExogenous = ArmaMatrix(np.ndarray([0, 0])) if phiExogenous.size == 0 else ArmaMatrix(phiExogenous).t()
+    xInitExogenous = ArmaMatrix(np.ndarray([0, 0])) if xInitExogenous.size == 0 else ArmaMatrix(xInitExogenous).t()
     thetaInitExogenous = ArmaVector(np.ndarray(0)) if thetaInitExogenous.size == 0 else ArmaVector(thetaInitExogenous)
-    muExogenous = ArmaMatrix(np.ndarray([0, 0])) if muExogenous.size == 0 else ArmaMatrix(muExogenous)
-    dotmuExogenous=ArmaMatrix(np.ndarray([0, 0])) if dotmuExogenous.size == 0 else ArmaMatrix(dotmuExogenous)
+    muExogenous = ArmaMatrix(np.ndarray([0, 0])) if muExogenous.size == 0 else ArmaMatrix(muExogenous).t()
+    dotmuExogenous=ArmaMatrix(np.ndarray([0, 0])) if dotmuExogenous.size == 0 else ArmaMatrix(dotmuExogenous).t()
 
     result_solved = solveGpdsPy(
         yFull=ArmaMatrix(yFull).t(),

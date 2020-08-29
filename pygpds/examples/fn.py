@@ -44,10 +44,14 @@ ydataR = [0.94, 0.87, 0.62, 0.44,
           -0.3, -0.53, -0.5, -0.35, -1.03, -1.02, -0.6, -0.61, -0.05, 0.31,
           0.82, 0.85, 0.64, 1.31, 0.78, 0.47, 0.35]
 ydata = np.stack([np.array(ydataV), np.array(ydataR)], axis=1)
-tvecFull = np.linspace(0, 20, num=81)
-yFull = np.ndarray([81, 2])
+tvecFull = np.linspace(0, 20, num=161)
+yFull = np.ndarray([161, 2])
 yFull.fill(np.nan)
-yFull[np.linspace(0, 80, num=41).astype(int), :] = ydata
+yFull[np.linspace(0, 160, num=41).astype(int), :] = ydata
+
+xInitExogenous = np.zeros_like(yFull)
+for j in range(2):
+    xInitExogenous[:, j] = np.interp(range(161), np.linspace(0, 160, num=41), ydata[:, j])
 
 result = solve_gpds(
     yFull,
@@ -55,23 +59,23 @@ result = solve_gpds(
     tvecFull,
     sigmaExogenous = np.array([]),
     phiExogenous = np.array([[]]),
-    xInitExogenous = np.array([[]]),
+    xInitExogenous = xInitExogenous,
     thetaInitExogenous = np.array([]),
     muExogenous = np.array([[]]),
     dotmuExogenous = np.array([[]]),
-    priorTemperatureLevel = 1.0,
-    priorTemperatureDeriv = 1.0,
+    priorTemperatureLevel = yFull.shape[0]/ydata.shape[0],
+    priorTemperatureDeriv = yFull.shape[0]/ydata.shape[0],
     priorTemperatureObs = 1.0,
     kernel = "generalMatern",
     nstepsHmc = 100,
     burninRatioHmc = 0.5,
-    niterHmc = 1000,
-    stepSizeFactorHmc = 0.1,
+    niterHmc = 20001,
+    stepSizeFactorHmc = 0.06,
     nEpoch = 1,
     bandSize = 20,
     useFrequencyBasedPrior = True,
     useBand = True,
-    useMean = False,
+    useMean = True,
     useScalerSigma = False,
     useFixedSigma = False,
     verbose = True)
