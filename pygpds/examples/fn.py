@@ -56,6 +56,7 @@ ydataTruth = [[-1, -0.20925154659207, 1.83568745612659,
                0.229726996465537, 0.514243895516946, 0.757337477682966, 0.949110759701012,
                1.05705510574894, 0.934260823997242, 0.611444769682256, 0.304475451953246
                ]]
+ydataTruth = np.array(ydataTruth).transpose()
 
 ydataV = [-0.86, -0.26, 2.14, 1.94, 1.63, 1.75,
           1.92, 1.39, 1.29, 1.59, 0.63, 0.78, -1.59, -1.92, -1.56, -1.58,
@@ -68,6 +69,7 @@ ydataR = [0.94, 0.87, 0.62, 0.44,
           -0.3, -0.53, -0.5, -0.35, -1.03, -1.02, -0.6, -0.61, -0.05, 0.31,
           0.82, 0.85, 0.64, 1.31, 0.78, 0.47, 0.35]
 ydata = np.stack([np.array(ydataV), np.array(ydataR)], axis=1)
+tvecObs = np.linspace(0, 20, num=41)
 tvecFull = np.linspace(0, 20, num=161)
 yFull = np.ndarray([161, 2])
 yFull.fill(np.nan)
@@ -75,7 +77,7 @@ yFull[np.linspace(0, 160, num=41).astype(int), :] = ydata
 
 xInitExogenous = np.zeros_like(yFull)
 for j in range(2):
-    xInitExogenous[:, j] = np.interp(range(161), np.linspace(0, 160, num=41), ydata[:, j])
+    xInitExogenous[:, j] = np.interp(tvecFull, tvecObs, ydata[:, j])
 
 result = solve_gpds(
     yFull,
@@ -108,3 +110,27 @@ print(result['phiUsed'])
 print(result['samplesCpp'])
 
 # verify trajectory RMSE
+samplesCpp = result['samplesCpp']
+llikId = 0
+xId = range(np.max(llikId)+1, np.max(llikId)+yFull.size+1)
+thetaId = range(np.max(xId)+1, np.max(xId)+3+1)
+sigmaId = range(np.max(thetaId)+1, np.max(thetaId)+yFull.shape[1]+1)
+
+burnin = int(20001*0.5)
+xsampled = samplesCpp[xId, (burnin+1):]
+xsampled = xsampled.reshape([yFull.shape[1], yFull.shape[0], -1])
+
+from matplotlib import pyplot as plt
+for j in range(yFull.shape[1]):
+    plt.plot(tvecFull, xsampled[j, :, -1])  # one single sample plot
+
+inferred_trajectory = np.mean(xsampled, axis=-1)
+for j in range(yFull.shape[1]):
+    plt.plot(tvecFull, inferred_trajectory[j, :])  # inferred trajectory plot
+
+
+inferred_trajectory_orig_time = np.zeros_like(ydataTruth)
+for j in range(yFull.shape[1]):
+    inferred_trajectory_orig_time[:, j] = np.interp(tvecObs, tvecFull, inferred_trajectory[j, :])
+trajectory_rmse = np.sqrt(np.mean((inferred_trajectory_orig_time - ydataTruth)**2, axis=0))
+np.savetxt("trajectory_rmse.csv", trajectory_rmse)
