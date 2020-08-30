@@ -110,6 +110,7 @@ ydataTruth = [[1, 0.588261834720057, 0.405587021811379,
                0.604413810939102, 0.579397235952683, 0.48623804196906, 0.387397305099487,
                0.297210421739746, 0.218936724748142, 0.103552056465885, 0.0410604925007539
                ]]
+ydataTruth = np.array(ydataTruth).transpose()
 
 ydata = [[1.00003, 0.5887, 0.40509, 0.23316, 0.18567,
           0.12149, 0.06848, 0.024, 0.00674, 0.00109, 0.00044, -0.00099,
@@ -241,7 +242,7 @@ print(result['samplesCpp'])
 samplesCpp = result['samplesCpp']
 llikId = 0
 xId = range(np.max(llikId)+1, np.max(llikId)+yFull.size+1)
-thetaId = range(np.max(xId)+1, np.max(xId)+3+1)
+thetaId = range(np.max(xId)+1, np.max(xId)+6+1)
 sigmaId = range(np.max(thetaId)+1, np.max(thetaId)+yFull.shape[1]+1)
 
 burnin = int(20001*0.5)
