@@ -87,6 +87,7 @@ ydataTruth = [[0.363653040293724, 0.577225047385934, 1.02000277711257,
                -0.366323730542059, -0.611131674472768, -0.674872789806283, -0.614440501124868,
                -0.461879564657812, -0.234159461824482, 0.062191976517597, 0.42999485046593,
                0.882873661322661, 1.4467562116298, 2.13585225078904]]
+ydataTruth = np.array(ydataTruth).transpose()
 
 
 ydataP = [0.74, 0.78, 1.86, 1.86, 2.2, 1.93, 1.47, 1.03, 0.36,
@@ -132,3 +133,25 @@ print(result['phiUsed'])
 print(result['samplesCpp'])
 
 # verify trajectory RMSE
+samplesCpp = result['samplesCpp']
+llikId = 0
+xId = range(np.max(llikId)+1, np.max(llikId)+yFull.size+1)
+thetaId = range(np.max(xId)+1, np.max(xId)+3+1)
+sigmaId = range(np.max(thetaId)+1, np.max(thetaId)+yFull.shape[1]+1)
+
+burnin = int(20001*0.5)
+xsampled = samplesCpp[xId, (burnin+1):]
+xsampled = xsampled.reshape([yFull.shape[1], yFull.shape[0], -1])
+
+from matplotlib import pyplot as plt
+for j in range(yFull.shape[1]):
+    plt.plot(tvecFull, xsampled[j, :, -1])  # one single sample plot
+
+inferred_trajectory = np.mean(xsampled, axis=-1)
+for j in range(yFull.shape[1]):
+    plt.plot(tvecFull, inferred_trajectory[j, :])  # inferred trajectory plot
+
+
+inferred_trajectory_orig_time = inferred_trajectory.transpose()
+trajectory_rmse = np.sqrt(np.mean((inferred_trajectory_orig_time - ydataTruth)**2, axis=0))
+np.savetxt("trajectory_rmse.csv", trajectory_rmse)
