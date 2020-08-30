@@ -11,10 +11,10 @@ def fOde(theta, x):
     RS = x[:, 3]
     RPP = x[:, 4]
 
-    resultdt[:, 0] = -theta[0]*S - theta[1] * S @ R + theta[2] * RS
+    resultdt[:, 0] = -theta[0]*S - theta[1] * S * R + theta[2] * RS
     resultdt[:, 1] = theta[0]*S
-    resultdt[:, 2] = -theta[1]*S@R + theta[2]*RS + theta[4] * RPP / (theta[5]+RPP)
-    resultdt[:, 3] = theta[1]*S@R - theta[2]* RS - theta[3]*RS
+    resultdt[:, 2] = -theta[1]*S*R + theta[2]*RS + theta[4] * RPP / (theta[5]+RPP)
+    resultdt[:, 3] = theta[1]*S*R - theta[2]* RS - theta[3]*RS
     resultdt[:, 4] = theta[3]*RS - theta[4] * RPP / (theta[5]+RPP)
 
     return resultdt
@@ -38,7 +38,7 @@ def fOdeDx(theta, x):
     resultDx[:, 0, 2] = -theta[1]*R
     resultDx[:, 2, 2] = -theta[1]*S
     resultDx[:, 3, 2].fill(theta[2])
-    resultDx[:, 4, 2] =  theta[4] * theta[5] /  np.square(theta[5] + RPP)
+    resultDx[:, 4, 2] =  theta[4] * theta[5] / np.square(theta[5] + RPP)
 
     resultDx[:, 0, 3] = theta[1]*R
     resultDx[:, 2, 3] = theta[1]*S
@@ -60,17 +60,17 @@ def fOdeDtheta(theta, x):
     RPP = x[:, 4]
 
     resultDtheta[:, 0, 0] = -S
-    resultDtheta[:, 1, 0] = -S@R
+    resultDtheta[:, 1, 0] = -S*R
     resultDtheta[:, 2, 0] = RS
 
     resultDtheta[:, 0, 1] = S
 
-    resultDtheta[:, 1, 2] = -S@R
+    resultDtheta[:, 1, 2] = -S*R
     resultDtheta[:, 2, 2] = RS
     resultDtheta[:, 4, 2] = RPP / (theta[5]+RPP)
     resultDtheta[:, 5, 2] = -theta[4] * RPP / np.square(theta[5]+RPP)
 
-    resultDtheta[:, 1, 3] = S@R
+    resultDtheta[:, 1, 3] = S*R
     resultDtheta[:, 2, 3] = -RS
     resultDtheta[:, 3, 3] = -RS
 
