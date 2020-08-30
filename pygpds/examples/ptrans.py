@@ -131,7 +131,6 @@ ydata = np.array(ydata).transpose()
 tvecObs = [0, 1, 2, 4, 5, 7, 10, 15, 20, 30, 40, 50, 60, 80, 100]
 yFillI0 = np.ndarray([101, 5])
 yFillI0.fill(np.nan)
-yFillI0[tvecObs, :] = ydata
 tvecI0 = np.linspace(0, 100, num=101)
 for j in range(5):
     yFillI0[:, j] = np.interp(tvecI0, tvecObs, ydata[:, j])
@@ -139,8 +138,9 @@ for j in range(5):
 
 yFull = np.ndarray([201, 5])
 yFull.fill(np.nan)
-yFull[tvecObs, :] = ydata
-tvecFull = np.linspace(0, 200, num=201)
+tvecFull = np.linspace(0, 100, num=201)
+yFull[[x in tvecObs for x in tvecFull], :] = ydata
+
 xInitExogenous = np.zeros_like(yFull)
 for j in range(5):
     xInitExogenous[:, j] = np.interp(tvecFull, tvecObs, ydata[:, j])
@@ -238,3 +238,28 @@ print(result['phiUsed'])
 print(result['samplesCpp'])
 
 # verify trajectory RMSE
+samplesCpp = result['samplesCpp']
+llikId = 0
+xId = range(np.max(llikId)+1, np.max(llikId)+yFull.size+1)
+thetaId = range(np.max(xId)+1, np.max(xId)+3+1)
+sigmaId = range(np.max(thetaId)+1, np.max(thetaId)+yFull.shape[1]+1)
+
+burnin = int(20001*0.5)
+xsampled = samplesCpp[xId, (burnin+1):]
+xsampled = xsampled.reshape([yFull.shape[1], yFull.shape[0], -1])
+
+from matplotlib import pyplot as plt
+for j in range(yFull.shape[1]):
+    plt.plot(tvecFull, xsampled[j, :, -1])  # one single sample plot
+
+inferred_trajectory = np.mean(xsampled, axis=-1)
+for j in range(yFull.shape[1]):
+    plt.plot(tvecFull, inferred_trajectory[j, :])  # inferred trajectory plot
+
+
+inferred_trajectory_orig_time = np.zeros_like(ydataTruth)
+for j in range(yFull.shape[1]):
+    inferred_trajectory_orig_time[:, j] = np.interp(tvecObs, tvecFull, inferred_trajectory[j, :])
+
+trajectory_rmse = np.sqrt(np.mean((inferred_trajectory_orig_time - ydataTruth)**2, axis=0))
+np.savetxt("trajectory_rmse.csv", trajectory_rmse)
