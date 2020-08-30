@@ -142,6 +142,8 @@ sigmaId = range(np.max(thetaId)+1, np.max(thetaId)+yFull.shape[1]+1)
 burnin = int(20001*0.5)
 xsampled = samplesCpp[xId, (burnin+1):]
 xsampled = xsampled.reshape([yFull.shape[1], yFull.shape[0], -1])
+thetaSampled = samplesCpp[thetaId, (burnin+1):]
+sigmaSampled = samplesCpp[sigmaId, (burnin+1):]
 
 from matplotlib import pyplot as plt
 for j in range(yFull.shape[1]):
@@ -153,5 +155,5 @@ for j in range(yFull.shape[1]):
 
 
 inferred_trajectory_orig_time = inferred_trajectory.transpose()
-trajectory_rmse = np.sqrt(np.mean((inferred_trajectory_orig_time - ydataTruth)**2, axis=0))
+trajectory_rmse = np.sqrt(np.mean((np.exp(inferred_trajectory_orig_time) - np.exp(ydataTruth))**2, axis=0))
 np.savetxt("trajectory_rmse.csv", trajectory_rmse)
