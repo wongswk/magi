@@ -94,6 +94,10 @@ ydataP = [0.74, 0.78, 1.86, 1.86, 2.2, 1.93, 1.47, 1.03, 0.36,
           0.88, 1.68, 1.97, 2.15, 1.85, 1.8, 1.47, 0.71]
 ydataM = [0.91, 0.82, 0.71, -0.11, 0.08, -0.45, -0.05, 0.2,
           0.88, 1.09, 0.3, 0.35, 0.25, -0.23, -0.51, -0.09]
+
+ydataP = ydataTruth[np.linspace(0, 32, num=17).astype(int), 0] + np.random.normal(0, 0.15, 17)
+ydataM = ydataTruth[np.linspace(1, 31, num=16).astype(int), 0] + np.random.normal(0, 0.15, 16)
+
 yFull = np.ndarray([33, 3])
 yFull.fill(np.nan)
 yFull[np.linspace(0, 32, num=17).astype(int), 0] = ydataP

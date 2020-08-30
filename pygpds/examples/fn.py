@@ -68,6 +68,10 @@ ydataR = [0.94, 0.87, 0.62, 0.44,
           -0.55, 0.01, 0.43, 0.4, 0.57, 0.64, 1.26, 1.09, 0.46, 0.13, 0.14,
           -0.3, -0.53, -0.5, -0.35, -1.03, -1.02, -0.6, -0.61, -0.05, 0.31,
           0.82, 0.85, 0.64, 1.31, 0.78, 0.47, 0.35]
+
+ydataV = ydataTruth[:, 0] + np.random.normal(0, 0.2, ydataTruth[:, 0].size)
+ydataR = ydataTruth[:, 1] + np.random.normal(0, 0.2, ydataTruth[:, 1].size)
+
 ydata = np.stack([np.array(ydataV), np.array(ydataR)], axis=1)
 tvecObs = np.linspace(0, 20, num=41)
 tvecFull = np.linspace(0, 20, num=161)
