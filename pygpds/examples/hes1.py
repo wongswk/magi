@@ -136,7 +136,7 @@ print(result['samplesCpp'])
 samplesCpp = result['samplesCpp']
 llikId = 0
 xId = range(np.max(llikId)+1, np.max(llikId)+yFull.size+1)
-thetaId = range(np.max(xId)+1, np.max(xId)+3+1)
+thetaId = range(np.max(xId)+1, np.max(xId)+7+1)
 sigmaId = range(np.max(thetaId)+1, np.max(thetaId)+yFull.shape[1]+1)
 
 burnin = int(20001*0.5)
