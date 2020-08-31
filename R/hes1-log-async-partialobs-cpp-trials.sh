@@ -62,3 +62,30 @@ for dummy in {1..3}; do
   Rscript R/ptrans-temper.R
   sleep 180
 done
+
+
+cd ~/Workspace/DynamicSys/dynamic-systems/pygpds
+for dummy in {1..3}; do
+  for i in {1..60}; do
+    PYTHONPATH=$(pwd) python examples/fn.py &
+  done
+  PYTHONPATH=$(pwd) python examples/fn.py
+  sleep 180
+done
+
+
+for dummy in {1..4}; do
+  for i in {1..55}; do
+    PYTHONPATH=$(pwd) python examples/hes1.py &
+  done
+  PYTHONPATH=$(pwd) python examples/hes1.py
+  sleep 180
+done
+
+for dummy in {1..3}; do
+  for i in {1..60}; do
+    Rscript R/hes1-log-clean.R &
+  done
+  Rscript R/hes1-log-clean.R
+  sleep 180
+done
