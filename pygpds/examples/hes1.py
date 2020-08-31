@@ -95,6 +95,8 @@ ydataP = [0.74, 0.78, 1.86, 1.86, 2.2, 1.93, 1.47, 1.03, 0.36,
 ydataM = [0.91, 0.82, 0.71, -0.11, 0.08, -0.45, -0.05, 0.2,
           0.88, 1.09, 0.3, 0.35, 0.25, -0.23, -0.51, -0.09]
 
+SEED = np.random.randint(1, 100000)
+np.random.seed(SEED)
 ydataP = ydataTruth[np.linspace(0, 32, num=17).astype(int), 0] + np.random.normal(0, 0.15, 17)
 ydataM = ydataTruth[np.linspace(1, 31, num=16).astype(int), 0] + np.random.normal(0, 0.15, 16)
 
@@ -160,4 +162,4 @@ for j in range(yFull.shape[1]):
 
 inferred_trajectory_orig_time = inferred_trajectory.transpose()
 trajectory_rmse = np.sqrt(np.mean((np.exp(inferred_trajectory_orig_time) - np.exp(ydataTruth))**2, axis=0))
-np.savetxt("trajectory_rmse.csv", trajectory_rmse)
+np.savetxt("hes1log_trajectory_rmse_seed{}.csv".format(SEED), trajectory_rmse)
