@@ -1,5 +1,6 @@
 import numpy as np
 from arma import ode_system, solve_gpds
+import random
 
 
 def fOde(theta, x):
@@ -69,6 +70,8 @@ ydataR = [0.94, 0.87, 0.62, 0.44,
           -0.3, -0.53, -0.5, -0.35, -1.03, -1.02, -0.6, -0.61, -0.05, 0.31,
           0.82, 0.85, 0.64, 1.31, 0.78, 0.47, 0.35]
 
+SEED = np.random.randint(1, 100000)
+np.random.seed(SEED)
 ydataV = ydataTruth[:, 0] + np.random.normal(0, 0.2, ydataTruth[:, 0].size)
 ydataR = ydataTruth[:, 1] + np.random.normal(0, 0.2, ydataTruth[:, 1].size)
 
@@ -137,4 +140,4 @@ inferred_trajectory_orig_time = np.zeros_like(ydataTruth)
 for j in range(yFull.shape[1]):
     inferred_trajectory_orig_time[:, j] = np.interp(tvecObs, tvecFull, inferred_trajectory[j, :])
 trajectory_rmse = np.sqrt(np.mean((inferred_trajectory_orig_time - ydataTruth)**2, axis=0))
-np.savetxt("trajectory_rmse.csv", trajectory_rmse)
+np.savetxt("trajectory_rmse_seed{}.csv".format(SEED), trajectory_rmse)
