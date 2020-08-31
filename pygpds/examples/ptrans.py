@@ -257,10 +257,5 @@ inferred_trajectory = np.mean(xsampled, axis=-1)
 for j in range(yFull.shape[1]):
     plt.plot(tvecFull, inferred_trajectory[j, :])  # inferred trajectory plot
 
-
-inferred_trajectory_orig_time = np.zeros_like(ydataTruth)
-for j in range(yFull.shape[1]):
-    inferred_trajectory_orig_time[:, j] = np.interp(tvecObs, tvecFull, inferred_trajectory[j, :])
-
-trajectory_rmse = np.sqrt(np.mean((inferred_trajectory_orig_time - ydataTruth)**2, axis=0))
-np.savetxt("trajectory_rmse.csv", trajectory_rmse)
+thetaSampled = samplesCpp[thetaId, (burnin+1):]
+inferred_theta = np.mean(thetaSampled, axis=-1)
