@@ -160,6 +160,8 @@ for j in range(yFull.shape[1]):
     plt.plot(tvecFull, inferred_trajectory[j, :])  # inferred trajectory plot
 
 
-inferred_trajectory_orig_time = inferred_trajectory.transpose()
-trajectory_rmse = np.sqrt(np.mean((np.exp(inferred_trajectory_orig_time) - np.exp(ydataTruth))**2, axis=0))
-np.savetxt("hes1log_trajectory_rmse_seed{}.csv".format(SEED), trajectory_rmse)
+thetaSampled = samplesCpp[thetaId, (burnin+1):]
+inferred_theta = np.mean(thetaSampled, axis=-1)
+np.savetxt("hes1log_inferred_theta_seed{}.csv".format(SEED), inferred_theta)
+np.savetxt("hes1log_inferred_trajectory_seed{}.csv".format(SEED), inferred_trajectory)
+np.savetxt("hes1log_inferred_sigma_seed{}.csv".format(SEED), np.mean(samplesCpp[sigmaId, (burnin+1):], axis=-1))
