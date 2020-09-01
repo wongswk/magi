@@ -12,7 +12,7 @@ if [[ -z "${PROJECT}" ]]; then
 fi
 
 if [[ -z "${CPU}" ]]; then
-    export CPU=$(python -c 'import multiprocessing as mp; print(mp.cpu_count())')
+    export CPU=$(python3 -c 'import multiprocessing as mp; print(mp.cpu_count())')
 fi
 
 cd "$PROJECT"/rgpds || exit 1
