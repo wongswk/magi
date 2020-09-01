@@ -72,9 +72,10 @@ if [ ! -d "include/cppoptlib" ]; then
     cp -r package/CppNumericalSolvers/include/* include/
 fi
 
-
-cd package/Arma_Wrapper
-git checkout 0e5aa1aeb9c8a91962deed4da7e26ac2e7f903c9
-cd $PROJECT
-cp -r package/Arma_Wrapper/include/* pygpds/src/
-cp -r package/Arma_Wrapper/src/* pygpds/src/
+#cd package
+#git clone https://gitlab.com/sangrey/Arma_Wrapper.git
+#cd Arma_Wrapper
+#git checkout 0e5aa1aeb9c8a91962deed4da7e26ac2e7f903c9
+#cd $PROJECT
+#cp -r package/Arma_Wrapper/include/* pygpds/src/
+#cp -r package/Arma_Wrapper/src/* pygpds/src/
