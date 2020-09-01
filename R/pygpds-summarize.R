@@ -135,10 +135,12 @@ for(i in seeds){
   oursPostX[[as.character(i)]]<- inferred_trajectory
   oursPostTheta[[as.character(i)]] <- inferred_theta
   xdesolve <- deSolve::ode(y = inferred_trajectory[1,], times = times, func = modelODE, parms = unlist(inferred_theta))
-  rmse <- sqrt(colMeans((xdesolve[rowId, -1] - xtrue.obs[, -1])^2))
+  rmse <- sqrt(colMeans((exp(xdesolve[rowId, -1]) - exp(xtrue.obs[, -1]))^2))
   oursRMSE[[as.character(i)]] <- rmse
 }
 oursRMSE <- do.call(rbind, oursRMSE)
 oursPostTheta <- do.call(rbind, oursPostTheta)
 colMeans(oursRMSE)
 colMeans(oursPostTheta)
+sqrt(rowMeans((t(oursPostTheta) - theta_true)^2))
+
