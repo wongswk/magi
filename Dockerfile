@@ -5,8 +5,8 @@ WORKDIR $PROJECT_DIR
 
 RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install gcc-6 g++-6 python3-tk python3-pip python3-venv python3-dev ipython3 libblas-dev liblapack-dev gfortran git wget software-properties-common libxml2-dev build-essential libssl-dev libcurl4-openssl-dev rsync -y
 RUN wget https://cmake.org/files/v3.18/cmake-3.18.1-Linux-x86_64.sh && sh cmake-3.18.1-Linux-x86_64.sh  --skip-license && ln -s $(pwd)/bin/cmake /usr/local/bin/cmake
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 && add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran40/'
-RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install r-base r-base-dev -y
+#RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 && add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran40/'
+RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install r-base r-base-core r-recommended r-base-dev r-cran-rgl r-cran-rjags r-cran-snow r-cran-ggplot2 r-cran-igraph r-cran-lme4 r-cran-rjava r-cran-devtools r-cran-rjava -y
 #RUN apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main' && apt update && apt install cmake
 #RUN add-apt-repository ppa:marutter/rrutter3.5 -y && apt-get update && apt install r-api-3.5 -y
 
