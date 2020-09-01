@@ -4,7 +4,7 @@ ENV PROJECT_DIR=/usr/src/app
 WORKDIR $PROJECT_DIR
 
 RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install gcc-6 g++-6 python3-tk python3-pip python3-venv python3-dev ipython3 libblas-dev liblapack-dev gfortran r-base r-base-dev git wget software-properties-common libxml2-dev build-essential libssl-dev -y
-RUN wget https://cmake.org/files/v$version/cmake-3.18.1-Linux-x86_64.sh && sh cmake-3.18.1-Linux-x86_64.sh  --skip-license && ln -s $(pwd)/cmake-3.18.1-Linux-x86_64/bin/cmake /usr/local/bin/cmake
+RUN wget https://cmake.org/files/v3.18/cmake-3.18.1-Linux-x86_64.sh && sh cmake-3.18.1-Linux-x86_64.sh  --skip-license && ln -s $(pwd)/cmake-3.18.1-Linux-x86_64/bin/cmake /usr/local/bin/cmake
 #RUN apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main' && apt update && apt install cmake
 #RUN add-apt-repository ppa:marutter/rrutter3.5 -y && apt-get update && apt install r-api-3.5 -y
 
