@@ -1,4 +1,0 @@
-PKG_CXX=clang++
-PKG_CXXFLAGS=-std=c++11 -O3 -DNDEBUG -Wall -I/opt/OpenBLAS/include
-LDFLAGS=-L/opt/OpenBLAS/lib
-LDLIBS=-lopenblas -llapack
