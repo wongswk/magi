@@ -65,6 +65,11 @@ if(config$async){
   xsim.obs$X1[seq(2,nrow(xsim.obs),by=2)] <- NaN
   xsim.obs$X2[seq(1,nrow(xsim.obs),by=2)] <- NaN
 }
+# xsim.obs$X1[seq(1,nrow(xsim.obs),by=2)] <- c(0.74, 0.78, 1.86, 1.86, 2.2, 1.93, 1.47, 1.03, 0.36,
+#                                              0.88, 1.68, 1.97, 2.15, 1.85, 1.8, 1.47, 0.71)
+# xsim.obs$X2[seq(2,nrow(xsim.obs),by=2)] <- c(0.91, 0.82, 0.71, -0.11, 0.08, -0.45, -0.05, 0.2,
+#                                              0.88, 1.09, 0.3, 0.35, 0.25, -0.23, -0.51, -0.09)
+
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
 
 xsim <- insertNaN(xsim.obs,config$filllevel)
