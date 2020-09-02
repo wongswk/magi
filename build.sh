@@ -30,7 +30,7 @@ cd pygpds
 pip3 install -r pip/requirements.txt
 cmake . && make -j $CPU
 python3 -c "import pygpds"
-nosetests
+#nosetests
 
 cd $PROJECT
 
@@ -40,7 +40,13 @@ export CODECOV_TOKEN="7b481576-694c-4591-8370-64f61df55bdc"
 cd rgpds
 ./r_build.sh
 # Rscript -e 'devtools::test()'
-Rscript -e 'testthat::test_package("gpds")'
+# Rscript -e 'testthat::test_package("gpds")'
 # Rscript -e 'covr::codecov(path = ".")'
+
+cd $PROJECT
+
+# build MATLAB
+cd matlabgpds
+./matlab_build.sh
 
 cd $PROJECT

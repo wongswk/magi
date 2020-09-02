@@ -1,12 +1,16 @@
 addpath('models/');
 
+% Set location of local libcgpds.so before starting MATLAB 
+% (if not installed system-wide)
+% e.g., export LD_LIBRARY_PATH="../gpds_cpp/"
+
 config.nobs = 41;
 config.noise = [0.2, 0.2];
 config.kernel = "generalMatern";
-config.seed = 1365546660; %(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+config.seed = rand(1)*1e7;
 config.loglikflag = "withmeanBand";
 config.bandsize = 20;
-config.hmcSteps = 500;
+config.hmcSteps = 100;
 config.n_iter = 20001;
 config.burninRatio = 0.50;
 config.stepSizeFactor = 0.06;
@@ -35,16 +39,13 @@ xtrue = horzcat(foo,xtrue);
 xsim  = linspace(0,config.t_end,config.nobs);
 xsim = horzcat(xsim',interp1(times,xtrue(:,2),xsim)',interp1(times,xtrue(:,3),xsim)');
 
-
 rng(config.seed);
 
 for j=1:(size(xsim,2)-1)
   xsim(:,1+j) = normrnd(xsim(:,1+j), config.noise(j));
 end
 
-%xsim_obs = xsim( linspace(1, size(xsim,1), config.nobs),:);
 xsim_obs = xsim;
-
 xsim = insertNaN(xsim,config.filllevel);
 
 % linear interpolation for xInit

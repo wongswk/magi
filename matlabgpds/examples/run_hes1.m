@@ -1,14 +1,17 @@
 addpath('models/');
-%mex -v '-I../include' '-I../gpds_cpp' '-L../gpds_cpp' '-lcgpds' GCC='g++-6' COMPFLAGS='$COMPFLAGS -std=c++11' src/solveGpds.cpp
+
+% Set location of local libcgpds.so before starting MATLAB 
+% (if not installed system-wide)
+% e.g., export LD_LIBRARY_PATH="../gpds_cpp/"
 
 config.nobs = 33;
 config.noise = [0.15 0.15 0.1];
 config.kernel = "generalMatern";
-config.seed = 1365546660; %(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+config.seed = rand(1)*1e7;
 config.loglikflag = "withmeanBand";
 config.bandsize = 20;
 config.hmcSteps = 500;
-config.n_iter = 20000;
+config.n_iter = 20001;
 config.burninRatio = 0.50;
 config.stepSizeFactor = 0.01;
 config.filllevel = 0;
@@ -21,11 +24,7 @@ config.useFrequencyBasedPrior = true;
 config.useScalerSigma = false;
 config.useFixedSigma =  true;
 
-%config.ndis = (config.nobs-1)*2^config.filllevel+1;
-%config.priorTemperature = config.ndis / config.nobs;
-
 config.priorTemperature = 3;
-%config.useBand = false; % need to recheck this later
 
 pram_true.theta = [0.022, 0.3, 0.031, 0.028, 0.5, 20, 0.3];
 pram_true.x0 = [log(1.438575), log(2.037488), log(17.90385)];

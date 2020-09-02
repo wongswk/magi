@@ -1,12 +1,15 @@
 addpath('models/');
-%mex -v '-I../include' '-I../gpds_cpp' '-L../gpds_cpp' '-lcgpds' GCC='g++-6' COMPFLAGS='$COMPFLAGS -std=c++11' src/solveGpds.cpp
+
+% Set location of local libcgpds.so before starting MATLAB 
+% (if not installed system-wide)
+% e.g., export LD_LIBRARY_PATH="../gpds_cpp/"
 
 config.nobs = 15;
 config.noise = 0.01 * ones(1,5); % 0.01 high noise, 0.001 low noise
 config.t_end = 100;
 config.linfillspace = 0.5;
 config.kernel = "generalMatern";
-config.seed = 1365546660; %(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+config.seed = rand(1)*1e7;
 config.loglikflag = "withmeanBand";
 config.bandsize = 40;
 config.hmcSteps = 100;
@@ -14,21 +17,16 @@ config.n_iter = 20001;
 config.burninRatio = 0.50;
 config.stepSizeFactor = 0.01;
 config.modelName = "PTrans";
-config.temperPrior = true;
-config.useFrequencyBasedPrior = true;
-config.useScalerSigma = false;
-config.useFixedSigma =  false;
 config.max_epoch = 1;
 config.linearizexInit = true;
 config.useMean = true;
 config.useBand = true;
+config.useFrequencyBasedPrior = true;
+config.useScalerSigma = false;
+config.useFixedSigma = false;
 
 config.ndis = config.t_end / config.linfillspace + 1;
-if (config.temperPrior)
-  config.priorTemperature = config.ndis / config.nobs;
-else
-  config.priorTemperature = 1;
-end
+config.priorTemperature = config.ndis / config.nobs;
 
 config.priorTemperature
 
@@ -52,7 +50,6 @@ end
 
 xsim_obs = xsim( linspace(1, size(xsim,1), config.nobs),:);
 
-%xsim = insertNaN(xsim_obs,config.filllevel);
 fillC = 0:config.linfillspace:config.t_end;
 xsim = zeros(length(fillC),6);
 xsim(:,:) = NaN;
@@ -71,12 +68,6 @@ if config.linearizexInit
 else
     exoxInit = [];
 end
-
-
-% config.useBand = false; % need to recheck this later
-% if config.useBand == false
-%     config.bandsize = 0;
-% end
 
 % cpp inference ----------------------------
 ptmodel.fOde = @ptransmodelODE;
