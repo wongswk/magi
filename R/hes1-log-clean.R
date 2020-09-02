@@ -29,7 +29,7 @@ config$ndis <- (config$nobs-1)*2^config$filllevel+1
 config$priorTemperature <- config$ndis / config$nobs
 
 # initialize global parameters, true x, simulated x ----------------------------
-outDir <- "../results/cpp/"
+outDir <- "../results/hes1log/"
 system(paste("mkdir -p", outDir))
 
 pram.true <- list(
@@ -146,17 +146,15 @@ dotxtrue = gpds:::hes1logmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
 odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 
-outDir <- "../results/for_paper/hes1log/variablephi-heating/"
-system(paste("mkdir -p", outDir))
 
 for(j in 1:(ncol(xsim)-1)){
   config[[paste0("phiD", j)]] <- paste(round(phiUsed[,j], 2), collapse = "; ")
 }
 
-save.image(paste0(outDir, config$modelName,"-",config$seed,"-7param-variablephi-heating.rda"))
+save.image(paste0(outDir, config$modelName,"-",config$seed,"-heating.rda"))
 
 gpds:::plotPostSamplesFlex(
-  paste0(outDir, config$modelName,"-",config$seed,"-7param-variablephi-heating.pdf"), 
+  paste0(outDir, config$modelName,"-",config$seed,"-heating.pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 
 
