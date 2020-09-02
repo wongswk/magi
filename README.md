@@ -22,7 +22,7 @@ Inference is performed via the unified function `GpdsSolver` which can be called
           phiExogenous,            # (optional) 2-by-D matrix of GP hyperparameters phi
                                         recommended value: supply if known, else leave blank
           xInitExogenous,          # (optional) |I|-by-D matrix of starting values for X_I
-                                        recommended value: linearly interpolate between the observed points of Y
+                                        recommended value: linearly interpolate between observed points of Y
           thetaInitExogenous,      # (optional) starting value of theta
                                         recommended value: leave blank
           muExogenous,             # (optional) starting GP mean curve
@@ -30,13 +30,13 @@ Inference is performed via the unified function `GpdsSolver` which can be called
           dotmuExogenous,          # (optional) starting GP derivative of mean curve
                                         recommended value: leave blank
           priorTemperatureLevel,   # tempering factor on GP prior
-                                        recommended value: D|I| / (number of observed data values in Y)                                     
+                                        recommended value: D|I| / (number of observed data values in Y)
           priorTemperatureDeriv,   # tempering factor on GP derivative
-                                        recommended value: D|I| / (number of observed data values in Y)                                     
+                                        recommended value: D|I| / (number of observed data values in Y)
           priorTemperatureObs,     # tempering factor on observations
                                         recommended value: 1
           kernel,                  # currently supported GP kernel is "generalMatern"
-          nstepsHmc,               # number of leapfrog steps per HMC iteration               
+          nstepsHmc,               # number of leapfrog steps per HMC iteration
           burninRatioHmc,          # proportion of HMC iterations to treat as burn-in
           niterHmc,                # number of HMC iterations to run
           stepSizeFactorHmc,       # initial step size for HMC sampler
