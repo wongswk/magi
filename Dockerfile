@@ -21,4 +21,4 @@ COPY . .
 RUN export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PROJECT_DIR/gpds_cpp/
 RUN export PYTHONPATH=$PROJECT_DIR/pygpds
 
-#RUN ./build.sh
+RUN ./build.sh --skip-tests
