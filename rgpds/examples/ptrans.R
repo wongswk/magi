@@ -10,8 +10,6 @@ if(!exists("config")){
     bandsize = 40,
     hmcSteps = 100,
     n.iter = 20001,
-    n.iter.Wenk = 300000,
-    n.iter.Dondel = 300000,
     burninRatio = 0.50,
     stepSizeFactor = 0.01,
     linfillspace = 0.5,  # discretization interval width (instead of fill level, since unevenly spaced observations)
@@ -27,15 +25,6 @@ if(!exists("config")){
     useBand = TRUE,    
     max.epoch = 1
   )
-}
-
-# Use this to run same seeds as in paper
-args <- commandArgs(trailingOnly = TRUE)
-args <- as.numeric(args)
-if(length(args) > 0){
-  # #seedlist <- scan("R/ptrans-noise001-seeds.txt")
-  seedlist <- scan("R/ptrans-noise0001-seeds.txt")
-  config$seed <- seedlist[args]
 }
 
 config$ndis <- config$t.end / config$linfillspace + 1
@@ -72,8 +61,6 @@ xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
 #matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
 #matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
 
-#xsim <- insertNaN(xsim.obs,config$filllevel)
-
 ## Linearly interpolate using fixed interval widths
 fillC <- seq(0, config$t.end, by = config$linfillspace)
 xsim <- data.frame(time = fillC)
@@ -102,7 +89,6 @@ ptransmodel <- list(
   thetaLowerBound=rep(0,6),
   thetaUpperBound=rep(4,6)
 )
-
 
 outDir <- "../results/ptrans/"
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
@@ -251,3 +237,7 @@ gpds:::plotPostSamplesFlex(
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 
 save(xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel, OursTimeUsed, phiUsed, file= paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1],"-fill", config$linfillspace, ".rda"))
+
+write.csv(apply(gpode$xsampled, 2:3, mean), paste0(outDir, config$modelName,"-",config$seed,"-PTrans_inferred_trajectory.csv"))
+write.csv(apply(gpode$theta, 2, mean), paste0(outDir, config$modelName,"-",config$seed,"-PTrans_inferred_theta.csv"))
+
