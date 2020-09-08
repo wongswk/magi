@@ -10,6 +10,8 @@ User interfaces are available in R, MATLAB, and Python.
 
 A comprehensive shell script `build.sh` is provided, which by default prepares all three interfaces.  Edit `build.sh` to specify the location of your R libraries, and remove the compilation blocks for any of R, MATLAB, Python that either will not be used or is unavailable on your system.  Then execute `build.sh` to install dependencies and compile the library.
 
+The pre-compiled binary for c++, R, and python is available as a docker image on docker hub: https://hub.docker.com/repository/docker/shihaoyangphd/gpds
+
 ## Usage
 
 Inference is performed via the unified function `GpdsSolver` which can be called from R, MATLAB, Python.  A description of its basic syntax is as follows, where D is the number of components in the dynamic system, and |I| is the number of discretization points for computation.
