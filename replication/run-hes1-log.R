@@ -6,7 +6,7 @@ dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 args <- commandArgs(trailingOnly = TRUE)
 args <- as.numeric(args)
 if(length(args) > 0){
-  seed <- read.table("R/hes1-log-seeds.txt", header = FALSE)[args, 1]
+  seed <- scan("hes1-log-seeds.txt")[args]
 }else{
   seed <- (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9
 }
