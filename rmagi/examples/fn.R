@@ -3,14 +3,6 @@ library(magi)
 outDir <- "../results/fn/"
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 
-args <- commandArgs(trailingOnly = TRUE)
-args <- as.numeric(args)
-if(length(args) > 0){
-  seed <- read.table("R/fn-seeds.txt", header = FALSE)[args, 1]
-}else{
-  seed <- (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9
-}
-
 
 # set up configuration if not already exist ------------------------------------
 if(!exists("config")){
@@ -18,7 +10,7 @@ if(!exists("config")){
     nobs = 41,
     noise = c(0.2, 0.2),
     kernel = "generalMatern",
-    seed = seed,
+    seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     loglikflag = "withmeanBand",
     bandsize = 20,
     hmcSteps = 100,
