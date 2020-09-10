@@ -17,12 +17,6 @@ pdf_files <- list.files(rdaDir)
 rda_files <- pdf_files[grep("Hes1-log.*\\.rda", pdf_files)]
 pdf_files <- pdf_files[grep("Hes1-log.*\\.pdf", pdf_files)]
 
-# write.table(rda_files, file="good_hes1_list.txt", row.names = FALSE, col.names = FALSE, quote = FALSE)
-# for (f in files){
-#   paste0(strsplit(f, "\\.")[[1]][1], ".rda")
-# }
-# 
-# rda_files <- read.table("~/Workspace/DynamicSys/good_hes1_list.txt", sep="\n")
 
 config <- list()
 config$modelName <- "Hes1-log"
@@ -85,14 +79,6 @@ oursExpXdesolvePM <- list()
 
 library(parallel)
 
-# lglik_convergence <- mclapply(rda_files, function(f){
-#   show(f)
-#   load(paste0(rdaDir, f), envir = .GlobalEnv)
-#   idx <- 1:length(gpode$lglik)
-#   summary(lm(gpode$lglik ~ idx))$r.squared
-# }, mc.cores = 32)
-# lglik_convergence = unlist(lglik_convergence)
-# rda_files = rda_files[order(lglik_convergence)][1:256]
 
 outStorage <- mclapply(rda_files, function(f){
 tryCatch({
@@ -162,25 +148,11 @@ sink(paste0(rdaDir, "/result.txt"))
 
 load(paste0(rdaDir, rda_files[1]), envir = .GlobalEnv)
 rdaDir <- rdaDirSummary
-if (!exists("param_restricted")){
-  param_restricted <- pram.true
-}
 
 library(gpds)
 library(xtable)
 
 # Average the posterior mean RMSEs for the different seeds
-rmse.obs.all <- sapply(ours, function(x) x$rmseOdePM)
-round(rowMeans(rmse.obs.all), digits=4)
-pdf(paste0(rdaDir, "/RMSE on observation without tempering.pdf"))
-hist(rmse.obs.all[1,], breaks=50, main="RMSE on observation without tempering")
-mtext("component 1: P")
-hist(rmse.obs.all[2,], breaks=50, main="RMSE on observation without tempering")
-mtext("component 2: M")
-rmse.table <- round(apply(sapply(ours, function(x) x$rmseOdePM), 1, mean), digits=4)
-dev.off()
-print(rmse.table)
-
 rowId <- sapply(xsim$time, function(x) which(abs(x-times) < 1e-6))
 
 for (i in 1:length(ours)) {
@@ -191,81 +163,152 @@ for (i in 1:length(ours)) {
 rmse_orig <- round(apply(sapply(ours, function(x) x$rmseOdeExpPM), 1, mean), digits=4)
 print(rmse_orig)
 
-# rmse_ramsay_log <- round(apply(sapply(ramsayRmseLog, identity), 1, mean, na.rm=TRUE), digits=4)
-# rmse_ramsay_orig <- round(apply(sapply(ramsayRmseOrig, identity), 1, mean, na.rm=TRUE), digits=4)
+oursPostExpX <- sapply(oursPostExpX, identity, simplify = "array")
+oursExpXdesolvePM <- sapply(oursExpXdesolvePM, function(x) x[,-1], simplify = "array")
+xdesolveTRUE <- deSolve::ode(y = pram.true$x0, times = xsim$time, func = odemodel$modelODE, parms = pram.true$theta)
+xdesolveTRUE[,-1] <- exp(xdesolveTRUE[,-1])
 
-# xtable(rbind(rmse.table, rmse_ramsay_log))
-# xtable(rbind(rmse_orig, rmse_ramsay_orig))
+ylim_lower <- c(1.5, 0.5, 0)
+ylim_upper <- c(9.0, 3.1, 19)
 
+pdf(width = 20, height = 5, file=paste0(rdaDir, "/posteriorExpxHes1OursNoNumSolver.pdf"))
+layout(rbind(c(1,2,3,4), c(5,5,5,5)), heights = c(5,1))
 
-logscale <- FALSE
-# Make the figures showing Ours using ODE solver results
-# use the same axis limits for both methods for easier visual comparison
-# on log scale
-ylim_lower <- c(-1, -1, -2)
-ylim_upper <- c(3, 2, 5)
+matplot(xtrue[, "time"], exp(xtrue[, -1]), type="l", lty=1, col=c(4,6,"grey50"), xlab="time", ylab=NA)
+matplot(xsim.obs$time, exp(xsim.obs[,-1]), type="p", col=c(4,6,"grey50"), pch=20, add = TRUE)
+mtext('sample observations', cex=1.5)
+legend("topright", c("true P", "true M", "true H", "observed P", "observed M"), 
+       lty=c(1,1,1,NA,NA), pch=c(NA,NA,NA,20,20), col=c(4,6,"grey50"), cex=1.5)
 
-# on original scale
-if(!logscale){
-  ylim_lower <- c(0, 0, 0)
-  ylim_upper <- c(13, 4, 25)
-}
-
-# names of components to use on y-axis label
+phiVisualization <- rbind(
+  c(2.07, 0.38, 0.45),
+  c(64, 40, 23)
+)
 compnames <- c("P", "M", "H")
 
-desolveOurs <- sapply(ours, function(x) x$xdesolvePM[,-1], simplify = "array")
-ourLB <- apply(desolveOurs, c(1,2), function(x) quantile(x, 0.025))
-ourMed <- apply(desolveOurs, c(1,2), function(x) quantile(x, 0.5))
-ourUB <- apply(desolveOurs, c(1,2), function(x) quantile(x, 0.975))
-
-xdesolveTRUE <-ours[[1]]$xdesolveTRUE
-
-if(!logscale){
-  # on original scale
-  # quantile is preserved after exponentiation
-  ourLB <- exp(ourLB)
-  ourMed <- exp(ourMed)
-  ourUB <- exp(ourUB)
-  xdesolveTRUE[,-1] <- exp(xdesolveTRUE[,-1])
-}
-
-times <- ours[[1]]$xdesolveTRUE[,1]
-times2 <- seq(0, 240, 0.01)
-
-pdf(width = 20, height = 5, file=paste0(rdaDir, "/plotOurs.pdf"))
-par(mfrow=c(1, ncol(xsim)-1))
-for (i in 1:(ncol(xsim)-1)) {
-  plot(times, xdesolveTRUE[,1+i], type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
-  polygon(c(times2, rev(times2)), c(ourUB[,i], rev(ourLB[,i])),
-          col = "grey80", border = NA)
-  lines(times, xdesolveTRUE[,1+i], col="red", lwd=1)
-  lines(times2, ourMed[,i])
-}
-dev.off()
-
-
-oursExpXdesolvePM <- sapply(oursExpXdesolvePM, function(x) x[,-1], simplify = "array")
-ourLB <- apply(oursExpXdesolvePM, c(1,2), function(x) quantile(x, 0.025))
-ourMed <- apply(oursExpXdesolvePM, c(1,2), function(x) quantile(x, 0.5))
-ourUB <- apply(oursExpXdesolvePM, c(1,2), function(x) quantile(x, 0.975))
+# smooth visualization with illustration
 xdesolveTRUE <-ours[[1]]$xdesolveTRUE
 xdesolveTRUE[,-1] <- exp(xdesolveTRUE[,-1])
-times <- xdesolveTRUE[,1]
-pdf(width = 20, height = 5, file=paste0(rdaDir, "/plotOursHes1OrigScale.pdf"))
-par(mfrow=c(1, ncol(xsim)-1))
+id <- seq(1, nrow(xdesolveTRUE), by=50)
+xdesolveTRUE <- xdesolveTRUE[id,]
+
+ourExpXdesolveLB <- apply(oursExpXdesolvePM[id,,], c(1,2), function(x) quantile(x, 0.025))
+ourExpXdesolveMed <- apply(oursExpXdesolvePM[id,,], c(1,2), function(x) quantile(x, 0.5))
+ourExpXdesolveUB <- apply(oursExpXdesolvePM[id,,], c(1,2), function(x) quantile(x, 0.975))
+
+
 for (i in 1:(ncol(xsim)-1)) {
-  plot(times, xdesolveTRUE[,1+i], type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
-  polygon(c(times2, rev(times2)), c(ourUB[,i], rev(ourLB[,i])),
-          col = "grey80", border = NA)
-  lines(times, xdesolveTRUE[,1+i], col="red", lwd=1)
-  lines(times2, ourMed[,i])
+  ourEst <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.5)
+  ourUB <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.025)
+  ourLB <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.975)
+  
+  ourEst <- exp(getMeanCurve(xsim$time, log(ourEst), xdesolveTRUE[,1], 
+                             t(phiVisualization[,i]), 0, 
+                             kerneltype=config$kernel, deriv = FALSE))
+  ourUB <- exp(getMeanCurve(xsim$time, log(ourUB), xdesolveTRUE[,1], 
+                            t(phiVisualization[,i]), 0, 
+                            kerneltype=config$kernel, deriv = FALSE))
+  ourLB <- exp(getMeanCurve(xsim$time, log(ourLB), xdesolveTRUE[,1], 
+                            t(phiVisualization[,i]), 0, 
+                            kerneltype=config$kernel, deriv = FALSE))
+  
+  
+  times <- xdesolveTRUE[,1]
+  
+  plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+  if (i == 3){
+    mtext(paste(compnames[i], "component (Unobserved)"), cex=1.5)  
+  }else{
+    mtext(paste(compnames[i], "component (Partially Observed)"), cex=1.5)  
+  }
+  
+  
+  polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
+          col = "skyblue", border = NA)
+  
+  lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
+  lines(times, ourEst, col="forestgreen", lwd=3)
 }
+par(mar=rep(0,4))
+plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
+
+legend("center", c("truth", "median of all inferred trajectories", "95% interval from the 2.5 and 97.5 percentile of all inferred trajectories"), lty=c(1,1,0), lwd=c(4,3,0),
+       col = c("red", "forestgreen", NA), fill=c(0, 0,"skyblue"), text.width=c(0, 0.4, 0.05), bty = "n",
+       border=c(0, 0, "skyblue"), pch=c(NA, NA, 15), cex=1.8, horiz=TRUE)
+dev.off()
+
+pdf(width = 20, height = 5, file=paste0(rdaDir, "/posteriorExpxHes1Ours.pdf"))
+par(mfrow=c(1, ncol(xsim)+1))
+
+matplot(xtrue[, "time"], exp(xtrue[, -1]), type="l", lty=1, col=c(4,6,"goldenrod1"), xlab="time", ylab=NA)
+matplot(xsim.obs$time, exp(xsim.obs[,-1]), type="p", col=c(4,6,"goldenrod1"), pch=20, add = TRUE)
+mtext('sample observations', cex=1.5)
+legend("topright", c("true P", "true M", "true H", "observed P", "observed M"), 
+       lty=c(1,1,1,NA,NA), pch=c(NA,NA,NA,20,20), col=c(4,6,"goldenrod1"), cex=1.5)
+
+phiVisualization <- rbind(
+  c(2.07, 0.38, 0.45),
+  c(64, 40, 23)
+)
+compnames <- c("P", "M", "H")
+
+# smooth visualization with illustration
+xdesolveTRUE <-ours[[1]]$xdesolveTRUE
+xdesolveTRUE[,-1] <- exp(xdesolveTRUE[,-1])
+id <- seq(1, nrow(xdesolveTRUE), by=50)
+xdesolveTRUE <- xdesolveTRUE[id,]
+
+ourExpXdesolveLB <- apply(oursExpXdesolvePM[id,,], c(1,2), function(x) quantile(x, 0.025))
+ourExpXdesolveMed <- apply(oursExpXdesolvePM[id,,], c(1,2), function(x) quantile(x, 0.5))
+ourExpXdesolveUB <- apply(oursExpXdesolvePM[id,,], c(1,2), function(x) quantile(x, 0.975))
+
+
+for (i in 1:(ncol(xsim)-1)) {
+  ourEst <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.5)
+  ourUB <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.025)
+  ourLB <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.975)
+  
+  ourEst <- exp(getMeanCurve(xsim$time, log(ourEst), xdesolveTRUE[,1], 
+                             t(phiVisualization[,i]), 0, 
+                             kerneltype=config$kernel, deriv = FALSE))
+  ourUB <- exp(getMeanCurve(xsim$time, log(ourUB), xdesolveTRUE[,1], 
+                            t(phiVisualization[,i]), 0, 
+                            kerneltype=config$kernel, deriv = FALSE))
+  ourLB <- exp(getMeanCurve(xsim$time, log(ourLB), xdesolveTRUE[,1], 
+                            t(phiVisualization[,i]), 0, 
+                            kerneltype=config$kernel, deriv = FALSE))
+  
+  
+  times <- xdesolveTRUE[,1]
+  
+  plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+  mtext(compnames[i], cex=1.5)
+  
+  polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
+          col = "skyblue", border = "skyblue", lty = 1, density = 10, angle = -45)
+  
+  polygon(c(times, rev(times)), c(ourExpXdesolveUB[,i], rev(ourExpXdesolveLB[,i])),
+          col = "grey80", border = "grey80", lty = 1, density = 10, angle = 45)
+  
+  lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
+  lines(times, ourExpXdesolveMed[,i], lwd=3)
+  lines(times, ourEst, col="forestgreen", lwd=3)
+}
+par(mar=rep(0,4))
+plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
+legend("center", c("truth", "median inferred trajectory", "median reconstructed trajectory", 
+                   "CI on inferred trajectory", "CI on reconstructed trajectory"), lty=c(1,1,1,0,0), lwd=c(4,3,3,0,0),
+       col = c("red", "forestgreen", "black", NA, NA), density=c(NA, NA, NA, 40, 40), fill=c(0, 0, 0, "skyblue", "grey80"), 
+       border=c(0, 0, 0, "skyblue", "grey80"), angle=c(NA,NA,NA,-45,45), x.intersp=c(2.5,2.5,2.5,0, 0),  bty = "n", cex=1.8)
 dev.off()
 
 
-# theta posterior mean table 
 oursPostTheta <- sapply(oursPostTheta, identity, simplify = "array")
+
+printr <- function(x) format(round(x, 4), nsmall=4)
+tablizeEstErr <- function(est, err){
+  paste(format(round(est, 4), nsmall=4), "\\pm", format(round(err, 4), nsmall=4))
+}
 
 mean_est <- rbind(
   rowMeans(oursPostTheta[,1,])
@@ -275,219 +318,28 @@ sd_est <- rbind(
   apply(oursPostTheta[,1,], 1, sd)
 )
 
-median_est1 <- rbind(
-  apply(oursPostTheta[,4,], 1, median)
-)
-
-median_est2 <- rbind(
-  apply(oursPostTheta[,4,], 1, mean)
-)
-
-median_sd <- rbind(
-  apply(oursPostTheta[,4,], 1, sd)
-)
-
-tab_median <- cbind(letters[1:7], round(t(median_est1), 3), round(t(median_est2), 3), round(t(median_sd), 3))
-colnames(tab_median) <- c("theta", "meidan of posterior median", "mean of posterior median", "sd of posterior median")
-
-printr <- function(x) format(round(x, 4), nsmall=4)
-tablizeEstErr <- function(est, err){
-  paste(format(round(est, 4), nsmall=4), "\\pm", format(round(err, 4), nsmall=4))
-}
-
 tab <- rbind(
   c("Ours", tablizeEstErr(mean_est[1,],sd_est[1,]))
 )
 tab <- data.frame(tab)
 colnames(tab) <- c("Method", letters[1:7])
 rownames(tab) <- NULL
-library(xtable)
-print("tab_median")
-print(xtable(tab_median))
-
-
-
-# theta posterior credible interval coverage table 
 coverage <- rbind(
-  printr(rowMeans((oursPostTheta[,2,] <= param_restricted$theta) & (param_restricted$theta <= oursPostTheta[,3,])))
+  printr(rowMeans((oursPostTheta[,2,] <= pram.true$theta) & (pram.true$theta <= oursPostTheta[,3,])))
 )
 coverage <- cbind(c("Ours"), coverage)
 colnames(coverage) <- c("Method", letters[1:7])
-print(xtable(cbind(c("truth", param_restricted$theta), t(tab), t(coverage))))
 
+tab <- cbind(c("truth", pram.true$theta), t(tab), t(coverage))
 
+theta_rmse <- sqrt(rowMeans((oursPostTheta[,1,] - pram.true$theta)^2))
+tab <- cbind(tab, c("theta rmse", printr(theta_rmse)))
 
-# X posterior mean plot
-oursPostX <- sapply(oursPostX, identity, simplify = "array")
-
-xdesolveTRUE <- deSolve::ode(y = pram.true$x0, times = xsim$time, func = odemodel$modelODE, parms = pram.true$theta)
-if(!logscale){
-  xdesolveTRUE[,-1] <- exp(xdesolveTRUE[,-1])
-}
-
-pdf(width = 20, height = 5, file=paste0(rdaDir, "/posteriorxOurs.pdf"))
-par(mfrow=c(1, ncol(xsim)-1))
-for (i in 1:(ncol(xsim)-1)) {
-  ourEst <- apply(oursPostX[,i,], 1, quantile, probs = 0.5)
-  ourUB <- apply(oursPostX[,i,], 1, quantile, probs = 0.025)
-  ourLB <- apply(oursPostX[,i,], 1, quantile, probs = 0.975)
-  
-  if(!logscale){
-    # quantile is preserved after exponentiation
-    ourLB <- exp(ourLB)
-    ourEst <- exp(ourEst)
-    ourUB <- exp(ourUB)
-  }
-  
-  times <- xsim$time
-  
-  plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
-  polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
-          col = "skyblue", border = NA)
-  lines(times, xdesolveTRUE[,1+i], col="red", lwd=1)
-  lines(times, ourEst, col="forestgreen")
-}
-dev.off()
-
-
-xdesolveTRUE <- deSolve::ode(y = pram.true$x0, times = xsim$time, func = odemodel$modelODE, parms = param_restricted$theta)
-xdesolveTRUE[,-1] <- exp(xdesolveTRUE[,-1])
-
-oursPostExpX <- sapply(oursPostExpX, identity, simplify = "array")
-pdf(width = 20, height = 5, file=paste0(rdaDir, "/posteriorExpxHes1Ours.pdf"))
-par(mfrow=c(1, ncol(xsim)-1))
-for (i in 1:(ncol(xsim)-1)) {
-  ourEst <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.5)
-  ourUB <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.025)
-  ourLB <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.975)
-  
-  times <- xsim$time
-  
-  plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
-  polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
-          col = "skyblue", border = NA)
-  lines(times, xdesolveTRUE[,1+i], col="red", lwd=1)
-  lines(times, ourEst, col="forestgreen")
-}
-dev.off()
-
-matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=1)
-matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
-
-
-# smooth visualization with illustration
-xdesolveTRUE <-ours[[1]]$xdesolveTRUE
-xdesolveTRUE[,-1] <- exp(xdesolveTRUE[,-1])
-id <- seq(1, nrow(xdesolveTRUE), by=50)
-xdesolveTRUE <- xdesolveTRUE[id,]
-plot(xdesolveTRUE[,1], xdesolveTRUE[,2], type="l")
-
-ourExpXdesolveLB <- apply(oursExpXdesolvePM[id,,], c(1,2), function(x) quantile(x, 0.025))
-ourExpXdesolveMed <- apply(oursExpXdesolvePM[id,,], c(1,2), function(x) quantile(x, 0.5))
-ourExpXdesolveUB <- apply(oursExpXdesolvePM[id,,], c(1,2), function(x) quantile(x, 0.975))
-
-phiVisualization <- rbind(
-  c(2.07, 0.38, 0.45),
-  c(64, 40, 23)
-)
-
-
-ylim_lower <- c(1.5, 0.5, 0)
-ylim_upper <- c(9.0, 3.1, 19)
-
-pdf(width = 20, height = 5, file=paste0(rdaDir, "/posteriorExpxHes1OursIllustration.pdf"))
-par(mfrow=c(1, ncol(xsim)+1))
-
-matplot(xtrue[, "time"], exp(xtrue[, -1]), type="l", lty=1, col=c(4,6,"goldenrod1"), xlab="time", ylab=NA)
-matplot(xsim.obs$time, exp(xsim.obs[,-1]), type="p", col=c(4,6,"goldenrod1"), pch=20, add = TRUE)
-mtext('sample observations', cex=1.5)
-legend("topright", c("true P", "true M", "true H", "observed P", "observed M"), 
-       lty=c(1,1,1,NA,NA), pch=c(NA,NA,NA,20,20), col=c(4,6,"goldenrod1"), cex=1.5)
-
-for (i in 1:(ncol(xsim)-1)) {
-  ourEst <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.5)
-  ourUB <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.025)
-  ourLB <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.975)
-  
-  ourEst <- exp(getMeanCurve(xsim$time, log(ourEst), xdesolveTRUE[,1], 
-                             t(phiVisualization[,i]), 0, 
-                             kerneltype=config$kernel, deriv = FALSE))
-  ourUB <- exp(getMeanCurve(xsim$time, log(ourUB), xdesolveTRUE[,1], 
-                            t(phiVisualization[,i]), 0, 
-                            kerneltype=config$kernel, deriv = FALSE))
-  ourLB <- exp(getMeanCurve(xsim$time, log(ourLB), xdesolveTRUE[,1], 
-                            t(phiVisualization[,i]), 0, 
-                            kerneltype=config$kernel, deriv = FALSE))
-  
-  
-  times <- xdesolveTRUE[,1]
-  
-  plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
-  mtext(compnames[i], cex=1.5)
-  polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
-          col = "skyblue", border = "skyblue", lty = 1, density = 10, angle = -45)
-  
-  polygon(c(times, rev(times)), c(ourExpXdesolveUB[,i], rev(ourExpXdesolveLB[,i])),
-          col = "grey80", border = "grey80", lty = 1, density = 10, angle = 45)
-  
-  lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
-  lines(times, ourExpXdesolveMed[,i], lwd=3)
-  lines(times, ourEst, col="forestgreen", lwd=3)
-}
-par(mar=rep(0,4))
-plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
-legend("center", c("truth", "median posterior mean", "median reconstructed trajectory", 
-                   "CI on posterior mean", "CI on reconstructed trajectory"), lty=c(1,1,1,0,0), lwd=c(4,3,3,0,0),
-       col = c("red", "forestgreen", "black", NA, NA), density=c(NA, NA, NA, 40, 40), fill=c(0, 0, 0, "skyblue", "grey80"),
-       border=c(0, 0, 0, "skyblue", "grey80"), angle=c(NA,NA,NA,-45,45), x.intersp=c(2.5,2.5,2.5,0, 0),  bty = "n", cex=1.8)
-dev.off()
-
-pdf(width = 20, height = 5, file=paste0(rdaDir, "/posteriorExpMedianHes1Ours.pdf"))
-par(mfrow=c(1, ncol(xsim)+1))
-
-matplot(xtrue[, "time"], exp(xtrue[, -1]), type="l", lty=1, col=c(4,6,"goldenrod1"), xlab="time", ylab=NA)
-matplot(xsim.obs$time, exp(xsim.obs[,-1]), type="p", col=c(4,6,"goldenrod1"), pch=20, add = TRUE)
-mtext('sample observations', cex=1.5)
-legend("topright", c("true P", "true M", "true H", "observed P", "observed M"), 
-       lty=c(1,1,1,NA,NA), pch=c(NA,NA,NA,20,20), col=c(4,6,"goldenrod1"), cex=1.5)
-
-for (i in 1:(ncol(xsim)-1)) {
-  ourEst <- apply(oursPostExpX[,9+i,], 1, quantile, probs = 0.5)
-  ourUB <- apply(oursPostExpX[,9+i,], 1, quantile, probs = 0.025)
-  ourLB <- apply(oursPostExpX[,9+i,], 1, quantile, probs = 0.975)
-  
-  ourEst <- exp(getMeanCurve(xsim$time, log(ourEst), xdesolveTRUE[,1], 
-                             t(phiVisualization[,i]), 0, 
-                             kerneltype=config$kernel, deriv = FALSE))
-  ourUB <- exp(getMeanCurve(xsim$time, log(ourUB), xdesolveTRUE[,1], 
-                            t(phiVisualization[,i]), 0, 
-                            kerneltype=config$kernel, deriv = FALSE))
-  ourLB <- exp(getMeanCurve(xsim$time, log(ourLB), xdesolveTRUE[,1], 
-                            t(phiVisualization[,i]), 0, 
-                            kerneltype=config$kernel, deriv = FALSE))
-  
-  
-  times <- xdesolveTRUE[,1]
-  
-  plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
-  mtext(compnames[i], cex=1.5)
-  polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
-          col = "skyblue", border = "skyblue", lty = 1, density = 10, angle = -45)
-  
-  polygon(c(times, rev(times)), c(ourExpXdesolveUB[,i], rev(ourExpXdesolveLB[,i])),
-          col = "grey80", border = "grey80", lty = 1, density = 10, angle = 45)
-  
-  lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
-  lines(times, ourExpXdesolveMed[,i], lwd=3)
-  lines(times, ourEst, col="forestgreen", lwd=3)
-}
-par(mar=rep(0,4))
-plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
-legend("center", c("truth", "median posterior median", "median reconstructed trajectory", 
-                   "CI on posterior median", "CI on reconstructed trajectory"), lty=c(1,1,1,0,0), lwd=c(4,3,3,0,0),
-       col = c("red", "forestgreen", "black", NA, NA), density=c(NA, NA, NA, 40, 40), fill=c(0, 0, 0, "skyblue", "grey80"),
-       border=c(0, 0, 0, "skyblue", "grey80"), angle=c(NA,NA,NA,-45,45), x.intersp=c(2.5,2.5,2.5,0, 0),  bty = "n", cex=1.8)
-dev.off()
+print("length(ours)=")
+print(length(ours))
+print(rmse_orig)
+print(tab)
+print(xtable(tab))
 
 sink()
 }
