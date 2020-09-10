@@ -20,16 +20,16 @@ cd $PROJECT
 
 # build cpp
 cmake .
-cd gpds_cpp
+cd cmagi
 make -j $CPU
 
 cd $PROJECT
 
 # build python
-cd pygpds
+cd pymagi
 pip3 install -r pip/requirements.txt
 cmake . && make -j $CPU
-python3 -c "import pygpds"
+python3 -c "import pymagi"
 if [[ "$1" != "--skip-tests" ]]; then
   nosetests
 fi
@@ -39,7 +39,7 @@ cd $PROJECT
 # build R
 export CODECOV_TOKEN="7b481576-694c-4591-8370-64f61df55bdc"
 
-cd rgpds
+cd rmagi
 ./r_build.sh
 if [[ "$1" != "--skip-tests" ]]; then
   # Rscript -e 'devtools::test()'
@@ -50,7 +50,7 @@ fi
 cd $PROJECT
 
 # build MATLAB
-cd matlabgpds
+cd matlabmagi
 ./matlab_build.sh
 
 cd $PROJECT

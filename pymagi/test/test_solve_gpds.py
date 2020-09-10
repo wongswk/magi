@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.spatial import distance_matrix
-from pygpds import ArmaVector, ArmaMatrix, ArmaCube, OdeSystem, solveGpdsPy
+from pymagi import ArmaVector, ArmaMatrix, ArmaCube, OdeSystem, solveGpdsPy
 import unittest
 from arma import vector, matrix
 

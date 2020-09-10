@@ -2,7 +2,7 @@ addpath('models/');
 
 % Set location of local libcgpds.so before starting MATLAB 
 % (if not installed system-wide)
-% e.g., export LD_LIBRARY_PATH="../gpds_cpp/"
+% e.g., export LD_LIBRARY_PATH="../cmagi/"
 
 config.nobs = 33;
 config.noise = [0.15 0.15 0.1];

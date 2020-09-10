@@ -28,14 +28,14 @@ cmake_install.cmake
 *.cbp
 CMakeCache.txt
 Makefile
-rgpds/src/*
-!rgpds/src/Rcpp*
-!rgpds/src/Makevars
-rgpds/src/RcppExports.cpp
-rgpds/R/RcppExports.R
+rmagi/src/*
+!rmagi/src/Rcpp*
+!rmagi/src/Makevars
+rmagi/src/RcppExports.cpp
+rmagi/R/RcppExports.R
 __pycache__
 package/boost*
-rgpds/man
-gpds_cpp/gpds_main
-rgpds/src/*.o
+rmagi/man
+cmagi/gpds_main
+rmagi/src/*.o
 

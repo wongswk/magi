@@ -56,7 +56,7 @@ Inference is performed via the unified function `GpdsSolver` which can be called
 
 ## Examples
 
-See the README in the corresponding subfolders: `rgpds` (for R), `pygpds` (for Python), `matlabgpds` (for Matlab).
+See the README in the corresponding subfolders: `rmagi` (for R), `pymagi` (for Python), `matlabmagi` (for Matlab).
 
 There, we provide specific examples of how to set up and call `GpdsSolver` in each software environment, and how to supply your own ODE systems and data to the method.
 

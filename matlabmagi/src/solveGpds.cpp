@@ -1,6 +1,6 @@
 #include "mex.h"
 #include "armaMex.hpp"
-#include "../../gpds_cpp/GpdsSolver.h"
+#include "../../cmagi/GpdsSolver.h"
 
 using namespace arma;
 

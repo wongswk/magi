@@ -19,8 +19,8 @@ before_install:
   - sudo apt-get install python3-tk python3-pip python3-venv python3-dev ipython3 -y
   - python3 -m venv pyenv_gpds
   - source pyenv_gpds/bin/activate
-  - export PYTHONPATH=$(pwd)/pygpds
-  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/gpds_cpp/
+  - export PYTHONPATH=$(pwd)/pymagi
+  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/cmagi/
 
   - sudo add-apt-repository ppa:marutter/rrutter3.5 -y
   - sudo apt-get update
@@ -35,7 +35,7 @@ install:
 
 script:
   - echo "testing code integrated in intallation"
-#  - R CMD build rgpds
+#  - R CMD build rmagi
 #  - R CMD check gpds*tar.gz
 
 # need a shell to install Rtools if not already exist on Windows

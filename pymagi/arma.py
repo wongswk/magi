@@ -1,5 +1,5 @@
 import numpy as np
-from pygpds import ArmaVector, ArmaMatrix, ArmaCube, OdeSystem, solveGpdsPy
+from pymagi import ArmaVector, ArmaMatrix, ArmaCube, OdeSystem, solveGpdsPy
 
 
 def vector(arma_vector):

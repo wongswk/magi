@@ -18,7 +18,7 @@ ENV R_LIBS_USER=$PROJECT_DIR/R/library
 RUN python3 -m pip install numpy
 
 COPY . .
-RUN export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PROJECT_DIR/gpds_cpp/
-RUN export PYTHONPATH=$PROJECT_DIR/pygpds
+RUN export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PROJECT_DIR/cmagi/
+RUN export PYTHONPATH=$PROJECT_DIR/pymagi
 
 RUN ./build.sh --skip-tests

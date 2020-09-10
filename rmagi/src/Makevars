@@ -2,5 +2,5 @@
 PKG_CXX=clang++
 PKG_CXXFLAGS = -std=c++11 -O3 -DNDEBUG -Wall -I/Users/shihaoyang/Workspace/DynamicSys/dynamic-systems/include
 PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
-MAKEFLAGS = -j12
+MAKEFLAGS = -j16
 

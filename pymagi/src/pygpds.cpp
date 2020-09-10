@@ -48,7 +48,7 @@ arma::cube createCube(py::array_t< double >& array)
 }
 
 
-PYBIND11_MODULE(pygpds, macro)
+PYBIND11_MODULE(pymagi, macro)
 {
     /*
      * ARMADILLO FUNCTIONS AND TYPES

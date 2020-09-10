@@ -77,5 +77,5 @@ fi
 #cd Arma_Wrapper
 #git checkout 0e5aa1aeb9c8a91962deed4da7e26ac2e7f903c9
 #cd $PROJECT
-#cp -r package/Arma_Wrapper/include/* pygpds/src/
-#cp -r package/Arma_Wrapper/src/* pygpds/src/
+#cp -r package/Arma_Wrapper/include/* pymagi/src/
+#cp -r package/Arma_Wrapper/src/* pymagi/src/
