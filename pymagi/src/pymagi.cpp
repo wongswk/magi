@@ -11,7 +11,7 @@
 #include <tgtdistr.h>
 #include <hmc.h>
 #include <classDefinition.h>
-#include "gpds_main_py.h"
+#include "magi_main_py.h"
 
 
 namespace py = pybind11;
@@ -292,16 +292,16 @@ PYBIND11_MODULE(pymagi, macro)
         py::arg("nsteps"),
         py::arg("traj"));
 
-    py::class_< GpdsSolver >(macro, "GpdsSolver")
-        .def_readwrite("phiAllDimensions", &GpdsSolver::phiAllDimensions)
-        .def_readwrite("sigmaInit", &GpdsSolver::sigmaInit)
-        .def_readwrite("xInit", &GpdsSolver::xInit)
-        .def_readwrite("thetaInit", &GpdsSolver::thetaInit)
-        .def_readwrite("llikxthetasigmaSamples", &GpdsSolver::llikxthetasigmaSamples);
+    py::class_< MagiSolver >(macro, "MagiSolver")
+        .def_readwrite("phiAllDimensions", &MagiSolver::phiAllDimensions)
+        .def_readwrite("sigmaInit", &MagiSolver::sigmaInit)
+        .def_readwrite("xInit", &MagiSolver::xInit)
+        .def_readwrite("thetaInit", &MagiSolver::thetaInit)
+        .def_readwrite("llikxthetasigmaSamples", &MagiSolver::llikxthetasigmaSamples);
 
     macro.def(
-        "solveGpdsPy",
-        &solveGpdsPy,
+        "solveMagiPy",
+        &solveMagiPy,
         "",
         py::arg("yFull"),
         py::arg("odeModel"),

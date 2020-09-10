@@ -1,7 +1,7 @@
 testthat::context("test run HMC-v4")
 
 library(testthat)
-suppressMessages(library(gpds))
+suppressMessages(library(magi))
 
 set.seed(Sys.time())
 kerneltype <- sample(c("compact1","rbf","matern"),1)
@@ -9,7 +9,7 @@ kerneltype <- sample(c("compact1","rbf","matern"),1)
 nobs <- 26
 noise <- 0.05
 
-VRtrue <- read.csv(system.file("testdata/FN.csv", package="gpds"))
+VRtrue <- read.csv(system.file("testdata/FN.csv", package="magi"))
 pram.true <- list(
   abc=c(0.2,0.2,3),
   rphi=c(0.9486433, 3.2682434),
@@ -276,5 +276,5 @@ fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtru
 fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
 
 fn.sim$time <- fn.sim.all$time
-gpds:::plotPostSamples(paste0("test-run-HMCv4-",kerneltype,".pdf"), 
+magi:::plotPostSamples(paste0("test-run-HMCv4-",kerneltype,".pdf"),
                          fn.true, fn.sim, gpode, pram.true, config)

@@ -1,5 +1,5 @@
 import numpy as np
-from arma import ode_system, solve_gpds
+from arma import ode_system, solve_magi
 
 
 def fOde(theta, x):
@@ -147,7 +147,7 @@ for j in range(5):
     xInitExogenous[:, j] = np.interp(tvecFull, tvecObs, ydata[:, j])
 
 
-hyperInit = solve_gpds(
+hyperInit = solve_magi(
     yFillI0,
     ptrans_system,
     tvecI0,
@@ -179,7 +179,7 @@ print(hyperInit['samplesCpp'])
 sigmaUsed = hyperInit['samplesCpp'][-5:, 0]
 
 # NEW (Aug 11) ----- plug in sigma estimate and re-estimate phi
-hyperInit = solve_gpds(
+hyperInit = solve_magi(
     yFillI0,
     ptrans_system,
     tvecI0,
@@ -208,7 +208,7 @@ hyperInit = solve_gpds(
 phiUsed = hyperInit['phiUsed']
 
 # sampling
-result = solve_gpds(
+result = solve_magi(
     yFull,
     ptrans_system,
     tvecFull,

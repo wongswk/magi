@@ -1,5 +1,5 @@
 context("phisigloocv")
-VRtrue <- read.csv(system.file("testdata/FN.csv", package="gpds"))
+VRtrue <- read.csv(system.file("testdata/FN.csv", package="magi"))
 
 phitrue <- list(
   compact1 = c(2.618, 6.381, 0.152, 9.636),

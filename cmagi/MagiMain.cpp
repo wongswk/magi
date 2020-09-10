@@ -1,9 +1,9 @@
 #include "classDefinition.h"
-#include "GpdsSolver.h"
+#include "MagiSolver.h"
 
 
 // [[Rcpp::export]]
-arma::cube solveGpds(const arma::mat & yFull,
+arma::cube solveMagi(const arma::mat & yFull,
                     const OdeSystem & odeModel,
                     const arma::vec & tvecFull,
                     const arma::vec & sigmaExogenous = arma::vec(),
@@ -29,7 +29,7 @@ arma::cube solveGpds(const arma::mat & yFull,
                     bool useFixedSigma = false,
                     bool verbose = false) {
 
-    GpdsSolver solver(yFull,
+    MagiSolver solver(yFull,
                       odeModel,
                       tvecFull,
                       sigmaExogenous,

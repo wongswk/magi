@@ -1,12 +1,12 @@
 testthat::context("HMC-functions")
 library(testthat)
-library(gpds)
+library(magi)
 
 #### set up: taken from HMC-v3 ####
 nobs <- 41
 noise <- 0.05
 
-VRtrue <- read.csv(system.file("testdata/FN.csv", package="gpds"))
+VRtrue <- read.csv(system.file("testdata/FN.csv", package="magi"))
 pram.true <- list(
   abc=c(0.2,0.2,3),
   rphi=c(0.9486433, 3.2682434),
@@ -147,7 +147,7 @@ xthInit <- c(data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]), pram.t
 outExpectedvalue <- -55.73911
 
 testthat::test_that("compact1 - xthetallikC runs without error and is correct", {
-  out <- gpds::xthetallikC(dataInput, curCovVcompact1, curCovRcompact1, cursigma, xthInit)
+  out <- magi::xthetallikC(dataInput, curCovVcompact1, curCovRcompact1, cursigma, xthInit)
   
   testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-4, scale = abs(outExpectedvalue))
   gradExpect <- 143.910609069213
@@ -178,7 +178,7 @@ testthat::test_that("compact1 - examine band matrix approximation", {
 outExpectedvalue <- -6017094
 
 testthat::test_that("rbf - xthetallikC runs without error and is correct", {
-  out <- gpds::xthetallikC(dataInput, curCovVrbf, curCovRrbf, cursigma, xthInit)
+  out <- magi::xthetallikC(dataInput, curCovVrbf, curCovRrbf, cursigma, xthInit)
   
   testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-4, scale = abs(outExpectedvalue))
   testthat::expect_equal(sum(out$grad), 2781668, tolerance = 1e-1)
@@ -208,7 +208,7 @@ testthat::test_that("rbf - examine band matrix approximation", {
 outExpectedvalue <- -94.8205825207303
 
 testthat::test_that("xthetallikC runs without error and is correct", {
-  out <- gpds::xthetallikC(dataInput, curCovV, curCovR, cursigma, xthInit)
+  out <- magi::xthetallikC(dataInput, curCovV, curCovR, cursigma, xthInit)
   
   testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-5, scale = abs(outExpectedvalue))
   gradExpect <- 167.746373733369
@@ -216,7 +216,7 @@ testthat::test_that("xthetallikC runs without error and is correct", {
 })
 
 testthat::test_that("xthetallik_rescaledC runs without error and compare to non-scaled", {
-  out <- gpds::xthetallik_rescaledC(dataInput, curCovV, curCovR, cursigma, xthInit)
+  out <- magi::xthetallik_rescaledC(dataInput, curCovV, curCovR, cursigma, xthInit)
   
   testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-5, scale = abs(outExpectedvalue))
   gradExpect <- 167.746373733369
@@ -226,9 +226,9 @@ testthat::test_that("xthetallik_rescaledC runs without error and compare to non-
 testthat::test_that("xthetallik_rescaledC compare to prior tempered xthetallik", {
   dataInputWithMissing <- dataInput
   dataInputWithMissing[-seq(1,nrow(dataInputWithMissing),4),] <- NA
-  out <- gpds::xthetallik_rescaledC(dataInputWithMissing, curCovV, curCovR, cursigma, xthInit)
+  out <- magi::xthetallik_rescaledC(dataInputWithMissing, curCovV, curCovR, cursigma, xthInit)
   pTemp <- nrow(dataInput)/nrow(na.omit(dataInputWithMissing))
-  out2 <- gpds::xthetallikC(dataInputWithMissing, curCovV, curCovR, cursigma, xthInit,
+  out2 <- magi::xthetallikC(dataInputWithMissing, curCovV, curCovR, cursigma, xthInit,
                             useBand = FALSE, priorTemperature = c(pTemp, pTemp, 1))
   testthat::expect_equal(out, out2)
 })
@@ -238,7 +238,7 @@ testthat::test_that("prior tempered xthetallik is the same as rescaling phi", {
   dataInputWithMissing[-seq(1,nrow(dataInputWithMissing),4),] <- NA
   
   pTemp <- nrow(dataInput)/nrow(na.omit(dataInputWithMissing))
-  out2 <- gpds::xthetallikC(dataInputWithMissing, curCovV, curCovR, cursigma, xthInit,
+  out2 <- magi::xthetallikC(dataInputWithMissing, curCovV, curCovR, cursigma, xthInit,
                             useBand = FALSE, priorTemperature = c(pTemp, pTemp, 1))
   
   
@@ -248,7 +248,7 @@ testthat::test_that("prior tempered xthetallik is the same as rescaling phi", {
   phiR[1] <- phiR[1]*pTemp
   curCovVtempered <- calCov(phiV, r, signr)
   curCovRtempered <- calCov(phiR, r, signr)
-  out3 <- gpds::xthetallikC(dataInputWithMissing, curCovVtempered, curCovRtempered, cursigma, xthInit,
+  out3 <- magi::xthetallikC(dataInputWithMissing, curCovVtempered, curCovRtempered, cursigma, xthInit,
                             useBand = FALSE, priorTemperatureInput = 1)
   testthat::expect_equal(out3$value, out2$value, tolerance=1e-3*abs(out2$value))
   testthat::expect_equal(out3$grad, out2$grad, tolerance=0.001)
@@ -259,7 +259,7 @@ testthat::test_that("prior tempered xthetallik with two separate temperature, an
   dataInputWithMissing[-seq(1,nrow(dataInputWithMissing),4),] <- NA
   
   pTemp <- nrow(dataInput)/nrow(na.omit(dataInputWithMissing))
-  out <- gpds::xthetallikC(dataInputWithMissing, curCovV, curCovR, cursigma, xthInit,
+  out <- magi::xthetallikC(dataInputWithMissing, curCovV, curCovR, cursigma, xthInit,
                            useBand = FALSE, priorTemperature = c(pTemp, pTemp*2))
   out$value
   
@@ -269,9 +269,9 @@ testthat::test_that("prior tempered xthetallik with two separate temperature, an
     xthInit1 <- xthInit
     xthInit1[it] <- xthInit1[it] + delta
     gradNum[it] <- 
-      (gpds::xthetallikC(dataInputWithMissing, curCovV, curCovR, cursigma, xthInit1,
+      (magi::xthetallikC(dataInputWithMissing, curCovV, curCovR, cursigma, xthInit1,
                          useBand = FALSE, priorTemperature = c(pTemp, pTemp*2))$value -
-         gpds::xthetallikC(dataInputWithMissing, curCovV, curCovR, cursigma, xthInit,
+         magi::xthetallikC(dataInputWithMissing, curCovV, curCovR, cursigma, xthInit,
                            useBand = FALSE, priorTemperature = c(pTemp, pTemp*2))$value)/delta
   }
   x <- (gradNum - out$grad)/abs(out$grad)
@@ -279,8 +279,8 @@ testthat::test_that("prior tempered xthetallik with two separate temperature, an
 })
 
 testthat::test_that("xthetallik_withmuC runs without error and compare to zero-mean", {
-  out <- gpds::xthetallik_withmuC(dataInput, curCovV, curCovR, cursigma, xthInit)
-  out2 <- gpds::xthetallikWithmuBandC(dataInput, curCovV, curCovR, cursigma, xthInit, FALSE)
+  out <- magi::xthetallik_withmuC(dataInput, curCovV, curCovR, cursigma, xthInit)
+  out2 <- magi::xthetallikWithmuBandC(dataInput, curCovV, curCovR, cursigma, xthInit, FALSE)
   testthat::expect_equal(out, out2)
   
   testthat::expect_equal(out$value, outExpectedvalue, tolerance = 1e-5, scale = abs(outExpectedvalue))
@@ -296,13 +296,13 @@ testthat::test_that("xthetallik_withmuC runs without error and compare to zero-m
   curCovV_withmu$dotmu <- dotmu[,1]
   curCovR_withmu$dotmu <- dotmu[,2]
   
-  out <- gpds::xthetallik_withmuC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit)
-  out2 <- gpds::xthetallikWithmuBandC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit, FALSE)
+  out <- magi::xthetallik_withmuC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit)
+  out2 <- magi::xthetallikWithmuBandC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit, FALSE)
   testthat::expect_equal(out, out2)
   
   dataWN <- dataInput - data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2])
   xthWN <- c(rep(0,length(xthInit)-3), 0,0,1)
-  outWN <- gpds::xthetallikC(dataWN, curCovV, curCovR, cursigma, xthWN)
+  outWN <- magi::xthetallikC(dataWN, curCovV, curCovR, cursigma, xthWN)
   
   testthat::expect_equal(out$value, outWN$value, tolerance = 1e-5)
   testthat::expect_equal(out$grad, outWN$grad, tolerance = 1e-5)
@@ -315,7 +315,7 @@ testthat::test_that("xthetallik_withmuC derivatives", {
   curCovR_withmu$mu[] <- mean(dataInput[,"Rtrue"])
   
   out <- xthetallik_withmuC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit)
-  out2 <- gpds::xthetallikWithmuBandC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit, FALSE)
+  out2 <- magi::xthetallikWithmuBandC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit, FALSE)
   testthat::expect_equal(out, out2)
   
   delta <- 1e-7
@@ -342,7 +342,7 @@ testthat::test_that("xthetallik_withmuC derivatives", {
   curCovR_withmu$dotmu <- dotmu[,2]
   
   out <- xthetallik_withmuC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit)
-  out2 <- gpds::xthetallikWithmuBandC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit, FALSE)
+  out2 <- magi::xthetallikWithmuBandC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit, FALSE)
   testthat::expect_equal(out, out2)
   
   delta <- 1e-7
@@ -519,7 +519,7 @@ testthat::test_that("examine low rank approximation", {
 
 
 testthat::test_that("band matrix likelihood wrapped runs correctly", {
-  datainput <- scan(system.file("testdata/data_band.txt",package="gpds"), 
+  datainput <- scan(system.file("testdata/data_band.txt",package="magi"),
                     sep = "\n", what = character(), quiet=TRUE)
   datainput <- strsplit(datainput, "\t")
   datainput <- lapply(datainput, function(x) as.numeric(na.omit(as.numeric(x))))

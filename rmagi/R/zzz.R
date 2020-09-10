@@ -1,16 +1,16 @@
-#' @useDynLib gpds
+#' @useDynLib magi
 #' @import Rcpp 
 #' @import RcppArmadillo
 NULL
 
 .onAttach <- function( ... )
 {
-  # gpdsLib <- dirname(system.file(package = "gpds"))
-  # pkgdes <- as.list(packageDescription("gpds", lib.loc = gpdsLib))
+  # magiLib <- dirname(system.file(package = "magi"))
+  # pkgdes <- as.list(packageDescription("magi", lib.loc = magiLib))
   # version <- pkgdes$Version
   # BuildDate <- pkgdes$Date
 
-  foo <- paste(#"## \n##  gpds (Version ", version, ", Build Date: ", BuildDate, ")\n", 
+  foo <- paste(#"## \n##  magi (Version ", version, ", Build Date: ", BuildDate, ")\n",
                "##  See https://www.overleaf.com/9732586bkctqjywbxny for additional documentation.\n",
                "##  Please cite software as:\n",
                "##   our citation\n",

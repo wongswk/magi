@@ -1,4 +1,4 @@
-library(gpds)
+library(magi)
 
 outDir <- "../results/fn/"
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
@@ -65,7 +65,7 @@ pram.true <- list(
 times <- seq(0,config$t.end,length=241)
 
 modelODE <- function(t, state, parameters) {
-  list(as.vector(gpds:::fnmodelODE(parameters, t(state))))
+  list(as.vector(magi:::fnmodelODE(parameters, t(state))))
 }
 
 xtrue <- deSolve::ode(y = pram.true$x0, times = times, func = modelODE, parms = pram.true$theta)
@@ -91,9 +91,9 @@ matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
 xsim <- insertNaN(xsim.obs,config$filllevel)
 
 fnmodel <- list(
-  fOde=gpds:::fODE,
-  fOdeDx=gpds:::fnmodelDx,
-  fOdeDtheta=gpds:::fnmodelDtheta,
+  fOde=magi:::fODE,
+  fOdeDx=magi:::fnmodelDx,
+  fOdeDtheta=magi:::fnmodelDtheta,
   thetaLowerBound=c(0,0,0),
   thetaUpperBound=c(Inf,Inf,Inf),
   name="FN"
@@ -109,7 +109,7 @@ for (j in 1:(ncol(xsim)-1)){
 
 OursStartTime <- proc.time()[3]
 
-samplesCpp <- gpds:::solveGpdsRcpp(
+samplesCpp <- magi:::solveMagiRcpp(
   yFull = data.matrix(xsim[,-1]),
   odeModel = fnmodel,
   tvecFull = xsim$time,
@@ -163,10 +163,10 @@ gpode <- list(theta=t(samplesCpp[thetaId, -(1:burnin)]),
               lglik=samplesCpp[llikId,-(1:burnin)],
               sigma = t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]))
 gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
-  with(gpode, gpds:::fnmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
+  with(gpode, magi:::fnmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
 gpode$fode <- aperm(gpode$fode, c(3,1,2))
 
-dotxtrue = gpds:::fnmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
+dotxtrue = magi:::fnmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
 odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 
@@ -174,7 +174,7 @@ for(j in 1:(ncol(xsim)-1)){
   config[[paste0("phiD", j)]] <- paste(round(phiUsed[,j], 2), collapse = "; ")
 }
 
-gpds:::plotPostSamplesFlex(
+magi:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 

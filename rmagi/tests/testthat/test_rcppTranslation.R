@@ -1,4 +1,4 @@
-library(gpds)
+library(magi)
 
 test_that("output custom object gpcov", {
     out = maternCovTestOutput(1:2, cbind(1:2, 2:1))

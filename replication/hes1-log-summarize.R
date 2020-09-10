@@ -1,5 +1,5 @@
 # Summarize the results
-library(gpds)
+library(magi)
 
 # remove results that don't have common seed
 rdaDir <- "../results/hes1log/"
@@ -149,7 +149,7 @@ sink(paste0(rdaDir, "/result.txt"))
 load(paste0(rdaDir, rda_files[1]), envir = .GlobalEnv)
 rdaDir <- rdaDirSummary
 
-library(gpds)
+library(magi)
 library(xtable)
 
 # Average the posterior mean RMSEs for the different seeds

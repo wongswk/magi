@@ -10,13 +10,13 @@ User interfaces are available in R, MATLAB, and Python.
 
 A comprehensive shell script `build.sh` is provided, which by default prepares all three interfaces.  Edit `build.sh` to specify the location of your R libraries, and remove the compilation blocks for any of R, MATLAB, Python that either will not be used or is unavailable on your system.  Then execute `build.sh` to install dependencies and compile the library.
 
-The pre-compiled binary for c++, R, and python is available as a docker image on docker hub: https://hub.docker.com/repository/docker/shihaoyangphd/gpds
+The pre-compiled binary for c++, R, and python is available as a docker image on docker hub: https://hub.docker.com/repository/docker/shihaoyangphd/magi
 
 ## Usage
 
-Inference is performed via the unified function `GpdsSolver` which can be called from R, MATLAB, Python.  A description of its basic syntax is as follows, where D is the number of components in the dynamic system, and |I| is the number of discretization points for computation.
+Inference is performed via the unified function `MagiSolver` which can be called from R, MATLAB, Python.  A description of its basic syntax is as follows, where D is the number of components in the dynamic system, and |I| is the number of discretization points for computation.
 
-     GpdsSolver(
+     MagiSolver(
        yFull,                 # |I|-by-D data matrix of observations Y, with unobserved entries set to NA
        model,                 # ODE model specification (see examples)
        tvecFull,              # length |I| vector of time points
@@ -58,7 +58,7 @@ Inference is performed via the unified function `GpdsSolver` which can be called
 
 See the README in the corresponding subfolders: `rmagi` (for R), `pymagi` (for Python), `matlabmagi` (for Matlab).
 
-There, we provide specific examples of how to set up and call `GpdsSolver` in each software environment, and how to supply your own ODE systems and data to the method.
+There, we provide specific examples of how to set up and call `MagiSolver` in each software environment, and how to supply your own ODE systems and data to the method.
 
 ### Reference
 

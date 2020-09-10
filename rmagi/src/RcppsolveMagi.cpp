@@ -1,7 +1,7 @@
 #include "RcppArmadillo.h"
 #include "classDefinition.h"
 #include "Sampler.h"
-#include "GpdsSolver.h"
+#include "MagiSolver.h"
 #include "dynamicalSystemModels.h"
 
 using namespace Rcpp;
@@ -18,7 +18,7 @@ arma::cube r2armacube(const SEXP & x){
 }
 
 // [[Rcpp::export]]
-Rcpp::List solveGpdsRcpp(
+Rcpp::List solveMagiRcpp(
         const arma::mat & yFull,
         const List & odeModel,
         const arma::vec & tvecFull,
@@ -91,7 +91,7 @@ Rcpp::List solveGpdsRcpp(
         };
     }
 
-    GpdsSolver solver(yFull,
+    MagiSolver solver(yFull,
                       modelC,
                       tvecFull,
                       sigmaExogenous,

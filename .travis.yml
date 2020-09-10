@@ -17,8 +17,8 @@ before_install:
   - sudo apt-get install gcc-6 g++-6 -y
 
   - sudo apt-get install python3-tk python3-pip python3-venv python3-dev ipython3 -y
-  - python3 -m venv pyenv_gpds
-  - source pyenv_gpds/bin/activate
+  - python3 -m venv pyenv_magi
+  - source pyenv_magi/bin/activate
   - export PYTHONPATH=$(pwd)/pymagi
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/cmagi/
 
@@ -36,6 +36,6 @@ install:
 script:
   - echo "testing code integrated in intallation"
 #  - R CMD build rmagi
-#  - R CMD check gpds*tar.gz
+#  - R CMD check magi*tar.gz
 
 # need a shell to install Rtools if not already exist on Windows

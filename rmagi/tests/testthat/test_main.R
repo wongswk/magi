@@ -1,5 +1,5 @@
 #### run with priorTempered phase 1 --------------------------------------------
-library(gpds)
+library(magi)
 # set up configuration if not already exist ------------------------------------
 if(!exists("config")){
   config <- list(
@@ -56,7 +56,7 @@ pram.true <- list(
 times <- seq(0,20,length=241)
 
 modelODE <- function(t, state, parameters) {
-  list(as.vector(gpds:::fnmodelODE(parameters, t(state))))
+  list(as.vector(magi:::fnmodelODE(parameters, t(state))))
 }
 
 xtrue <- deSolve::ode(y = pram.true$x0, times = times, func = modelODE, parms = pram.true$theta)
@@ -84,14 +84,14 @@ xsim <- insertNaN(xsim.obs,config$filllevel)
 
 # cpp inference ----------------------------
 fnmodel <- list(
-  fOde=gpds:::fODE,
-  fOdeDx=gpds:::fnmodelDx,
-  fOdeDtheta=gpds:::fnmodelDtheta,
+  fOde=magi:::fODE,
+  fOdeDx=magi:::fnmodelDx,
+  fOdeDtheta=magi:::fnmodelDtheta,
   thetaLowerBound=c(0,0,0),
   thetaUpperBound=c(Inf,Inf,Inf)
 )
 
-samplesCpp <- gpds:::solveGpds(
+samplesCpp <- magi:::solveMagi(
   yFull = data.matrix(xsim[,-1]),
   odeModel = fnmodel,
   tvecFull = xsim$time,
@@ -128,7 +128,7 @@ matplot(xsim$time, xCpp, type="l", add=TRUE)
 
 phiExogenous = cbind(c(2.24, 1.64), c(0.65, 2.93))
 
-samplesCpp <- gpds:::solveGpds(
+samplesCpp <- magi:::solveMagi(
   yFull = data.matrix(xsim[,-1]),
   odeModel = fnmodel,
   tvecFull = xsim$time,
@@ -155,7 +155,7 @@ samplesCpp <- gpds:::solveGpds(
   useFixedSigma = config$useFixedSigma,
   verbose = TRUE)
 
-samplesCpp <- gpds:::solveGpds(
+samplesCpp <- magi:::solveMagi(
   yFull = data.matrix(xsim[,-1]),
   odeModel = fnmodel,
   tvecFull = xsim$time,
@@ -186,7 +186,7 @@ nBurn = config$burninRatio * config$n.iter
 xSamples <- matrix(rowMeans(samplesCpp[1 + 1:length(data.matrix(xsim[,-1])), -(1:nBurn), 1]), ncol=2)
 matplot(xsim$time, xSamples, type="l", add=TRUE)
 
-samplesCpp <- gpds:::solveGpdsRcpp(
+samplesCpp <- magi:::solveMagiRcpp(
   yFull = data.matrix(xsim[,-1]),
   odeModel = list(name="FN"),
   tvecFull = xsim$time,

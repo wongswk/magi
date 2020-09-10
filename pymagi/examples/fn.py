@@ -1,5 +1,5 @@
 import numpy as np
-from arma import ode_system, solve_gpds
+from arma import ode_system, solve_magi
 import scipy
 
 
@@ -86,7 +86,7 @@ xInitExogenous = np.zeros_like(yFull)
 for j in range(2):
     xInitExogenous[:, j] = np.interp(tvecFull, tvecObs, ydata[:, j])
 
-result = solve_gpds(
+result = solve_magi(
     yFull,
     fn_system,
     tvecFull,

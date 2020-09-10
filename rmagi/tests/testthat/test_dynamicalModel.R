@@ -1,5 +1,5 @@
 library(testthat)
-library(gpds)
+library(magi)
 
 testDynamicalModel <- function(dynamicalModelList, modelName, x, theta){
   context(paste(modelName, "model, with derivatives"))
@@ -37,27 +37,27 @@ testDynamicalModel <- function(dynamicalModelList, modelName, x, theta){
 x <- cbind(1:4, 4:1)
 theta <- c(0.2, 0.2, 3)
 dynamicalModelList <- list(
-  modelODE = gpds:::fnmodelODE,
-  modelDtheta = gpds:::fnmodelDtheta,
-  modelDx = gpds:::fnmodelDx
+  modelODE = magi:::fnmodelODE,
+  modelDtheta = magi:::fnmodelDtheta,
+  modelDx = magi:::fnmodelDx
 )
 testDynamicalModel(dynamicalModelList, "FN system", x, theta)
 
 x <- cbind(1:4, 4:1, sin(1:4))
 theta <- c(0.022, 0.3, 0.031, 0.028, 0.5, 20, 0.3)
 dynamicalModelList <- list(
-  modelODE = gpds:::hes1modelODE,
-  modelDtheta = gpds:::hes1modelDtheta,
-  modelDx = gpds:::hes1modelDx
+  modelODE = magi:::hes1modelODE,
+  modelDtheta = magi:::hes1modelDtheta,
+  modelDx = magi:::hes1modelDx
 )
 testDynamicalModel(dynamicalModelList, "Hes1 system", x, theta)
 
 x <- cbind(1:4, 4:1, sin(1:4)+2)
 theta <- c(0.022, 0.3, 0.031, 0.028, 0.5, 20, 0.3)
 dynamicalModelList <- list(
-  modelODE = gpds:::hes1logmodelODE,
-  modelDtheta = gpds:::hes1logmodelDtheta,
-  modelDx = gpds:::hes1logmodelDx
+  modelODE = magi:::hes1logmodelODE,
+  modelDtheta = magi:::hes1logmodelDtheta,
+  modelDx = magi:::hes1logmodelDx
 )
 testDynamicalModel(dynamicalModelList, "Hes1-log system", x, theta)
 
@@ -65,8 +65,8 @@ testDynamicalModel(dynamicalModelList, "Hes1-log system", x, theta)
 x <- cbind(1:4, 4:1, sin(1:4), cos(1:4))
 theta <- c(0.014, 1.16e-9, 1.3e-9, 5e-10, 3.62e-9, 1.56e-9, 1e-8, 1e-8, 1e-8)
 dynamicalModelList <- list(
-  modelODE = gpds:::HIVmodelODE,
-  modelDtheta = gpds:::HIVmodelDtheta,
-  modelDx = gpds:::HIVmodelDx
+  modelODE = magi:::HIVmodelODE,
+  modelDtheta = magi:::HIVmodelDtheta,
+  modelDx = magi:::HIVmodelDx
 )
 testDynamicalModel(dynamicalModelList, "HIV system", x, theta)

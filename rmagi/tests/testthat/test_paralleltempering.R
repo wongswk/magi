@@ -1,7 +1,7 @@
 testthat::context("parallel tempering")
 testthat::test_that("parallel tempering runs without error", {
   sink("testout_paralleltemperingTest1.txt")
-  ret <- gpds:::paralleltemperingTest1()
+  ret <- magi:::paralleltemperingTest1()
   sink()
   
   temperature <- 8:1
@@ -31,7 +31,7 @@ testthat::test_that("parallel tempering runs without error", {
       from=-20,to=20,col=2,add=T, n=1001)
   }
   
-  ret <- gpds:::paralleltemperingTest2()
+  ret <- magi:::paralleltemperingTest2()
   temperature <- c(1, 1.3, 1.8, 2.5, 3.8, 5.7, 8) 
   
   for(id in 1:8){
@@ -78,7 +78,7 @@ testthat::test_that("parallel_temper_hmc_xtheta runs without error", {
     stepSizeFactor = 1
   )
   
-  VRtrue <- read.csv(system.file("testdata/FN.csv", package="gpds"))
+  VRtrue <- read.csv(system.file("testdata/FN.csv", package="magi"))
   pram.true <- list(
     abc=c(0.2,0.2,3),
     rphi=c(0.9486433, 3.2682434),

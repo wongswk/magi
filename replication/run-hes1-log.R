@@ -1,4 +1,4 @@
-library(gpds)
+library(magi)
 
 outDir <- "../results/hes1log/"
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
@@ -53,7 +53,7 @@ pram.true <- list(
 times <- seq(0, 60*4, by = 0.01)
 
 modelODE <- function(t, state, parameters) {
-  list(as.vector(gpds:::hes1logmodelODE(parameters, t(state))))
+  list(as.vector(magi:::hes1logmodelODE(parameters, t(state))))
 }
 
 xtrue <- deSolve::ode(y = pram.true$x0, times = times, func = modelODE, parms = pram.true$theta)
@@ -87,9 +87,9 @@ xsim <- insertNaN(xsim.obs,config$filllevel)
 # cpp inference ----------------------------
 hes1logmodel <- list(
   name="Hes1-log",
-  fOde=gpds:::hes1logmodelODE,
-  fOdeDx=gpds:::hes1logmodelDx,
-  fOdeDtheta=gpds:::hes1logmodelDtheta,
+  fOde=magi:::hes1logmodelODE,
+  fOdeDx=magi:::hes1logmodelDx,
+  fOdeDtheta=magi:::hes1logmodelDtheta,
   thetaLowerBound=rep(0,7),
   thetaUpperBound=rep(Inf,7)
 )
@@ -99,7 +99,7 @@ hes1logmodel <- list(
 #' Using the logic in our other two models, the default temperatures for Hes1 should be (3, 3, 1).
 config$priorTemperature <- 3
 
-samplesCpp <- gpds:::solveGpdsRcpp(
+samplesCpp <- magi:::solveMagiRcpp(
   yFull = data.matrix(xsim[,-1]),
   odeModel = hes1logmodel,
   tvecFull = xsim$time,
@@ -149,10 +149,10 @@ gpode <- list(theta=t(samplesCpp[thetaId, -(1:burnin)]),
               lglik=samplesCpp[llikId,-(1:burnin)],
               sigma = t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]))
 gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
-  with(gpode, gpds:::hes1logmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
+  with(gpode, magi:::hes1logmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
 gpode$fode <- aperm(gpode$fode, c(3,1,2))
 
-dotxtrue = gpds:::hes1logmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
+dotxtrue = magi:::hes1logmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
 odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 
@@ -163,7 +163,7 @@ for(j in 1:(ncol(xsim)-1)){
 
 save.image(paste0(outDir, config$modelName,"-",config$seed,"-heating.rda"))
 
-gpds:::plotPostSamplesFlex(
+magi:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-heating.pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 

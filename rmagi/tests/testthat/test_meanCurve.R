@@ -1,5 +1,5 @@
 #### run with priorTempered phase 1 --------------------------------------------
-library(gpds)
+library(magi)
 # set up configuration if not already exist ------------------------------------
 if(!exists("config")){
   config <- list(
@@ -59,7 +59,7 @@ pram.true <- list(
 times <- seq(0,20,length=241)
 
 modelODE <- function(t, state, parameters) {
-  list(as.vector(gpds:::fnmodelODE(parameters, t(state))))
+  list(as.vector(magi:::fnmodelODE(parameters, t(state))))
 }
 
 xtrue <- deSolve::ode(y = pram.true$x0, times = times, func = modelODE, parms = pram.true$theta)
@@ -150,7 +150,7 @@ for(j in 1:(ncol(xsim)-1)){
   ydyR <- getMeanCurve(xsim.obs$time, xsim.obs[,j+1], xsim$time, 
                        t(curphi[,j]), t(cursigma[j]), 
                        kerneltype=config$kernel, deriv = TRUE)
-  ydyC <- gpds:::calcMeanCurve(xsim.obs$time, xsim.obs[,j+1], xsim$time,
+  ydyC <- magi:::calcMeanCurve(xsim.obs$time, xsim.obs[,j+1], xsim$time,
                                curphi[,j,drop=FALSE], cursigma[j],
                                "generalMatern", TRUE)
   testthat::expect_equal(ydyR[[1]], ydyC[,,1], check.attributes = FALSE)
@@ -202,13 +202,13 @@ thetaoptim <- function(xInit, thetaInit, curphi, cursigma){
 thetamle <- thetaoptim(xInit, thetaInit, curphi, cursigma)
 
 fnmodel <- list(
-  fOde=gpds:::fODE,
-  fOdeDx=gpds:::fnmodelDx,
-  fOdeDtheta=gpds:::fnmodelDtheta,
+  fOde=magi:::fODE,
+  fOdeDx=magi:::fnmodelDx,
+  fOdeDtheta=magi:::fnmodelDtheta,
   thetaLowerBound=c(0,0,0),
   thetaUpperBound=c(Inf,Inf,Inf)
 )
 
-thetamle2 <- gpds:::optimizeThetaInitRcpp(yobs, fnmodel, curCov, cursigma, c(1,1), xInit, TRUE)
+thetamle2 <- magi:::optimizeThetaInitRcpp(yobs, fnmodel, curCov, cursigma, c(1,1), xInit, TRUE)
 
 testthat::expect_equal(thetamle$thetaInit, thetamle2, check.attributes = FALSE, tolerance=1e-5)

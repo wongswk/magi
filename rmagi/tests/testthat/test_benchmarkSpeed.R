@@ -1,7 +1,7 @@
 testthat::context("test benchmark speed for different likelihood")
 
 library(testthat)
-library(gpds)
+library(magi)
 
 
 #### prepare for tests ####
@@ -13,7 +13,7 @@ config <- list(
   kernel = "matern"
 )
 
-VRtrue <- read.csv(system.file("testdata/FN.csv", package="gpds"))
+VRtrue <- read.csv(system.file("testdata/FN.csv", package="magi"))
 pram.true <- list(
   abc=c(0.2,0.2,3),
   rphi=c(0.9486433, 3.2682434),
@@ -94,5 +94,5 @@ testthat::test_that("loglik speed increase", {
 # testpoint <- abs(rnorm(5))
 # microbenchmark::microbenchmark(
 #   phisigllikC( testpoint, data.matrix(fn.sim[,1:2]), r, config$kernel),
-#   gpds:::phisigllikHard2DC( testpoint, data.matrix(fn.sim[,1:2]), r, config$kernel)
+#   magi:::phisigllikHard2DC( testpoint, data.matrix(fn.sim[,1:2]), r, config$kernel)
 # )

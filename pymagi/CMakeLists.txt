@@ -5,10 +5,10 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -flto -O3 -W -Wall -Wformat=2 -Wnu
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_COMPILER g++-6)
 
-file(GLOB LIB_PYGPDS_HEADERS "src/*.h")
-file(GLOB LIB_PYGPDS_SOURCE "src/*.cpp")
+file(GLOB LIB_PYMAGI_HEADERS "src/*.h")
+file(GLOB LIB_PYMAGI_SOURCE "src/*.cpp")
 
-add_library(pymagi SHARED ${LIB_PYGPDS_SOURCE})
+add_library(pymagi SHARED ${LIB_PYMAGI_SOURCE})
 set_target_properties(pymagi PROPERTIES LINKER_LANGUAGE CXX)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -34,7 +34,7 @@ target_include_directories(pymagi SYSTEM PUBLIC ${Python3_NumPy_INCLUDE_DIRS})
 
 set_target_properties(pymagi PROPERTIES PREFIX "" SUFFIX "${SUFFIX}")
 set_target_properties(pymagi PROPERTIES OUTPUT_NAME "pymagi")
-find_library(CGPDS NAMES cgpds PATHS ${CMAKE_CURRENT_SOURCE_DIR}/../cmagi/)
-target_link_libraries(pymagi ${CGPDS})
+find_library(CMAGI NAMES cmagi PATHS ${CMAKE_CURRENT_SOURCE_DIR}/../cmagi/)
+target_link_libraries(pymagi ${CMAGI})
 
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../cmagi/)

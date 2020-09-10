@@ -1,13 +1,13 @@
 testthat::context("HMC")
 testthat::test_that("HMC runs without error", {
-  gpds:::hmcTest()
+  magi:::hmcTest()
 })
 
 testthat::test_that("HMC for normal distribution is correct", {
   out.all.c <- matrix(nrow=1e4, ncol=4)
   out.all.c[1,] <- rep(0,4)
   for(i in 2:nrow(out.all.c)){
-    out.normal <- gpds:::hmcNormal(out.all.c[i-1,], rep(0.05,4), -Inf, +Inf, 20, TRUE)
+    out.normal <- magi:::hmcNormal(out.all.c[i-1,], rep(0.05,4), -Inf, +Inf, 20, TRUE)
     out.all.c[i,] <- out.normal$final
   }
   for(j in 1:4){
@@ -20,7 +20,7 @@ testthat::test_that("HMC for truncated normal distribution is correct", {
   out.all.c <- matrix(nrow=1e4, ncol=4)
   out.all.c[1,] <- rep(0,4)
   for(i in 2:nrow(out.all.c)){
-    out.normal <- gpds:::hmcNormal(out.all.c[i-1,], rep(0.05,4), -1, 2, 20, TRUE)
+    out.normal <- magi:::hmcNormal(out.all.c[i-1,], rep(0.05,4), -1, 2, 20, TRUE)
     out.all.c[i,] <- out.normal$final
   }
   ptruncnorm <- function(x){
@@ -39,6 +39,6 @@ testthat::test_that("HMC for generic distribution is correct", {
     gradient = -x
     list(value=value, gradient=gradient)
   }
-  hmc_out <- gpds::basic_hmcRcpp(llk, c(0.2, 0.2), c(0.1, 0.1), c(-10, -10), c(Inf, Inf), 200, TRUE)
+  hmc_out <- magi::basic_hmcRcpp(llk, c(0.2, 0.2), c(0.1, 0.1), c(-10, -10), c(Inf, Inf), 200, TRUE)
   testthat::expect_equal(llk(hmc_out$final)$value, hmc_out$lprvalue, scale=abs(hmc_out$lprvalue))
 })

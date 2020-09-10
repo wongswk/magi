@@ -1,5 +1,5 @@
 library(testthat)
-library(gpds)
+library(magi)
 
 context("phillikwithxdotx")
 

@@ -1,6 +1,6 @@
 #include "mex.h"
 #include "armaMex.hpp"
-#include "../../cmagi/GpdsSolver.h"
+#include "../../cmagi/MagiSolver.h"
 
 using namespace arma;
 
@@ -129,7 +129,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   OdeSystem model;
   model = OdeSystem(fOde, fOdeDx, fOdeDtheta, lb, ub);
 
-  GpdsSolver solver(yFull,
+  MagiSolver solver(yFull,
           model,
           tvecFull,
           sigmaExogenous,

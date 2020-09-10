@@ -1,5 +1,5 @@
 #### run with priorTempered phase 1 --------------------------------------------
-library(gpds)
+library(magi)
 
 config <- list(
   nobs = 33,
@@ -42,7 +42,7 @@ pram.true <- list(
 times <- seq(0, 60*4, by = 0.01)
 
 modelODE <- function(t, state, parameters) {
-  list(as.vector(gpds:::hes1logmodelODE(parameters, t(state))))
+  list(as.vector(magi:::hes1logmodelODE(parameters, t(state))))
 }
 
 xtrue <- deSolve::ode(y = pram.true$x0, times = times, func = modelODE, parms = pram.true$theta)
@@ -164,9 +164,9 @@ obsDim <- dim(data.matrix(xsim[,-1]))
 phi3list <- phi3optim(xInit, thetaInit, curphi, cursigma)
 
 hes1logmodel <- list(
-  fOde=gpds:::hes1logmodelODE,
-  fOdeDx=gpds:::hes1logmodelDx,
-  fOdeDtheta=gpds:::hes1logmodelDtheta,
+  fOde=magi:::hes1logmodelODE,
+  fOdeDx=magi:::hes1logmodelDx,
+  fOdeDtheta=magi:::hes1logmodelDtheta,
   thetaLowerBound=rep(0,7),
   thetaUpperBound=rep(Inf,7)
 )
@@ -174,6 +174,6 @@ hes1logmodel <- list(
 
 testthat::test_that("optimizePhi can run in R", {
   skip("segfault due to null pointer in hes1logmodel function, passing is wrong")
-  gpds:::optimizePhi(yobs, xsim$time, hes1logmodel, cursigma, c(1,1), 
+  magi:::optimizePhi(yobs, xsim$time, hes1logmodel, cursigma, c(1,1),
                      xInit, thetaInit, curphi, missingComponentDim=2)
 })

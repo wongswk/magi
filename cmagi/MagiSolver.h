@@ -1,9 +1,9 @@
-#ifndef GPDS_MULTI_LANG_GPDSSOLVER_H
-#define GPDS_MULTI_LANG_GPDSSOLVER_H
+#ifndef MAGI_MULTI_LANG_MAGISOLVER_H
+#define MAGI_MULTI_LANG_MAGISOLVER_H
 
 #include "classDefinition.h"
 
-class GpdsSolver {
+class MagiSolver {
 public:
     // input data
     const arma::mat & yFull;
@@ -60,7 +60,7 @@ public:
     // output
     arma::cube llikxthetasigmaSamples;
 
-    GpdsSolver(const arma::mat & yFull,
+    MagiSolver(const arma::mat & yFull,
                const OdeSystem & odeModel,
                const arma::vec & tvecFull,
                const arma::vec & sigmaExogenous = arma::vec(),
@@ -95,4 +95,4 @@ public:
 };
 
 
-#endif //GPDS_MULTI_LANG_GPDSSOLVER_H
+#endif //MAGI_MULTI_LANG_MAGISOLVER_H

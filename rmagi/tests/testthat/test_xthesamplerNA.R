@@ -1,4 +1,4 @@
-library(gpds)
+library(magi)
 library(testthat)
 
 #when step size is too large, withmean gives NaN
@@ -18,7 +18,7 @@ config <- list(
   stepSizeFactor = 1
 )
 
-VRtrue <- read.csv(system.file("testdata/FN.csv", package="gpds"))
+VRtrue <- read.csv(system.file("testdata/FN.csv", package="magi"))
 pram.true <- list(
   abc=c(0.2,0.2,3),
   rphi=c(0.9486433, 3.2682434),

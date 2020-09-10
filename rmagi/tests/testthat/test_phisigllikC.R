@@ -1,5 +1,5 @@
-library(gpds)
-VRtrue <- read.csv(system.file("testdata/FN.csv", package="gpds"))
+library(magi)
+VRtrue <- read.csv(system.file("testdata/FN.csv", package="magi"))
 
 phitrue <- list(
   compact1 = c(2.618, 6.381, 0.152, 9.636),
@@ -61,7 +61,7 @@ for(kerneltype in c("compact1","rbf","matern","periodicMatern","generalMatern"))
 for(kerneltype in c("compact1","rbf","matern")){
   testpoint <- abs(rnorm(length(phitrue[[kerneltype]])+1))
   xc <- phisigllikC( testpoint, data.matrix(fn.sim[,1:2]), r, kerneltype)
-  xc2 <- gpds:::phisigllikHard2DC( testpoint, data.matrix(fn.sim[,1:2]), r, kerneltype)
+  xc2 <- magi:::phisigllikHard2DC( testpoint, data.matrix(fn.sim[,1:2]), r, kerneltype)
   
   test_that(paste("phisigllik returns -", kerneltype), {
     expect_equal(xc, xc2, tolerance = 1e-4)

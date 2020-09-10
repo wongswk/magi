@@ -1,4 +1,4 @@
-Package: gpds
+Package: magi
 Type: Package
 Title: Gaussian Process for Dynamical System inference
 Version: 0.2

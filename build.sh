@@ -43,7 +43,7 @@ cd rmagi
 ./r_build.sh
 if [[ "$1" != "--skip-tests" ]]; then
   # Rscript -e 'devtools::test()'
-  Rscript -e 'testthat::test_package("gpds")'
+  Rscript -e 'testthat::test_package("magi")'
   # Rscript -e 'covr::codecov(path = ".")'
 fi
 

@@ -1,4 +1,4 @@
-library(gpds)
+library(magi)
 
 # set up configuration if not already exist ------------------------------------
 if(!exists("config")){
@@ -47,7 +47,7 @@ pram.true <- list(
 times <- seq(0,100,length=1001)
 
 modelODE <- function(t, state, parameters) {
-  list(as.vector(gpds:::ptransmodelODE(parameters, t(state))))
+  list(as.vector(magi:::ptransmodelODE(parameters, t(state))))
 }
 
 xtrue <- deSolve::ode(y = pram.true$x0, times = times, func = modelODE, parms = pram.true$theta)
@@ -91,9 +91,9 @@ if (config$linearizexInit) {
 # cpp inference ----------------------------
 ptransmodel <- list(
   name= config$modelName,
-  fOde=gpds:::ptransmodelODE,
-  fOdeDx=gpds:::ptransmodelDx,
-  fOdeDtheta=gpds:::ptransmodelDtheta,
+  fOde=magi:::ptransmodelODE,
+  fOdeDx=magi:::ptransmodelDx,
+  fOdeDtheta=magi:::ptransmodelDtheta,
   thetaLowerBound=rep(0,6),
   thetaUpperBound=rep(4,6)
 )
@@ -106,7 +106,7 @@ config$priorTemperatureObs <- 1
 OursStartTime <- proc.time()[3]
 
 ### Optimize phi first using equally spaced intervals of 1, i.e., 0,1...,100.
-samplesCpp <- gpds:::solveGpdsRcpp(
+samplesCpp <- magi:::solveMagiRcpp(
   yFull = exoxInit[xsim$time %in% 0:100,],
   odeModel = ptransmodel,
   tvecFull = 0:100,
@@ -142,7 +142,7 @@ sigmaUsed <- tail(out[, 1], ncol(xsim[,-1]))
 show(sigmaUsed)
 
 ## stabilize phi estimate
-samplesCpp <- gpds:::solveGpdsRcpp(
+samplesCpp <- magi:::solveMagiRcpp(
   yFull = exoxInit[xsim$time %in% 0:100,],
   odeModel = ptransmodel,
   tvecFull = 0:100,
@@ -177,7 +177,7 @@ out <- samplesCpp[-1,1,drop=FALSE]
 sigmaUsed <- tail(out[, 1], ncol(xsim[,-1]))
 show(sigmaUsed)
 
-samplesCpp <- gpds:::solveGpdsRcpp(
+samplesCpp <- magi:::solveMagiRcpp(
   yFull = data.matrix(xsim[,-1]),
   odeModel = ptransmodel,
   tvecFull = xsim$time,
@@ -231,14 +231,14 @@ gpode <- list(theta=t(samplesCpp[thetaId, -(1:burnin)]),
               lglik=samplesCpp[llikId,-(1:burnin)],
               sigma = t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]))
 gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
-  with(gpode, gpds:::ptransmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
+  with(gpode, magi:::ptransmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
 gpode$fode <- aperm(gpode$fode, c(3,1,2))
 
-dotxtrue = gpds:::ptransmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
+dotxtrue = magi:::ptransmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
 
 odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 
-gpds:::plotPostSamplesFlex(
+magi:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 

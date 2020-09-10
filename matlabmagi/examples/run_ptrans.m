@@ -1,6 +1,6 @@
 addpath('models/');
 
-% Set location of local libcgpds.so before starting MATLAB 
+% Set location of local libcmagi.so before starting MATLAB
 % (if not installed system-wide)
 % e.g., export LD_LIBRARY_PATH="../cmagi/"
 
@@ -77,7 +77,7 @@ ptmodel.thetaLowerBound= [0 0 0 0 0 0];
 ptmodel.thetaUpperBound= [4 4 4 4 4 4];
 
 % get initial phi and sigma estimate
-[samplesCpp, phiUsed] = solveGpds( exoxInit(ismember(xsim(:,1),0:1:100),:), ptmodel, 0:1:100, [], [], [], [], [], [], config.priorTemperature, config.priorTemperature, 1, char(config.kernel), config.hmcSteps, config.burninRatio, 2, ...
+[samplesCpp, phiUsed] = solveMagi( exoxInit(ismember(xsim(:,1),0:1:100),:), ptmodel, 0:1:100, [], [], [], [], [], [], config.priorTemperature, config.priorTemperature, 1, char(config.kernel), config.hmcSteps, config.burninRatio, 2, ...
     config.stepSizeFactor, config.max_epoch, config.bandsize, config.useFrequencyBasedPrior, config.useBand, config.useMean, config.useScalerSigma, config.useFixedSigma, true);
 
 outCpp = samplesCpp;
@@ -85,11 +85,11 @@ outCpp(:,1) = [];
 sigmaUsed = outCpp((size(outCpp,1)-size(xsim,2)+2):size(outCpp,1),:)';
 
 % optimize phi
-[samplesCpp, phiUsed] = solveGpds( exoxInit(ismember(xsim(:,1),0:1:100),:), ptmodel, 0:1:100, sigmaUsed, [], [], [], [], [], config.priorTemperature, config.priorTemperature, 1, char(config.kernel), config.hmcSteps, config.burninRatio, 2, ...
+[samplesCpp, phiUsed] = solveMagi( exoxInit(ismember(xsim(:,1),0:1:100),:), ptmodel, 0:1:100, sigmaUsed, [], [], [], [], [], config.priorTemperature, config.priorTemperature, 1, char(config.kernel), config.hmcSteps, config.burninRatio, 2, ...
     config.stepSizeFactor, config.max_epoch, config.bandsize, config.useFrequencyBasedPrior, config.useBand, config.useMean, config.useScalerSigma, config.useFixedSigma, true);
 
 % HMC sampling
-[samplesCpp, phiUsed] = solveGpds( xsim(:,2:size(xsim,2)), ptmodel, xsim(:,1)', sigmaUsed, phiUsed, exoxInit, [], [], [], config.priorTemperature, config.priorTemperature, 1, char(config.kernel), config.hmcSteps, config.burninRatio, config.n_iter, ...
+[samplesCpp, phiUsed] = solveMagi( xsim(:,2:size(xsim,2)), ptmodel, xsim(:,1)', sigmaUsed, phiUsed, exoxInit, [], [], [], config.priorTemperature, config.priorTemperature, 1, char(config.kernel), config.hmcSteps, config.burninRatio, config.n_iter, ...
     config.stepSizeFactor, config.max_epoch, config.bandsize, config.useFrequencyBasedPrior, config.useBand, config.useMean, config.useScalerSigma, config.useFixedSigma, true);
 
 burnin = round(config.n_iter*config.burninRatio);

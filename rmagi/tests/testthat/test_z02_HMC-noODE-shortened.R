@@ -2,8 +2,8 @@ testthat::context("test run HMC-noODE")
 ### Required variables
 ### - fn.sim with nobs rows (noisy V and R in cols 1 & 2, using sigma = 0.1)
 ### - VRtrue with 401 rows (V and R true)
-library(gpds)
-VRtrue <- read.csv(system.file("testdata/FN.csv", package="gpds"))
+library(magi)
+VRtrue <- read.csv(system.file("testdata/FN.csv", package="magi"))
 
 phitrue <- list(
   compact1 = c(2.618, 6.381, 0.152, 9.636),
@@ -102,7 +102,7 @@ gpfit$vtrue <- getMeanCurve(fn.sim$time, fn.sim$Vtrue, plotx,
 gpfit$rtrue <- getMeanCurve(fn.sim$time, fn.sim$Rtrue, plotx, 
                             gpfit$rphi, sigma.mat=gpfit$sigma, kerneltype)
 
-post.noODE <- gpds:::summary.post.noODE(paste0("C-GPfit-",noise,"-",kerneltype,".pdf"), 
+post.noODE <- magi:::summary.post.noODE(paste0("C-GPfit-",noise,"-",kerneltype,".pdf"),
                                  fn.true, fn.sim, gpfit, pram.true, plotx)
 
 startX <- c(post.noODE$init.epost$vtrue, post.noODE$init.epost$rtrue)

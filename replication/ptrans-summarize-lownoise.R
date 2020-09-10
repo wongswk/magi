@@ -1,5 +1,5 @@
 # Summarize the results
-library(gpds)
+library(magi)
 
 config <- list()
 config$modelName <- "PTrans"
@@ -12,9 +12,9 @@ seeds <- unlist(lapply(seeds, function(x) gsub(".*PTrans-([0-9]+).*rda", "\\1", 
 
 ptransmodel <- list(
   name= config$modelName,
-  fOde=gpds:::ptransmodelODE,
-  fOdeDx=gpds:::ptransmodelDx,
-  fOdeDtheta=gpds:::ptransmodelDtheta,
+  fOde=magi:::ptransmodelODE,
+  fOdeDx=magi:::ptransmodelDx,
+  fOdeDtheta=magi:::ptransmodelDtheta,
   thetaLowerBound=rep(0,6),
   thetaUpperBound=rep(4,6)
 )

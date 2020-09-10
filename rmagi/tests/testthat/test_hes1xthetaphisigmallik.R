@@ -1,6 +1,6 @@
 rm(list=ls())
 
-library(gpds)
+library(magi)
 
 config <- list(
   nobs = 11,
@@ -34,7 +34,7 @@ pram.true <- list(
 times <- seq(0, 60*4, by = 0.01)
 
 modelODE <- function(t, state, parameters) {
-  list(as.vector(gpds:::hes1modelODE(parameters, t(state))))
+  list(as.vector(magi:::hes1modelODE(parameters, t(state))))
 }
 
 xtrue <- deSolve::ode(y = pram.true$x0, times = times, func = modelODE, parms = pram.true$theta)

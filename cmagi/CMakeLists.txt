@@ -37,16 +37,16 @@ find_library(RLAPACK NAMES Rlapack PATHS ${R_PATH}/Resources/lib/ ${R_PATH}/lib/
 find_library(PTHREAD NAMES pthread PATHS /usr/lib/)
 
 
-file(GLOB LIB_GPDS_HEADERS "*.h")
-file(GLOB LIB_GPDS_SOURCE "*.cpp")
+file(GLOB LIB_MAGI_HEADERS "*.h")
+file(GLOB LIB_MAGI_SOURCE "*.cpp")
 
-add_library(cgpds SHARED ${LIB_GPDS_HEADERS} ${LIB_GPDS_SOURCE})
-target_include_directories(cgpds PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+add_library(cmagi SHARED ${LIB_MAGI_HEADERS} ${LIB_MAGI_SOURCE})
+target_include_directories(cmagi PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 #add_definitions(-DARMA_BLAS_LONG_LONG)
-set_target_properties(cgpds PROPERTIES COMPILE_DEFINITIONS "ARMA_BLAS_LONG_LONG")
-target_link_libraries(cgpds ${BLAS} ${ARMADILLO} ${LAPACK} ${PTHREAD})
+set_target_properties(cmagi PROPERTIES COMPILE_DEFINITIONS "ARMA_BLAS_LONG_LONG")
+target_link_libraries(cmagi ${BLAS} ${ARMADILLO} ${LAPACK} ${PTHREAD})
 
 SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
-add_executable(gpds_main ${CMAKE_CURRENT_SOURCE_DIR}/tests/main.cpp)
-target_include_directories(gpds_main PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
-target_link_libraries(gpds_main cgpds ${ARMADILLO})
+add_executable(magi_main ${CMAKE_CURRENT_SOURCE_DIR}/tests/main.cpp)
+target_include_directories(magi_main PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+target_link_libraries(magi_main cmagi ${ARMADILLO})

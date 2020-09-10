@@ -1,5 +1,5 @@
 import numpy as np
-from arma import ode_system, solve_gpds
+from arma import ode_system, solve_magi
 
 
 def fOde(theta, x):
@@ -108,7 +108,7 @@ yFull[np.linspace(1, 31, num=16).astype(int), 1] = ydataM
 tvecFull = np.linspace(0, 240, num=33)
 
 
-result = solve_gpds(
+result = solve_magi(
     yFull,
     hes1_system,
     tvecFull,

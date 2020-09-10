@@ -1,12 +1,12 @@
 library(testthat)
-library(gpds)
+library(magi)
 
 context("x theta phi log likelihood")
 
 nobs <- 11
 noise <- 0.05
 
-VRtrue <- read.csv(system.file("testdata/FN.csv", package="gpds"))
+VRtrue <- read.csv(system.file("testdata/FN.csv", package="magi"))
 pram.true <- list(
   abc=c(0.2,0.2,3),
   rphi=c(0.9486433, 3.2682434),
@@ -55,7 +55,7 @@ testthat::test_that("xthetaphisigmallik differs to xthetallik and loglikOrig by 
     
     xthInit <- c(xlatentTest, thetaTest)
     
-    out1 <- gpds::xthetallikC(dataInput, curCovV, curCovR, sigmaTest, xthInit)
+    out1 <- magi::xthetallikC(dataInput, curCovV, curCovR, sigmaTest, xthInit)
     out2 <- loglikWithNormalizingConstants(xlatentTest,
                                            thetaTest,
                                            phiTest,
@@ -248,7 +248,7 @@ test_that("xthetaphisigma sampler can run", {
 if(interactive()){
   # speed benchmark
   mb <- microbenchmark::microbenchmark(
-  gpds::xthetallikC(dataInput, curCovV, curCovR, pram.true$sigma, xthInit),
+  magi::xthetallikC(dataInput, curCovV, curCovR, pram.true$sigma, xthInit),
   loglikOrig(fn.true[seq(1,nrow(fn.true), length=nobs),],
              pram.true$abc,
              c(pram.true$vphi, pram.true$rphi),

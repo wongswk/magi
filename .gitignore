@@ -10,13 +10,13 @@ dynamic-systems.Rproj
 plot/*
 *.rda
 *.pdf
-gpds/src/RcppExports.cpp
-gpds/R/RcppExports.R
+magi/src/RcppExports.cpp
+magi/R/RcppExports.R
 *.so
-gpds/man/*
-gpds/tests/testthat/testout*.txt
+magi/man/*
+magi/tests/testthat/testout*.txt
 FnLargeExperiment/rsconnect/shinyapps.io/*
-gpds/testout*.txt
+magi/testout*.txt
 *.xlsx
 *.xls
 *.zip
@@ -36,6 +36,6 @@ rmagi/R/RcppExports.R
 __pycache__
 package/boost*
 rmagi/man
-cmagi/gpds_main
+cmagi/magi_main
 rmagi/src/*.o
 

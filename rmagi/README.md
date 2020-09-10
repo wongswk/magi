@@ -6,7 +6,7 @@ Three complete, self-contained dynamic system examples are provided in the `exam
   * FitzHugh-Nagumo (FN) system
   * Protein transduction (PTrans) system
 
-Each example lays out how to prepare the input to `GpdsSolver`, and then use the output to plot inferred trajectories and compute parameter estimates.
+Each example lays out how to prepare the input to `MagiSolver`, and then use the output to plot inferred trajectories and compute parameter estimates.
 
 Further details on how to set up your own ODE system for inference are provided below, following the FitzHugh-Nagumo system  as an illustrative example.
 
@@ -59,7 +59,7 @@ fnmodelDtheta <- function(theta,x) {
   resultDtheta
 }
 ```
-Now we are ready to create a list object representing the dynamic system model to pass to `GpdsSolver`.  First, give the system a name.  Then, supply the three arguments -- ODEs, gradient with respect to `x`, gradient with respect to `theta` -- using the three functions created above.  Lastly, supply two vectors, `thetaLowerBound` and `thetaUpperBound`, that specify the lower and upper bounds on the parameters `theta`.
+Now we are ready to create a list object representing the dynamic system model to pass to `MagiSolver`.  First, give the system a name.  Then, supply the three arguments -- ODEs, gradient with respect to `x`, gradient with respect to `theta` -- using the three functions created above.  Lastly, supply two vectors, `thetaLowerBound` and `thetaUpperBound`, that specify the lower and upper bounds on the parameters `theta`.
 
 ```
 fnmodel <- list(

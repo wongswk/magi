@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.9)
-project(gpds_multi_lang)
+project(magi_multi_lang)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_COMPILER g++-6)

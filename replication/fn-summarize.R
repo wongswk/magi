@@ -1,5 +1,5 @@
 # Summarize the results
-library(gpds)
+library(magi)
 
 config <- list()
 config$modelName <- "FN"
@@ -11,9 +11,9 @@ seeds <- seeds[grep(".*FN-([0-9]+)-noise.*", seeds)]
 seeds <- unique(gsub(".*FN-([0-9]+)-noise.*", "\\1", seeds))
 
 fnmodel <- list(
-  fOde=gpds:::fODE,
-  fOdeDx=gpds:::fnmodelDx,
-  fOdeDtheta=gpds:::fnmodelDtheta,
+  fOde=magi:::fODE,
+  fOdeDx=magi:::fnmodelDx,
+  fOdeDtheta=magi:::fnmodelDtheta,
   thetaLowerBound=c(0,0,0),
   thetaUpperBound=c(Inf,Inf,Inf),
   name="FN"

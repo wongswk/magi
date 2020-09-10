@@ -70,7 +70,7 @@ for(kerneltype in c("compact1","rbf","matern","periodicMatern","generalMatern",
   
   
   
-  fn.true <- read.csv(system.file("testdata/FN.csv", package="gpds"))
+  fn.true <- read.csv(system.file("testdata/FN.csv", package="magi"))
   fn.true$time <- fn.true$time <- seq(0,20,0.05)
   
   abc <- c(0.2, 0.2, 3)

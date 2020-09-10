@@ -1,7 +1,7 @@
 #include "RcppArmadillo.h"
 #include "classDefinition.h"
 #include "Sampler.h"
-#include "GpdsSolver.h"
+#include "MagiSolver.h"
 
 namespace Rcpp
 {
@@ -153,9 +153,9 @@ namespace Rcpp
         );
     }
 
-    // GpdsSolver - NOT WORKING
+    // MagiSolver - NOT WORKING
     template <>
-    SEXP wrap(const GpdsSolver& object)
+    SEXP wrap(const MagiSolver& object)
     {
         return List::create(
                 Named("llikxthetasigmaSamples")=object.llikxthetasigmaSamples,

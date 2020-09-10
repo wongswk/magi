@@ -1,12 +1,12 @@
 library(testthat)
-library(gpds)
+library(magi)
 
 context("x theta sigma phi1 log likelihood")
 
 nobs <- 11
 noise <- 0.05
 
-VRtrue <- read.csv(system.file("testdata/FN.csv", package="gpds"))
+VRtrue <- read.csv(system.file("testdata/FN.csv", package="magi"))
 pram.true <- list(
   abc=c(0.2,0.2,3),
   rphi=c(0.9486433, 3.2682434),

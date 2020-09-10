@@ -1,6 +1,6 @@
 addpath('models/');
 
-% Set location of local libcgpds.so before starting MATLAB 
+% Set location of local libcmagi.so before starting MATLAB
 % (if not installed system-wide)
 % e.g., export LD_LIBRARY_PATH="../cmagi/"
 
@@ -63,7 +63,7 @@ hes1model.fOdeDtheta= @hes1logmodelDtheta;
 hes1model.thetaLowerBound= [0 0 0 0 0 0 0];
 hes1model.thetaUpperBound= [Inf Inf Inf Inf Inf Inf Inf];
 
-[samplesCpp, phiUsed] = solveGpds( xsim(:,2:size(xsim,2)), hes1model, xsim(:,1)', pram_true.sigma, [], [], [], [], [], config.priorTemperature, config.priorTemperature, 1, char(config.kernel), config.hmcSteps, config.burninRatio, config.n_iter, ...
+[samplesCpp, phiUsed] = solveMagi( xsim(:,2:size(xsim,2)), hes1model, xsim(:,1)', pram_true.sigma, [], [], [], [], [], config.priorTemperature, config.priorTemperature, 1, char(config.kernel), config.hmcSteps, config.burninRatio, config.n_iter, ...
     config.stepSizeFactor, config.max_epoch, config.bandsize, config.useFrequencyBasedPrior, config.useBand, config.useMean, config.useScalerSigma, config.useFixedSigma, true);
 
 burnin = round(config.n_iter*config.burninRatio);

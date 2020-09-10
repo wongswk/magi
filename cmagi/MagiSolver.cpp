@@ -1,11 +1,11 @@
-#include "GpdsSolver.h"
+#include "MagiSolver.h"
 #include "gpsmoothing.h"
 #include "tgtdistr.h"
 #include "fullloglikelihood.h"
 #include "Sampler.h"
 
 
-GpdsSolver::GpdsSolver(const arma::mat & yFull,
+MagiSolver::MagiSolver(const arma::mat & yFull,
                        const OdeSystem & odeModel,
                        const arma::vec & tvecFull,
                        const arma::vec & sigmaExogenous,
@@ -112,7 +112,7 @@ GpdsSolver::GpdsSolver(const arma::mat & yFull,
 
 }
 
-void GpdsSolver::setupPhiSigma() {
+void MagiSolver::setupPhiSigma() {
     if(sigmaExogenous.empty() && phiExogenous.empty()){
         if(useScalerSigma){
             const arma::vec & phisig = gpsmooth(yObs,
@@ -215,7 +215,7 @@ void GpdsSolver::setupPhiSigma() {
     }
 }
 
-void GpdsSolver::initXmudotmu() {
+void MagiSolver::initXmudotmu() {
     arma::vec sigmaUsed(ydim);
     if(useScalerSigma){
         sigmaUsed.fill(sigmaInit(0));
@@ -278,7 +278,7 @@ void GpdsSolver::initXmudotmu() {
     }
 }
 
-void GpdsSolver::initTheta() {
+void MagiSolver::initTheta() {
     arma::vec sigmaUsed(ydim);
     if(useScalerSigma){
         sigmaUsed.fill(sigmaInit(0));
@@ -299,7 +299,7 @@ void GpdsSolver::initTheta() {
     }
 }
 
-void GpdsSolver::initMissingComponent() {
+void MagiSolver::initMissingComponent() {
     const unsigned int nSGD = 0;  // skip sgd, not useful, and produce unstable result due to delay eval of arma
     double learningRate = 1e-6;
     const arma::uvec & nobsEachDim = arma::sum(indicatorMatWithObs, 0).t();
@@ -462,7 +462,7 @@ void GpdsSolver::initMissingComponent() {
               << "\n";
 }
 
-void GpdsSolver::doHMC(int iEpoch) {
+void MagiSolver::doHMC(int iEpoch) {
     Sampler hmcSampler(yFull,
                        covAllDimensions,
                        nstepsHmc,
@@ -479,7 +479,7 @@ void GpdsSolver::doHMC(int iEpoch) {
     stepLow = hmcSampler.stepLow;
 }
 
-void GpdsSolver::sampleInEpochs() {
+void MagiSolver::sampleInEpochs() {
     std::string epochMethod = "mean";
 
     stepLow = arma::vec(llikxthetasigmaSamples.n_rows - 1);

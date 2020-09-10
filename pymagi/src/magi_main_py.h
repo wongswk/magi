@@ -2,12 +2,12 @@
 // Created by Shihao Yang on 6/5/20.
 //
 
-#ifndef GPDS_MULTI_LANG_GPDS_MAIN_PY_H
+#ifndef MAGI_MULTI_LANG_MAGI_MAIN_PY_H
 #include <classDefinition.h>
-#include <GpdsSolver.h>
-#define GPDS_MULTI_LANG_GPDS_MAIN_PY_H
+#include <MagiSolver.h>
+#define MAGI_MULTI_LANG_MAGI_MAIN_PY_H
 
-GpdsSolver solveGpdsPy(const arma::mat & yFull,
+MagiSolver solveMagiPy(const arma::mat & yFull,
                        const OdeSystem & odeModel,
                        const arma::vec & tvecFull,
                        const arma::vec & sigmaExogenous = arma::vec(),
@@ -33,4 +33,4 @@ GpdsSolver solveGpdsPy(const arma::mat & yFull,
                        bool useFixedSigma = false,
                        bool verbose = false);
 
-#endif //GPDS_MULTI_LANG_GPDS_MAIN_PY_H
+#endif //MAGI_MULTI_LANG_MAGI_MAIN_PY_H

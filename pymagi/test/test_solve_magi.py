@@ -1,11 +1,11 @@
 import numpy as np
 from scipy.spatial import distance_matrix
-from pymagi import ArmaVector, ArmaMatrix, ArmaCube, OdeSystem, solveGpdsPy
+from pymagi import ArmaVector, ArmaMatrix, ArmaCube, OdeSystem, solveMagiPy
 import unittest
 from arma import vector, matrix
 
 
-class SolveGpdsTest(unittest.TestCase):
+class SolveMagiTest(unittest.TestCase):
     def test_solve_fn(self):
         fn_system = OdeSystem()
         def fOde(theta, x):
@@ -75,7 +75,7 @@ class SolveGpdsTest(unittest.TestCase):
         yFull = np.ndarray([81, 2])
         yFull.fill(np.nan)
         yFull[np.linspace(0, 80, num=41).astype(int),:] = ydata
-        result_solver = solveGpdsPy(
+        result_solver = solveMagiPy(
             yFull=ArmaMatrix(yFull).t(),
             odeModel=fn_system,
             tvecFull=ArmaVector(tvecFull),
@@ -187,7 +187,7 @@ class SolveGpdsTest(unittest.TestCase):
         yFull[np.linspace(1, 31, num=16).astype(int),1] = ydataM
 
         tvecFull = np.linspace(0, 240, num=33)
-        result_solver = solveGpdsPy(
+        result_solver = solveMagiPy(
             yFull=ArmaMatrix(yFull).t(),
             odeModel=hes1_system,
             tvecFull=ArmaVector(tvecFull),

@@ -2,8 +2,8 @@
 // Created by Shihao Yang on 2019-08-22.
 //
 
-#ifndef GPDS_MULTI_LANG_GPSMOOTHING_H
-#define GPDS_MULTI_LANG_GPSMOOTHING_H
+#ifndef MAGI_MULTI_LANG_GPSMOOTHING_H
+#define MAGI_MULTI_LANG_GPSMOOTHING_H
 
 #include "classDefinition.h"
 arma::vec optimizeThetaInit(const arma::mat & yobsInput,
@@ -48,4 +48,4 @@ arma::mat optimizeXmissingThetaPhi(const arma::mat & yobsInput,
                                    const arma::mat & phiInitInput,
                                    const arma::uvec & missingComponentDim);
 
-#endif //GPDS_MULTI_LANG_GPSMOOTHING_H
+#endif //MAGI_MULTI_LANG_GPSMOOTHING_H

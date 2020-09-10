@@ -2,9 +2,9 @@
 // Created by Shihao Yang on 6/5/20.
 //
 
-#include "gpds_main_py.h"
+#include "magi_main_py.h"
 
-GpdsSolver solveGpdsPy(const arma::mat & yFull,
+MagiSolver solveMagiPy(const arma::mat & yFull,
                       const OdeSystem & odeModel,
                       const arma::vec & tvecFull,
                       const arma::vec & sigmaExogenous ,
@@ -30,7 +30,7 @@ GpdsSolver solveGpdsPy(const arma::mat & yFull,
                       bool useFixedSigma ,
                       bool verbose) {
 
-    GpdsSolver solver(yFull,
+    MagiSolver solver(yFull,
                       odeModel,
                       tvecFull,
                       sigmaExogenous,

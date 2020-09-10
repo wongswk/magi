@@ -6,7 +6,7 @@ Three complete, self-contained dynamic system examples are provided in the `exam
   * FitzHugh-Nagumo (FN) system
   * Protein transduction (PTrans) system
 
-Each example lays out how to prepare the input to `GpdsSolver`, and then use the output to plot inferred trajectories and compute parameter estimates.
+Each example lays out how to prepare the input to `MagiSolver`, and then use the output to plot inferred trajectories and compute parameter estimates.
 
 Further details on how to set up your own ODE system for inference are provided below, following the FitzHugh-Nagumo system  as an illustrative example.
 
@@ -47,7 +47,7 @@ def fOdeDtheta(theta, x):
     resultDtheta[:,2,1] = 1.0/pow(theta[2], 2) * ( V - theta[0] + theta[1] * R)
     return resultDtheta
 ```
-Now we are ready to create an `ode_system` object representing the dynamic system model to pass to `GpdsSolver`.  First, give the system a name.  Then, supply the three arguments -- ODEs, gradient with respect to `x`, gradient with respect to `theta` -- using the three functions created above.  Lastly, supply two vectors, `thetaLowerBound` and `thetaUpperBound`, that specify the lower and upper bounds on the parameters `theta`.
+Now we are ready to create an `ode_system` object representing the dynamic system model to pass to `MagiSolver`.  First, give the system a name.  Then, supply the three arguments -- ODEs, gradient with respect to `x`, gradient with respect to `theta` -- using the three functions created above.  Lastly, supply two vectors, `thetaLowerBound` and `thetaUpperBound`, that specify the lower and upper bounds on the parameters `theta`.
 
 ```
 fn_system = ode_system("FN-python", fOde, fOdeDx, fOdeDtheta,

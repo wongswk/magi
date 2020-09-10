@@ -1,4 +1,4 @@
-library(gpds)
+library(magi)
 
 config <- list(
   nobs = 41,
@@ -14,7 +14,7 @@ config <- list(
   stepSizeFactor = 1
 )
 
-VRtrue <- read.csv(system.file("testdata/FN.csv", package="gpds"))
+VRtrue <- read.csv(system.file("testdata/FN.csv", package="magi"))
 pram.true <- list(
   abc=c(0.2,0.2,3),
   rphi=c(0.9486433, 3.2682434),
@@ -34,15 +34,15 @@ fn.sim.obs <- fn.sim[seq(1,nrow(fn.sim), length=config$nobs),]
 tvec.nobs <- fn.sim$time[seq(1,nrow(fn.sim), length=config$nobs)]
 
 testthat::test_that("c++ calcFrequencyBasedPrior correct", {
-  priorFactor <<- gpds:::calcFrequencyBasedPrior(fn.sim.obs[,1])
-  priorFactor2 <<- gpds:::getFrequencyBasedPrior(fn.sim.obs[,1])
+  priorFactor <<- magi:::calcFrequencyBasedPrior(fn.sim.obs[,1])
+  priorFactor2 <<- magi:::getFrequencyBasedPrior(fn.sim.obs[,1])
   testthat::expect_true(all(priorFactor == priorFactor2))
 })
 
 testthat::test_that("c++ gpsmooth correct", {
   r.nobs <- abs(outer(tvec.nobs, t(tvec.nobs),'-')[,1,])
   yobs1 <- data.matrix(fn.sim.obs[,1,drop=FALSE])
-  outputc <- gpds:::gpsmooth(yobs1,
+  outputc <- magi:::gpsmooth(yobs1,
                              r.nobs,
                              config$kernel)
   
@@ -63,7 +63,7 @@ testthat::test_that("c++ gpsmooth correct", {
 testthat::test_that("c++ gpsmooth correct dim2", {
   r.nobs <- abs(outer(tvec.nobs, t(tvec.nobs),'-')[,1,])
   yobs1 <- data.matrix(fn.sim.obs[,1:2,drop=FALSE])
-  outputc <- gpds:::gpsmooth(yobs1,
+  outputc <- magi:::gpsmooth(yobs1,
                              r.nobs,
                              config$kernel)
   
@@ -84,7 +84,7 @@ testthat::test_that("c++ gpsmooth correct dim2", {
 testthat::test_that("c++ gpsmooth correct with fft prior", {
   r.nobs <- abs(outer(tvec.nobs, t(tvec.nobs),'-')[,1,])
   yobs1 <- data.matrix(fn.sim.obs[,1,drop=FALSE])
-  outputc <- gpds:::gpsmooth(yobs1,
+  outputc <- magi:::gpsmooth(yobs1,
                              r.nobs,
                              config$kernel,
                              -1,
@@ -116,13 +116,13 @@ testthat::test_that("c++ gpsmooth correct with fft prior", {
 testthat::test_that("c++ gpsmooth correct with fixed sigma fft prior", {
   r.nobs <- abs(outer(tvec.nobs, t(tvec.nobs),'-')[,1,])
   yobs1 <- data.matrix(fn.sim.obs[,1,drop=FALSE])
-  outputc <- gpds:::gpsmooth(yobs1,
+  outputc <- magi:::gpsmooth(yobs1,
                              r.nobs,
                              config$kernel,
                              0.1,
                              FALSE)
   
-  outputc <- gpds:::gpsmooth(yobs1,
+  outputc <- magi:::gpsmooth(yobs1,
                              r.nobs,
                              config$kernel,
                              0.1,
@@ -169,9 +169,9 @@ testthat::test_that("chainSamplerRcpp can run without error",{
   stepLowXthetasigmaInit <- c(rep(0.00035, 2*nall+3)*config$stepSizeFactor, 0, 0)
 
   fnmodel <- list(
-    fOde=gpds:::fODE,
-    fOdeDx=gpds:::fnmodelDx,
-    fOdeDtheta=gpds:::fnmodelDtheta,
+    fOde=magi:::fODE,
+    fOdeDx=magi:::fnmodelDx,
+    fOdeDtheta=magi:::fnmodelDtheta,
     thetaLowerBound=c(0,0,0),
     thetaUpperBound=c(Inf,Inf,Inf)
   )
@@ -209,7 +209,7 @@ testthat::test_that("chainSamplerRcpp can run without error",{
   )
 
   ## this gives segfault
-  # gpds:::optimizeThetaInit(
+  # magi:::optimizeThetaInit(
   #   yobsInput = data.matrix(fn.sim[,1:2]), 
   #   fOdeModelInput = fnmodel, 
   #   covAllDimensionsInput = list(curCovV, curCovR), 
@@ -218,7 +218,7 @@ testthat::test_that("chainSamplerRcpp can run without error",{
   #   xInitInput = cbind(fn.true$Vtrue, fn.true$Rtrue)
   # )
   
-  gpds:::optimizeThetaInitRcpp(
+  magi:::optimizeThetaInitRcpp(
     yobs = data.matrix(fn.sim[,1:2]), 
     modelInput = fnmodel, 
     covAllDimInput = list(curCovV, curCovR), 

@@ -1,5 +1,5 @@
 import numpy as np
-from pymagi import ArmaVector, ArmaMatrix, ArmaCube, OdeSystem, solveGpdsPy
+from pymagi import ArmaVector, ArmaMatrix, ArmaCube, OdeSystem, solveMagiPy
 
 
 def vector(arma_vector):
@@ -54,7 +54,7 @@ def ode_system(name, fOde, fOdeDx, fOdeDtheta, thetaLowerBound, thetaUpperBound)
     return system
 
 
-def solve_gpds(
+def solve_magi(
         yFull,
         odeModel,
         tvecFull,
@@ -88,7 +88,7 @@ def solve_gpds(
     muExogenous = ArmaMatrix(np.ndarray([0, 0])) if muExogenous.size == 0 else ArmaMatrix(muExogenous).t()
     dotmuExogenous=ArmaMatrix(np.ndarray([0, 0])) if dotmuExogenous.size == 0 else ArmaMatrix(dotmuExogenous).t()
 
-    result_solved = solveGpdsPy(
+    result_solved = solveMagiPy(
         yFull=ArmaMatrix(yFull).t(),
         odeModel=odeModel,
         tvecFull=ArmaVector(tvecFull),
