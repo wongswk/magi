@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export CPU=$(python -c 'import multiprocessing as mp; print(mp.cpu_count())')
+export CPU=$(python3 -c 'import multiprocessing as mp; print(mp.cpu_count())')
 export MAKE="make -j $CPU"
 
 PROJECT=$(pwd)
