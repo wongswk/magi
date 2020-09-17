@@ -62,4 +62,4 @@ There, we provide specific examples of how to set up and call `MagiSolver` in ea
 
 ### Reference
 
-For a full discussion of our method and examples, please see our paper "Inference of dynamic systems via constrained Gaussian processes" (https://arxiv.org/abs/2009.07444). 
+For a full discussion of our method and examples, please see our paper "Inference of dynamic systems via manifold-constrained Gaussian processes" (https://arxiv.org/abs/2009.07444). 
