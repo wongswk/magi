@@ -10,7 +10,7 @@ User interfaces are available in R, MATLAB, and Python.
 
 A comprehensive shell script `build.sh` is provided, which by default prepares all three interfaces.  Edit `build.sh` to specify the location of your R libraries, and remove the compilation blocks for any of R, MATLAB, Python that either will not be used or is unavailable on your system.  Then execute `build.sh` to install dependencies and compile the library.
 
-The pre-compiled binary for c++, R, and python is available as a docker image on docker hub: https://hub.docker.com/repository/docker/shihaoyangphd/magi
+The pre-compiled binary for C++, R, and Python is also available as a Docker image on Docker Hub: https://hub.docker.com/repository/docker/shihaoyangphd/magi
 
 ## Usage
 
@@ -62,4 +62,4 @@ There, we provide specific examples of how to set up and call `MagiSolver` in ea
 
 ### Reference
 
-For a full discussion of our method and examples, please see our paper "Inference of dynamic systems via constrained Gaussian processes" (https://arxiv.org/abs/xxxxx). 
+For a full discussion of our method and examples, please see our paper "Inference of dynamic systems via constrained Gaussian processes" (https://arxiv.org/abs/2009.07444). 
