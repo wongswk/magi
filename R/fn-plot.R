@@ -396,7 +396,7 @@ text(0.5, 0.5, "FGPGM", cex=2, font=2)
 plot(c(0,1), c(0,1) ,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
 text(0.5, 0.5, "AGM", cex=2, font=2)
 plot(c(0,1), c(0,1) ,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
-text(0.5, 0.5, "Method of Ref Ramsay et al.", cex=2, font=2)
+text(0.5, 0.5, "Method of Ref (7)", cex=2, font=2)
 dev.off()
 
 
