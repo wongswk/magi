@@ -61,8 +61,8 @@ if(config$loglikflag == "withmeanBand"){
 pram.true <- list(
   theta=c(0.2,0.2,3),
   x0 = c(-1, 1),
-  phi=c(0.9486433, 3.2682434,
-        1.9840824, 1.1185157),
+  phi=rbind(c(2.5, 0.75),
+            c(1.5, 3.00)),
   sigma=config$noise
 )
 
@@ -118,7 +118,7 @@ samplesCpp <- magi:::solveMagiRcpp(
   odeModel = fnmodel,
   tvecFull = xsim$time,
   sigmaExogenous = config$noise,
-  phiExogenous = matrix(pram.true$phi, ncol=2),
+  phiExogenous = pram.true$phi,
   xInitExogenous = xInitExogenous,
   thetaInitExogenous = matrix(nrow=0,ncol=0),
   muExogenous = matrix(nrow=0,ncol=0),
