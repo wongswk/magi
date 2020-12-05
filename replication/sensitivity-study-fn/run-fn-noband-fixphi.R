@@ -12,7 +12,7 @@ if(length(args) > 0){
   nobs_keep <- 41
 }
 
-outDir <- paste0("../results/fn-fill", filllevel, "-nobs", nobs_keep, "/")
+outDir <- paste0("../results/fn-fill", filllevel, "-nobs", nobs_keep, "-noband-fixphi/")
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 
 
