@@ -16,7 +16,7 @@ if(length(args) > 0){
   loglikflag <- "withmeanBand"
 }
 
-outDir <- paste0("../results/fn-fill", filllevel, "-nobs", nobs_keep, "-", loglikflag, "-fixphi-", temperature, "/")
+outDir <- paste0("../results/fn-ideal-fill", filllevel, "-nobs", nobs_keep, "-", loglikflag, "-fixphi-", temperature, "/")
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 
 
