@@ -65,8 +65,10 @@ if(config$loglikflag == "withmeanBand"){
 pram.true <- list(
   theta=c(0.2,0.2,3),
   x0 = c(-1, 1),
-  phi=rbind(c(2.5, 0.75),
-            c(1.5, 3.00)),
+  # phi=rbind(c(2.5, 0.75),
+  #           c(1.5, 3.00)),
+  phi=rbind(c(1.9840824, 0.9486433),
+            c(1.1185157, 3.2682434)),
   sigma=config$noise
 )
 
@@ -113,8 +115,11 @@ if(temperature == "heating"){
 }else if(temperature == "cooling"){
   config$priorTemperature <- 1
   config$priorTemperatureObs <- config$nobs / config$ndis
+}else if(temperature == "notempering"){
+  config$priorTemperature <- 1
+  config$priorTemperatureObs <- 1
 }else{
-  stop("temperature must be 'heating' or 'cooling'")
+  stop("temperature must be 'heating' or 'cooling' or 'notempering'")
 }
 
 xInitExogenous <- data.matrix(xsim[,-1])
