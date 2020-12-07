@@ -1,11 +1,11 @@
 library(magi)
 
 args <- commandArgs(trailingOnly = TRUE)
-args <- as.numeric(args)
+
 if(length(args) > 0){
-  filllevel <- args[1]
-  seed <- scan("fn-seeds.txt")[args[2]]
-  nobs_keep <- args[3]
+  filllevel <- as.numeric(args[1])
+  seed <- scan("fn-seeds.txt")[as.numeric(args[2])]
+  nobs_keep <- as.numeric(args[3])
   temperature <- args[4]
   loglikflag <- args[5]
 }else{
