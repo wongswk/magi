@@ -6,13 +6,17 @@ if(length(args) > 0){
   filllevel <- args[1]
   seed <- scan("fn-seeds.txt")[args[2]]
   nobs_keep <- args[3]
+  temperature <- args[4]
+  loglikflag <- args[5]
 }else{
   seed <- (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9
   filllevel <- 2
   nobs_keep <- 41
+  temperature <- "heating"
+  loglikflag <- "withmeanBand"
 }
 
-outDir <- paste0("../results/fn-fill", filllevel, "-nobs", nobs_keep, "-noband-fixphi/")
+outDir <- paste0("../results/fn-fill", filllevel, "-nobs", nobs_keep, "-", loglikflag, "-fixphi-", temperature, "/")
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 
 
@@ -23,7 +27,7 @@ if(!exists("config")){
     noise = c(0.2, 0.2),
     kernel = "generalMatern",
     seed = seed,
-    loglikflag = "withmean",
+    loglikflag = loglikflag,
     bandsize = 20,
     hmcSteps = 100,
     n.iter = 20001,
@@ -103,8 +107,15 @@ fnmodel <- list(
   name="FN"
 )
 
-config$priorTemperature <- config$ndis / config$nobs  
-config$priorTemperatureObs <- 1
+if(temperature == "heating"){
+  config$priorTemperature <- config$ndis / config$nobs  
+  config$priorTemperatureObs <- 1
+}else if(temperature == "cooling"){
+  config$priorTemperature <- 1
+  config$priorTemperatureObs <- config$nobs / config$ndis
+}else{
+  stop("temperature must be 'heating' or 'cooling'")
+}
 
 xInitExogenous <- data.matrix(xsim[,-1])
 for (j in 1:(ncol(xsim)-1)){
