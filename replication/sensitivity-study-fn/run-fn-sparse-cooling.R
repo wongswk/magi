@@ -12,7 +12,7 @@ if(length(args) > 0){
   nobs_keep <- 21
 }
 
-outDir <- paste0("../results/fn-sparse-fill", filllevel, "-nobs", nobs_keep, "/")
+outDir <- paste0("../results/fn-sparse-cooling-fill", filllevel, "-nobs", nobs_keep, "/")
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 
 
