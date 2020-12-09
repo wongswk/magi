@@ -33,6 +33,45 @@ for (i in 1:100) {
 }
 summarize("../results/fn-fill7-nobs6-withmeanBand-fixphi-cooling/")
 
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-ideal.R 5 ", i, " 6 heating withmeanBand"), wait=FALSE)
+}
+summarize("../results/fn-ideal-fill5-nobs6-withmeanBand-fixphi-heating/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-ideal.R 5 ", i, " 6 cooling withmeanBand"), wait=FALSE)
+}
+summarize("../results/fn-ideal-fill5-nobs6-withmeanBand-fixphi-cooling/")
+
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-noband-fixphi.R 5 ", i, " 6 notempering withmeanBand"), wait=FALSE)
+}
+summarize("../results/fn-fill5-nobs6-withmeanBand-fixphi-notempering/")
+
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-sparse.R 3 ", i, " 21"), wait=FALSE)
+}
+summarize("../results/fn-sparse-fill3-nobs21/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-sparse.R 4 ", i, " 11"), wait=FALSE)
+}
+summarize("../results/fn-sparse-fill4-nobs11/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-sparse.R 5 ", i, " 6"), wait=FALSE)
+}
+summarize("../results/fn-sparse-fill5-nobs6/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-sparse-cooling.R 5 ", i, " 6"), wait=FALSE)
+}
+summarize("../results/fn-sparse-cooling-fill5-nobs6/")
+
+
 ## Summarize results, make table and figures
 source("fn-summarize.R")
+summarize("~/Workspace/DynamicSys/results/sensitivity-result/fn-fill3-nobs21/")
 

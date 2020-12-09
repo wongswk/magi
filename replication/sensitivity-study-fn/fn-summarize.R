@@ -76,12 +76,18 @@ summarize <- function(rdaDir){
   
   oursPostTheta <- list()
   OursTimeUsedAll <- c()
+  OursPhi <- list()
+  OursSigma <- list()
   
   for (i in seeds) {
     show(i)
     j <- j+1
     
     load(paste0(rdaDir, config$modelName,"-",i,"-noise", config$noise[1], ".rda"))
+    phi1used <- as.numeric(unlist(strsplit(config$phiD1, "; ")))
+    phi2used <- as.numeric(unlist(strsplit(config$phiD2, "; ")))
+    OursPhi[[j]] <- cbind(phi1used, phi2used)
+    OursSigma[[j]] <- apply(gpode$sigma, 2, mean)
     OursTimeUsedAll[j] <- OursTimeUsed
     xsim.obs <- xsim[complete.cases(xsim),]
     ours[[j]] <- rmsePostSamples(xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
@@ -286,6 +292,21 @@ summarize <- function(rdaDir){
   print("time used in seconds")
   print(summary(OursTimeUsedAll))
   
+  OursPhi <- sapply(OursPhi, identity, simplify="array")
+  print("median phi")
+  print(apply(OursPhi, 1:2, median))
+  print("phi1 for V")
+  print(summary(OursPhi[1,1,]))
+  print("phi2 for V")
+  print(summary(OursPhi[2,1,]))
+  print("phi1 for R")
+  print(summary(OursPhi[1,2,]))
+  print("phi2 for R")
+  print(summary(OursPhi[2,2,]))
+  
+  print("\n inferred sigma")
+  OursSigma <- do.call(rbind, OursSigma)
+  print(apply(OursSigma, 2, summary))
   sink()
 }
 
