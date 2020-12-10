@@ -70,6 +70,15 @@ for (i in 1:100) {
 }
 summarize("../results/fn-sparse-cooling-fill5-nobs6/")
 
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-sparse-fixsigma.R 5 ", i, " 6"), wait=FALSE)
+}
+summarize("../results/fn-sparse-fixsigma-fill5-nobs6/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-sparse-fixsigma-cooling.R 5 ", i, " 6"), wait=FALSE)
+}
+summarize("../results/fn-sparse-fixsigma-cooling-fill5-nobs6/")
 
 ## Summarize results, make table and figures
 source("fn-summarize.R")
