@@ -86,6 +86,17 @@ for (i in 1:100) {
 summarize("../results/fn-sparse-fixsigma-truemu-fill5-nobs6/")
 
 ## Summarize results, make table and figures
-source("fn-summarize.R")
-summarize("~/Workspace/DynamicSys/results/sensitivity-result/fn-fill3-nobs21/")
+# source("fn-summarize.R")
+# summarize("~/Workspace/DynamicSys/results/sensitivity-result/fn-fill3-nobs21/")
 
+for (i in 1:100) {
+  system(paste0("Rscript run-fn.R 2 ", i, " 41"), wait=FALSE)
+}
+summarize("../results/fn-fill2-nobs41/")
+
+
+for(seed_i in 1:5){
+  for (i in 0:10) {
+    system(paste0("Rscript run-fn.R ", i, " ", seed_i, " 41"), wait=FALSE)
+  }
+}
