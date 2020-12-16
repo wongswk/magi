@@ -90,6 +90,7 @@ public:
     void initXmudotmu();
     void initTheta();
     void initMissingComponent();
+    void initSparseComponent();
     void doHMC(int iEpoch);
     void sampleInEpochs();
 };
