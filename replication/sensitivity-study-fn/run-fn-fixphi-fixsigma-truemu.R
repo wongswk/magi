@@ -114,8 +114,10 @@ if(flagInitX == "linear"){
   for (j in 1:(ncol(xsim)-1)){
     xInitExogenous[, j] <- approx(xsim.obs$time, xsim.obs[,j+1], xsim$time)$y
   }
+  thetaInitExogenous <- matrix(nrow=0,ncol=0)
 }else if(flagInitX == "truth"){
   xInitExogenous <- sapply(xtrueFunc, function(f) f(xsim$time))
+  thetaInitExogenous <- pram.true$theta
 }
 
 OursStartTime <- proc.time()[3]
@@ -130,7 +132,7 @@ samplesCpp <- magi:::solveMagiRcpp(
   sigmaExogenous = config$noise,
   phiExogenous = pram.true$phi,
   xInitExogenous = xInitExogenous,
-  thetaInitExogenous = matrix(nrow=0,ncol=0),
+  thetaInitExogenous = thetaInitExogenous,
   muExogenous = mutrue,
   dotmuExogenous = dotmutrue,
   priorTemperatureLevel = config$priorTemperature,
