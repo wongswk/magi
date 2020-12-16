@@ -462,6 +462,95 @@ void MagiSolver::initMissingComponent() {
               << "\n";
 }
 
+void MagiSolver::initSparseComponent() {
+    const arma::uvec & nobsEachDim = arma::sum(indicatorMatWithObs, 0).t();
+    const arma::uvec & missingComponentDim = arma::find(nobsEachDim < 10);
+    if(missingComponentDim.empty()){
+        return;
+    }
+
+    const arma::uvec & observedComponentDim = arma::find(nobsEachDim >= 0);
+    if(xInitExogenous.empty()) {
+        for (auto iPtr = missingComponentDim.begin(); iPtr < missingComponentDim.end(); iPtr++) {
+            xInit.col(*iPtr) = arma::mean(xInit.cols(observedComponentDim), 1);
+            xInit.submat(idxColElemWithObs[*iPtr], arma::uvec({*iPtr})) =
+                    yFull.submat(idxColElemWithObs[*iPtr], arma::uvec({*iPtr}));
+        }
+    }
+
+    // phi for missing component
+    if(phiExogenous.empty()){
+        const arma::mat & phiMissingDimensions = optimizePhi(yFull,
+                                                             tvecFull,
+                                                             odeModel,
+                                                             sigmaInit,
+                                                             priorTemperature,
+                                                             xInit,
+                                                             thetaInit,
+                                                             phiAllDimensions,
+                                                             missingComponentDim);
+        if(verbose){
+            std::cout << "initSparseComponent: phiSparseDimensions = \n"
+                      << phiMissingDimensions << "\n";
+        }
+
+        phiAllDimensions.cols(missingComponentDim) = phiMissingDimensions;
+    }
+
+    if(verbose) {
+        std::cout << "phiAllDimensions = \n" << phiAllDimensions << "\n";
+    }
+
+    for(unsigned i = 0; i < missingComponentDim.size(); i++){
+        unsigned j = missingComponentDim[i];
+        auto mu = covAllDimensions[j].mu;
+        auto dotmu = covAllDimensions[j].dotmu;
+        covAllDimensions[j] = kernelCov(phiAllDimensions.col(j), distSignedFull, 3);
+        covAllDimensions[j].addBandCov(bandSize);
+        covAllDimensions[j].mu = mu;
+        covAllDimensions[j].dotmu = dotmu;
+    }
+
+    // update theta
+    initTheta();
+
+    const arma::vec & xthetaphi = optimizeXmissingThetaPhi(yFull,
+                                                           tvecFull,
+                                                           odeModel,
+                                                           sigmaInit,
+                                                           priorTemperature,
+                                                           xInit,
+                                                           thetaInit,
+                                                           phiAllDimensions,
+                                                           missingComponentDim);
+    for (unsigned id = 0; id < missingComponentDim.size(); id++){
+        xInit.col(missingComponentDim(id)) = xthetaphi.subvec(
+                xInit.n_rows * (id), xInit.n_rows * (id + 1) - 1);
+    }
+
+    thetaInit = xthetaphi.subvec(
+            xInit.n_rows * missingComponentDim.size(), xInit.n_rows * missingComponentDim.size() + thetaInit.size() - 1);
+
+    for (unsigned id = 0; id < missingComponentDim.size(); id++){
+        phiAllDimensions.col(missingComponentDim(id)) = xthetaphi.subvec(
+                xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * id,
+                xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * (id + 1) - 1);
+    }
+
+    const lp & llik = xthetaphisigmallik( xInit,
+                                          thetaInit,
+                                          phiAllDimensions,
+                                          sigmaInit,
+                                          yFull,
+                                          tvecFull,
+                                          odeModel);
+
+    std::cout << "\nafter optimization "
+              << "; xthetaphisigmallik = " << llik.value
+              << "; phi sparse dim = \n" << phiAllDimensions.cols(missingComponentDim).t()
+              << "\n";
+}
+
 void MagiSolver::doHMC(int iEpoch) {
     Sampler hmcSampler(yFull,
                        covAllDimensions,
