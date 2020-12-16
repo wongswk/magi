@@ -37,6 +37,10 @@ perl -pi -e 's/\#include <armadillo>/\#include \"RcppArmadillo.h\"/g' src/rcppma
 
 perl -pi -e 's/std::cout/Rcpp::Rcout/g' src/rcppmagi/paralleltempering.cpp
 
+COMPILING_INFORMATION="Build Date - $(date); GIT branch - $(git rev-parse --abbrev-ref HEAD); GIT commit number - $(git log -1 --oneline)"
+export COMPILING_INFORMATION
+perl -pi -e 's/COMPILING_INFORMATION_HERE/$ENV{COMPILING_INFORMATION}/g' R/zzz.R
+
 rsync -az src/rcppmagi/*.cpp src/
 rsync -az src/rcppmagi/*.h src/
 
