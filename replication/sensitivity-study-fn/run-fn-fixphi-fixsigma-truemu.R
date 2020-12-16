@@ -1,11 +1,10 @@
 library(magi)
 
 args <- commandArgs(trailingOnly = TRUE)
-args <- as.numeric(args)
 if(length(args) > 0){
-  filllevel <- args[1]
-  seed <- scan("fn-seeds.txt")[args[2]]
-  nobs_keep <- args[3]
+  filllevel <- as.numeric(args[1])
+  seed <- scan("fn-seeds.txt")[as.numeric(args[2])]
+  nobs_keep <- as.numeric(args[3])
   flagInitX <- args[4]
 }else{
   seed <- (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9
