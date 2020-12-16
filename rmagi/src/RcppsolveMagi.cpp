@@ -131,6 +131,7 @@ Rcpp::List solveMagiRcpp(
 
     //return yFull;
     solver.initMissingComponent();
+    solver.initSparseComponent();
     solver.sampleInEpochs();
 
     Rcpp::List ret = Rcpp::List::create(Rcpp::Named("llikxthetasigmaSamples")=solver.llikxthetasigmaSamples,

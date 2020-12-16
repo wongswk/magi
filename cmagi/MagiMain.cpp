@@ -61,6 +61,7 @@ arma::cube solveMagi(const arma::mat & yFull,
     solver.initXmudotmu();
     solver.initTheta();
     solver.initMissingComponent();
+    solver.initSparseComponent();
     solver.sampleInEpochs();
     return solver.llikxthetasigmaSamples;
 }
