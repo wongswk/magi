@@ -1,18 +1,20 @@
 library(magi)
 
 args <- commandArgs(trailingOnly = TRUE)
-args <- as.numeric(args)
+
 if(length(args) > 0){
-  filllevel <- args[1]
-  seed <- scan("fn-seeds.txt")[args[2]]
-  nobs_keep <- args[3]
+  filllevel <- as.numeric(args[1])
+  seed <- scan("fn-seeds.txt")[as.numeric(args[2])]
+  nobs_keep <- as.numeric(args[3])
+  flagInitX <- args[4]
 }else{
   seed <- (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9
   filllevel <- 3
   nobs_keep <- 21
+  flagInitX <- "linear"
 }
 
-outDir <- paste0("../results/fn-sparse-fixsigma-truemu-fill", filllevel, "-nobs", nobs_keep, "/")
+outDir <- paste0("../results/fn-sparse-fixsigma-truemu-fill", filllevel, "-nobs", nobs_keep, "-initX", flagInitX, "/")
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 
 
@@ -151,6 +153,15 @@ sigmaUsed <- tail(out[, 1], ncol(xsim[,-1]))
 
 mutrue <- sapply(xtrueFunc, function(f) f(xsim$time))
 dotmutrue <- magi:::fnmodelODE(pram.true$theta, mutrue)
+
+if(flagInitX == "linear"){
+  xInitExogenous <- data.matrix(xsim[,-1])
+  for (j in 1:(ncol(xsim)-1)){
+    xInitExogenous[, j] <- approx(xsim.obs$time, xsim.obs[,j+1], xsim$time)$y
+  }
+}else if(flagInitX == "truth"){
+  xInitExogenous <- sapply(xtrueFunc, function(f) f(xsim$time))
+}
 
 samplesCpp <- magi:::solveMagiRcpp(
   yFull = data.matrix(xsim[,-1]),
