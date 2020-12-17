@@ -686,12 +686,18 @@ public:
         }
         priorFactor /= (yobs.n_cols - missingComponentDim.size());
         std::cout << "XmissingThetaPhiOptim: average priorFactor in PhiOptim =\n" << priorFactor << "\n";
+        double lbPhi2;
+        if (isnan(priorFactor(0))){
+            lbPhi2 = minDist;
+        }else{
+            lbPhi2 = std::min(maxDist * priorFactor(0) * 0.5, minDist);
+        }
 
         for(unsigned i = 0; i < missingComponentDim.size(); i++){
             ub[xInit.n_rows * missingComponentDim.size() + thetaInit.size() + 2*i] = maxScale * 5;
             lb[xInit.n_rows * missingComponentDim.size() + thetaInit.size() + 2*i] = maxScale * 1e-3;
             ub[xInit.n_rows * missingComponentDim.size() + thetaInit.size() + 2*i+1] = maxDist * 5;
-            lb[xInit.n_rows * missingComponentDim.size() + thetaInit.size() + 2*i+1] = std::min(maxDist * priorFactor(0) * 0.5, minDist);
+            lb[xInit.n_rows * missingComponentDim.size() + thetaInit.size() + 2*i+1] = lbPhi2;
         }
         this->setLowerBound(lb);
         this->setUpperBound(ub);
