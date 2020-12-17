@@ -135,10 +135,15 @@ public:
         }
 
         Eigen::VectorXd lb(numparam);
-        lb.fill(1e-4);
-        this->setLowerBound(lb);
+        // FIXME the lower bound should be set using smarter way
+        lb.fill(1e-2);
 
         maxDist = dist.max();
+        arma::vec distVec = arma::vectorise(dist);
+        distVec = distVec(distVec > 1e-8);
+//        std::cout << "distVec(distVec > 0) = \n" << distVec << "\n";
+//        double minDist = distVec.min();
+//        std::cout << "minDist = " << minDist << "\n";
         double maxScale = arma::max(arma::abs(yobs(arma::find_finite(yobs))));
         maxScale = std::max(maxScale, maxDist);
 
@@ -153,6 +158,7 @@ public:
         }
         std::cout << "ub in PhiGaussianProcessSmoothing is " << ub << "\n";
         this->setUpperBound(ub);
+        this->setLowerBound(lb);
 
         priorFactor = arma::zeros(2);
         if(useFrequencyBasedPrior){
