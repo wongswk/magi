@@ -37,6 +37,7 @@ perl -pi -e 's/\#include <armadillo>/\#include \"RcppArmadillo.h\"/g' src/rcppma
 
 perl -pi -e 's/std::cout/Rcpp::Rcout/g' src/rcppmagi/paralleltempering.cpp
 
+git checkout -- R/zzz.R
 COMPILING_INFORMATION="Build Date - $(date); GIT branch - $(git rev-parse --abbrev-ref HEAD); GIT commit number - $(git log -1 --oneline)"
 export COMPILING_INFORMATION
 perl -pi -e 's/COMPILING_INFORMATION_HERE/$ENV{COMPILING_INFORMATION}/g' R/zzz.R
@@ -56,3 +57,4 @@ cd "$PROJECT"/rmagi/src && rm $LIB_PYMAGI_SOURCE $LIB_PYMAGI_HEADERS
 cd "$PROJECT"/rmagi || return
 ln -s "$(pwd)"/../cmagi/*.cpp src/
 ln -s "$(pwd)"/../cmagi/*.h src/
+git checkout -- R/zzz.R
