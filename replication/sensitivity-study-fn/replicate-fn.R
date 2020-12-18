@@ -103,8 +103,12 @@ summarize("../results/fn-fixphi-fixsigma-truemu-fill5-nobs6-initXlinear/")
 for (i in 1:100) {
   system(paste0("Rscript run-fn-fixphi-fixsigma-truemu.R 5 ", i, " 6 truth"), wait=FALSE)
 }
-# run next
 summarize("../results/fn-fixphi-fixsigma-truemu-fill5-nobs6-initXtruth/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn.R 5 ", i, " 6"), wait=FALSE)
+}
+summarize("../results/fn-fill5-nobs6/")
 
 ## Summarize results, make table and figures
 # source("fn-summarize.R")
