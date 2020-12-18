@@ -14,7 +14,7 @@ if(length(args) > 0){
 
 flagInitX <- "truth"
 
-outDir <- paste0("../results/fn-fill", filllevel, "-nobs", nobs_keep, "/")
+outDir <- paste0("../results/fn-init-truth-fill", filllevel, "-nobs", nobs_keep, "/")
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 
 
