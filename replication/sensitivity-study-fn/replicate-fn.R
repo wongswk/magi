@@ -110,6 +110,12 @@ for (i in 1:100) {
 }
 summarize("../results/fn-fill5-nobs6/")
 
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-init-truth.R 5 ", i, " 6"), wait=FALSE)
+}
+summarize("../results/fn-init-truth-fill5-nobs6/")
+
+
 ## Summarize results, make table and figures
 # source("fn-summarize.R")
 # summarize("~/Workspace/DynamicSys/results/sensitivity-result/fn-fill3-nobs21/")
