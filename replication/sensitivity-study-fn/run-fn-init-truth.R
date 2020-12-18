@@ -12,7 +12,7 @@ if(length(args) > 0){
   nobs_keep <- 41
 }
 
-flagInitX <- "linear"
+flagInitX <- "truth"
 
 outDir <- paste0("../results/fn-fill", filllevel, "-nobs", nobs_keep, "/")
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
