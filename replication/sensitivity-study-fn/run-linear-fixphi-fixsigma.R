@@ -7,7 +7,7 @@ if(length(args) > 0){
   seed <- scan("fn-seeds.txt")[as.numeric(args[2])]
   nobs_keep <- as.numeric(args[3])
 }else{
-  seed <- (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9
+  seed <- 117015794 # (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9
   filllevel <- 2
   nobs_keep <- 41
 }
