@@ -427,9 +427,9 @@ gpcov <- calCov(pram.true$phi,
                 -sign(outer(xtime,xtime,'-')),
                 kerneltype = "generalMatern",
                 bandsize = config$bandsize)
-sigma1 <- rbind(cbind(gpcov$Cinv, 0), 0)
-sigma2 <- t(cbind(gpcov$mphi, -1)) %*% gpcov$Kinv %*% cbind(gpcov$mphi, -1)
-dd <- diag(c(is.finite(xsim[,2]) * config$noise^2, 0))
+sigma1 <- rbind(cbind(gpcov$Cinv / config$priorTemperature, 0), 0)
+sigma2 <- t(cbind(gpcov$mphi, -1)) %*% (gpcov$Kinv / config$priorTemperature) %*% cbind(gpcov$mphi, -1)
+dd <- diag(c(is.finite(xsim[,2]) * config$noise^(-2) / config$priorTemperatureObs, 0))
 ztilde <- c(xsim[,2], 0)
 ztilde[is.na(ztilde)] <- 0
 
