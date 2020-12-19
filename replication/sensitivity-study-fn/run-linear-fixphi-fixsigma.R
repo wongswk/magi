@@ -12,7 +12,8 @@ if(length(args) > 0){
   nobs_keep <- 41
 }
 
-outDir <- paste0("../results/linear-fill", filllevel, "-nobs", nobs_keep, "/")
+temperature <- "heating"
+outDir <- paste0("../results/linear-fill", filllevel, "-nobs", nobs_keep, "-", temperature, "/")
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 
 #' FIXME HMC in R has bug for random seed
@@ -122,7 +123,6 @@ matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
 xsim <- insertNaN(xsim.obs,config$filllevel)
 
 # tempering must be disabled when comparing with analytical results
-temperature <- "notempering"
 if(temperature == "heating"){
   config$priorTemperature <- config$ndis / config$nobs  
   config$priorTemperatureObs <- 1
@@ -430,6 +430,7 @@ gpcov <- calCov(pram.true$phi,
 sigma1 <- rbind(cbind(gpcov$Cinv / config$priorTemperature, 0), 0)
 sigma2 <- t(cbind(gpcov$mphi, -1)) %*% (gpcov$Kinv / config$priorTemperature) %*% cbind(gpcov$mphi, -1)
 dd <- diag(c(is.finite(xsim[,2]) * config$noise^(-2) / config$priorTemperatureObs, 0))
+
 ztilde <- c(xsim[,2], 0)
 ztilde[is.na(ztilde)] <- 0
 
@@ -451,11 +452,14 @@ plot.ellipse <- function (A, mu, r, n.points = 1000) {
   lines(t(z), type = "l", col=2, lwd=2)
 }
 
+samples_iid <- rmvnorm(length(id_plot), x0theta_mean, x0theta_variance)
+
 pdf(paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], "analytical-contour.pdf"), height = 8, width = 8)
-plot(gpode$xsampled[id_plot,1,], gpode$theta[id_plot], xlab="x0", ylab="theta")
+plot(samples_iid, pch=2, col=2, xlab="x0", ylab="theta")
+points(gpode$xsampled[id_plot,1,], gpode$theta[id_plot])
 points(x0theta_mean[1], x0theta_mean[2], pch=20, cex=2, col=2)
-plot.ellipse(solve(x0theta_variance), x0theta_mean, -2*log(0.05))
-plot.ellipse(solve(x0theta_variance), x0theta_mean, -2*log(0.32))
+plot.ellipse(solve(x0theta_variance), x0theta_mean, qchisq(0.95,df=2))
+plot.ellipse(solve(x0theta_variance), x0theta_mean, qchisq(0.68,df=2))
 legend("topright", c("95% contour", "68% contour"), lty=1, col=2, lwd=2)
 mtext(paste0(capture.output(round(x0theta_mean, 3), round(x0theta_variance, 5)), collapse = "\n"))
 dev.off()
