@@ -193,7 +193,20 @@ mtext(paste0(capture.output(round(x0theta_mean, 3), round(x0theta_variance, 5)),
 prior_sd_x0 <- 2
 prior_sd_theta <- 0.2
 
-get_posterior <- function(xsim){
+get_posterior <- function(xsim, temperature="notempering"){
+  if(temperature == "heating"){
+    config$priorTemperature <- nrow(xsim) / sum(is.finite(xsim[,2]))
+    config$priorTemperatureObs <- 1
+  }else if(temperature == "cooling"){
+    config$priorTemperature <- 1
+    config$priorTemperatureObs <- sum(is.finite(xsim[,2])) / nrow(xsim)
+  }else if(temperature == "notempering"){
+    config$priorTemperature <- 1
+    config$priorTemperatureObs <- 1
+  }else{
+    stop("temperature must be 'heating' or 'cooling' or 'notempering'")
+  }
+  
   xtime <- xsim$time
   gpcov <- calCov(pram.true$phi, 
                   as.matrix(dist(xtime)),
@@ -225,9 +238,11 @@ get_posterior <- function(xsim){
 
 outDir <- paste0("../results/linear-nobs", nobs_keep, "/")
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
-pdf(paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1],  "-", temperature, "-analytical-convergence.pdf"), height = 8, width = 8)
-for(each_fill_level in 0:4){
-  get_posterior(insertNaN(xsim.obs, each_fill_level))
-  legend("topleft", paste0("ndis =", nrow(insertNaN(xsim.obs, each_fill_level))))
+for(temperature in c("notempering", "heating", "cooling")){
+  pdf(paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1],  "-", temperature, "-analytical-convergence.pdf"), height = 8, width = 8)
+  for(each_fill_level in 0:6){
+    get_posterior(insertNaN(xsim.obs, each_fill_level), temperature)
+    legend("topleft", paste0("ndis =", nrow(insertNaN(xsim.obs, each_fill_level))))
+  }
+  dev.off()
 }
-dev.off()
