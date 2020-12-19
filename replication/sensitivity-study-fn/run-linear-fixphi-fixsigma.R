@@ -440,8 +440,6 @@ x0theta_mean <- posterior_mean[x0theta_id]
 x0theta_variance <- posterior_variance[x0theta_id, x0theta_id]
 
 library(mvtnorm)
-plot(gpode$xsampled[id_plot,1,], gpode$theta[id_plot], xlab="x0", ylab="theta")
-points(x0theta_mean[1], x0theta_mean[2], pch=20, cex=2, col=2)
 
 plot.ellipse <- function (A, mu, r, n.points = 1000) {
   theta <- seq(0, 2 * pi, length = n.points)
@@ -452,8 +450,13 @@ plot.ellipse <- function (A, mu, r, n.points = 1000) {
   lines(t(z), type = "l", col=2, lwd=2)
 }
 
+pdf(paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], "analytical-contour.pdf"), height = 8, width = 8)
+plot(gpode$xsampled[id_plot,1,], gpode$theta[id_plot], xlab="x0", ylab="theta")
+points(x0theta_mean[1], x0theta_mean[2], pch=20, cex=2, col=2)
 plot.ellipse(solve(x0theta_variance), x0theta_mean, -2*log(0.05))
 plot.ellipse(solve(x0theta_variance), x0theta_mean, -2*log(0.32))
 legend("topright", c("95% contour", "68% contour"), lty=1, col=2, lwd=2)
+mtext(paste0(capture.output(round(x0theta_mean, 3), round(x0theta_variance, 5)), collapse = "\n"))
+dev.off()
 
 save.image(paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".rda"))
