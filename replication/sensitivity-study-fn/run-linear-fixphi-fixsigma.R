@@ -455,3 +455,5 @@ plot.ellipse <- function (A, mu, r, n.points = 1000) {
 plot.ellipse(solve(x0theta_variance), x0theta_mean, -2*log(0.05))
 plot.ellipse(solve(x0theta_variance), x0theta_mean, -2*log(0.32))
 legend("topright", c("95% contour", "68% contour"), lty=1, col=2, lwd=2)
+
+save.image(paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".rda"))
