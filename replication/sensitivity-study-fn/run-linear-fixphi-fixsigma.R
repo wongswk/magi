@@ -121,7 +121,8 @@ matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
 
 xsim <- insertNaN(xsim.obs,config$filllevel)
 
-temperature <- "heating"
+# tempering must be disabled when comparing with analytical results
+temperature <- "notempering"
 if(temperature == "heating"){
   config$priorTemperature <- config$ndis / config$nobs  
   config$priorTemperatureObs <- 1
