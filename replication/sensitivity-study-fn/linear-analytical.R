@@ -188,3 +188,46 @@ points(x0theta_mean[1], x0theta_mean[2], pch=20, cex=2, col=2)
 plot.ellipse(solve(x0theta_variance), x0theta_mean, sqrt(qchisq(0.68,df=2)))
 legend("topright", c("95% contour", "68% contour"), lty=1, col=2, lwd=2)
 mtext(paste0(capture.output(round(x0theta_mean, 3), round(x0theta_variance, 5)), collapse = "\n"))
+
+
+prior_sd_x0 <- 2
+prior_sd_theta <- 0.2
+
+get_posterior <- function(xsim){
+  xtime <- xsim$time
+  gpcov <- calCov(pram.true$phi, 
+                  as.matrix(dist(xtime)),
+                  -sign(outer(xtime,xtime,'-')),
+                  kerneltype = "generalMatern",
+                  bandsize = config$bandsize)
+  sigma1 <- rbind(cbind(gpcov$Cinv / config$priorTemperature, 0), 0)
+  sigma2 <- t(cbind(gpcov$mphi, -1)) %*% (gpcov$Kinv / config$priorTemperature) %*% cbind(gpcov$mphi, -1)
+  dd <- diag(c(is.finite(xsim[,2]) * config$noise^(-2) / config$priorTemperatureObs, 0))
+  
+  ztilde <- c(xsim[,2], 0)
+  ztilde[is.na(ztilde)] <- 0
+  
+  posterior_mean <- solve(sigma1 + sigma2 + dd, dd%*%ztilde)
+  posterior_variance <- solve(sigma1 + sigma2 + dd)
+  
+  x0theta_id <- c(1, length(posterior_mean))
+  x0theta_mean <- posterior_mean[x0theta_id]
+  x0theta_variance <- posterior_variance[x0theta_id, x0theta_id]
+  
+  plot(NA, xlim = pram.true$x0 + c(-prior_sd_x0, prior_sd_x0), ylim=pram.true$theta + c(-prior_sd_theta, prior_sd_theta), xlab="x0", ylab="theta")
+  plot.ellipse(solve(x0theta_variance), x0theta_mean, sqrt(qchisq(0.95,df=2)))
+  points(x0theta_mean[1], x0theta_mean[2], pch=20, cex=2, col=2)
+  plot.ellipse(solve(x0theta_variance), x0theta_mean, sqrt(qchisq(0.68,df=2)))
+  legend("topright", c("95% contour", "68% contour"), lty=1, col=2, lwd=2)
+  mtext(paste0(capture.output(round(x0theta_mean, 3), round(x0theta_variance, 5)), collapse = "\n"))
+  return(list(x0theta_mean=x0theta_mean, x0theta_variance=x0theta_variance))
+}
+
+outDir <- paste0("../results/linear-nobs", nobs_keep, "/")
+dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
+pdf(paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1],  "-", temperature, "-analytical-convergence.pdf"), height = 8, width = 8)
+for(each_fill_level in 0:4){
+  get_posterior(insertNaN(xsim.obs, each_fill_level))
+  legend("topleft", paste0("ndis =", nrow(insertNaN(xsim.obs, each_fill_level))))
+}
+dev.off()
