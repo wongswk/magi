@@ -239,10 +239,100 @@ get_posterior <- function(xsim, temperature="notempering"){
 outDir <- paste0("../results/linear-nobs", nobs_keep, "/")
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 for(temperature in c("notempering", "heating", "cooling")){
-  pdf(paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1],  "-", temperature, "-analytical-convergence.pdf"), height = 8, width = 8)
+  pdf(paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1],  "-", temperature, "-analytical-posterior.pdf"), height = 8, width = 8)
   for(each_fill_level in 0:6){
     get_posterior(insertNaN(xsim.obs, each_fill_level), temperature)
     legend("topleft", paste0("ndis =", nrow(insertNaN(xsim.obs, each_fill_level))))
   }
   dev.off()
 }
+
+# MAGI prior cannot be sampled due to empty matrix
+# here we show analytical prior
+
+get_prior <- function(xsim, priorTemperature=1){
+  xsim[, 2:ncol(xsim)] <- NA
+
+  xtime <- xsim$time
+  gpcov <- calCov(pram.true$phi, 
+                  as.matrix(dist(xtime)),
+                  -sign(outer(xtime,xtime,'-')),
+                  kerneltype = "generalMatern",
+                  bandsize = config$bandsize)
+  sigma1 <- rbind(cbind(gpcov$Cinv / priorTemperature, 0), 0)
+  sigma2 <- t(cbind(gpcov$mphi, -1)) %*% (gpcov$Kinv / priorTemperature) %*% cbind(gpcov$mphi, -1)
+
+  posterior_mean <- rep(0, ncol(sigma1))
+  posterior_variance <- solve(sigma1 + sigma2)
+  
+  x0theta_id <- c(1, length(posterior_mean))
+  x0theta_mean <- posterior_mean[x0theta_id]
+  x0theta_variance <- posterior_variance[x0theta_id, x0theta_id]
+  
+  plot(NA, xlim = c(-prior_sd_x0, prior_sd_x0), ylim= c(-prior_sd_theta, prior_sd_theta), xlab="x0", ylab="theta")
+  plot.ellipse(solve(x0theta_variance), x0theta_mean, sqrt(qchisq(0.95,df=2)))
+  points(x0theta_mean[1], x0theta_mean[2], pch=20, cex=2, col=2)
+  plot.ellipse(solve(x0theta_variance), x0theta_mean, sqrt(qchisq(0.68,df=2)))
+  legend("topright", c("95% contour", "68% contour"), lty=1, col=2, lwd=2)
+  mtext(paste0(capture.output(round(x0theta_mean, 3), round(x0theta_variance, 5)), collapse = "\n"))
+  return(list(x0theta_mean=x0theta_mean, x0theta_variance=x0theta_variance))
+}
+
+priorTemperature <- 1
+prior_sd_x0 <- 10
+prior_sd_theta <- 1
+pdf(paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1],  "-priorTemperature", priorTemperature, "-analytical-prior.pdf"), height = 8, width = 8)
+for(each_fill_level in 0:6){
+  get_prior(insertNaN(xsim.obs, each_fill_level), priorTemperature=priorTemperature)
+  legend("topleft", c(paste0("ndis =", nrow(insertNaN(xsim.obs, each_fill_level))), paste0("priorTemperature = ", priorTemperature)))
+}
+dev.off()
+
+priorTemperature <- 1
+prior_sd_x0 <- 10
+prior_sd_theta <- 1
+each_fill_level <- 6
+pdf(paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1],  "-priorTempering-analytical-prior.pdf"), height = 8, width = 8)
+for(priorTemperature in 2^(-4:4)){
+  get_prior(insertNaN(xsim.obs, each_fill_level), priorTemperature=priorTemperature)
+  legend("topleft", c(paste0("ndis =", nrow(insertNaN(xsim.obs, each_fill_level))), paste0("priorTemperature = ", priorTemperature)))
+}
+dev.off()
+
+
+# posterior from bayesian linear regression with analytical prior (RHS eq2)
+each_fill_level <- 6
+x0theta_prior <- get_prior(insertNaN(xsim.obs, each_fill_level), priorTemperature=1)
+
+get_bayesian_lm_posterior <- function(prior_sigma, xsim.obs){
+  design_mat <- cbind(1, xsim.obs$time)
+  y <- as.matrix(xsim.obs[, 2])
+  obs_sigma <- config$noise
+  post_precision_mat <- (t(design_mat) %*% design_mat)/obs_sigma^2 + solve(prior_sigma)
+  post_var <- solve(post_precision_mat)
+  post_mean <- 1/obs_sigma^2 * post_var %*% t(design_mat) %*% y
+  return(list(x0theta_mean=post_mean, x0theta_variance=post_var))
+}
+
+x0theta_lm_post <- get_bayesian_lm_posterior(x0theta_prior$x0theta_variance, xsim.obs)
+# > x0theta_lm_post
+# $x0theta_mean
+#            [,1]
+# [1,] -1.3749985
+# [2,]  0.9177167
+# 
+# $x0theta_variance
+#             [,1]        [,2]
+# [1,]  0.20473441 -0.01510035
+# [2,] -0.01510035  0.00151003
+
+x0theta_magi_post <- get_posterior(insertNaN(xsim.obs, each_fill_level), "notempering")
+# > x0theta_magi_post
+# $x0theta_mean
+# [1] -1.3750018  0.9177163
+#
+# $x0theta_variance
+# [,1]         [,2]
+# [1,]  0.20473380 -0.015100337
+# [2,] -0.01510034  0.001510033
+#
