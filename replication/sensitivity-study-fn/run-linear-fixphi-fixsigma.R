@@ -207,7 +207,7 @@ for(j in 1:(ncol(xsim)-1)){
   config[[paste0("phiD", j)]] <- paste(round(phiUsed[,j], 2), collapse = "; ")
 }
 
-plotPostSamplesFlexLinear <- function (filename, xtrue, dotxtrue, xsim, gpode, param, config, odemodel = NULL) {
+plotPostSamplesFlex1d <- function (filename, xtrue, dotxtrue, xsim, gpode, param, config, odemodel = NULL) {
   npostplot <- config$npostplot
   if (is.null(npostplot)) {
     npostplot <- 20
@@ -406,7 +406,7 @@ plotPostSamplesFlexLinear <- function (filename, xtrue, dotxtrue, xsim, gpode, p
 }
 
 
-plotPostSamplesFlexLinear(
+plotPostSamplesFlex1d(
   paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 
