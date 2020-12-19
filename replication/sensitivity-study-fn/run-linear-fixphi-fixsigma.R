@@ -177,29 +177,29 @@ samplesCpp <- samplesCpp$llikxthetasigmaSamples
 samplesCpp <- samplesCpp[,,1]
 
 out <- samplesCpp[-1,1,drop=FALSE]
-xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=ncol(xsim[,-1]))
-thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + length(fnmodel$thetaLowerBound)), 1]
-sigmaCpp <- tail(out[, 1], ncol(xsim[,-1]))
+xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=ncol(xsim)-1)
+thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + length(linearmodel$thetaLowerBound)), 1]
+sigmaCpp <- tail(out[, 1], ncol(xsim)-1)
 
 matplot(xsim$time, xCpp, type="l", add=TRUE)
 
 llikId <- 1
 xId <- (max(llikId)+1):(max(llikId)+length(data.matrix(xsim[,-1])))
-thetaId <- (max(xId)+1):(max(xId)+length(fnmodel$thetaLowerBound))
-sigmaId <- (max(thetaId)+1):(max(thetaId)+ncol(xsim[,-1]))
+thetaId <- (max(xId)+1):(max(xId)+length(linearmodel$thetaLowerBound))
+sigmaId <- (max(thetaId)+1):(max(thetaId)+ncol(xsim)-1)
 
 
 burnin <- as.integer(config$n.iter*config$burninRatio)
-gpode <- list(theta=t(samplesCpp[thetaId, -(1:burnin)]),
+gpode <- list(theta=t(samplesCpp[thetaId, -(1:burnin), drop=FALSE]),
               xsampled=array(t(samplesCpp[xId, -(1:burnin)]),
                              dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
               lglik=samplesCpp[llikId,-(1:burnin)],
               sigma = t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]))
 gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
-  with(gpode, magi:::fnmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
+  with(gpode, linearmodel$fOde(theta[t,], xsampled[t,,])), simplify = "array")
 gpode$fode <- aperm(gpode$fode, c(3,1,2))
 
-dotxtrue = magi:::fnmodelODE(pram.true$theta, data.matrix(xtrue[,-1]))
+dotxtrue = linearmodel$fOde(pram.true$theta, data.matrix(xtrue[,-1]))
 
 odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 
@@ -207,7 +207,7 @@ for(j in 1:(ncol(xsim)-1)){
   config[[paste0("phiD", j)]] <- paste(round(phiUsed[,j], 2), collapse = "; ")
 }
 
-magi:::plotPostSamplesFlex(
+plotPostSamplesFlexLinear(
   paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".pdf"), 
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 
@@ -215,3 +215,44 @@ save(xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel, OursTimeUsed, fi
 
 write.csv(apply(gpode$xsampled, 2:3, mean), paste0(outDir, config$modelName,"-",config$seed,"-FN_inferred_trajectory.csv"))
 write.csv(apply(gpode$theta, 2, mean), paste0(outDir, config$modelName,"-",config$seed,"-FN_inferred_theta.csv"))
+
+
+# comparing with analytical result
+id_plot <- as.integer(seq(1, dim(gpode$xsampled)[1], length.out = 2001))
+plot(gpode$theta[id_plot], gpode$xsampled[id_plot,1,], xlab = "theta", ylab="x0")
+
+xtime <- xsim$time
+gpcov <- calCov(pram.true$phi, 
+                as.matrix(dist(xtime)),
+                -sign(outer(xtime,xtime,'-')),
+                kerneltype = "generalMatern",
+                bandsize = config$bandsize)
+sigma1 <- rbind(cbind(gpcov$Cinv, 0), 0)
+sigma2 <- t(cbind(gpcov$mphi, -1)) %*% gpcov$Kinv %*% cbind(gpcov$mphi, -1)
+dd <- diag(c(is.finite(xsim[,2]) * config$noise^2, 0))
+ztilde <- c(xsim[,2], 0)
+ztilde[is.na(ztilde)] <- 0
+
+posterior_mean <- solve(sigma1 + sigma2 + dd, dd%*%ztilde)
+posterior_variance <- solve(sigma1 + sigma2 + dd)
+
+x0theta_id <- c(1, length(posterior_mean))
+x0theta_mean <- posterior_mean[x0theta_id]
+x0theta_variance <- posterior_variance[x0theta_id, x0theta_id]
+
+library(mvtnorm)
+plot(gpode$xsampled[id_plot,1,], gpode$theta[id_plot], xlab="x0", ylab="theta")
+points(x0theta_mean[1], x0theta_mean[2], pch=20, cex=2, col=2)
+
+plot.ellipse <- function (A, mu, r, n.points = 1000) {
+  theta <- seq(0, 2 * pi, length = n.points)
+  v <- rbind(r * cos(theta), r * sin(theta))
+  ## transform for points on ellipse
+  z <- backsolve(chol(A), v) + mu
+  ## plot points
+  lines(t(z), type = "l", col=2, lwd=2)
+}
+
+plot.ellipse(solve(x0theta_variance), x0theta_mean, -2*log(0.05))
+plot.ellipse(solve(x0theta_variance), x0theta_mean, -2*log(0.32))
+legend("topright", c("95% contour", "68% contour"), lty=1, col=2, lwd=2)
