@@ -328,3 +328,226 @@ layout(rbind(c(1,2,3,4,5), c(6,6,6,6,6)), heights = c(8,1))
   dev.off()
 
 
+pdf(width = 20, height = 5, file=paste0(rdaDir, "/plotTruthSampleObs.pdf"))
+layout(rbind(c(1,2,3,4,5), c(6,6,6,6,6)), heights = c(8,1))
+
+for (i in 1:(ncol(xsim)-1)) {
+  par(mar=c(5.1, 4.1, 4.1, 2.1))
+  plot(xtrue[, "time"], xtrue[, i+1], type="l", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]),
+       lty=1, lwd=3)
+  mtext(paste(compnames[i]), cex=1.5)  
+}
+par(mar=rep(0,4))
+plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
+
+for (i in 1:(ncol(xsim)-1)) {
+  par(mar=c(5.1, 4.1, 4.1, 2.1))
+  plot(xsim.obs$time, xsim.obs[, i+1], type="p", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]),
+       pch=20, cex=3)
+  mtext(paste(compnames[i]), cex=1.5)  
+}
+par(mar=rep(0,4))
+plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
+
+for (i in 1:(ncol(xsim)-1)) {
+  par(mar=c(5.1, 4.1, 4.1, 2.1))
+  plot(xtrue[, "time"], (xtrue[, i+1]), type="l", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]),
+       lty=1, lwd=3)
+  points(xsim.obs$time, (xsim.obs[, i+1]), type="p", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]),
+         pch=20, cex=3)
+  mtext(paste(compnames[i]), cex=1.5)  
+}
+par(mar=rep(0,4))
+plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
+
+par(mar=c(5.1, 4.1, 4.1, 2.1))
+
+i <- 1 
+ourEst <- apply(oursPostX[,i,], 1, quantile, probs = 0.5)
+ourUB <- apply(oursPostX[,i,], 1, quantile, probs = 0.025)
+ourLB <- apply(oursPostX[,i,], 1, quantile, probs = 0.975)
+times <- xsim$time
+
+plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+mtext(compnames[i], cex=2)
+polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
+        col = "skyblue", border = NA)
+lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
+lines(times, ourEst, col="forestgreen", lwd=3)
+
+zoomin_x <- 2*c(37, 43)
+zoomin_y <- c(-0.012, 0.012)
+polygon(c(times[zoomin_x], rev(times[zoomin_x])), rep(zoomin_y, each=2),
+        col = NA, border = 1)
+
+zoomout_x <- 2*c(25, 80)
+zoomout_y <- c(0.25, 0.55)
+polygon(c(times[zoomout_x], rev(times[zoomout_x])), rep(zoomout_y, each=2),
+        col = NA, border = 1)
+
+lines(times[c(zoomin_x[1], zoomout_x[1])], c(zoomin_y[2], zoomout_y[1]))
+lines(times[c(zoomin_x[2], zoomout_x[2])], c(zoomin_y[2], zoomout_y[1]))
+zoomout_id <- zoomout_x[1]:zoomout_x[2]
+zoomin_id <- zoomin_x[1]:zoomin_x[2]
+zoomtrans_y <- function(y) {
+  y <- y[zoomin_id]
+  (y - zoomin_y[1])/diff(zoomin_y) * diff(zoomout_y) + zoomout_y[1]
+}
+zoomtrans_x <- function(x) {
+  zoomin_x <- times[zoomin_x]
+  zoomout_x <- times[zoomout_x]
+  (x - zoomin_x[1])/diff(zoomin_x) * diff(zoomout_x) + zoomout_x[1]
+}
+polygon(c(zoomtrans_x(times[zoomin_id]), rev(zoomtrans_x(times[zoomin_id]))), c(zoomtrans_y(ourUB), rev(zoomtrans_y(ourLB))),
+        col = "skyblue", border = NA)
+lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(xdesolveTRUE[,1+i]), col="red", lwd=4)
+lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(ourEst), col="forestgreen", lwd=3)  
+
+
+i <- 2 
+ourEst <- apply(oursPostX[,i,], 1, quantile, probs = 0.5)
+ourUB <- apply(oursPostX[,i,], 1, quantile, probs = 0.025)
+ourLB <- apply(oursPostX[,i,], 1, quantile, probs = 0.975)
+times <- xsim$time
+
+plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+mtext(compnames[i], cex=2)
+polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
+        col = "skyblue", border = NA)
+lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
+lines(times, ourEst, col="forestgreen", lwd=3)
+
+i <- 3 
+ourEst <- apply(oursPostX[,i,], 1, quantile, probs = 0.5)
+ourUB <- apply(oursPostX[,i,], 1, quantile, probs = 0.025)
+ourLB <- apply(oursPostX[,i,], 1, quantile, probs = 0.975)
+times <- xsim$time
+
+plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+mtext(compnames[i], cex=2)
+polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
+        col = "skyblue", border = NA)
+lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
+lines(times, ourEst, col="forestgreen", lwd=3)
+
+zoomin_x <- 2*c(55, 65)
+zoomin_y <- c(0.73, 0.83)
+polygon(c(times[zoomin_x], rev(times[zoomin_x])), rep(zoomin_y, each=2),
+        col = NA, border = 1)
+
+zoomout_x <- 2*c(50, 86)
+zoomout_y <- c(0.3, 0.6)
+polygon(c(times[zoomout_x], rev(times[zoomout_x])), rep(zoomout_y, each=2),
+        col = NA, border = 1)
+
+lines(times[c(zoomin_x[1], zoomout_x[1])], c(zoomin_y[1], zoomout_y[2]))
+lines(times[c(zoomin_x[2], zoomout_x[2])], c(zoomin_y[1], zoomout_y[2]))
+zoomout_id <- zoomout_x[1]:zoomout_x[2]
+zoomin_id <- zoomin_x[1]:zoomin_x[2]
+zoomtrans_y <- function(y) {
+  y <- y[zoomin_id]
+  (y - zoomin_y[1])/diff(zoomin_y) * diff(zoomout_y) + zoomout_y[1]
+}
+zoomtrans_x <- function(x) {
+  zoomin_x <- times[zoomin_x]
+  zoomout_x <- times[zoomout_x]
+  (x - zoomin_x[1])/diff(zoomin_x) * diff(zoomout_x) + zoomout_x[1]
+}
+polygon(c(zoomtrans_x(times[zoomin_id]), rev(zoomtrans_x(times[zoomin_id]))), c(zoomtrans_y(ourUB), rev(zoomtrans_y(ourLB))),
+        col = "skyblue", border = NA)
+lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(xdesolveTRUE[,1+i]), col="red", lwd=4)
+lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(ourEst), col="forestgreen", lwd=3)  
+
+i <- 4 
+ourEst <- apply(oursPostX[,i,], 1, quantile, probs = 0.5)
+ourUB <- apply(oursPostX[,i,], 1, quantile, probs = 0.025)
+ourLB <- apply(oursPostX[,i,], 1, quantile, probs = 0.975)
+times <- xsim$time
+
+plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+mtext(compnames[i], cex=2)
+polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
+        col = "skyblue", border = NA)
+lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
+lines(times, ourEst, col="forestgreen", lwd=3)
+
+zoomin_x <- 2*c(35, 45)
+zoomin_y <- c(-0.012, 0.012)
+polygon(c(times[zoomin_x], rev(times[zoomin_x])), rep(zoomin_y, each=2),
+        col = NA, border = 1)
+
+zoomout_x <- 2*c(25, 80)
+zoomout_y <- c(0.1, 0.22)
+polygon(c(times[zoomout_x], rev(times[zoomout_x])), rep(zoomout_y, each=2),
+        col = NA, border = 1)
+
+lines(times[c(zoomin_x[1], zoomout_x[1])], c(zoomin_y[2], zoomout_y[1]))
+lines(times[c(zoomin_x[2], zoomout_x[2])], c(zoomin_y[2], zoomout_y[1]))
+zoomout_id <- zoomout_x[1]:zoomout_x[2]
+zoomin_id <- zoomin_x[1]:zoomin_x[2]
+zoomtrans_y <- function(y) {
+  y <- y[zoomin_id]
+  (y - zoomin_y[1])/diff(zoomin_y) * diff(zoomout_y) + zoomout_y[1]
+}
+zoomtrans_x <- function(x) {
+  zoomin_x <- times[zoomin_x]
+  zoomout_x <- times[zoomout_x]
+  (x - zoomin_x[1])/diff(zoomin_x) * diff(zoomout_x) + zoomout_x[1]
+}
+polygon(c(zoomtrans_x(times[zoomin_id]), rev(zoomtrans_x(times[zoomin_id]))), c(zoomtrans_y(ourUB), rev(zoomtrans_y(ourLB))),
+        col = "skyblue", border = NA)
+lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(xdesolveTRUE[,1+i]), col="red", lwd=4)
+lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(ourEst), col="forestgreen", lwd=3)    
+
+i <- 5
+ourEst <- apply(oursPostX[,i,], 1, quantile, probs = 0.5)
+ourUB <- apply(oursPostX[,i,], 1, quantile, probs = 0.025)
+ourLB <- apply(oursPostX[,i,], 1, quantile, probs = 0.975)
+times <- xsim$time
+
+plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+mtext(compnames[i], cex=2)
+polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
+        col = "skyblue", border = NA)
+lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
+lines(times, ourEst, col="forestgreen", lwd=3)
+
+zoomin_x <- 2*c(50, 60)
+zoomin_y <- c(0.21, 0.312)
+polygon(c(times[zoomin_x], rev(times[zoomin_x])), rep(zoomin_y, each=2),
+        col = NA, border = 1)
+
+zoomout_x <- 2*c(60, 90)
+zoomout_y <- c(0.37, 0.65)
+polygon(c(times[zoomout_x], rev(times[zoomout_x])), rep(zoomout_y, each=2),
+        col = NA, border = 1)
+
+lines(times[c(zoomin_x[1], zoomout_x[1])], c(zoomin_y[2], zoomout_y[1]))
+lines(times[c(zoomin_x[2], zoomout_x[2])], c(zoomin_y[2], zoomout_y[1]))
+zoomout_id <- zoomout_x[1]:zoomout_x[2]
+zoomin_id <- zoomin_x[1]:zoomin_x[2]
+zoomtrans_y <- function(y) {
+  y <- y[zoomin_id]
+  (y - zoomin_y[1])/diff(zoomin_y) * diff(zoomout_y) + zoomout_y[1]
+}
+zoomtrans_x <- function(x) {
+  zoomin_x <- times[zoomin_x]
+  zoomout_x <- times[zoomout_x]
+  (x - zoomin_x[1])/diff(zoomin_x) * diff(zoomout_x) + zoomout_x[1]
+}
+polygon(c(zoomtrans_x(times[zoomin_id]), rev(zoomtrans_x(times[zoomin_id]))), c(zoomtrans_y(ourUB), rev(zoomtrans_y(ourLB))),
+        col = "skyblue", border = NA)
+lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(xdesolveTRUE[,1+i]), col="red", lwd=4)
+lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(ourEst), col="forestgreen", lwd=3)    
+
+par(mar=rep(0,4))
+plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
+xcoords <- c(0, 0.5, 1)
+secondvector <- (1:length(xcoords))-1
+textwidths <- xcoords/secondvector # this works for all but the first element
+textwidths[1] <- 0
+
+legend("center", c("truth", "median of all inferred trajectories", "95% interval from the 2.5 and 97.5 percentile of all inferred trajectories"), lty=c(1,1,0), lwd=c(4,3,0),
+       col = c("red", "forestgreen", NA), fill=c(0, 0,"skyblue"), text.width=c(0, 0.4, 0.05), bty = "n",
+       border=c(0, 0, "skyblue"), pch=c(NA, NA, 15), cex=1.8, horiz=TRUE)
+dev.off()
