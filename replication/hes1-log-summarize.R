@@ -237,6 +237,93 @@ legend("center", c("truth", "median of all inferred trajectories", "95% interval
        border=c(0, 0, "skyblue"), pch=c(NA, NA, 15), cex=1.8, horiz=TRUE)
 dev.off()
 
+pdf(width = 15, height = 5, file=paste0(rdaDir, "/plotTruthSampleObs.pdf"))
+layout(rbind(c(1,2,3), c(4,4,4)), heights = c(5,1))
+
+for (i in 1:(ncol(xsim)-1)) {
+  par(mar=c(5.1, 4.1, 4.1, 2.1))
+  plot(xtrue[, "time"], exp(xtrue[, i+1]), type="l", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]),
+       lty=1, lwd=3)
+  if (i == 3){
+    mtext(paste(compnames[i], "component (Unobserved)"), cex=1.5)  
+  }else{
+    mtext(paste(compnames[i], "component (Partially Observed)"), cex=1.5)  
+  }
+}
+par(mar=rep(0,4))
+plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
+
+for (i in 1:(ncol(xsim)-1)) {
+  par(mar=c(5.1, 4.1, 4.1, 2.1))
+  plot(xsim.obs$time, exp(xsim.obs[, i+1]), type="p", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]),
+       pch=20, cex=3)
+  if (i == 3){
+    mtext(paste(compnames[i], "component (Unobserved)"), cex=1.5)  
+  }else{
+    mtext(paste(compnames[i], "component (Partially Observed)"), cex=1.5)  
+  }
+}
+par(mar=rep(0,4))
+plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
+
+for (i in 1:(ncol(xsim)-1)) {
+  par(mar=c(5.1, 4.1, 4.1, 2.1))
+  plot(xtrue[, "time"], exp(xtrue[, i+1]), type="l", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]),
+       lty=1, lwd=3)
+  points(xsim.obs$time, exp(xsim.obs[, i+1]), type="p", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]),
+       pch=20, cex=3)
+  if (i == 3){
+    mtext(paste(compnames[i], "component (Unobserved)"), cex=1.5)  
+  }else{
+    mtext(paste(compnames[i], "component (Partially Observed)"), cex=1.5)  
+  }
+}
+par(mar=rep(0,4))
+plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
+
+
+for (i in 1:(ncol(xsim)-1)) {
+  par(mar=c(5.1, 4.1, 4.1, 2.1))
+  ourEst <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.5)
+  ourUB <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.025)
+  ourLB <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.975)
+  
+  ourEst <- exp(getMeanCurve(xsim$time, log(ourEst), xdesolveTRUE[,1], 
+                             t(phiVisualization[,i]), 0, 
+                             kerneltype=config$kernel, deriv = FALSE))
+  ourUB <- exp(getMeanCurve(xsim$time, log(ourUB), xdesolveTRUE[,1], 
+                            t(phiVisualization[,i]), 0, 
+                            kerneltype=config$kernel, deriv = FALSE))
+  ourLB <- exp(getMeanCurve(xsim$time, log(ourLB), xdesolveTRUE[,1], 
+                            t(phiVisualization[,i]), 0, 
+                            kerneltype=config$kernel, deriv = FALSE))
+  
+  
+  times <- xdesolveTRUE[,1]
+  
+  plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+  if (i == 3){
+    mtext(paste(compnames[i], "component (Unobserved)"), cex=1.5)  
+  }else{
+    mtext(paste(compnames[i], "component (Partially Observed)"), cex=1.5)  
+  }
+  
+  
+  polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
+          col = "skyblue", border = NA)
+  
+  lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
+  lines(times, ourEst, col="forestgreen", lwd=3)
+}
+par(mar=rep(0,4))
+plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
+
+legend("center", c("truth", "median of all inferred trajectories", "95% interval from the 2.5 and 97.5 percentile of all inferred trajectories"), lty=c(1,1,0), lwd=c(4,3,0),
+       col = c("red", "forestgreen", NA), fill=c(0, 0,"skyblue"), text.width=c(0, 0.55, 0.05), bty = "n",
+       border=c(0, 0, "skyblue"), pch=c(NA, NA, 15), cex=1.8, horiz=TRUE)
+dev.off()
+
+
 pdf(width = 20, height = 5, file=paste0(rdaDir, "/posteriorExpxHes1Ours.pdf"))
 par(mfrow=c(1, ncol(xsim)+1))
 
