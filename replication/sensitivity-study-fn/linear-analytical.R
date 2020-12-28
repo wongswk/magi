@@ -65,7 +65,7 @@ pram.true <- list(
   x0 = c(-2),
   # phi=rbind(c(2.5, 0.75),
   #           c(1.5, 3.00)),
-  phi=as.matrix(c(10, 3)),
+  phi=as.matrix(c(10, 10)),
   sigma=config$noise
 )
 
@@ -292,12 +292,14 @@ priorTemperature <- 1
 prior_sd_x0 <- 10
 prior_sd_theta <- 1
 each_fill_level <- 6
-pdf(paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1],  "-priorTempering-analytical-prior.pdf"), height = 8, width = 8)
-for(priorTemperature in 2^(-4:4)){
-  get_prior(insertNaN(xsim.obs, each_fill_level), priorTemperature=priorTemperature)
-  legend("topleft", c(paste0("ndis =", nrow(insertNaN(xsim.obs, each_fill_level))), paste0("priorTemperature = ", priorTemperature)))
-}
-dev.off()
+#' linear analytical skip heating because it takes too long to run
+
+# pdf(paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1],  "-priorTempering-analytical-prior.pdf"), height = 8, width = 8)
+# for(priorTemperature in 2^(-4:4)){
+#   get_prior(insertNaN(xsim.obs, each_fill_level), priorTemperature=priorTemperature)
+#   legend("topleft", c(paste0("ndis =", nrow(insertNaN(xsim.obs, each_fill_level))), paste0("priorTemperature = ", priorTemperature)))
+# }
+# dev.off()
 
 
 # posterior from bayesian linear regression with analytical prior (RHS eq2)
