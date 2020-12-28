@@ -7,14 +7,16 @@ if(length(args) > 0){
   seed <- scan("fn-seeds.txt")[args[2]]
   nobs_keep <- args[3]
   time_horizon <- as.numeric(args[4])
+  n_interpolation <- as.numeric(args[5])
 }else{
   filllevel <- 2
   seed <- (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9
   nobs_keep <- 41
   time_horizon <- 20
+  n_interpolation <- 81
 }
 
-outDir <- paste0("../results/fn-sparse-fill", filllevel, "-nobs", nobs_keep, "-timeend", time_horizon, "/")
+outDir <- paste0("../results/fn-sparse-fill", filllevel, "-nobs", nobs_keep, "-ninterp", n_interpolation, "-timeend", time_horizon, "/")
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 
 
@@ -115,8 +117,8 @@ for (j in 1:(ncol(xsim)-1)){
 
 OursStartTime <- proc.time()[3]
 
-# set phi initialization with 81 points
-id4phi <- seq(1, nrow(xInitExogenous), length.out = 81)
+# set phi initialization with n_interpolation points
+id4phi <- seq(1, nrow(xInitExogenous), length.out = n_interpolation)
 samplesCpp <- magi:::solveMagiRcpp(
   yFull = xInitExogenous[id4phi,],
   odeModel = fnmodel,
