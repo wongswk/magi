@@ -115,6 +115,22 @@ for (i in 1:100) {
 }
 summarize("../results/fn-init-truth-fill5-nobs6/")
 
+for(filllevel in 0:4){
+  for (i in 1:4) {
+    system(paste0("Rscript run-linear-fixphi-fixsigma.R ", filllevel, " ", i, " 41"), wait=FALSE)
+  }
+}
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-horizon.R 2 ", i, " 41 40"), wait=FALSE)
+}
+summarize("../results/fn-sparse-fill2-nobs41-timeend40/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-horizon.R 3 ", i, " 41 40 161"), wait=FALSE)
+}
+summarize("../results/fn-sparse-fill3-nobs41-ninterp161-timeend40/")
+
 
 ## Summarize results, make table and figures
 # source("fn-summarize.R")
