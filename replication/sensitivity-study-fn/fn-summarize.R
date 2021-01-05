@@ -330,6 +330,17 @@ summarize <- function(rdaDir){
   OursSigma <- do.call(rbind, OursSigma)
   print(apply(OursSigma, 2, summary))
   sink()
+  
+  rmse_all <- sapply(ours, function(x) x$rmseOdePM)
+  bad_seeds <- unique(c(tail(seeds[order(rmse_all[1,])], 4), tail(seeds[order(rmse_all[2,])], 4)))
+  cmd <- "rsync -avm --include='p*.pdf'"
+  for(each_seed in bad_seeds){
+    cmd <- paste0(cmd, " --include='*", each_seed, "*.pdf'")
+  }
+  cmd <- paste0(cmd, " --include='result.txt' --include='*/' --exclude='*' gt75:~/Workspace/DynamicSys/dynamic-systems/replication/sensitivity-study-fn/")
+  cmd <- paste0(cmd, Xmisc::strip(rdaDir, "/"))
+  cmd <- paste0(cmd, " ~/Workspace/DynamicSys/results/fn-sensitivity-paper-revision/")
+  cat(cmd)
 }
 
 summarize("../results/fn-fill5-nobs5/")
