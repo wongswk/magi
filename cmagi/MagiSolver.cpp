@@ -464,7 +464,7 @@ void MagiSolver::initMissingComponent() {
 
 void MagiSolver::initSparseComponent() {
     const arma::uvec & nobsEachDim = arma::sum(indicatorMatWithObs, 0).t();
-    const arma::uvec & missingComponentDim = arma::find(nobsEachDim < 10);
+    const arma::uvec & missingComponentDim = arma::find(nobsEachDim < 15);
     if(missingComponentDim.empty()){
         return;
     }
