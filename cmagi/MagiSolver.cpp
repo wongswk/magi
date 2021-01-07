@@ -463,6 +463,9 @@ void MagiSolver::initMissingComponent() {
 }
 
 void MagiSolver::initSparseComponent() {
+    if(!useFrequencyBasedPrior){  // hack to skip initSparseComponent if useFrequencyBasedPrior is False
+        return;
+    }
     const arma::uvec & nobsEachDim = arma::sum(indicatorMatWithObs, 0).t();
     const arma::uvec & missingComponentDim = arma::find(nobsEachDim < 15);
     if(missingComponentDim.empty()){
