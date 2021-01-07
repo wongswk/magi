@@ -216,6 +216,18 @@ for (i in 1:100) {
 }
 summarize("../results/fn-sparse-fill6-nobs11-ninterp41-timeend20/")
 
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-horizon.R 5 ", i, " 11 20 81"), wait=FALSE)
+}
+summarize("../results/fn-sparse-fill5-nobs11-ninterp81-timeend20/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-horizon.R 4 ", i, " 11 20 81"), wait=FALSE)
+}
+summarize("../results/fn-sparse-fill4-nobs11-ninterp81-timeend20/")
+
+
+
 ## Summarize results, make table and figures
 # source("fn-summarize.R")
 # summarize("~/Workspace/DynamicSys/results/sensitivity-result/fn-fill3-nobs21/")
