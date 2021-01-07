@@ -182,7 +182,7 @@ samplesCpp <- magi:::solveMagiRcpp(
   stepSizeFactorHmc = config$stepSizeFactor,
   nEpoch = config$max.epoch,
   bandSize = config$bandsize,
-  useFrequencyBasedPrior = config$useFrequencyBasedPrior,
+  useFrequencyBasedPrior = FALSE,  # hack to skip initSparseComponent; useFrequencyBasedPrior has no original use because phi and sigma are set
   useBand = config$useBand,
   useMean = config$useMean,
   useScalerSigma = config$useScalerSigma,
