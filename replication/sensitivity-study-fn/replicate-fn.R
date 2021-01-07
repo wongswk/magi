@@ -131,6 +131,90 @@ for (i in 1:100) {
 }
 summarize("../results/fn-sparse-fill3-nobs41-ninterp161-timeend40/")
 
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-horizon.R 2 ", i, " 41 20 41"), wait=FALSE)
+}
+summarize("../results/fn-sparse-fill2-nobs41-ninterp41-timeend20/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-horizon.R 3 ", i, " 21 20 81"), wait=FALSE)
+}
+summarize("../results/fn-sparse-fill3-nobs21-ninterp81-timeend20/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-horizon.R 3 ", i, " 21 20 161"), wait=FALSE)
+}
+summarize("../results/fn-sparse-fill3-nobs21-ninterp161-timeend20/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-horizon.R 3 ", i, " 21 20 41"), wait=FALSE)
+}
+summarize("../results/fn-sparse-fill3-nobs21-ninterp41-timeend20/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-ideal.R 3 ", i, " 21 heating withmeanBand"), wait=FALSE)
+}
+summarize("../results/fn-ideal-fill3-nobs21-withmeanBand-fixphi-heating/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-noband-fixphi.R 3 ", i, " 21 heating withmeanBand"), wait=FALSE)
+}
+summarize("../results/fn-fill3-nobs21-withmeanBand-fixphi-heating/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-horizon.R 3 ", i, " 21 20 21"), wait=FALSE)
+}
+summarize("../results/fn-sparse-fill3-nobs21-ninterp21-timeend20/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-horizon.R 3 ", i, " 21 20 33"), wait=FALSE)
+}
+summarize("../results/fn-sparse-fill3-nobs21-ninterp33-timeend20/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-horizon.R 4 ", i, " 21 20 41"), wait=FALSE)
+}
+summarize("../results/fn-sparse-fill4-nobs21-ninterp41-timeend20/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-horizon.R 4 ", i, " 21 20 81"), wait=FALSE)
+}
+summarize("../results/fn-sparse-fill4-nobs21-ninterp81-timeend20/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-ideal.R 4 ", i, " 11 heating withmeanBand"), wait=FALSE)
+}
+summarize("../results/fn-ideal-fill4-nobs11-withmeanBand-fixphi-heating/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-ideal.R 5 ", i, " 11 heating withmeanBand"), wait=FALSE)
+}
+summarize("../results/fn-ideal-fill5-nobs11-withmeanBand-fixphi-heating/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-ideal.R 6 ", i, " 11 heating withmeanBand"), wait=FALSE)
+}
+summarize("../results/fn-ideal-fill6-nobs11-withmeanBand-fixphi-heating/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-ideal.R 4 ", i, " 21 heating withmeanBand"), wait=FALSE)
+}
+summarize("../results/fn-ideal-fill4-nobs21-withmeanBand-fixphi-heating/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-horizon.R 5 ", i, " 11 20 41"), wait=FALSE)
+}
+summarize("../results/fn-sparse-fill5-nobs11-ninterp41-timeend20/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-horizon.R 4 ", i, " 11 20 41"), wait=FALSE)
+}
+summarize("../results/fn-sparse-fill4-nobs11-ninterp41-timeend20/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn-horizon.R 6 ", i, " 11 20 41"), wait=FALSE)
+}
+summarize("../results/fn-sparse-fill6-nobs11-ninterp41-timeend20/")
 
 ## Summarize results, make table and figures
 # source("fn-summarize.R")
