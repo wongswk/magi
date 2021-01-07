@@ -6,13 +6,15 @@ if(length(args) > 0){
   filllevel <- args[1]
   seed <- scan("fn-seeds.txt")[args[2]]
   nobs_keep <- args[3]
+  n_interpolation <- args[4]
 }else{
   seed <- (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9
-  filllevel <- 2
-  nobs_keep <- 41
+  filllevel <- 5
+  nobs_keep <- 11
+  n_interpolation <- 41
 }
 
-outDir <- paste0("../results/fn-fill", filllevel, "-nobs", nobs_keep, "/")
+outDir <- paste0("../results/fn-sparseComponent-opt-interp-fill", filllevel, "-nobs", nobs_keep, "-ninterp", n_interpolation, "/")
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 
 
@@ -113,12 +115,59 @@ for (j in 1:(ncol(xsim)-1)){
 
 OursStartTime <- proc.time()[3]
 
+xsimPhiOpt <- insertNaN(xsim.obs, 1)
+id4phi <- seq(1, nrow(xInitExogenous), length.out = 2*nrow(xsim.obs)-1)
+
+samplesCpp <- magi:::solveMagiRcpp(
+  yFull = data.matrix(xsimPhiOpt[,-1]),
+  odeModel = fnmodel,
+  tvecFull = xsimPhiOpt$time,
+  sigmaExogenous = numeric(0),
+  phiExogenous = matrix(nrow=0,ncol=0),
+  xInitExogenous = xInitExogenous[id4phi,],
+  thetaInitExogenous = matrix(nrow=0,ncol=0),
+  muExogenous = matrix(nrow=0,ncol=0),
+  dotmuExogenous = matrix(nrow=0,ncol=0),
+  priorTemperatureLevel = config$priorTemperature,
+  priorTemperatureDeriv = config$priorTemperature,
+  priorTemperatureObs = config$priorTemperatureObs,
+  kernel = config$kernel,
+  nstepsHmc = config$hmcSteps,
+  burninRatioHmc = config$burninRatio,
+  niterHmc = 2,
+  stepSizeFactorHmc = config$stepSizeFactor,
+  nEpoch = config$max.epoch,
+  bandSize = config$bandsize,
+  useFrequencyBasedPrior = config$useFrequencyBasedPrior,
+  useBand = config$useBand,
+  useMean = config$useMean,
+  useScalerSigma = config$useScalerSigma,
+  useFixedSigma = config$useFixedSigma,
+  verbose = TRUE)
+
+phiUsed <- samplesCpp$phi
+phiUsed <- pmax(phiUsed, 0.3)
+
+samplesCpp <- samplesCpp$llikxthetasigmaSamples
+samplesCpp <- samplesCpp[,,1]
+out <- samplesCpp[-1,1,drop=FALSE]
+sigmaUsed <- tail(out[, 1], ncol(xsim[,-1]))
+xCpp <- matrix(out[1:length(data.matrix(xsimPhiOpt[,-1])), 1], ncol=ncol(xsim[,-1]))
+thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + length(fnmodel$thetaLowerBound)), 1]
+
+xsimPhiOptInit <- xsimPhiOpt
+xsimPhiOptInit[,-1] <- xCpp
+xInitExogenous <- data.matrix(xsim[,-1])
+for (j in 1:(ncol(xsim)-1)){
+  xInitExogenous[, j] <- approx(xsimPhiOptInit$time, xsimPhiOptInit[,j+1], xsim$time)$y
+}
+
 samplesCpp <- magi:::solveMagiRcpp(
   yFull = data.matrix(xsim[,-1]),
   odeModel = fnmodel,
   tvecFull = xsim$time,
-  sigmaExogenous = numeric(0),
-  phiExogenous = matrix(nrow=0,ncol=0),
+  sigmaExogenous = sigmaUsed,
+  phiExogenous = phiUsed,
   xInitExogenous = xInitExogenous,
   thetaInitExogenous = matrix(nrow=0,ncol=0),
   muExogenous = matrix(nrow=0,ncol=0),
