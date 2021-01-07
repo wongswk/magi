@@ -514,28 +514,28 @@ void MagiSolver::initSparseComponent() {
     // update theta
     initTheta();
 
-//    const arma::vec & xthetaphi = optimizeXmissingThetaPhi(yFull,
-//                                                           tvecFull,
-//                                                           odeModel,
-//                                                           sigmaInit,
-//                                                           priorTemperature,
-//                                                           xInit,
-//                                                           thetaInit,
-//                                                           phiAllDimensions,
-//                                                           missingComponentDim);
-//    for (unsigned id = 0; id < missingComponentDim.size(); id++){
-//        xInit.col(missingComponentDim(id)) = xthetaphi.subvec(
-//                xInit.n_rows * (id), xInit.n_rows * (id + 1) - 1);
-//    }
-//
-//    thetaInit = xthetaphi.subvec(
-//            xInit.n_rows * missingComponentDim.size(), xInit.n_rows * missingComponentDim.size() + thetaInit.size() - 1);
-//
-//    for (unsigned id = 0; id < missingComponentDim.size(); id++){
-//        phiAllDimensions.col(missingComponentDim(id)) = xthetaphi.subvec(
-//                xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * id,
-//                xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * (id + 1) - 1);
-//    }
+    const arma::vec & xthetaphi = optimizeXmissingThetaPhi(yFull,
+                                                           tvecFull,
+                                                           odeModel,
+                                                           sigmaInit,
+                                                           priorTemperature,
+                                                           xInit,
+                                                           thetaInit,
+                                                           phiAllDimensions,
+                                                           missingComponentDim);
+    for (unsigned id = 0; id < missingComponentDim.size(); id++){
+        xInit.col(missingComponentDim(id)) = xthetaphi.subvec(
+                xInit.n_rows * (id), xInit.n_rows * (id + 1) - 1);
+    }
+
+    thetaInit = xthetaphi.subvec(
+            xInit.n_rows * missingComponentDim.size(), xInit.n_rows * missingComponentDim.size() + thetaInit.size() - 1);
+
+    for (unsigned id = 0; id < missingComponentDim.size(); id++){
+        phiAllDimensions.col(missingComponentDim(id)) = xthetaphi.subvec(
+                xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * id,
+                xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * (id + 1) - 1);
+    }
 
     const lp & llik = xthetaphisigmallik( xInit,
                                           thetaInit,
