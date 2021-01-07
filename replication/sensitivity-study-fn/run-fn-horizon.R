@@ -147,6 +147,7 @@ samplesCpp <- magi:::solveMagiRcpp(
   verbose = TRUE)
 
 phiUsed <- samplesCpp$phi
+phiUsed <- pmax(phiUsed, 0.3)
 
 samplesCpp <- samplesCpp$llikxthetasigmaSamples
 samplesCpp <- samplesCpp[,,1]
