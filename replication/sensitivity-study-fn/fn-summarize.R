@@ -341,6 +341,13 @@ summarize <- function(rdaDir){
   cmd <- paste0(cmd, Xmisc::strip(rdaDir, "/"))
   cmd <- paste0(cmd, " ~/Workspace/DynamicSys/results/fn-sensitivity-paper-revision/")
   cat(cmd)
+  
+  pdf(file=paste0(rdaDir, "plot_error_phi.pdf"))
+  plot(rmse_all[1,], OursPhi[1,1,], ylab="phi1 for V", xlab="trajectory RMSE for V", main="V phi1")
+  plot(rmse_all[2,], OursPhi[1,2,], ylab="phi1 for R", xlab="trajectory RMSE for R", main="R phi1")
+  plot(rmse_all[1,], OursPhi[2,1,], ylab="phi2 for V", xlab="trajectory RMSE for V", main="V phi2")
+  plot(rmse_all[2,], OursPhi[2,2,], ylab="phi2 for R", xlab="trajectory RMSE for R", main="R phi2")
+  dev.off()
 }
 
 summarize("../results/fn-fill5-nobs5/")
