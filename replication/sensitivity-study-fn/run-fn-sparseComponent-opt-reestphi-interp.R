@@ -162,6 +162,42 @@ for (j in 1:(ncol(xsim)-1)){
   xInitExogenous[, j] <- approx(xsimPhiOptInit$time, xsimPhiOptInit[,j+1], xsim$time)$y
 }
 
+id4phi <- seq(1, nrow(xInitExogenous), length.out = n_interpolation)
+samplesCpp <- magi:::solveMagiRcpp(
+  yFull = xInitExogenous[id4phi,],
+  odeModel = fnmodel,
+  tvecFull = xsim$time[id4phi],
+  sigmaExogenous = numeric(0),
+  phiExogenous = matrix(nrow=0,ncol=0),
+  xInitExogenous = xInitExogenous[id4phi,],
+  thetaInitExogenous = matrix(nrow=0,ncol=0),
+  muExogenous = matrix(nrow=0,ncol=0),
+  dotmuExogenous = matrix(nrow=0,ncol=0),
+  priorTemperatureLevel = config$priorTemperature,
+  priorTemperatureDeriv = config$priorTemperature,
+  priorTemperatureObs = config$priorTemperatureObs,
+  kernel = config$kernel,
+  nstepsHmc = config$hmcSteps,
+  burninRatioHmc = config$burninRatio,
+  niterHmc = 2,
+  stepSizeFactorHmc = config$stepSizeFactor,
+  nEpoch = config$max.epoch,
+  bandSize = config$bandsize,
+  useFrequencyBasedPrior = config$useFrequencyBasedPrior,
+  useBand = config$useBand,
+  useMean = config$useMean,
+  useScalerSigma = config$useScalerSigma,
+  useFixedSigma = config$useFixedSigma,
+  verbose = TRUE)
+
+phiUsed <- samplesCpp$phi
+phiUsed <- pmax(phiUsed, 0.3)
+
+samplesCpp <- samplesCpp$llikxthetasigmaSamples
+samplesCpp <- samplesCpp[,,1]
+out <- samplesCpp[-1,1,drop=FALSE]
+sigmaUsed <- tail(out[, 1], ncol(xsim[,-1]))
+
 samplesCpp <- magi:::solveMagiRcpp(
   yFull = data.matrix(xsim[,-1]),
   odeModel = fnmodel,
