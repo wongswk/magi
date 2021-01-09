@@ -463,6 +463,7 @@ void MagiSolver::initMissingComponent() {
 }
 
 void MagiSolver::initSparseComponent() {
+    return; // skip initSparseComponent
     if(!useFrequencyBasedPrior){  // hack to skip initSparseComponent if useFrequencyBasedPrior is False
         return;
     }
