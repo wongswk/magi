@@ -21,17 +21,17 @@ arma::vec calcFrequencyBasedPrior(const arma::vec & x){
     double iqr = upperQuarter - lowerQuarter;
     arma::vec outliers = zmodEffective(arma::find(zmodEffective > upperQuarter + 1.5 * iqr));
     long long int freq = 1;
-    if(!outliers.empty()){
-        for(unsigned long long int i = zmodEffective.size(); i > 0; i--){
-            if(arma::min(arma::abs(zmodEffective(i - 1) - outliers)) < 1e-6){
-                freq = i;
-                break;
-            }
-        }
-
-    }else{
+//    if(!outliers.empty()){
+//        for(unsigned long long int i = zmodEffective.size(); i > 0; i--){
+//            if(arma::min(arma::abs(zmodEffective(i - 1) - outliers)) < 1e-6){
+//                freq = i;
+//                break;
+//            }
+//        }
+//
+//    }else{
         freq = zmodEffective.index_max() + 1;
-    }
+//    }
 
     double meanFactor = 0.5 / freq;
     double sdFactor = (1 - meanFactor) / 3;
