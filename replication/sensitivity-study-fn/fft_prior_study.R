@@ -162,10 +162,10 @@ for(n_interpolation in c(21, 41, 81, 161)){
 }
 
 pdf("fft_problem_illustration.pdf", height = 7, width = 10)
-for(n_interpolation in c(21, 41, 81, 161)){
+for(n_interpolation in c(21, 41, 81, 161, 321, 641)){
   cat("++++++ n_interpolation =", n_interpolation, "+++++++\n")
   id4phi <- seq(1, nrow(xInitExogenous), length.out = n_interpolation)
-  par(mar=c(5,3,8,3))
+  par(mar=c(5,3,11,3))
   plot(xsim$time[id4phi], xInitExogenous[id4phi,1], main=paste0("component V with n_interpolation = ", n_interpolation), xlab="time")
   axis(3, at=5*(0:4), labels = seq(1, length(id4phi), length.out = 5))
   mtext("index")
@@ -174,7 +174,8 @@ for(n_interpolation in c(21, 41, 81, 161)){
   z <- fft(x)
   zmod <- Mod(z)
   names(zmod) <- NULL
-  plot(zmod, main="modulus of fft", col=c(1,rep(2, (length(zmod)-1)/2),rep(1, (length(zmod)-1)/2)))
+  plot(zmod, col=c(1,rep(2, (length(zmod)-1)/2),rep(1, (length(zmod)-1)/2)))
+  title("modulus of fft", line=7)
   
   zmodEffective <- zmod[-1]
   zmodEffective <- zmodEffective[1:(length(zmodEffective)/2)]
@@ -199,8 +200,16 @@ for(n_interpolation in c(21, 41, 81, 161)){
          lty=c(1, NA), pch=c(NA, 1), col=c(4, 2))
   msg <- paste0("WANT: frequency with largest loading = ", which.max(zmodEffective), 
                 ", corresponding prior factor = ", round(0.5/which.max(zmodEffective), digits = 4))
+  freq_wtd <- weighted.mean(whichOutliers, outliers^2)
+  msg <- paste0(msg, "\nWANT: mod^2 weighted average frequency with large loadings = ", freq_wtd, ", corresponding prior factor = ", round(0.5/freq_wtd, digits = 4))
+  freq_wtd <- weighted.mean(1:length(zmodEffective), zmodEffective^2)
+  msg <- paste0(msg, "\nWANT: mod^2 weighted average frequency among all = ", freq_wtd, ", corresponding prior factor = ", round(0.5/freq_wtd, digits = 4))
+  period_wtd <- weighted.mean(0.5/whichOutliers, outliers^2)
+  msg <- paste0(msg, "\nWANT: mod^2 weighted average half periodicity (i.e. prior factor) with large loadings = ", period_wtd)
+  period_wtd <- weighted.mean(0.5/(1:length(zmodEffective)), zmodEffective^2)
+  msg <- paste0(msg, "\nWANT: mod^2 weighted average half periodicity (i.e. prior factor) among all = ", period_wtd)
   msg <- paste0(msg, "\nCURRENT: highest frequency with large loadings = ", freq, ", corresponding prior factor = ", round(0.5/freq, digits = 4))
   mtext(msg)
-  
 }
 dev.off()
+
