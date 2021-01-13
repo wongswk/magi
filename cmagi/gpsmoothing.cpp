@@ -33,7 +33,7 @@ arma::vec calcFrequencyBasedPrior(const arma::vec & x){
 //        freq = zmodEffective.index_max() + 1;
 //    }
     const arma::vec & zmodEffectiveSq = arma::square(zmodEffective);
-    freq = arma::sum(arma::linspace<vec>(1, zmodEffective.size(), zmodEffective.size()) % zmodEffectiveSq) / arma::sum(zmodEffectiveSq);
+    freq = arma::sum(arma::linspace<arma::vec>(1, zmodEffective.size(), zmodEffective.size()) % zmodEffectiveSq) / arma::sum(zmodEffectiveSq);
 
     double meanFactor = 0.5 / freq;
     double sdFactor = (1 - meanFactor) / 3;
