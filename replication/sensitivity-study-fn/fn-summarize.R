@@ -350,9 +350,3 @@ summarize <- function(rdaDir){
   
   cat(cmd)
 }
-
-summarize("../results/fn-fill5-nobs5/")
-summarize("../results/fn-fill0-nobs41/")
-summarize("../results/fn-fill1-nobs41/")
-summarize("../results/fn-fill2-nobs41/")
-summarize("../results/fn-fill3-nobs41/")
