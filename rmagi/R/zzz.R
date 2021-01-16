@@ -12,6 +12,7 @@ NULL
 
   foo <- paste(#"## \n##  magi (Version ", version, ", Build Date: ", BuildDate, ")\n",
                "##  See https://www.overleaf.com/9732586bkctqjywbxny for additional documentation.\n",
+               "##  COMPILING_INFORMATION_HERE\n",
                "##  Please cite software as:\n",
                "##   our citation\n",
                "##   goes here\n",
