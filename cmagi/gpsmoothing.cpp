@@ -180,19 +180,46 @@ arma::vec gpsmooth(const arma::mat & yobsInput,
 
     PhiGaussianProcessSmoothing objective(yobsInput, distInput, std::move(kernelInput), numparam, sigmaExogenScalar, useFrequencyBasedPrior);
     cppoptlib::LbfgsbSolver<PhiGaussianProcessSmoothing> solver;
-    Eigen::VectorXd phisig(numparam);
-    phisig.fill(1);
+    // phi sigma 1st initial value for optimization
+    Eigen::VectorXd phisigAttempt1(numparam);
+    phisigAttempt1.fill(1);
     double maxDist = distInput.max();
     double sdOverall = 0;
     for(unsigned i = 0; i < yobsInput.n_cols; i++) {
-        phisig[phiDim * i] = 0.5 * arma::stddev(yobsInput.col(i));
-        phisig[phiDim * i + 1] = 0.5 * maxDist;
-        sdOverall += phisig[phiDim * i];
+        phisigAttempt1[phiDim * i] = 0.5 * arma::stddev(yobsInput.col(i));
+        phisigAttempt1[phiDim * i + 1] = 0.5 * maxDist;
+        sdOverall += phisigAttempt1[phiDim * i];
     }
     if(sigmaExogenScalar <= 0){
-        phisig[phiDim * yobsInput.n_cols] = sdOverall / yobsInput.n_cols;
+        phisigAttempt1[phiDim * yobsInput.n_cols] = sdOverall / yobsInput.n_cols;
     }
-    solver.minimize(objective, phisig);
+    solver.minimize(objective, phisigAttempt1);
+
+    // phi sigma 2nd initial value for optimization
+    Eigen::VectorXd phisigAttempt2(numparam);
+    phisigAttempt2.fill(1);
+    for(unsigned i = 0; i < yobsInput.n_cols; i++) {
+        phisigAttempt2[phiDim * i] = arma::stddev(yobsInput.col(i));
+        if (useFrequencyBasedPrior){
+            phisigAttempt2[phiDim * i + 1] = maxDist * objective.priorFactor(0);
+        }else{
+            arma::vec distVec = arma::vectorise(distInput);
+            phisigAttempt2[phiDim * i + 1] = distVec(arma::find(distVec > 1e-8)).eval().min();
+//            std::cout << "phisigAttempt2[phiDim * i + 1] init = " << phisigAttempt2[phiDim * i + 1] << "\n";
+        }
+    }
+    if(sigmaExogenScalar <= 0){
+        phisigAttempt2[phiDim * yobsInput.n_cols] = sdOverall / yobsInput.n_cols * 0.2;
+    }
+    solver.minimize(objective, phisigAttempt2);
+
+    Eigen::VectorXd phisig;
+    if (objective.value(phisigAttempt1) < objective.value(phisigAttempt2)){
+        phisig = phisigAttempt1;
+    }else{
+        phisig = phisigAttempt2;
+    }
+
     const arma::vec & phisigArgmin = arma::vec(phisig.data(), numparam, false, false);
     return phisigArgmin;
 }
