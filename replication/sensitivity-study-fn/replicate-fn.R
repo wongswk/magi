@@ -354,6 +354,27 @@ for (i in 1:100) {
 }
 summarize("../results/fn-fill2-nobs41/")
 
+for (i in 1:100) {
+  system(paste0("Rscript run-fn.R 3 ", i, " 41"), wait=FALSE)
+}
+summarize("../results/fn-fill3-nobs41/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn.R 3 ", i, " 21"), wait=FALSE)
+}
+summarize("../results/fn-fill3-nobs21/")
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn.R 4 ", i, " 21"), wait=FALSE)
+}
+summarize("../results/fn-fill4-nobs21/")
+
+
+for (i in 1:100) {
+  system(paste0("Rscript run-fn.R 2 ", i, " 41"), wait=FALSE)
+}
+summarize("../results/fn-fill2-nobs41/")
+
 
 for(seed_i in 1:5){
   for (i in 0:10) {
