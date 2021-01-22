@@ -76,14 +76,22 @@ summarize <- function(rdaDir){
   
   oursPostTheta <- list()
   OursTimeUsedAll <- c()
+  OursPhi <- list()
+  OursSigma <- list()
+  xsimObsAll <- list()
   
   for (i in seeds) {
     show(i)
     j <- j+1
     
     load(paste0(rdaDir, config$modelName,"-",i,"-noise", config$noise[1], ".rda"))
+    phi1used <- as.numeric(unlist(strsplit(config$phiD1, "; ")))
+    phi2used <- as.numeric(unlist(strsplit(config$phiD2, "; ")))
+    OursPhi[[j]] <- cbind(phi1used, phi2used)
+    OursSigma[[j]] <- apply(gpode$sigma, 2, mean)
     OursTimeUsedAll[j] <- OursTimeUsed
     xsim.obs <- xsim[complete.cases(xsim),]
+    xsimObsAll[[j]] <- xsim.obs
     ours[[j]] <- rmsePostSamples(xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
     oursPostX[[j]] <- cbind(
       apply(gpode$xsampled, 2:3, mean), 
@@ -134,6 +142,10 @@ summarize <- function(rdaDir){
             col = "grey80", border = NA)
     lines(times, ours[[1]]$xdesolveTRUE[,1+i], col="red", lwd=1)
     lines(times, ourMed[,i])
+    
+    for(it in 1:length(xsimObsAll)){
+      points(jitter(xsimObsAll[[it]]$time, factor=0.1), xsimObsAll[[it]][,i+1], pch='.', col=2)
+    }
   }
   dev.off()
   
@@ -192,6 +204,9 @@ summarize <- function(rdaDir){
   xdesolveTRUE <- deSolve::ode(y = pram.true$x0, times = xsim$time, func = odemodel$modelODE, parms = pram.true$theta)
   
   pdf(width = 20, height = 5, file=paste0(rdaDir, "posteriorxOurs.pdf"))
+  zoom <- FALSE
+  plotdata <- TRUE
+  
   layout(t(1:3), widths = c(2,2,1))
   i = 1
   ourEst <- apply(oursPostX[,i,], 1, quantile, probs = 0.5)
@@ -206,33 +221,40 @@ summarize <- function(rdaDir){
   lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
   lines(times, ourEst, col="forestgreen", lwd=3)
   
-  zoomin_x <- c(85, 89)
-  zoomin_y <- c(1.80, 2.05)
-  polygon(c(times[zoomin_x], rev(times[zoomin_x])), rep(zoomin_y, each=2),
-          col = NA, border = 1)
-  
-  zoomout_x <- c(80, 116)
-  zoomout_y <- c(-2.5, -0.4)
-  polygon(c(times[zoomout_x], rev(times[zoomout_x])), rep(zoomout_y, each=2),
-          col = NA, border = 1)
-  
-  lines(times[c(zoomin_x[1], zoomout_x[1])], c(zoomin_y[1], zoomout_y[2]))
-  lines(times[c(zoomin_x[2], zoomout_x[2])], c(zoomin_y[1], zoomout_y[2]))
-  zoomout_id <- zoomout_x[1]:zoomout_x[2]
-  zoomin_id <- zoomin_x[1]:zoomin_x[2]
-  zoomtrans_y <- function(y) {
-    y <- y[zoomin_id]
-    (y - zoomin_y[1])/diff(zoomin_y) * diff(zoomout_y) + zoomout_y[1]
+  if(zoom){
+    zoomin_x <- c(85, 89)
+    zoomin_y <- c(1.80, 2.05)
+    polygon(c(times[zoomin_x], rev(times[zoomin_x])), rep(zoomin_y, each=2),
+            col = NA, border = 1)
+    
+    zoomout_x <- c(80, 116)
+    zoomout_y <- c(-2.5, -0.4)
+    polygon(c(times[zoomout_x], rev(times[zoomout_x])), rep(zoomout_y, each=2),
+            col = NA, border = 1)
+    
+    lines(times[c(zoomin_x[1], zoomout_x[1])], c(zoomin_y[1], zoomout_y[2]))
+    lines(times[c(zoomin_x[2], zoomout_x[2])], c(zoomin_y[1], zoomout_y[2]))
+    zoomout_id <- zoomout_x[1]:zoomout_x[2]
+    zoomin_id <- zoomin_x[1]:zoomin_x[2]
+    zoomtrans_y <- function(y) {
+      y <- y[zoomin_id]
+      (y - zoomin_y[1])/diff(zoomin_y) * diff(zoomout_y) + zoomout_y[1]
+    }
+    zoomtrans_x <- function(x) {
+      zoomin_x <- times[zoomin_x]
+      zoomout_x <- times[zoomout_x]
+      (x - zoomin_x[1])/diff(zoomin_x) * diff(zoomout_x) + zoomout_x[1]
+    }
+    polygon(c(zoomtrans_x(times[zoomin_id]), rev(zoomtrans_x(times[zoomin_id]))), c(zoomtrans_y(ourUB), rev(zoomtrans_y(ourLB))),
+            col = "skyblue", border = NA)
+    lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(xdesolveTRUE[,1+i]), col="red", lwd=4)
+    lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(ourEst), col="forestgreen", lwd=3)
   }
-  zoomtrans_x <- function(x) {
-    zoomin_x <- times[zoomin_x]
-    zoomout_x <- times[zoomout_x]
-    (x - zoomin_x[1])/diff(zoomin_x) * diff(zoomout_x) + zoomout_x[1]
+  if(plotdata){
+    for(it in 1:length(xsimObsAll)){
+      points(jitter(xsimObsAll[[it]]$time, factor=0.1), xsimObsAll[[it]][,2], pch='.')
+    }
   }
-  polygon(c(zoomtrans_x(times[zoomin_id]), rev(zoomtrans_x(times[zoomin_id]))), c(zoomtrans_y(ourUB), rev(zoomtrans_y(ourLB))),
-          col = "skyblue", border = NA)
-  lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(xdesolveTRUE[,1+i]), col="red", lwd=4)
-  lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(ourEst), col="forestgreen", lwd=3)
   
   i = 2
   ourEst <- apply(oursPostX[,i,], 1, quantile, probs = 0.5)
@@ -247,34 +269,40 @@ summarize <- function(rdaDir){
   lines(times, xdesolveTRUE[,1+i], col="red", lwd=4)
   lines(times, ourEst, col="forestgreen", lwd=3)
   
-  zoomin_x <- c(73, 79)
-  zoomin_y <- c(0.9, 1.10)
-  polygon(c(times[zoomin_x], rev(times[zoomin_x])), rep(zoomin_y, each=2),
-          col = NA, border = 1)
-  
-  zoomout_x <- c(57, 94)
-  zoomout_y <- c(-1.5, -0.4)
-  polygon(c(times[zoomout_x], rev(times[zoomout_x])), rep(zoomout_y, each=2),
-          col = NA, border = 1)
-  
-  lines(times[c(zoomin_x[1], zoomout_x[1])], c(zoomin_y[1], zoomout_y[2]))
-  lines(times[c(zoomin_x[2], zoomout_x[2])], c(zoomin_y[1], zoomout_y[2]))
-  zoomout_id <- zoomout_x[1]:zoomout_x[2]
-  zoomin_id <- zoomin_x[1]:zoomin_x[2]
-  zoomtrans_y <- function(y) {
-    y <- y[zoomin_id]
-    (y - zoomin_y[1])/diff(zoomin_y) * diff(zoomout_y) + zoomout_y[1]
+  if(zoom){
+    zoomin_x <- c(73, 79)
+    zoomin_y <- c(0.9, 1.10)
+    polygon(c(times[zoomin_x], rev(times[zoomin_x])), rep(zoomin_y, each=2),
+            col = NA, border = 1)
+    
+    zoomout_x <- c(57, 94)
+    zoomout_y <- c(-1.5, -0.4)
+    polygon(c(times[zoomout_x], rev(times[zoomout_x])), rep(zoomout_y, each=2),
+            col = NA, border = 1)
+    
+    lines(times[c(zoomin_x[1], zoomout_x[1])], c(zoomin_y[1], zoomout_y[2]))
+    lines(times[c(zoomin_x[2], zoomout_x[2])], c(zoomin_y[1], zoomout_y[2]))
+    zoomout_id <- zoomout_x[1]:zoomout_x[2]
+    zoomin_id <- zoomin_x[1]:zoomin_x[2]
+    zoomtrans_y <- function(y) {
+      y <- y[zoomin_id]
+      (y - zoomin_y[1])/diff(zoomin_y) * diff(zoomout_y) + zoomout_y[1]
+    }
+    zoomtrans_x <- function(x) {
+      zoomin_x <- times[zoomin_x]
+      zoomout_x <- times[zoomout_x]
+      (x - zoomin_x[1])/diff(zoomin_x) * diff(zoomout_x) + zoomout_x[1]
+    }
+    polygon(c(zoomtrans_x(times[zoomin_id]), rev(zoomtrans_x(times[zoomin_id]))), c(zoomtrans_y(ourUB), rev(zoomtrans_y(ourLB))),
+            col = "skyblue", border = NA)
+    lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(xdesolveTRUE[,1+i]), col="red", lwd=4)
+    lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(ourEst), col="forestgreen", lwd=3)
   }
-  zoomtrans_x <- function(x) {
-    zoomin_x <- times[zoomin_x]
-    zoomout_x <- times[zoomout_x]
-    (x - zoomin_x[1])/diff(zoomin_x) * diff(zoomout_x) + zoomout_x[1]
+  if(plotdata){
+    for(it in 1:length(xsimObsAll)){
+      points(jitter(xsimObsAll[[it]]$time, factor=0.1), xsimObsAll[[it]][,3], pch='.')
+    }
   }
-  polygon(c(zoomtrans_x(times[zoomin_id]), rev(zoomtrans_x(times[zoomin_id]))), c(zoomtrans_y(ourUB), rev(zoomtrans_y(ourLB))),
-          col = "skyblue", border = NA)
-  lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(xdesolveTRUE[,1+i]), col="red", lwd=4)
-  lines(zoomtrans_x(times[zoomin_id]), zoomtrans_y(ourEst), col="forestgreen", lwd=3)
-  
   
   par(mar=rep(0,4))
   plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
@@ -286,11 +314,20 @@ summarize <- function(rdaDir){
   print("time used in seconds")
   print(summary(OursTimeUsedAll))
   
+  OursPhi <- sapply(OursPhi, identity, simplify="array")
+  print("median phi")
+  print(apply(OursPhi, 1:2, median))
+  print("phi1 for V")
+  print(summary(OursPhi[1,1,]))
+  print("phi2 for V")
+  print(summary(OursPhi[2,1,]))
+  print("phi1 for R")
+  print(summary(OursPhi[1,2,]))
+  print("phi2 for R")
+  print(summary(OursPhi[2,2,]))
+  
+  print("\n inferred sigma")
+  OursSigma <- do.call(rbind, OursSigma)
+  print(apply(OursSigma, 2, summary))
   sink()
 }
-
-summarize("../results/fn-fill5-nobs5/")
-summarize("../results/fn-fill0-nobs41/")
-summarize("../results/fn-fill1-nobs41/")
-summarize("../results/fn-fill2-nobs41/")
-summarize("../results/fn-fill3-nobs41/")
