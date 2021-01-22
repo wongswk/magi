@@ -22,3 +22,8 @@ RUN export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PROJECT_DIR/cmagi/
 RUN export PYTHONPATH=$PROJECT_DIR/pymagi
 
 RUN ./build.sh --skip-tests
+RUN pip3 install jupyter
+RUN pip3 install Pygments==2.6.1
+RUN pip3 install --upgrade --force jupyter-console
+RUN cd $PROJECT_DIR/pymagi
+CMD ["jupyter", "notebook", "--port=8888", "--no-browser", "--ip=0.0.0.0", "--allow-root"]
