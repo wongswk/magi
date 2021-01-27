@@ -26,4 +26,6 @@ RUN pip3 install jupyter
 RUN pip3 install Pygments==2.6.1
 RUN pip3 install --upgrade --force jupyter-console
 RUN cd $PROJECT_DIR/pymagi
+# run docker using command `docker run -d -p 8888:8888 shihaoyangphd/magi:dev`
+# the jupyter notebook can be used to view R results, or to run python directly
 CMD ["jupyter", "notebook", "--port=8888", "--no-browser", "--ip=0.0.0.0", "--allow-root"]
