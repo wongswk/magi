@@ -305,8 +305,8 @@ PYBIND11_MODULE(pymagi, macro)
         .def_readwrite("sigmaInit", &MagiSolver::sigmaInit)
         .def_readwrite("xInit", &MagiSolver::xInit)
         .def_readwrite("thetaInit", &MagiSolver::thetaInit)
+        .def_readwrite("covAllDimensions", &MagiSolver::covAllDimensions)
         .def_readwrite("llikxthetasigmaSamples", &MagiSolver::llikxthetasigmaSamples);
-        .def_readwrite("covAllDimensions", &MagiSolver::covAllDimensions);
 
     macro.def(
         "solveMagiPy",
