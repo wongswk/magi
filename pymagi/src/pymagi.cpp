@@ -263,7 +263,7 @@ PYBIND11_MODULE(pymagi, macro)
 
     py::class_< gpcov >(macro, "gpcov")
             .def(py::init<>())
-            .def_readwrite("C", &gpcov::final)
+            .def_readwrite("C", &gpcov::C)
             .def_readwrite("Cinv", &gpcov::Cinv)
             .def_readwrite("mphi", &gpcov::mphi)
             .def_readwrite("Kphi", &gpcov::Kphi)
