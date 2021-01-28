@@ -118,4 +118,4 @@ def solve_magi(
     phiUsed = matrix(result_solved.phiAllDimensions)
     phiUsed = np.copy(phiUsed.reshape([-1])).reshape([2, -1])
     samplesCpp = matrix(result_solved.llikxthetasigmaSamples.slice(0))
-    return dict(phiUsed=phiUsed, samplesCpp=samplesCpp)
+    return dict(phiUsed=phiUsed, samplesCpp=samplesCpp, result_solved=result_solved)
