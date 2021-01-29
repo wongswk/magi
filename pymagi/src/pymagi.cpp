@@ -300,6 +300,14 @@ PYBIND11_MODULE(pymagi, macro)
         py::arg("nsteps"),
         py::arg("traj"));
 
+    macro.def(
+        "generalMaternCov",
+        &generalMaternCov,
+        "",
+        py::arg("phi"),
+        py::arg("distSigned"),
+        py::arg("complexity"));
+
     py::class_< MagiSolver >(macro, "MagiSolver")
         .def_readwrite("phiAllDimensions", &MagiSolver::phiAllDimensions)
         .def_readwrite("sigmaInit", &MagiSolver::sigmaInit)
