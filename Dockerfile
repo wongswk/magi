@@ -24,6 +24,7 @@ RUN export PYTHONPATH=$PROJECT_DIR/pymagi
 RUN ./build.sh --skip-tests
 RUN pip3 install jupyter
 RUN pip3 install Pygments==2.6.1
+RUN pip3 install torch pandas
 RUN pip3 install --upgrade --force jupyter-console
 RUN cd $PROJECT_DIR/pymagi
 # run docker using command `docker run -d -p 8888:8888 shihaoyangphd/magi:dev`
