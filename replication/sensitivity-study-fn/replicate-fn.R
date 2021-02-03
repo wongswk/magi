@@ -28,3 +28,7 @@ for (i in 1:100) {
   system(paste0("Rscript run-fn.R 3 ", i, " 41"), wait=FALSE)
 }
 summarize("../results/fn-fill3-nobs41/")
+
+for (i in 1:100) {
+  system(paste0("python fnmap.py --seed_id ", i), wait=FALSE)
+}
