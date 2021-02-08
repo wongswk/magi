@@ -545,6 +545,9 @@ public:
         if ((xthetaphiInput.array() > this->upperBound().array()).any()){
             return INFINITY;
         }
+        if (xthetaphiInput.array().isNaN().any()){
+            return INFINITY;
+        }
 
         const arma::vec xthetaphi(
                 const_cast<double*>(xthetaphiInput.data()),
@@ -564,6 +567,7 @@ public:
             phiAllDimensions.col(missingComponentDim(id)) = xthetaphi.subvec(
                     xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * id,
                     xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * (id + 1) - 1);
+//            std::cout << "value: phiAllDimensions.col(missingComponentDim(id)) = " << phiAllDimensions.col(missingComponentDim(id)) << "\n";
         }
 //        cout << "inside evaluation of value\n";
 
@@ -574,6 +578,9 @@ public:
                                              yobs,
                                              tvec,
                                              fOdeModel);
+        if (out.gradient.has_nan()){
+            return INFINITY;
+        }
         return -out.value*SCALE;
     }
 
@@ -615,6 +622,7 @@ public:
             phiAllDimensions.col(missingComponentDim(id)) = xthetaphi.subvec(
                     xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * id,
                     xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * (id + 1) - 1);
+//            std::cout << "gradient: phiAllDimensions.col(missingComponentDim(id)) = " << phiAllDimensions.col(missingComponentDim(id)) << "\n";
         }
 
         lp out = xthetaphisigmallik( xInit,
@@ -697,7 +705,7 @@ public:
         this->setLowerBound(lb);
         this->setUpperBound(ub);
 //        std::cout << "finish set up of the problem\n";
-//        std::cout << "ub = \n" << ub << "lb = \n" << lb;
+//        std::cout << "ub = \n" << ub << "\nlb = \n" << lb << "\n";
     }
 };
 
