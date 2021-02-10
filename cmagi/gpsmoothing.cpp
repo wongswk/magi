@@ -578,7 +578,7 @@ public:
                                              yobs,
                                              tvec,
                                              fOdeModel);
-        if (out.gradient.has_nan()){
+        if (out.gradient.has_nan() || isnan(out.value)){
             return INFINITY;
         }
         return -out.value*SCALE;
