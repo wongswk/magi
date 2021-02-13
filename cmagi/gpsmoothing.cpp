@@ -578,7 +578,7 @@ public:
                                              yobs,
                                              tvec,
                                              fOdeModel);
-        if (out.gradient.has_nan()){
+        if (out.gradient.has_nan() || isnan(out.value)){
             return INFINITY;
         }
         return -out.value*SCALE;
@@ -740,8 +740,19 @@ arma::mat optimizeXmissingThetaPhi(const arma::mat & yobsInput,
 
 //    std::cout << "inside optimizeXmissingThetaPhi\n"
 //    << "init xThetaPhi = " << xThetaPhi;
+    Eigen::VectorXd xThetaPhiInit = xThetaPhi;
 
     solver.minimize(objective, xThetaPhi);
-    const arma::vec & xThetaPhiArgmin = arma::vec(xThetaPhi.data(), xInitInput.n_rows * missingComponentDim.size() + thetaInitInput.size() + phiInitInput.n_rows * missingComponentDim.size(), false, false);
-    return xThetaPhiArgmin;
+    if (! isfinite(objective.value(xThetaPhi))){
+        const arma::vec & xThetaPhiArgmin = arma::vec(xThetaPhiInit.data(), xInitInput.n_rows * missingComponentDim.size() + thetaInitInput.size() + phiInitInput.n_rows * missingComponentDim.size(), false, false);
+        return xThetaPhiArgmin;
+    }
+
+    if (objective.value(xThetaPhi) < objective.value(xThetaPhiInit)){
+        const arma::vec & xThetaPhiArgmin = arma::vec(xThetaPhi.data(), xInitInput.n_rows * missingComponentDim.size() + thetaInitInput.size() + phiInitInput.n_rows * missingComponentDim.size(), false, false);
+        return xThetaPhiArgmin;
+    }else{
+        const arma::vec & xThetaPhiArgmin = arma::vec(xThetaPhiInit.data(), xInitInput.n_rows * missingComponentDim.size() + thetaInitInput.size() + phiInitInput.n_rows * missingComponentDim.size(), false, false);
+        return xThetaPhiArgmin;
+    }
 }
