@@ -2,7 +2,7 @@
 [![Travis-CI Build Status](https://travis-ci.com/Shihao-Yang/dynamic-systems.svg?token=zsECgNMyrthwbokp6yPB&branch=master)](https://travis-ci.com/Shihao-Yang/dynamic-systems)
 [![codecov](https://codecov.io/gh/Shihao-Yang/dynamic-systems/branch/master/graph/badge.svg?token=Sr7hFVaajH)](https://codecov.io/gh/Shihao-Yang/dynamic-systems)
 
-This repository contains the accompanying software for the paper "[Inference of dynamic systems via manifold-constrained Gaussian processes](https://arxiv.org/abs/2009.07444)" by Shihao Yang, Samuel W.K. Wong, and S. C. Kou.
+This repository contains the accompanying software for the paper "[Inference of dynamic systems from noisy and sparse data via manifold-constrained Gaussian processes](https://doi.org/10.1073/pnas.2020397118)" by Shihao Yang, Samuel W.K. Wong, and S. C. Kou.
 
 ## Installation
 
@@ -62,4 +62,4 @@ There, we provide specific examples of how to set up and call `MagiSolver` in ea
 
 ### Reference
 
-For a full discussion of our method and examples, please see our paper "Inference of dynamic systems via manifold-constrained Gaussian processes" (https://arxiv.org/abs/2009.07444). 
+For a full discussion of our method and examples, please see our paper "Inference of dynamic systems from noisy and sparse data via manifold-constrained Gaussian processes", PNAS 118 (15), e2020397118 (https://doi.org/10.1073/pnas.2020397118).
