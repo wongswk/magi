@@ -197,6 +197,7 @@ void MagiSolver::setupPhiSigma() {
 
     for(unsigned j = 0; j < ydim; j++){
         covAllDimensions[j] = kernelCov(phiAllDimensions.col(j), distSignedFull, 3);
+        covAllDimensions[j].tvecCovInput = tvecFull;
 
         // Workaround for phi1 getting too large and matrix inverse failing
         while (covAllDimensions[j].Cinv.n_rows == 0 || covAllDimensions[j].Kinv.n_rows == 0) {

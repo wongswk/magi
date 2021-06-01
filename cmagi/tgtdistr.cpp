@@ -430,6 +430,7 @@ lp xthetallik( const vec & xtheta,
                const OdeSystem & fOdeModel,
                const bool useBand,
                const arma::vec & priorTemperatureInput) {
+  const arma::vec & tvecFull = CovAllDimensions[0].tvecCovInput;
   int n = yobs.n_rows;
   int pdimension = yobs.n_cols;
   const mat & xlatent = mat(const_cast<double*>( xtheta.memptr()), n, pdimension, false, false);
@@ -451,9 +452,9 @@ lp xthetallik( const vec & xtheta,
     throw std::invalid_argument("priorTemperatureInput must be scaler, 2-vector or 3-vector");
   }
 
-  const mat & fderiv = fOdeModel.fOde(theta, xlatent);
-  const cube & fderivDx = fOdeModel.fOdeDx(theta, xlatent);
-  const cube & fderivDtheta = fOdeModel.fOdeDtheta(theta, xlatent);
+  const mat & fderiv = fOdeModel.fOde(theta, xlatent, tvecFull);
+  const cube & fderivDx = fOdeModel.fOdeDx(theta, xlatent, tvecFull);
+  const cube & fderivDtheta = fOdeModel.fOdeDtheta(theta, xlatent, tvecFull);
   
   mat res(pdimension, 3);
   
