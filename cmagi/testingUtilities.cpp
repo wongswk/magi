@@ -135,6 +135,7 @@ lp xthetallik_withmu( const vec & xtheta,
                       const double & sigma, 
                       const mat & yobs, 
                       const OdeSystem & fOdeModel) {
+  const arma::vec & tvecFull = CovAllDimensions[0].tvecCovInput;
   const gpcov & CovV = CovAllDimensions[0];
   const gpcov & CovR = CovAllDimensions[1];
   
@@ -148,9 +149,9 @@ lp xthetallik_withmu( const vec & xtheta,
   const vec & Rsmminusmu = Rsm - CovR.mu;
   
   
-  const mat & fderiv = fOdeModel.fOde(theta, join_horiz(Vsm, Rsm));
-  const cube & fderivDx = fOdeModel.fOdeDx(theta, join_horiz(Vsm, Rsm));
-  const cube & fderivDtheta = fOdeModel.fOdeDtheta(theta, join_horiz(Vsm, Rsm));
+  const mat & fderiv = fOdeModel.fOde(theta, join_horiz(Vsm, Rsm), tvecFull);
+  const cube & fderivDx = fOdeModel.fOdeDx(theta, join_horiz(Vsm, Rsm), tvecFull);
+  const cube & fderivDtheta = fOdeModel.fOdeDtheta(theta, join_horiz(Vsm, Rsm), tvecFull);
   
   mat res(2,3);
   
@@ -332,6 +333,7 @@ lp xthetallikBandApprox( const vec & xtheta,
                          const double & sigma, 
                          const mat & yobs,
                          const OdeSystem & fOdeModel) {
+  const arma::vec & tvecFull = CovAllDimensions[0].tvecCovInput;
   const gpcov & CovV = CovAllDimensions[0];
   const gpcov & CovR = CovAllDimensions[1]; 
   
@@ -349,9 +351,9 @@ lp xthetallikBandApprox( const vec & xtheta,
   const vec & Vsm = xtheta.subvec(0, n - 1);
   const vec & Rsm = xtheta.subvec(n, 2*n - 1);
   
-  const mat & fderiv = fOdeModel.fOde(theta, join_horiz(Vsm, Rsm));
-  const cube & fderivDx = fOdeModel.fOdeDx(theta, join_horiz(Vsm, Rsm));
-  const cube & fderivDtheta = fOdeModel.fOdeDtheta(theta, join_horiz(Vsm, Rsm));
+  const mat & fderiv = fOdeModel.fOde(theta, join_horiz(Vsm, Rsm), tvecFull);
+  const cube & fderivDx = fOdeModel.fOdeDx(theta, join_horiz(Vsm, Rsm), tvecFull);
+  const cube & fderivDtheta = fOdeModel.fOdeDtheta(theta, join_horiz(Vsm, Rsm), tvecFull);
   
   mat res(2,3);
   
@@ -556,6 +558,7 @@ lp xthetallikTwoDimension( const vec & xtheta,
                            const double & sigma, 
                            const mat & yobs, 
                            const OdeSystem & fOdeModel) {
+  const arma::vec & tvecFull = CovV.tvecCovInput;
   int n = (xtheta.size() - 3)/2;
   const vec & theta = xtheta.subvec(xtheta.size() - 3, xtheta.size() - 1);
   lp ret;
@@ -570,9 +573,9 @@ lp xthetallikTwoDimension( const vec & xtheta,
   const vec & Vsm = xtheta.subvec(0, n - 1);
   const vec & Rsm = xtheta.subvec(n, 2*n - 1);
   
-  const mat & fderiv = fOdeModel.fOde(theta, join_horiz(Vsm, Rsm));
-  const cube & fderivDx = fOdeModel.fOdeDx(theta, join_horiz(Vsm, Rsm));
-  const cube & fderivDtheta = fOdeModel.fOdeDtheta(theta, join_horiz(Vsm, Rsm));
+  const mat & fderiv = fOdeModel.fOde(theta, join_horiz(Vsm, Rsm), tvecFull);
+  const cube & fderivDx = fOdeModel.fOdeDx(theta, join_horiz(Vsm, Rsm), tvecFull);
+  const cube & fderivDtheta = fOdeModel.fOdeDtheta(theta, join_horiz(Vsm, Rsm), tvecFull);
   
   mat res(2,3);
   
