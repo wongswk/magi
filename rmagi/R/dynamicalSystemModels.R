@@ -1,4 +1,4 @@
-fnmodelODE <- function(theta,x) {
+fnmodelODE <- function(theta,x,tvec) {
   V <- x[,1]
   R <- x[,2]
   
@@ -9,7 +9,7 @@ fnmodelODE <- function(theta,x) {
   result
 }
 
-fnmodelDx <- function(theta,x) {
+fnmodelDx <- function(theta,x,tvec) {
   resultDx <- array(0, c(nrow(x), ncol(x), ncol(x)))
   
   V = x[,1]
@@ -23,7 +23,7 @@ fnmodelDx <- function(theta,x) {
   resultDx
 }
 
-fnmodelDtheta <- function(theta,x) {
+fnmodelDtheta <- function(theta,x,tvec) {
   resultDtheta <- array(0, c(nrow(x), length(theta), ncol(x)))
   
   V = x[,1]
@@ -39,7 +39,7 @@ fnmodelDtheta <- function(theta,x) {
 }
 
 
-hes1modelODE  <-function(theta,x) {
+hes1modelODE  <-function(theta,x,tvec) {
    P = x[,1]
    M = x[,2]
    H = x[,3] 
@@ -53,7 +53,7 @@ hes1modelODE  <-function(theta,x) {
 }
 
 
- hes1modelDx <- function(theta,x) {
+ hes1modelDx <- function(theta,x,tvec) {
    resultDx<- array(0, c(nrow(x), ncol(x), ncol(x)))
   
    P = x[,1]
@@ -73,7 +73,7 @@ hes1modelODE  <-function(theta,x) {
 }
 
 
- hes1modelDtheta <- function(theta,x) {
+ hes1modelDtheta <- function(theta,x,tvec) {
    resultDtheta <- array(0, c(nrow(x), length(theta), ncol(x)))
   
    P = x[,1]
@@ -95,7 +95,7 @@ hes1modelODE  <-function(theta,x) {
 }
 
 
- hes1logmodelODE <- function(theta,x) {
+ hes1logmodelODE <- function(theta,x,tvec) {
    P = exp(x[,1])
    M = exp(x[,2])
    H = exp(x[,3]) 
@@ -109,7 +109,7 @@ hes1modelODE  <-function(theta,x) {
 }
 
 
- hes1logmodelDx <- function(theta,x) {
+ hes1logmodelDx <- function(theta,x,tvec) {
    resultDx<- array(0, c(nrow(x), ncol(x), ncol(x)))
   
    P = x[,1]
@@ -133,7 +133,7 @@ hes1modelODE  <-function(theta,x) {
 }
 
 
- hes1logmodelDtheta <- function(theta,x) {
+ hes1logmodelDtheta <- function(theta,x,tvec) {
    resultDtheta <- array(0, c(nrow(x), length(theta), ncol(x)))
   
    P = x[,1]
@@ -155,7 +155,7 @@ hes1modelODE  <-function(theta,x) {
 }
 
 
- HIVmodelODE <- function(theta,x) {
+ HIVmodelODE <- function(theta,x,tvec) {
    T = exp(x[,1])
    Tm = exp(x[,2])
    Tw = exp(x[,3])
@@ -172,7 +172,7 @@ hes1modelODE  <-function(theta,x) {
 }
 
 
- HIVmodelDx <- function(theta,x) {
+ HIVmodelDx <- function(theta,x,tvec) {
    resultDx<- array(0, c(nrow(x), ncol(x), ncol(x)))
   
    T = exp(x[,1])
@@ -204,7 +204,7 @@ hes1modelODE  <-function(theta,x) {
 }
 
 
- HIVmodelDtheta <- function(theta,x) {
+ HIVmodelDtheta <- function(theta,x,tvec) {
    resultDtheta <- array(0, c(nrow(x), length(theta), ncol(x)))
   
    T = exp(x[,1])
@@ -237,7 +237,7 @@ hes1modelODE  <-function(theta,x) {
 }
 
 
- ptransmodelODE <- function(theta,x) {
+ ptransmodelODE <- function(theta,x,tvec) {
    S = x[,1]
    dS = x[,2]
    R = x[,3]
@@ -256,7 +256,7 @@ hes1modelODE  <-function(theta,x) {
 }
 
 
- ptransmodelDx <- function(theta,x) {
+ ptransmodelDx <- function(theta,x,tvec) {
    resultDx <- array(0, c(nrow(x), ncol(x), ncol(x)))
   
    S = x[,1]
@@ -287,7 +287,7 @@ hes1modelODE  <-function(theta,x) {
 }
 
 
- ptransmodelDtheta <- function(theta,x) {
+ ptransmodelDtheta <- function(theta,x,tvec) {
    resultDtheta <- array(0, c(nrow(x), length(theta), ncol(x)))
   
    S = x[,1]
