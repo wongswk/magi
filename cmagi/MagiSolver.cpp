@@ -524,7 +524,7 @@ void MagiSolver::sampleInEpochs() {
                 covAllDimensions[j].dotmu = covAllDimensions[j].mphi * xPosteriorMean.col(j);
             }
         }else if(epochMethod == "f_bar_x") {
-            arma::mat dotxOde = odeModel.fOde(thetaPosteriorMean, xPosteriorMean);
+            arma::mat dotxOde = odeModel.fOde(thetaPosteriorMean, xPosteriorMean, tvecFull);
             for(unsigned long j = 0; j < covAllDimensions.size(); j++) {
                 covAllDimensions[j].dotmu = dotxOde.col(j);
             }
@@ -536,7 +536,8 @@ void MagiSolver::sampleInEpochs() {
                         arma::reshape(xthetasigmaSamples(
                                 arma::span(0, yFull.size() - 1),
                                 arma::span(it, it)
-                        ), yFull.n_rows, yFull.n_cols));
+                        ), yFull.n_rows, yFull.n_cols),
+                        tvecFull);
             }
             dotxOde /= niterHmc - static_cast<int>(niterHmc * burninRatioHmc);
             for(unsigned long j = 0; j < covAllDimensions.size(); j++) {

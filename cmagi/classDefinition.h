@@ -52,11 +52,11 @@ struct gpcov {
 class OdeSystem {
 public:
     // row is observations, col is each X variable
-    std::function<arma::mat (arma::vec, arma::mat)> fOde;
+    std::function<arma::mat (arma::vec, arma::mat, arma::vec)> fOde;
     // row is observations, col is each partial X denominator, slice is each X variable numerator
-    std::function<arma::cube (arma::vec, arma::mat)> fOdeDx;
+    std::function<arma::cube (arma::vec, arma::mat, arma::vec)> fOdeDx;
     // row is observations, col is each partial theta denominator, slice is each X variable numerator
-    std::function<arma::cube (arma::vec, arma::mat)> fOdeDtheta;
+    std::function<arma::cube (arma::vec, arma::mat, arma::vec)> fOdeDtheta;
 
     std::string name;
 
@@ -68,9 +68,9 @@ public:
     arma::vec xUpperBound;
 
     OdeSystem(
-            const std::function<arma::mat (arma::vec, arma::mat)> & fOdeInput,
-            const std::function<arma::cube (arma::vec, arma::mat)> & fOdeDxInput,
-            const std::function<arma::cube (arma::vec, arma::mat)> & fOdeDthetaInput,
+            const std::function<arma::mat (arma::vec, arma::mat, arma::vec)> & fOdeInput,
+            const std::function<arma::cube (arma::vec, arma::mat, arma::vec)> & fOdeDxInput,
+            const std::function<arma::cube (arma::vec, arma::mat, arma::vec)> & fOdeDthetaInput,
             const arma::vec & thetaLowerBoundInput,
             const arma::vec & thetaUpperBoundInput
     ) : fOde(fOdeInput), fOdeDx(fOdeDxInput), fOdeDtheta(fOdeDthetaInput),
