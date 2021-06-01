@@ -349,6 +349,7 @@ void MagiSolver::initMissingComponent() {
         covAllDimensions[j].addBandCov(bandSize);
         covAllDimensions[j].mu = mu;
         covAllDimensions[j].dotmu = dotmu;
+        covAllDimensions[j].tvecCovInput = tvecFull;
     }
 
     // update theta
