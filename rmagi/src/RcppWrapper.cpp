@@ -90,6 +90,7 @@ gpcov cov_r2cpp(const Rcpp::List & cov_r){
   const Rcpp::NumericMatrix & KinvBand = as<const NumericMatrix>(cov_r["KinvBand"]);
   const Rcpp::NumericVector & mu = as<const NumericVector>(cov_r["mu"]);
   const Rcpp::NumericVector & dotmu = as<const NumericVector>(cov_r["dotmu"]);
+  const Rcpp::NumericVector & tvecCovInput = as<const NumericVector>(cov_r["tvecCovInput"]);
   
   // *(const_cast<double*>( &(mu[0]))) = -1; // this part is working -- R value changed
   
@@ -103,6 +104,7 @@ gpcov cov_r2cpp(const Rcpp::List & cov_r){
   cov_v.mu = vec(const_cast<double*>( &(mu[0])), mu.size(), false, false);
   cov_v.dotmu = vec(const_cast<double*>( &(dotmu[0])), dotmu.size(), false, false);
   cov_v.bandsize = as<int>(cov_r["bandsize"]);
+  cov_v.tvecCovInput = vec(const_cast<double*>( &(tvecCovInput[0])), tvecCovInput.size(), false, false);
   
   // cov_v.mu(1) = 2; // this part is also working -- R value changed
   // cov_v.CinvBand(0) = 999;
@@ -123,7 +125,8 @@ Rcpp::List cov_cpp2r(const gpcov & cov_v){
     Named("mphi")=cov_v.mphi,
     Named("Kinv")=cov_v.Kinv,
     Named("Sigma")=cov_v.Sigma,
-    Named("dSigmadphiCube")=cov_v.dSigmadphiCube
+    Named("dSigmadphiCube")=cov_v.dSigmadphiCube,
+    Named("tvecCovInput")=cov_v.tvecCovInput
   );
   return cov_r;
 }

@@ -38,7 +38,9 @@ phiTest <- cbind(pram.true$vphi, pram.true$rphi)
 sigmaTest <- rep(pram.true$sigma, 2)
 
 curCovV <- calCov(phiTest[,1], r, signr, kerneltype = "generalMatern")
+curCovV$tvecCovInput = fn.sim$time
 curCovR <- calCov(phiTest[,2], r, signr, kerneltype = "generalMatern")
+curCovR$tvecCovInput = fn.sim$time
 
 testthat::test_that("xthetasigmallik differs to xthetallik and loglikOrig by constant fixing phi sigma", {
   
