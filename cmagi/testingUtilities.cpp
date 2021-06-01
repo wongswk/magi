@@ -226,6 +226,7 @@ lp xthetallik_rescaled( const vec & xtheta,
                         const double & sigma,
                         const mat & yobs,
                         const std::function<mat (vec, mat, vec)> & fODE) {
+    const arma::vec tvecFull = CovV.tvecCovInput;
     vec xlatent = xtheta.subvec(0, xtheta.size() - 4);
     vec theta = xtheta.subvec(xtheta.size() - 3, xtheta.size() - 1);
     lp ret;
@@ -242,7 +243,7 @@ lp xthetallik_rescaled( const vec & xtheta,
     int n = xlatent.size()/2;
     int nobs = 0;
 
-    mat fderiv = fODE(theta, join_horiz(Vsm, Rsm));
+    mat fderiv = fODE(theta, join_horiz(Vsm, Rsm), tvecFull);
     mat res(2,3);
 
     // V
@@ -439,6 +440,7 @@ lp xthetallikHardCode( const vec & xtheta,
                        const double & sigma,
                        const mat & yobs,
                        const std::function<mat (vec, mat, vec)> & fODE) {
+    const vec & tvecFull = CovV.tvecCovInput;
     int n = (xtheta.size() - 3)/2;
     const vec & theta = xtheta.subvec(xtheta.size() - 3, xtheta.size() - 1);
     lp ret;
@@ -453,7 +455,7 @@ lp xthetallikHardCode( const vec & xtheta,
     const vec & Vsm = xtheta.subvec(0, n - 1);
     const vec & Rsm = xtheta.subvec(n, 2*n - 1);
 
-    const mat & fderiv = fODE(theta, join_horiz(Vsm, Rsm));
+    const mat & fderiv = fODE(theta, join_horiz(Vsm, Rsm), tvecFull);
     mat res(2,3);
 
     // V
