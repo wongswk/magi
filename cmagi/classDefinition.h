@@ -45,6 +45,7 @@ struct gpcov {
     arma::cube dCdphiCube, dCprimedphiCube, dCdoubleprimedphiCube, dSigmadphiCube;
     arma::mat CinvBand, mphiBand, KinvBand;
     arma::vec Ceigen1over, Keigen1over, mu, dotmu;
+    arma::vec tvecCovInput;
     int bandsize;
     void addBandCov(const int bandsizeInput);
 };
