@@ -26,22 +26,25 @@ def integer_matrix(arma_integer_matrix):
 
 def ode_system(name, fOde, fOdeDx, fOdeDtheta, thetaLowerBound, thetaUpperBound):
     system = OdeSystem()
-    def fOdeArma(theta, x):
+    def fOdeArma(theta, x, tvec):
         theta = vector(theta)
         x = matrix(x)
-        result = fOde(theta, x)
+        tvec = vector(tvec)
+        result = fOde(theta, x, tvec)
         return ArmaMatrix(result.T.copy())
 
-    def fOdeDxArma(theta, x):
+    def fOdeDxArma(theta, x, tvec):
         theta = vector(theta)
         x = matrix(x)
-        resultDx = fOdeDx(theta, x)
+        tvec = vector(tvec)
+        resultDx = fOdeDx(theta, x, tvec)
         return ArmaCube(resultDx.T.copy())
 
-    def fOdeDthetaArma(theta, x):
+    def fOdeDthetaArma(theta, x, tvec):
         theta = vector(theta)
         x = matrix(x)
-        resultDtheta = fOdeDtheta(theta, x)
+        tvec = vector(tvec)
+        resultDtheta = fOdeDtheta(theta, x, tvec)
         return ArmaCube(resultDtheta.T.copy())
 
     system.fOde = fOdeArma
