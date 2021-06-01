@@ -568,18 +568,18 @@ lp xthetallikWithmuBand( const vec & xtheta,
   OdeSystem fOdeModelShifted = fOdeModel;
   
   fOdeModelShifted.fOde = [&muAllDimension, &dotmuAllDimension, &fOdeModel]
-  (const vec & theta, const mat & x) -> mat{
-    return fOdeModel.fOde(theta, x+muAllDimension) - dotmuAllDimension;
+  (const vec & theta, const mat & x, const vec & tvec) -> mat{
+    return fOdeModel.fOde(theta, x+muAllDimension, tvec) - dotmuAllDimension;
   };
   
   fOdeModelShifted.fOdeDx = [&muAllDimension, &dotmuAllDimension, &fOdeModel]
-  (const vec & theta, const mat & x) -> cube{ 
-    return fOdeModel.fOdeDx(theta, x+muAllDimension);
+  (const vec & theta, const mat & x, const vec & tvec) -> cube{
+    return fOdeModel.fOdeDx(theta, x+muAllDimension, tvec);
   };
   
   fOdeModelShifted.fOdeDtheta = [&muAllDimension, &dotmuAllDimension, &fOdeModel]
-  (const vec & theta, const mat & x) -> cube{ 
-    return fOdeModel.fOdeDtheta(theta, x+muAllDimension);
+  (const vec & theta, const mat & x, const vec & tvec) -> cube{
+    return fOdeModel.fOdeDtheta(theta, x+muAllDimension, tvec);
   };
   
   lp ret = xthetallik(xthetaShifted, CovAllDimensions, sigma, yobsShifted, 
