@@ -22,7 +22,7 @@ lp xthetallik_rescaled( const arma::vec & xtheta,
                         const gpcov & CovR,
                         const double & sigma,
                         const arma::mat & yobs,
-                        const std::function<arma::mat (arma::vec, arma::mat)> & fODE);
+                        const std::function<arma::mat (arma::vec, arma::mat, arma::vec)> & fODE);
 lp xthetallikBandApprox( const arma::vec & xtheta, 
                          const std::vector<gpcov> & CovAllDimensions,
                          const double & sigma, 
@@ -39,13 +39,13 @@ lp xthetallikBandApproxHardCode( const vec & xtheta,
                                  const gpcov & CovR, 
                                  const double & sigma, 
                                  const mat & yobs,
-                                 const std::function<mat (vec, mat)> & fODE);
+                                 const std::function<mat (vec, mat, vec)> & fODE);
 lp xthetallikHardCode( const vec & xtheta, 
                        const gpcov & CovV, 
                        const gpcov & CovR, 
                        const double & sigma, 
                        const mat & yobs, 
-                       const std::function<mat (vec, mat)> & fODE);
+                       const std::function<mat (vec, mat, vec)> & fODE);
 
 lp phisigllikHard2D( const arma::vec &, const arma::mat &, const arma::mat &, string kernel = "matern");
 
