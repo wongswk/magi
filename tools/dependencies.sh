@@ -46,7 +46,7 @@ fi
 
 if [ ! -d "include/boost" ]; then
     cd package/
-    wget https://dl.bintray.com/boostorg/release/1.70.0/source/$BOOST.tar.gz
+    wget https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/$BOOST.tar.gz
     tar xf $BOOST.tar.gz
     rm $BOOST.tar.gz
     cd $PROJECT
