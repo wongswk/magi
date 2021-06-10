@@ -109,12 +109,18 @@ xtrueFunc <- lapply(2:ncol(xtrue), function(j)
 xsim <- data.frame(time = seq(0,20,length=config$nobs))
 xsim <- cbind(xsim, sapply(xtrueFunc, function(f) f(xsim$time)))
 
+xtrue_long <- deSolve::ode(y = pram.true$x0, times = seq(0,config$t.end,length=2561), func = modelODE, parms = pram.true$theta)
+xtrue_long <- data.frame(xtrue_long)
+xsim_long <- xtrue_long
+
 set.seed(config$seed)
 for(j in 1:(ncol(xsim)-1)){
   xsim[,1+j] <- xsim[,1+j]+rnorm(nrow(xsim), sd=config$noise[j])  
+  xsim_long[,1+j] <- xsim_long[,1+j]+rnorm(nrow(xsim_long), sd=config$noise[j])  
 }
 
-xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
+xsim <- xsim_long[seq(1,nrow(xsim_long), length=nrow(xsim)),]
+xsim.obs <- xsim_long[seq(1,nrow(xsim_long), length=config$nobs),]
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
 
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
@@ -239,13 +245,25 @@ get_posterior <- function(xsim, temperature="notempering"){
 outDir <- paste0("../results/linear-nobs", nobs_keep, "/")
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 for(temperature in c("notempering", "heating", "cooling")){
-  pdf(paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1],  "-", temperature, "-analytical-posterior.pdf"), height = 8, width = 8)
+  pdf(paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1],  "-", temperature, "-analytical-posterior-ndis.pdf"), height = 8, width = 8)
   for(each_fill_level in 0:6){
     get_posterior(insertNaN(xsim.obs, each_fill_level), temperature)
     legend("topleft", paste0("ndis =", nrow(insertNaN(xsim.obs, each_fill_level))))
   }
   dev.off()
 }
+
+
+for(temperature in c("notempering", "heating")){
+  pdf(paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1],  "-", temperature, "-analytical-posterior-nobs.pdf"), height = 8, width = 8)
+  for(each_fill_level in 0:6){
+    get_posterior(xsim_long[seq(1,nrow(xsim_long), length=10*2^(each_fill_level+2)+1),], temperature)
+    legend("topleft", paste0("nobs =", 10*2^(each_fill_level+2)+1))
+  }
+  dev.off()
+}
+
+
 
 # MAGI prior cannot be sampled due to empty matrix
 # here we show analytical prior
