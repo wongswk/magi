@@ -5,7 +5,7 @@ if(!exists("config")){
     nobs = 15,
     noise = rep(0.001, 5), # 0.001 = low noise, 0.01 = high noise
     kernel = "generalMatern",
-    seed = 123,
+    seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     bandsize = 40,
     hmcSteps = 100,
     n.iter = 20001,
@@ -60,13 +60,8 @@ for (i in 1:length(fillC)) {
     xsim[i,2:ncol(xsim)] = xsim.obs[loc,2:ncol(xsim)];
 }
 
-
-if (config$linearizexInit) {
-  exoxInit <- sapply(2:ncol(xsim.obs), function(j)
-    approx(xsim.obs[, "time"], xsim.obs[, j], xsim[, "time"])$y)
-} else {
-  exoxInit <- matrix(nrow=0,ncol=0)
-}
+exoxInit <- sapply(2:ncol(xsim.obs), function(j)
+  approx(xsim.obs[, "time"], xsim.obs[, j], xsim[, "time"])$y)
 
 
 # cpp inference ----------------------------
