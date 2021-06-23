@@ -1,4 +1,9 @@
-### Temp (simple) R wrapper
+#' R wrapper for MAGI
+#' 
+#' @param control list of control variables, including `sigma`, `phi`, `xInit`, `thetaInit`, `mu`, `dotmu`, `priorTemperature`, `niterHmc`
+#' `burninRatio`, `nstepsHmc`, `stepSizeFactor`, `bandSize`, `useFixedSigma`.
+#' 
+#' @export 
 MagiSolver <- function(y, odeModel, tvec, control = list()) {
 
   if (!is.null(control$sigma))

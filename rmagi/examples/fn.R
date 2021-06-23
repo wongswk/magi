@@ -71,7 +71,7 @@ for (j in 1:(ncol(xsim)-1)){
 
 OursStartTime <- proc.time()[3]
 
-result <- magi:::MagiSolver(xsim[,-1], fnmodel, xsim$time, control = list(xInit = xInitExogenous, niterHmc=config$niterHmc, stepSizeFactor = 0.06))
+result <- magi::MagiSolver(xsim[,-1], fnmodel, xsim$time, control = list(xInit = xInitExogenous, niterHmc=config$niterHmc, stepSizeFactor = 0.06))
 
 OursTimeUsed <- proc.time()[3] - OursStartTime
 
