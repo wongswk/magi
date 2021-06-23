@@ -15,6 +15,7 @@ Imports:
     gridExtra,
     gridBase,
     grid,
+    methods,
     deSolve
 LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 7.1.1
