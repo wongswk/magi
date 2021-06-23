@@ -75,7 +75,7 @@ MagiSolver <- function(y, odeModel, tvec, control = list()) {
     useFixedSigma = FALSE
 
 
-  samplesCpp <- magi:::solveMagiRcpp(
+  samplesCpp <- solveMagiRcpp(
     yFull = data.matrix(y),
     odeModel = odeModel,
     tvecFull = tvec,
