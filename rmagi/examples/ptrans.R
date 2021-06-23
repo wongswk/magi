@@ -5,25 +5,14 @@ if(!exists("config")){
     nobs = 15,
     noise = rep(0.001, 5), # 0.001 = low noise, 0.01 = high noise
     kernel = "generalMatern",
-    seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
-    loglikflag = "withmeanBand",
+    seed = 123,
     bandsize = 40,
     hmcSteps = 100,
     n.iter = 20001,
-    burninRatio = 0.50,
     stepSizeFactor = 0.01,
     linfillspace = 0.5,  # discretization interval width (instead of fill level, since unevenly spaced observations)
     t.end = 100,
-    modelName = "PTrans",
-    temperPrior = TRUE,
-    useFrequencyBasedPrior = TRUE,
-    useScalerSigma = FALSE,
-    useFixedSigma = FALSE,
-    linearizexInit = TRUE,
-    useExoSigma = FALSE,
-    useMean = TRUE,
-    useBand = TRUE,    
-    max.epoch = 1
+    modelName = "PTrans"
   )
 }
 
@@ -98,132 +87,25 @@ config$priorTemperatureObs <- 1
 OursStartTime <- proc.time()[3]
 
 ### Optimize phi first using equally spaced intervals of 1, i.e., 0,1...,100.
-samplesCpp <- magi:::solveMagiRcpp(
-  yFull = exoxInit[xsim$time %in% 0:100,],
-  odeModel = ptransmodel,
-  tvecFull = 0:100,
-  sigmaExogenous = matrix(numeric(0)),
-  phiExogenous = matrix(numeric(0)),
-  xInitExogenous = matrix(numeric(0)),
-  thetaInitExogenous = matrix(numeric(0)),
-  muExogenous = matrix(numeric(0)),
-  dotmuExogenous = matrix(numeric(0)),
-  priorTemperatureLevel = config$priorTemperature,
-  priorTemperatureDeriv = config$priorTemperature,
-  priorTemperatureObs = config$priorTemperatureObs,
-  kernel = config$kernel,
-  nstepsHmc = config$hmcSteps,
-  burninRatioHmc = config$burninRatio,
-  niterHmc = 2,
-  stepSizeFactorHmc = config$stepSizeFactor,
-  nEpoch = config$max.epoch,
-  bandSize = config$bandsize,
-  useFrequencyBasedPrior = config$useFrequencyBasedPrior,
-  useBand = config$useBand,
-  useMean = config$useMean,
-  useScalerSigma = config$useScalerSigma,
-  useFixedSigma = config$useFixedSigma,
-  verbose = TRUE)
-
-phiUsed <- samplesCpp$phi
-
-samplesCpp <- samplesCpp$llikxthetasigmaSamples
-samplesCpp <- samplesCpp[,,1]
-out <- samplesCpp[-1,1,drop=FALSE]
-sigmaUsed <- tail(out[, 1], ncol(xsim[,-1]))
-show(sigmaUsed)
+result <- magi::MagiSolver(exoxInit[xsim$time %in% 0:100,], ptransmodel, 0:100, control = list(
+  nstepsHmc=config$hmcSteps, niterHmc=2, stepSizeFactor = config$stepSizeFactor, bandsize=config$bandsize, priorTemperature=config$priorTemperature))
+sigmaUsed <- as.vector(result$sigma)
 
 ## NEW (Aug 11) ----- plug in sigma estimate and re-estimate phi
-samplesCpp <- magi:::solveMagiRcpp(
-  yFull = exoxInit[xsim$time %in% 0:100,],
-  odeModel = ptransmodel,
-  tvecFull = 0:100,
-  sigmaExogenous = sigmaUsed,
-  phiExogenous = matrix(numeric(0)),
-  xInitExogenous = matrix(numeric(0)),
-  thetaInitExogenous = matrix(numeric(0)),
-  muExogenous = matrix(numeric(0)),
-  dotmuExogenous = matrix(numeric(0)),
-  priorTemperatureLevel = config$priorTemperature,
-  priorTemperatureDeriv = config$priorTemperature,
-  priorTemperatureObs = config$priorTemperatureObs,
-  kernel = config$kernel,
-  nstepsHmc = config$hmcSteps,
-  burninRatioHmc = config$burninRatio,
-  niterHmc = 2,
-  stepSizeFactorHmc = config$stepSizeFactor,
-  nEpoch = config$max.epoch,
-  bandSize = config$bandsize,
-  useFrequencyBasedPrior = config$useFrequencyBasedPrior,
-  useBand = config$useBand,
-  useMean = config$useMean,
-  useScalerSigma = config$useScalerSigma,
-  useFixedSigma = config$useFixedSigma,
-  verbose = TRUE)
+result <- magi::MagiSolver(exoxInit[xsim$time %in% 0:100,], ptransmodel, 0:100, control = list(
+  nstepsHmc=config$hmcSteps, niterHmc=2, stepSizeFactor = config$stepSizeFactor, bandsize=config$bandsize, priorTemperature=config$priorTemperature, sigma=sigmaUsed))
+phiUsed <- result$phi
+sigmaUsed <- as.vector(result$sigma)
 
-phiUsed <- samplesCpp$phi
+## final samples
+result <- magi::MagiSolver(xsim[,-1], ptransmodel, xsim$time, control = list(
+  nstepsHmc=config$hmcSteps, niterHmc=config$n.iter, stepSizeFactor = config$stepSizeFactor, bandsize=config$bandsize, priorTemperature=config$priorTemperature, sigma=sigmaUsed, phi=phiUsed, xInit=exoxInit))
 
-samplesCpp <- samplesCpp$llikxthetasigmaSamples
-samplesCpp <- samplesCpp[,,1]
-out <- samplesCpp[-1,1,drop=FALSE]
-sigmaUsed <- tail(out[, 1], ncol(xsim[,-1]))
-show(sigmaUsed)
-
-
-
-samplesCpp <- magi:::solveMagiRcpp(
-  yFull = data.matrix(xsim[,-1]),
-  odeModel = ptransmodel,
-  tvecFull = xsim$time,
-  sigmaExogenous = sigmaUsed,
-  phiExogenous = phiUsed,
-  xInitExogenous = exoxInit,
-  thetaInitExogenous = matrix(numeric(0)),
-  muExogenous = matrix(numeric(0)),
-  dotmuExogenous = matrix(numeric(0)),
-  priorTemperatureLevel = config$priorTemperature,
-  priorTemperatureDeriv = config$priorTemperature,
-  priorTemperatureObs = config$priorTemperatureObs,
-  kernel = config$kernel,
-  nstepsHmc = config$hmcSteps,
-  burninRatioHmc = config$burninRatio,
-  niterHmc = config$n.iter,
-  stepSizeFactorHmc = config$stepSizeFactor,
-  nEpoch = config$max.epoch,
-  bandSize = config$bandsize,
-  useFrequencyBasedPrior = config$useFrequencyBasedPrior,
-  useBand = config$useBand,
-  useMean = config$useMean,
-  useScalerSigma = config$useScalerSigma,
-  useFixedSigma = config$useFixedSigma,
-  verbose = TRUE)
 
 OursTimeUsed <- proc.time()[3] - OursStartTime
 
-phiUsed <- samplesCpp$phi
-samplesCpp <- samplesCpp$llikxthetasigmaSamples
-
-samplesCpp <- samplesCpp[,,1]
-
-out <- samplesCpp[-1,1,drop=FALSE]
-xCpp <- matrix(out[1:length(data.matrix(xsim[,-1])), 1], ncol=ncol(xsim[,-1]))
-thetaCpp <- out[(length(xCpp)+1):(length(xCpp) + length(ptransmodel$thetaLowerBound)), 1]
-sigmaCpp <- tail(out[, 1], ncol(xsim[,-1]))
-
-#matplot(xsim$time, xCpp, type="l", add=TRUE)
-
-llikId <- 1
-xId <- (max(llikId)+1):(max(llikId)+length(data.matrix(xsim[,-1])))
-thetaId <- (max(xId)+1):(max(xId)+length(ptransmodel$thetaLowerBound))
-sigmaId <- (max(thetaId)+1):(max(thetaId)+ncol(xsim[,-1]))
-
-
-burnin <- as.integer(config$n.iter*config$burninRatio)
-gpode <- list(theta=t(samplesCpp[thetaId, -(1:burnin)]),
-              xsampled=array(t(samplesCpp[xId, -(1:burnin)]),
-                             dim=c(config$n.iter-burnin, nrow(xsim), ncol(xsim)-1)),
-              lglik=samplesCpp[llikId,-(1:burnin)],
-              sigma = t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]))
+gpode <- result
+gpode$lglik <- gpode$lp
 gpode$fode <- sapply(1:length(gpode$lglik), function(t) 
   with(gpode, magi:::ptransmodelODE(theta[t,], xsampled[t,,])), simplify = "array")
 gpode$fode <- aperm(gpode$fode, c(3,1,2))
