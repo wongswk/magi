@@ -4,7 +4,7 @@ if(!exists("config")){
   config <- list(
     nobs = 33,
     noise = c(0.15,0.15,0.15),
-    seed = 123,
+    seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     npostplot = 50,
     loglikflag = "withmeanBand",
     bandsize = 20,
