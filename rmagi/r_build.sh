@@ -36,7 +36,7 @@ rsync -az ../cmagi/*.h src/rcppmagi/
 perl -pi -e 's/\#include <armadillo>/\#include \"RcppArmadillo.h\"/g' src/rcppmagi/*.h
 perl -pi -e 's/\#include <armadillo>/\#include \"RcppArmadillo.h\"/g' src/rcppmagi/*.cpp
 
-perl -pi -e 's/std::cout/Rcpp::Rcout/g' src/rcppmagi/paralleltempering.cpp
+perl -pi -e 's/std::cout/Rcpp::Rcout/g' src/rcppmagi/*.cpp
 
 git checkout -- R/zzz.R
 COMPILING_INFORMATION="Build Date - $(date); GIT branch - $(git rev-parse --abbrev-ref HEAD); GIT commit number - $(git log -1 --oneline)"
