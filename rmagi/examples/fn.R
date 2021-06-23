@@ -9,41 +9,14 @@ if(!exists("config")){
   config <- list(
     nobs = 41,
     noise = c(0.2, 0.2),
-    kernel = "generalMatern",
-    seed = 123,
-    loglikflag = "withmeanBand",
-    bandsize = 20,
-    hmcSteps = 100,
-    niterHmc = 2001,
-    burninRatio = 0.50,
-    stepSizeFactor = 0.06,
+    seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+    niterHmc = 20000,
     filllevel = 2,
     t.end = 20,
-    modelName = "FN",
-    temperPrior = TRUE,
-    useFrequencyBasedPrior = TRUE,
-    useScalerSigma = FALSE,
-    useFixedSigma = FALSE,
-    max.epoch = 1
+    modelName = "FN"
   )
 }
 
-config$ndis <- (config$nobs-1)*2^config$filllevel+1
-config$priorTemperatureObs <- 1
-
-if(config$loglikflag == "withmeanBand"){
-  config$useMean = TRUE
-  config$useBand = TRUE
-}else if(config$loglikflag == "band"){
-  config$useMean = FALSE
-  config$useBand = TRUE
-}else if(config$loglikflag == "withmean"){
-  config$useMean = TRUE
-  config$useBand = FALSE
-}else if(config$loglikflag == "usual"){
-  config$useMean = FALSE
-  config$useBand = FALSE
-}
 
 # initialize global parameters, true x, simulated x ----------------------------
 pram.true <- list(
@@ -90,9 +63,6 @@ fnmodel <- list(
   thetaUpperBound=c(Inf,Inf,Inf),
   name="FN"
 )
-
-config$priorTemperature <- config$ndis / config$nobs  
-config$priorTemperatureObs <- 1
 
 xInitExogenous <- data.matrix(xsim[,-1])
 for (j in 1:(ncol(xsim)-1)){
