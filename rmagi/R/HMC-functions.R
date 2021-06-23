@@ -268,22 +268,6 @@ calCovPeriodicWarpMatern <- function(phi, r, signr, complexity=0) {
   maternCov
 }
 
-#' calculate fn model ODE derivatives
-#' 
-#' @export
-fODE <- function(theta, x) {
-  a <- theta[1]
-  b <- theta[2]
-  c <- theta[3]
-  
-  V <- x[,1]
-  R <- x[,2]
-  
-  Vdt <- c * (V - V^3 / 3 + R)
-  Rdt <- -1/c * ( V - a + b * R)
-  
-  return(cbind(Vdt, Rdt))
-}
 
 #' full log likelihood in R with contribution from each component
 #' 
