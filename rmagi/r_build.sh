@@ -19,7 +19,8 @@ cd "$PROJECT"/rmagi || exit 1
 
 echo "
 PKG_CXX=clang++
-PKG_CXXFLAGS = -std=c++11 -O3 -DNDEBUG -Wall -I$PROJECT/include
+CXX_STD = CXX11
+PKG_CXXFLAGS = -DNDEBUG -I$PROJECT/include
 PKG_LIBS = \$(LAPACK_LIBS) \$(BLAS_LIBS) \$(FLIBS)
 MAKEFLAGS = -j$CPU
 " > src/Makevars
