@@ -4,29 +4,17 @@ if(!exists("config")){
   config <- list(
     nobs = 33,
     noise = c(0.15,0.15,0.15),
-    kernel = "generalMatern",
     seed = 123,
     npostplot = 50,
     loglikflag = "withmeanBand",
     bandsize = 20,
     hmcSteps = 500,
     n.iter = 2e4,
-    burninRatio = 0.50,
     stepSizeFactor = 0.01,
     filllevel = 0,
-    modelName = "Hes1-log",
-    async = TRUE,
-    max.epoch = 1,
-    useMean = TRUE,
-    useBand = TRUE,
-    useFrequencyBasedPrior = TRUE,
-    useScalerSigma = FALSE,
-    useFixedSigma = TRUE
+    modelName = "Hes1-log"
   )
 }
-
-config$ndis <- (config$nobs-1)*2^config$filllevel+1
-config$priorTemperature <- config$ndis / config$nobs
 
 # initialize global parameters, true x, simulated x ----------------------------
 outDir <- "../results/hes1log/"
@@ -61,14 +49,8 @@ for(j in 1:(ncol(xsim)-1)){
 }
 xsim$X3 <- NaN
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
-if(config$async){
-  xsim.obs$X1[seq(2,nrow(xsim.obs),by=2)] <- NaN
-  xsim.obs$X2[seq(1,nrow(xsim.obs),by=2)] <- NaN
-}
-# xsim.obs$X1[seq(1,nrow(xsim.obs),by=2)] <- c(0.74, 0.78, 1.86, 1.86, 2.2, 1.93, 1.47, 1.03, 0.36,
-#                                              0.88, 1.68, 1.97, 2.15, 1.85, 1.8, 1.47, 0.71)
-# xsim.obs$X2[seq(2,nrow(xsim.obs),by=2)] <- c(0.91, 0.82, 0.71, -0.11, 0.08, -0.45, -0.05, 0.2,
-#                                              0.88, 1.09, 0.3, 0.35, 0.25, -0.23, -0.51, -0.09)
+xsim.obs$X1[seq(2,nrow(xsim.obs),by=2)] <- NaN
+xsim.obs$X2[seq(1,nrow(xsim.obs),by=2)] <- NaN
 
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
 
@@ -87,7 +69,6 @@ hes1logmodel <- list(
 # heating up with (3, 3, 1) temperature ------------------------------------
 #' there are 99 sampled X's (3 x 33) and only 33 actual observations.  
 #' Using the logic in our other two models, the default temperatures for Hes1 should be (3, 3, 1).
-config$priorTemperature <- 3
 
 result <- magi::MagiSolver(xsim[,-1], hes1logmodel, xsim$time, control = list(nstepsHmc=config$hmcSteps, niterHmc=config$n.iter, stepSizeFactor = config$stepSizeFactor, sigma=pram.true$sigma, useFixedSigma=TRUE))
 gpode <- result
