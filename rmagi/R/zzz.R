@@ -1,6 +1,5 @@
 #' @useDynLib magi
 #' @import Rcpp 
-#' @import RcppArmadillo
 NULL
 
 .onAttach <- function( ... )
