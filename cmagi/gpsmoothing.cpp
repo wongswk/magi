@@ -1,3 +1,7 @@
+#define NDEBUG
+#define BOOST_DISABLE_ASSERTS
+#define EIGEN_NO_DEBUG
+
 #include <armadillo>
 #include <cppoptlib/boundedproblem.h>
 #include <cppoptlib/solver/lbfgsbsolver.h>
