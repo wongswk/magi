@@ -70,7 +70,6 @@ MAKE="make -j$CPU" Rscript -e "Rcpp::compileAttributes(); devtools::document(); 
 
 if [[ "$1" == "--cran" ]]; then
   mv examples inst/examples
-  mv r_build.sh inst/r_build.sh
 else
   LIB_PYMAGI_SOURCE=$(cd "$PROJECT"/cmagi && ls -- *.cpp)
   LIB_PYMAGI_HEADERS=$(cd "$PROJECT"/cmagi && ls -- *.h)
