@@ -16,7 +16,7 @@
 #' @importFrom grDevices dev.off pdf
 #' @importFrom graphics abline hist layout legend lines matplot mtext par plot.function plot.new points title
 #' @importFrom stats approx density dist dlnorm dnorm fft median nobs plot.ts quantile runif sd weighted.mean
-#' @importFrom utils head installed.packages tailR/fourier.R
+#' @importFrom utils head installed.packages tail
 #'
 #' @export
 plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, config, odemodel=NULL){
