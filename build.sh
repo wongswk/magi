@@ -40,7 +40,7 @@ cd $PROJECT
 export CODECOV_TOKEN="7b481576-694c-4591-8370-64f61df55bdc"
 
 cd rmagi
-./r_build.sh
+./inst/r_build.sh
 if [[ "$1" != "--skip-tests" ]]; then
   # Rscript -e 'devtools::test()'
   Rscript -e 'testthat::test_package("magi")'
