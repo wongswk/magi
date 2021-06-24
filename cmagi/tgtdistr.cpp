@@ -1,4 +1,7 @@
 // [[Rcpp::depends(BH)]]
+#define NDEBUG
+#define BOOST_DISABLE_ASSERTS
+
 #include "tgtdistr.h"
 #include "band.h"
 #include "dynamicalSystemModels.h"

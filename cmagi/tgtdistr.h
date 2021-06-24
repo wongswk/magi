@@ -1,6 +1,9 @@
 #ifndef TGTDISTR_H
 #define TGTDISTR_H
 
+#define NDEBUG
+#define BOOST_DISABLE_ASSERTS
+
 #include <cmath>
 #include <random>
 #include <vector>
