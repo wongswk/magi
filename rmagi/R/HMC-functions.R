@@ -69,7 +69,6 @@ calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerne
 #' 
 #' only calculate core part of C, Cprime, Cprimeprime, dCdphi etc.
 #' 
-#' @export
 calCovMatern <- function(phi, r, signr, complexity=3) {
   r2 <- r^2
   C <- phi[1] * (1 + ((sqrt(5)*r)/phi[2]) + ((5*r2)/(3*phi[2]^2))) * exp((-sqrt(5)*r)/phi[2])
@@ -90,7 +89,6 @@ calCovMatern <- function(phi, r, signr, complexity=3) {
 #' 
 #' only calculate core part of C, Cprime, Cprimeprime, dCdphi etc.
 #' 
-#' @export
 calCovGeneralMatern <- function(phi, r, signr, complexity=3, df = 2.01) {
   r2 <- r^2
   
@@ -129,7 +127,6 @@ calCovGeneralMatern <- function(phi, r, signr, complexity=3, df = 2.01) {
 #' 
 #' only calculate core part of C, Cprime, Cprimeprime, dCdphi etc.
 #' 
-#' @export
 calCovRBF <- function(phi, r, signr, complexity=3) {
   r2 <- r^2
   
@@ -151,7 +148,6 @@ calCovRBF <- function(phi, r, signr, complexity=3) {
 #' only calculate core part of C, Cprime, Cprimeprime, dCdphi etc. 
 #' See overleaf writeup for details
 #' 
-#' @export
 calCovCompact1 <- function(phi, r, signr, complexity=3, D=3) {
   r2 <- r^2
   jsmooth <- floor(D/2)+2
@@ -179,7 +175,6 @@ calCovCompact1 <- function(phi, r, signr, complexity=3, D=3) {
 #' 
 #' only calculate core part of C, Cprime, Cprimeprime, dCdphi etc.
 #' 
-#' @export
 calCovRationalQuadratic <- function(phi, r, signr, complexity=3) {
   df = 0.01
   r2 <- r^2
@@ -201,7 +196,6 @@ calCovRationalQuadratic <- function(phi, r, signr, complexity=3) {
 
 #' calculate linear Gaussian process kernel
 #' 
-#' @export
 calCovLinear <- function(phi, x, complexity=3) {
   C <- phi[1] * (1 + outer(x, x)/phi[2]^2)
   
@@ -212,7 +206,6 @@ calCovLinear <- function(phi, x, complexity=3) {
 
 #' calculate Neural Network Gaussian process kernel
 #' 
-#' @export
 calCovNeuralNetwork <- function(phi, x, complexity=3) {
   xtilde <- cbind(1, x)
   sigmaMat <- diag(c(phi[1], phi[2]^2))
@@ -226,7 +219,6 @@ calCovNeuralNetwork <- function(phi, x, complexity=3) {
 
 #' calculate modulated squared exponential Gaussian process kernel
 #' 
-#' @export
 calCovModulatedRBF <- function(phi, x, complexity=3) {
   sigmaG <- phi[2]
   sigmaU <- phi[3]
@@ -246,7 +238,6 @@ calCovModulatedRBF <- function(phi, x, complexity=3) {
 
 #' calculate Periodic Warpped Matern Gaussian process kernel
 #' 
-#' @export
 calCovPeriodicWarpMatern <- function(phi, r, signr, complexity=0) {
   newr <- abs(sin(r*pi/phi[3])*2) # equivalent to cbind(sin(x*2*pi/phi[3]), cos(x*2*pi/phi[3]))
   maternCov <- calCovMatern(phi, newr, signr, complexity)
