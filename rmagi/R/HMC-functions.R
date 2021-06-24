@@ -363,6 +363,7 @@ getMeanCurve <- function(x, y, x.new, phi.mat, sigma.mat, kerneltype="matern", d
 #' insert nan in simulated data for explicit control of discretization
 #' 
 #' @param mydata a data frame that contains at least one column `time`
+#' @param level the level to insert nan: 2^level - 1 points will be inserted between two data points
 #' 
 #' @export
 insertNaN <- function(mydata, level){
