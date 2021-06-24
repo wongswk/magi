@@ -268,26 +268,6 @@ calCovPeriodicWarpMatern <- function(phi, r, signr, complexity=0) {
   maternCov
 }
 
-#' marginal log likelihood for phi conditional on x and xdot
-#' 
-#' used for fitting phi with ODE and conditioning on latent variables.
-#' used to draw phi from Gibbs Sampler (possibly with HMC).
-#' 
-#' @export
-phillikwithxdotx <- function(phi, x, xdot, rInput, signrInput, kerneltype="matern"){
-  CovV <- calCov(phi, rInput, signrInput, kerneltype=kerneltype)
-  bigCov <- rbind(cbind(CovV$C, t(CovV$Cprime)),
-                  cbind(CovV$Cprime, CovV$Cdoubleprime))
-  diag(bigCov) <- diag(bigCov) + 1e-7
-  
-  bigCov.l <- t(chol(bigCov))
-  eta <- solve(bigCov.l, c(x, xdot))
-  
-  ret <- -length(c(x, xdot))/2*log(2*pi) - sum(log(diag(bigCov.l))) - 0.5*sum(eta^2)
-  
-  return(ret)
-}
-
 #' calculate number of eigen values to preserve based on frobenius norm
 #' @export
 truncEigen <- function(eigenValues, frobeniusNormApprox = 0.99){
