@@ -1,3 +1,4 @@
+// [[Rcpp::depends(BH)]]
 #include "tgtdistr.h"
 #include "band.h"
 #include "dynamicalSystemModels.h"
