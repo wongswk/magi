@@ -145,7 +145,7 @@ lp xthetaphi1sigmallik( const mat & xlatent,
   res.col(1) = -0.5 * sum(fitDerivError % KinvfitDerivError).t() / phi1 / priorTemperature(0);
   res.col(2) = -0.5 * sum(xlatent % CinvX).t() / phi1 / priorTemperature(1);
   
-  // cout << "lglik component = \n" << res << endl;
+  // std::cout << "lglik component = \n" << res << endl;
   
   ret.value = accu(res);
   ret.value -= xlatent.n_rows * accu(log(phi1));
@@ -155,7 +155,7 @@ lp xthetaphi1sigmallik( const mat & xlatent,
   //   ret.value += -xlatent.n_rows*log(2.0*datum::pi) - 0.5*covThisDim.logCdet - 0.5*covThisDim.logKdet;
   // }
   
-  // cout << "lglik = " << ret.value << endl;
+  // std::cout << "lglik = " << ret.value << endl;
   
   // gradient 
   // V contrib

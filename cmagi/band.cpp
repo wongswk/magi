@@ -13,11 +13,11 @@ void bmatvecmult(const double *a, const double *b, const int *bandsize, const in
     double one = 1.0;
     blasint ione = 1;
     char nthechar = 'n';
-    //cout << *a << " " << *bandsize << " " << *matdim <<  endl;
+    //std::cout << *a << " " << *bandsize << " " << *matdim <<  endl;
     blasint nrow = 2 * *bandsize +  1;
     blasint bmatdim = *matdim;
     blasint bbandsize = *bandsize;
-    //cout << nrow << endl;
+    //std::cout << nrow << endl;
 
     dgbmv_(&nthechar, &bmatdim, &bmatdim, &bbandsize, &bbandsize, &one, a, &nrow, b, &ione, &zero, result,
            &ione);
@@ -98,7 +98,7 @@ void xthetallikBandC( const double *xtheta, const double *Vmphi, const double *V
     bmatvecmult(Vmphi,Vsm,bandsize,nn,frV);
 
     for (i = 0; i < n; i++) {
-        //cout << frV[i] << " ";
+        //std::cout << frV[i] << " ";
         frV[i] = Vdt[i] - frV[i];
 
         if (!std::isnan(yobs[i]))
@@ -124,12 +124,12 @@ void xthetallikBandC( const double *xtheta, const double *Vmphi, const double *V
         res02 += Vsm[i] * tempV2[i];
     res02 *= -0.5;
 
-    //cout << res00 << " " << res01 << " " << res02 << endl;
+    //std::cout << res00 << " " << res01 << " " << res02 << endl;
 
     // R
     bmatvecmult(Rmphi,Rsm,bandsize,nn,frR);
     for (i = 0; i < n; i++) {
-        //cout << frV[i] << " ";
+        //std::cout << frV[i] << " ";
         frR[i] = Rdt[i] - frR[i];
 
         if (!std::isnan(yobs[i+n]))
@@ -155,7 +155,7 @@ void xthetallikBandC( const double *xtheta, const double *Vmphi, const double *V
         res12 += Rsm[i] * tempR2[i];
     res12 *= -0.5;
 
-    //cout << res10 << " " << res11 << " " << res12 <<  endl;
+    //std::cout << res10 << " " << res11 << " " << res12 <<  endl;
 
     // gradient
     // V contrib
@@ -168,7 +168,7 @@ void xthetallikBandC( const double *xtheta, const double *Vmphi, const double *V
 
     j = 0;
     for (i = *bandsize; i < m; i+= 2* *bandsize+1) {
-        //cout << Vtemp[i] << " ";
+        //std::cout << Vtemp[i] << " ";
         Vtemp[i] += theta[2] * (1 - Vsm[j] * Vsm[j]);
         j++;
     }
@@ -190,7 +190,7 @@ void xthetallikBandC( const double *xtheta, const double *Vmphi, const double *V
         Rtemp[i] = -Rmphi[i];
     }
     for (i = *bandsize; i < m; i+= 2* *bandsize+1) {
-        //cout << Vtemp[i] << " ";
+        //std::cout << Vtemp[i] << " ";
         Rtemp[i] -= theta[1]/theta[2];
     }
     bmatvecmultT(Rtemp,tempR,bandsize,nn,tempR3);

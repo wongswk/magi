@@ -17,7 +17,7 @@ gpcov maternCov( const vec & phi, const mat & dist, int complexity = 0){
   out.C = phi(0) * (1.0 + ((sqrt(5.0)*dist)/phi(1)) + 
     ((5.0*dist2)/(3.0*pow(phi(1),2)))) % exp((-sqrt(5.0)*dist)/phi(1));
   out.C.diag() += 1e-7;
-  // cout << out.C << endl;
+  // std::cout << out.C << endl;
   if (complexity == 0) return out;
   
   out.dCdphiCube.set_size(out.C.n_rows, out.C.n_cols, 2);
@@ -193,7 +193,7 @@ gpcov rbfCov( const vec & phi, const mat & dist, int complexity = 0){
   mat dist2 = square(dist);
   out.C = phi(0) * exp(-dist2/(2.0*pow(phi(1), 2)));
   out.C.diag() += 1e-7;
-  // cout << out.C << endl;
+  // std::cout << out.C << endl;
   if (complexity == 0) return out;
   
   out.dCdphiCube.set_size(out.C.n_rows, out.C.n_cols, 2);
@@ -212,7 +212,7 @@ gpcov compact1Cov( const vec & phi, const mat & dist, int complexity = 0){
   mat dist2 = square(dist);
   out.C = phi(0) * pow( arma::max(1 - dist / phi(1), zeromat), p+1) % ((p+1)*dist/phi(1)+1);
   out.C.diag() += 1e-7;
-  // cout << out.C << endl;
+  // std::cout << out.C << endl;
   if (complexity == 0) return out;
   
   out.dCdphiCube.set_size(out.C.n_rows, out.C.n_cols, 2);
@@ -502,11 +502,11 @@ lp xthetallik( const vec & xtheta,
   res.col(1) = -0.5 * sum(fitDerivError % KinvfitDerivError).t() / priorTemperature(0);
   res.col(2) = -0.5 * sum(xlatent % CinvX).t() / priorTemperature(1);
   
-  // cout << "lglik component = \n" << res << endl;
+  // std::cout << "lglik component = \n" << res << endl;
   
   ret.value = accu(res);
   
-  // cout << "lglik = " << ret.value << endl;
+  // std::cout << "lglik = " << ret.value << endl;
   
   // gradient 
   // V contrib

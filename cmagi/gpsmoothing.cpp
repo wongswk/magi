@@ -568,7 +568,7 @@ public:
                     xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * (id + 1) - 1);
 //            std::cout << "value: phiAllDimensions.col(missingComponentDim(id)) = " << phiAllDimensions.col(missingComponentDim(id)) << "\n";
         }
-//        cout << "inside evaluation of value\n";
+//        std::cout << "inside evaluation of value\n";
 
         const lp & out = xthetaphisigmallik( xInit,
                                              thetaInit,
@@ -648,7 +648,7 @@ public:
                         -out.gradient(xInit.size() + thetaInit.size() + phiAllDimensions.n_rows * missingComponentDim(id) + j);
             }
         }
-//        cout << "after gradient assignment =\n" << grad.transpose();
+//        std::cout << "after gradient assignment =\n" << grad.transpose();
     }
 
     XmissingThetaPhiOptim(const arma::mat & yobsInput,

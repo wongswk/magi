@@ -150,7 +150,7 @@ lp xthetasigmallik( const mat & xlatent,
 
   ret.value = accu(res);
   
-  // cout << "lglik = " << ret.value << endl;
+  // std::cout << "lglik = " << ret.value << endl;
   
   // gradient 
   // V contrib

@@ -18,8 +18,8 @@ int hmcTest(){
                                {arma::datum::inf},
                                nsteps, traj);
     // for(int i; i < post.final.size(); i++)
-    //   cout << post.final(i) << endl;
-    // cout << post.final << endl;
+    //   std::cout << post.final(i) << endl;
+    // std::cout << post.final << endl;
     return 0;
 }
 
@@ -122,7 +122,7 @@ arma::cube paralleltemperingTest2() {
                                         0.125,
                                         1e4,
                                         false);
-    // cout << "parallel_termperingC finished, before returning from paralleltemperingTest2\n";
+    // std::cout << "parallel_termperingC finished, before returning from paralleltemperingTest2\n";
     return samples;
 }
 
@@ -172,11 +172,11 @@ lp xthetallik_withmu( const vec & xtheta,
     res(1,1) = -0.5 * as_scalar( frRminusdotmu.t() * CovR.Kinv * frRminusdotmu);
     res(1,2) = -0.5 * as_scalar( Rsmminusmu.t() * CovR.Cinv * Rsmminusmu);
 
-    //cout << "lglik component = \n" << res << endl;
+    //std::cout << "lglik component = \n" << res << endl;
 
     ret.value = accu(res);
 
-    // cout << "lglik = " << ret.value << endl;
+    // std::cout << "lglik = " << ret.value << endl;
 
     // gradient
     // V contrib
@@ -273,11 +273,11 @@ lp xthetallik_rescaled( const vec & xtheta,
     res(1,1) = -0.5 * as_scalar( frR.t() * CovR.Kinv * frR) * (double)nobs/(double)n;
     res(1,2) = -0.5 * as_scalar( Rsm.t() * CovR.Cinv * Rsm) * (double)nobs/(double)n;
 
-    //cout << "lglik component = \n" << res << endl;
+    //std::cout << "lglik component = \n" << res << endl;
 
     ret.value = accu(res);
 
-    // cout << "lglik = " << ret.value << endl;
+    // std::cout << "lglik = " << ret.value << endl;
 
     // gradient
     // V contrib
@@ -291,7 +291,7 @@ lp xthetallik_rescaled( const vec & xtheta,
     mat VC2 = join_horiz(join_horiz(join_horiz(join_horiz(Vtemp,Rtemp),aTemp),bTemp),cTemp);
     VC2 = 2.0 * VC2.t() * CovV.Kinv * frV * (double)nobs/(double)n;
 
-    // cout << "VC2 = \n" << VC2 << endl;
+    // std::cout << "VC2 = \n" << VC2 << endl;
 
     // R contrib
     Vtemp = eye<mat>(n, n) * -1.0/theta(2);
@@ -302,7 +302,7 @@ lp xthetallik_rescaled( const vec & xtheta,
     mat RC2 = join_horiz(join_horiz(join_horiz(join_horiz(Vtemp,Rtemp),aTemp),bTemp),cTemp);
     RC2 = 2.0 * RC2.t() * CovR.Kinv * frR * (double)nobs/(double)n;
 
-    // cout << "RC2 = \n" << RC2 << endl;
+    // std::cout << "RC2 = \n" << RC2 << endl;
 
     vec C3 = join_vert(join_vert( 2.0 * CovV.Cinv * Vsm,
                                   2.0 * CovR.Cinv * Rsm ),
@@ -481,11 +481,11 @@ lp xthetallikHardCode( const vec & xtheta,
     res(1,1) = -0.5 * sum( square(frRKTrans) % CovR.Keigen1over);
     res(1,2) = -0.5 * sum( square(RsmCTrans) % CovR.Ceigen1over);
 
-    //cout << "lglik component = \n" << res << endl;
+    //std::cout << "lglik component = \n" << res << endl;
 
     ret.value = accu(res);
 
-    // cout << "lglik = " << ret.value << endl;
+    // std::cout << "lglik = " << ret.value << endl;
 
     // gradient
     // V contrib
@@ -598,11 +598,11 @@ lp xthetallikTwoDimension( const vec & xtheta,
     res(1,1) = -0.5 * as_scalar( frR.t() * CovR.Kinv * frR);
     res(1,2) = -0.5 * as_scalar( Rsm.t() * CovR.Cinv * Rsm);
 
-    //cout << "lglik component = \n" << res << endl;
+    //std::cout << "lglik component = \n" << res << endl;
 
     ret.value = accu(res);
 
-    // cout << "lglik = " << ret.value << endl;
+    // std::cout << "lglik = " << ret.value << endl;
 
     // gradient
     // V contrib
@@ -709,7 +709,7 @@ lp phisigllikHard2D( const vec & phisig,
     ret.gradient.subvec(dVdphi.size(), p-2) = dRdphi;
     ret.gradient(p-1) = dVdsig+dRdsig;
 
-    // cout << ret.value << endl << ret.gradient;
+    // std::cout << ret.value << endl << ret.gradient;
 
     return ret;
 }
