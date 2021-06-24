@@ -31,6 +31,7 @@ perl -pi -e 's/\#define META_H/\#define META_H\n\#include <Rcpp.h>/g' inst/inclu
 perl -pi -e 's/std::cout/Rcpp::Rcout/g' inst/include/cppoptlib/solver/*.h
 perl -pi -e 's/std::cerr/Rcpp::Rcerr/g' inst/include/cppoptlib/solver/*.h
 perl -pi -e 's/assert\((.*)\);/if(!(\1)) Rcpp::Rcerr << "!(\1\)\\n\";/g' inst/include/cppoptlib/solver/*.h
+perl -pi -e 's/\#pragma GCC diagnostic ignored \"-Wunused-parameter\"//g' inst/include/cppoptlib/*.h
 
 echo "
 PKG_CXX=clang++
