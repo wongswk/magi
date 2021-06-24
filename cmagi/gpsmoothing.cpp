@@ -1,7 +1,6 @@
 #include <armadillo>
 #include <cppoptlib/boundedproblem.h>
 #include <cppoptlib/solver/lbfgsbsolver.h>
-#include <cppoptlib/solver/bfgssolver.h>
 
 #include "tgtdistr.h"
 #include "fullloglikelihood.h"
