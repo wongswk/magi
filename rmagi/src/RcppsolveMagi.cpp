@@ -120,13 +120,13 @@ Rcpp::List solveMagiRcpp(
 
     solver.setupPhiSigma();
     if(verbose){
-        std::cout << "phi = \n" << solver.phiAllDimensions << "\n";
+        Rcpp::Rcout << "phi = \n" << solver.phiAllDimensions << "\n";
     }
     solver.initXmudotmu();
 
     solver.initTheta();
     if(verbose){
-        std::cout << "thetaInit = \n" << solver.thetaInit << "\n";
+        Rcpp::Rcout << "thetaInit = \n" << solver.thetaInit << "\n";
     }
 
     //return yFull;
