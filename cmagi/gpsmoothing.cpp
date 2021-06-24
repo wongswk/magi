@@ -232,7 +232,7 @@ arma::cube calcMeanCurve(const arma::vec & xInput,
                         const arma::vec & sigmaCandidates,
                         const std::string kerneltype = "generalMatern",
                         const bool useDeriv = false) {
-    assert(kerneltype == "generalMatern");
+    if(kerneltype != "generalMatern") std::cerr << "kerneltype other than generalMatern is not supported\n";
 
     const arma::vec & tvec = arma::join_vert(xOutput, xInput);
     arma::mat distSigned(tvec.size(), tvec.size());
