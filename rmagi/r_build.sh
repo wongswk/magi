@@ -17,10 +17,20 @@ fi
 
 cd "$PROJECT"/rmagi || exit 1
 
+# only select the mininum sufficient third party library for compile
+mkdir -p inst/include/cppoptlib/solver
+mkdir -p inst/include/cppoptlib/linesearch
+rsync -az $PROJECT/include/cppoptlib/boundedproblem.h inst/include/cppoptlib/
+rsync -az $PROJECT/include/cppoptlib/meta.h inst/include/cppoptlib/
+rsync -az $PROJECT/include/cppoptlib/problem.h inst/include/cppoptlib/
+rsync -az $PROJECT/include/cppoptlib/solver/isolver.h inst/include/cppoptlib/solver/
+rsync -az $PROJECT/include/cppoptlib/solver/lbfgsbsolver.h inst/include/cppoptlib/solver/
+rsync -az $PROJECT/include/cppoptlib/linesearch/morethuente.h inst/include/cppoptlib/linesearch/
+
 echo "
 PKG_CXX=clang++
 CXX_STD = CXX11
-PKG_CXXFLAGS = -DNDEBUG -I$PROJECT/include
+PKG_CXXFLAGS = -DNDEBUG -I'../inst/include'
 PKG_LIBS = \$(LAPACK_LIBS) \$(BLAS_LIBS) \$(FLIBS)
 MAKEFLAGS = -j$CPU
 " > src/Makevars
@@ -56,6 +66,7 @@ LIB_PYMAGI_SOURCE=$(cd "$PROJECT"/cmagi && ls -- *.cpp)
 LIB_PYMAGI_HEADERS=$(cd "$PROJECT"/cmagi && ls -- *.h)
 cd "$PROJECT"/rmagi/src && rm $LIB_PYMAGI_SOURCE $LIB_PYMAGI_HEADERS
 cd "$PROJECT"/rmagi || return
+rm -r inst/include/cppoptlib
 ln -s "$(pwd)"/../cmagi/*.cpp src/
 ln -s "$(pwd)"/../cmagi/*.h src/
 git checkout -- R/zzz.R
