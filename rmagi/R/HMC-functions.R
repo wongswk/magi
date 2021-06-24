@@ -210,17 +210,6 @@ calCovLinear <- function(phi, x, complexity=3) {
   }
 }
 
-#' calculate linear Gaussian process kernel
-#' 
-#' @export
-calCovLinear <- function(phi, x, complexity=3) {
-  C <- phi[1] * (1 + outer(x, x)/phi[2]^2)
-  
-  if(complexity==0){
-    return(list(C = C))
-  }
-}
-
 #' calculate Neural Network Gaussian process kernel
 #' 
 #' @export
