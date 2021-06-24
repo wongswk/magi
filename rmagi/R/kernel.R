@@ -1,7 +1,18 @@
 #' calculate stationary Gaussian process kernel
 #' 
-#' currently supports matern, rbf, compact1, 
+#' currently supports matern, rbf, compact1, periodicMatern, generalMatern, rationalQuadratic
 #' also returns m_phi and other matrix which will be needed for ODE inference
+#'
+#' @param phi the kernel hyper parameters
+#' @param rInput the distance matrix at two time point, i.e., |s - t|
+#' @param rInput the sign of the time difference, i.e., sign(s - t)
+#' @param bandsize the size for band matrix approximation
+#' @param complexity integer value for the complexity of the kernel calculation,
+#' 0 includes C;
+#' 1 additionally includes Cprime, Cdoubleprime, dCdphi
+#' 2 or above additionally includes Ceigen1over, CeigenVec, Cinv, mphi, Kphi, Keigen1over, KeigenVec, Kinv, mphiLeftHalf, dCdphiCube
+#' @param kerneltype must be in matern, rbf, compact1, periodicMatern, generalMatern, rationalQuadratic
+#' @param noiseInjection the small value injected in the diagonal elements for numerical stability
 #' 
 #' @export
 calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerneltype="matern",
