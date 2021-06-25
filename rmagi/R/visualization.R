@@ -4,11 +4,13 @@
 #' of the X
 #'
 #' @param filename string of pdf filename to save
-#' @param xtrue VRtrue plus time and derivative
+#' @param xtrue true ODE curve with time as index colume
+#' @param dotxtrue true ODE derivative with time as index colume
 #' @param xsim noisy observations
-#' @param gpode list of ode posterior that contains element stated in example
-#' section
+#' @param gpode result list of magi::MagiSolver output
 #' @param param list of true parameters abc and sigma
+#' @param config list of configuration settings
+#' @param odemodel list of the ODE model function, times, and xtrue
 #' 
 #' @importFrom gridExtra grid.table
 #' @importFrom gridBase baseViewports
