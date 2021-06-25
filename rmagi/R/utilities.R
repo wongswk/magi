@@ -3,7 +3,7 @@
 #' use to visulize Gaussian process smoothing without ODE, and for initialize
 #' the x theta sampler
 #'
-#' @export
+#' @noRd
 getMeanCurve <- function(x, y, x.new, phi.mat, sigma.mat, kerneltype="matern", deriv=FALSE){
   tvec <- c(x.new,x)
 
