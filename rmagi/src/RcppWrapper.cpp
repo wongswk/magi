@@ -234,8 +234,7 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
 //' not used in the final method, in final method, only one temperature with heating is needed
 //'
 //' @noRd
-// DISABLED [[Rcpp::export]]
-arma::cube parallel_temper_hmc_xtheta( const arma::mat & yobs, 
+arma::cube parallel_temper_hmc_xtheta( const arma::mat & yobs,
                                        const Rcpp::List & covVr, 
                                        const Rcpp::List & covRr, 
                                        const arma::vec & sigmaInput,
