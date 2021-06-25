@@ -1,3 +1,5 @@
+# testhat helper functions
+
 #' get posterior mean curve for value and derivative conditioning on
 #' observed y, observed derivative dy, phi, sigma
 #'
@@ -5,7 +7,7 @@
 #'
 #' @param delta small value added to diagnal of the matrix to prevent singularity
 #'
-#' @export
+#' @noRd
 getMeanDerivCurve <- function(x, y.mat, dy.mat, x.new, phi.mat, delta = 1e-9, sigma.mat, gamma.mat=NULL){
   tvec <- c(x.new,x,x.new,x)
   id.dnew <- 1:length(x.new)
@@ -74,7 +76,7 @@ getMeanDerivCurve <- function(x, y.mat, dy.mat, x.new, phi.mat, delta = 1e-9, si
 #' @importFrom gridBase baseViewports
 #' @importFrom grid pushViewport
 #'
-#' @export
+#' @noRd
 plotPostSamples <- function(filename, fn.true, fn.sim, gpode, init, config){
   npostplot <- config$npostplot
   if(is.null(npostplot)) {

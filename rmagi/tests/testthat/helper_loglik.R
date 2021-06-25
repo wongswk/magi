@@ -1,10 +1,12 @@
+# testhat helper functions
+
 #' full log likelihood for latent x and theta in R
 #'
 #' used for Gaussian process ODE inference on x and theta only.
 #' likelihood value is proportional to phi and sigma, so this cannot be used to
 #' draw phi and sigma
 #'
-#' @export
+#' @noRd
 xthetallik <- function(x, theta, CovV, CovR, sigma, y, grad = F, lambda = 1)  {
   if(length(lambda) < 3) lambda <- c(lambda, rep(1, 3-length(lambda)))
   a <- theta[1]
@@ -79,7 +81,7 @@ xthetallik <- function(x, theta, CovV, CovR, sigma, y, grad = F, lambda = 1)  {
 #' used to draw phi and sigma directly from marginal likelihood.
 #' mathematically, this is the integration of logliknoODE
 #'
-#' @export
+#' @noRd
 phisigllik <- function(phisig, y, rInput, signrInput, grad = F, kerneltype="matern"){
   n <- nrow(y)
   sigma <- tail(phisig,1)
@@ -127,7 +129,7 @@ phisigllik <- function(phisig, y, rInput, signrInput, grad = F, kerneltype="mate
 
 #' calculate fn model ODE derivatives
 #'
-#' @export
+#' @noRd
 fODE <- function(theta, x) {
   a <- theta[1]
   b <- theta[2]
@@ -150,7 +152,7 @@ fODE <- function(theta, x) {
 #'
 #' @seealso phisigllik
 #'
-#' @export
+#' @noRd
 logliknoODE <- function(x, CovV, CovR, sigma, y)  {
 
   Vsm <- x[,1]
@@ -184,7 +186,7 @@ logliknoODE <- function(x, CovV, CovR, sigma, y)  {
 #' value is exact for x, theta, phi, sigma. we simply need to sample from this
 #' if computation is feasible. phi info is contained in CovV, CovR
 #'
-#' @export
+#' @noRd
 loglik <- function(x, theta, CovV, CovR, sigma, y, lambda=1)  {
   if(length(lambda) < 3) lambda <- c(lambda, rep(1, 3-length(lambda)))
   a <- theta[1]
@@ -227,7 +229,7 @@ loglik <- function(x, theta, CovV, CovR, sigma, y, lambda=1)  {
 #' value is exact for x, theta, phi, sigma. we simply need to sample from this
 #' if computation is feasible. phi info is supplied explicitly
 #'
-#' @export
+#' @noRd
 loglikOrig <- function(x, theta, phi, sigma, y, rInput, signrInput, kerneltype = "matern")  {
   CovV <- calCov(phi[1:2], rInput, signrInput, complexity = 3, kerneltype=kerneltype)
   CovR <- calCov(phi[3:4], rInput, signrInput, complexity = 3, kerneltype=kerneltype)
@@ -241,7 +243,7 @@ loglikOrig <- function(x, theta, phi, sigma, y, rInput, signrInput, kerneltype =
 #'
 #' this idea is not used in the end
 #'
-#' @export
+#' @noRd
 phillikwithxdotx <- function(phi, x, xdot, rInput, signrInput, kerneltype="matern"){
   CovV <- calCov(phi, rInput, signrInput, kerneltype=kerneltype)
   bigCov <- rbind(cbind(CovV$C, t(CovV$Cprime)),

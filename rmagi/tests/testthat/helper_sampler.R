@@ -1,8 +1,10 @@
+# testhat helper functions
+
 #' chain Sampler generate one MCMC chain
 #' 
 #' @param config need at least `n.iter`, `burninRatio`, `loglikflag`, `hmcSteps`
 #' 
-#' @export 
+#' @noRd 
 chainSampler <- function(config, xInit, singleSampler, stepLowInit, verbose=TRUE, 
                          thetaDim=3){
   numparam <- length(xInit)
@@ -47,7 +49,7 @@ chainSampler <- function(config, xInit, singleSampler, stepLowInit, verbose=TRUE
 #' @param config need at least `n.iter`, `burninRatio`, 
 #' `loglikflag`, `hmcSteps`, `pilotRatio`, `stepSize`, 
 #' 
-#' @export 
+#' @noRd 
 runPilot <- function(pilotIndex, xsim.obs, r.nobs, signr.nobs, curphi,
                      gpsmoothFuncList, thetaSize, config){
   xsim.obs <- xsim.obs[pilotIndex, ]

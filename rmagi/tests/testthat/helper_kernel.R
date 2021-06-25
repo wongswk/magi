@@ -1,5 +1,7 @@
+# testhat helper functions
+
 #' calculate number of eigen values to preserve based on frobenius norm
-#' @export
+#' @noRd
 truncEigen <- function(eigenValues, frobeniusNormApprox = 0.99){
   frobeniusNorm <- sum(eigenValues^2)
   frobeniusNormTrunc <- cumsum(eigenValues^2)
@@ -18,7 +20,7 @@ truncEigen <- function(eigenValues, frobeniusNormApprox = 0.99){
 #'
 #' @param cKeep number of eigen values to keep for C matrix
 #' @param kKeep number of eigen values to keep for K matrix
-#' @export
+#' @noRd
 truncCovByEigen <- function(gpCov, cKeep, kKeep){
   cKeepId <- (ncol(gpCov$CeigenVec)-cKeep+1):ncol(gpCov$CeigenVec)
   gpCov$Ceigen1over <- gpCov$Ceigen1over[cKeepId]

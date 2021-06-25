@@ -1,9 +1,11 @@
+# testhat helper functions
+
 #' calculate frequency of data series and give recommanded bandwidth parameter phi2
 #' 
 #' phi2 rule of thumb should be half of the periodicity
 #' 
 #' 
-#' @export
+#' @noRd
 getFrequencyBasedPrior <- function(x, showplot=FALSE){
   z <- fft(x)
   zmod <- Mod(z)
