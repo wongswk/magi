@@ -52,7 +52,7 @@ lp phisigllikHard2D( const arma::vec &, const arma::mat &, const arma::mat &, st
 // using namespace Rcpp;
 
 //' R wrapper for basic_hmcC for normal distribution
-//' 
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List hmcNormal(arma::vec initial, arma::vec step, arma::vec lb, arma::vec ub,
                int nsteps = 1, bool traj = false){
