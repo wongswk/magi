@@ -230,8 +230,11 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
 }
 
 //' parallel tempered version of hmc for xtheta sample
-//' @export
-// [[Rcpp::export]]
+//'
+//' not used in the final method, in final method, only one temperature with heating is needed
+//'
+//' @noRd
+// DISABLED [[Rcpp::export]]
 arma::cube parallel_temper_hmc_xtheta( const arma::mat & yobs, 
                                        const Rcpp::List & covVr, 
                                        const Rcpp::List & covRr, 
