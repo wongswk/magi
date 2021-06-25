@@ -5,7 +5,7 @@
 #'
 #' @param phi the kernel hyper parameters
 #' @param rInput the distance matrix at two time point, i.e., |s - t|
-#' @param rInput the sign of the time difference, i.e., sign(s - t)
+#' @param signrInput the sign of the time difference, i.e., sign(s - t)
 #' @param bandsize the size for band matrix approximation
 #' @param complexity integer value for the complexity of the kernel calculation,
 #' 0 includes C;
