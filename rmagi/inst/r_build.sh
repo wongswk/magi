@@ -63,10 +63,7 @@ rsync -az src/rcppmagi/*.h src/
 
 rm -r src/rcppmagi/
 
-if [[ "$1" == "--cran" ]]; then
-  rm src/RcppTestingUtilities.cpp
-  rm src/testingUtilities.cpp
-else
+if [[ "$1" != "--cran" ]]; then
   echo "MAKEFLAGS = -j$CPU" >> src/Makevars
 fi
 
@@ -76,10 +73,9 @@ MAKE="make -j$CPU" Rscript -e "Rcpp::compileAttributes(); devtools::document(); 
 
 if [[ "$1" == "--cran" ]]; then
   mv examples inst/examples
-  rm tests
+  rm -r tests
   R -e 'devtools::build()'
   mv inst/examples examples
-  touch src/testingUtilities.cpp
 fi
 
 LIB_PYMAGI_SOURCE=$(cd "$PROJECT"/cmagi && ls -- *.cpp)
