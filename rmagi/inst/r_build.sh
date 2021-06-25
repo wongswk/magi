@@ -75,14 +75,15 @@ MAKE="make -j$CPU" Rscript -e "Rcpp::compileAttributes(); devtools::document(); 
 
 if [[ "$1" == "--cran" ]]; then
   mv examples inst/examples
-else
-  LIB_PYMAGI_SOURCE=$(cd "$PROJECT"/cmagi && ls -- *.cpp)
-  LIB_PYMAGI_HEADERS=$(cd "$PROJECT"/cmagi && ls -- *.h)
-  cd "$PROJECT"/rmagi/src && rm $LIB_PYMAGI_SOURCE $LIB_PYMAGI_HEADERS
-  cd "$PROJECT"/rmagi || return
-  rm -r inst/include/cppoptlib
-  ln -s "$(pwd)"/../cmagi/*.cpp src/
-  ln -s "$(pwd)"/../cmagi/*.h src/
-  git checkout -- R/zzz.R
-  git checkout -- src/RcppTestingUtilities.cpp
-fi
+  R -e 'devtools::build()'
+  mv inst/examples examples
+
+LIB_PYMAGI_SOURCE=$(cd "$PROJECT"/cmagi && ls -- *.cpp)
+LIB_PYMAGI_HEADERS=$(cd "$PROJECT"/cmagi && ls -- *.h)
+cd "$PROJECT"/rmagi/src && rm $LIB_PYMAGI_SOURCE $LIB_PYMAGI_HEADERS
+cd "$PROJECT"/rmagi || return
+rm -r inst/include/cppoptlib
+ln -s "$(pwd)"/../cmagi/*.cpp src/
+ln -s "$(pwd)"/../cmagi/*.h src/
+git checkout -- R/zzz.R
+git checkout -- src/RcppTestingUtilities.cpp
