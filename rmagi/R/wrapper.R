@@ -1,5 +1,8 @@
 #' R wrapper for MAGI
-#' 
+#'
+#' @param y the observation data frame
+#' @param odeModel list of ODE functions
+#' @param tvec vector of discretization time points
 #' @param control list of control variables, including `sigma`, `phi`, `xInit`, `thetaInit`, `mu`, `dotmu`, `priorTemperature`, `niterHmc`
 #' `burninRatio`, `nstepsHmc`, `stepSizeFactor`, `bandSize`, `useFixedSigma`.
 #' 
