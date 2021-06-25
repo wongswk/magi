@@ -10,6 +10,12 @@ using namespace Rcpp;
 
 
 //' R wrapper for phisigllik
+//' phi sigma marginal log likelihood in GP smoothing.
+//' used to set hyper-parameters phi
+//' @param phisig vector of phi and sigma
+//' @param yobs matrix of observations. if set each dimension separately, then supply a matrix of only 1 column
+//' @param dist distance matrix on time index
+//' @param kernel the type of kernel, support "matern", "rbf", "compact1", "periodicMatern", "generalMatern"
 //' @export
 // [[Rcpp::export]]
 Rcpp::List phisigllikC(const arma::vec & phisig, 
@@ -22,7 +28,8 @@ Rcpp::List phisigllikC(const arma::vec & phisig,
 }
 
 //' R wrapper for phisigllik
-//' @export
+//' phi sigma leave-one-out-cross-validation log-likelihood for setting hyper-paramters. This idea is not used in the final method
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List phisigloocvllikC(const arma::vec & phisig, 
                             const arma::mat & yobs, 
@@ -34,7 +41,8 @@ Rcpp::List phisigloocvllikC(const arma::vec & phisig,
 }
 
 //' R wrapper for phisigloocvmse
-//' @export
+//' phi sigma leave-one-out-cross-validation mean-squared-error for setting hyper-paramters. This idea is not used in the final method
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List phisigloocvmseC(const arma::vec & phisig, 
                            const arma::mat & yobs, 
@@ -47,7 +55,8 @@ Rcpp::List phisigloocvmseC(const arma::vec & phisig,
 
 
 //' sample from GP marginal likelihood for phi and sigma
-//' @export
+//' Internal function for debugging purpose
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List phisigSample( const arma::mat & yobs, 
                          const arma::mat & dist, 
@@ -132,14 +141,18 @@ Rcpp::List cov_cpp2r(const gpcov & cov_v){
 }
 
 //' general matern cov calculation Rcpp wrapper
+//' @param phi the GP kernel hyper-parameters
+//' @param distSigned signed distance of time indices
+//' @param complexity the complexity of GP kernel calculation. Refer to documentation of `calCov`
 //' @export
 // [[Rcpp::export]]
 Rcpp::List generalMaternCovRcpp( const arma::vec & phi, const arma::mat & distSigned, int complexity = 3){
   return cov_cpp2r(generalMaternCov(phi, distSigned, complexity));
 }
 
-//' sample from GP ODE for latent x and theta
-//' @export
+//' sample from GP ODE for latent x and theta using HMC
+//' Internal function for debugging purpose
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List xthetaSample( const arma::mat & yobs, 
                          const Rcpp::List & covList, 
@@ -234,6 +247,7 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
 //' not used in the final method, in final method, only one temperature with heating is needed
 //'
 //' @noRd
+// [[Rcpp::export]]
 arma::cube parallel_temper_hmc_xtheta( const arma::mat & yobs,
                                        const Rcpp::List & covVr, 
                                        const Rcpp::List & covRr, 
@@ -303,6 +317,14 @@ arma::cube parallel_temper_hmc_xtheta( const arma::mat & yobs,
 
 
 //' R wrapper for xthetallik
+//' Calculate the log posterior
+//' @param yobs matrix of observations
+//' @param covAllDimInput list of covariance kernel objects
+//' @param sigmaInput vector of sigma for each component of y
+//' @param xtheta vector of x and theta, i.e., vectorise x from matrix, and then concatenate the theta vector
+//' @param modelName string of model name
+//' @param useBand boolean variable to use band matrix approximation
+//' @param priorTemperatureInput the prior temperature for derivative, level, and observation, in that order
 //' @export
 // [[Rcpp::export]]
 Rcpp::List xthetallikRcpp(const arma::mat & yobs, 
@@ -348,7 +370,8 @@ Rcpp::List xthetallikRcpp(const arma::mat & yobs,
 
 
 //' R wrapper for xthetallik
-//' @export
+//' Internal function for debugging purpose
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List xthetallikWithmuBandC(const arma::mat & yobs, 
                                  const Rcpp::List & covVr, 
@@ -388,7 +411,8 @@ lp lp_r2cpp(const Rcpp::List & lp_r){
 
 
 //' R wrapper for basic_hmcC
-//' @export
+//' Internal function for debugging purpose
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List basic_hmcRcpp(const Rcpp::Function rlpr,
                          const arma::vec & initial,
@@ -414,7 +438,8 @@ Rcpp::List basic_hmcRcpp(const Rcpp::Function rlpr,
 }
 
 //' R wrapper for chainSamplerRcpp
-//' @export
+//' Internal function for debugging purpose
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List chainSamplerRcpp(const arma::mat & yobs,
                             const Rcpp::List & covAllDimInput,
@@ -448,8 +473,9 @@ Rcpp::List chainSamplerRcpp(const arma::mat & yobs,
     );
 }
 
-//' R wrapper for chainSamplerRcpp
-//' @export
+//' R wrapper for optimizeThetaInit
+//' Internal function for debugging purpose
+//' @noRd
 // [[Rcpp::export]]
 arma::vec optimizeThetaInitRcpp(const arma::mat & yobs,
                                 const OdeSystem & modelInput,
