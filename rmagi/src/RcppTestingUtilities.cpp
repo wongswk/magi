@@ -102,7 +102,7 @@ gpcov cov_r2cpp_legacy(const Rcpp::List & cov_r){
 
 
 //' R wrapper for xthetallik
-//' @export
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List xthetallik_rescaledC(const arma::mat & yobs, 
                                 const Rcpp::List & covVr, 
@@ -117,7 +117,7 @@ Rcpp::List xthetallik_rescaledC(const arma::mat & yobs,
 }
 
 //' R wrapper for xthetallikBandApprox
-//' @export
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List xthetallikBandApproxC( arma::mat & yobs, 
                                   const Rcpp::List & covVr, 
@@ -134,7 +134,7 @@ Rcpp::List xthetallikBandApproxC( arma::mat & yobs,
 }
 
 //' R wrapper for xthetallik
-//' @export
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List xthetallik_withmuC(const arma::mat & yobs, 
                               const Rcpp::List & covVr, 
@@ -151,7 +151,7 @@ Rcpp::List xthetallik_withmuC(const arma::mat & yobs,
 }
 
 //' R wrapper for xthetallik
-//' @export
+//' @noRd
 // [[Rcpp::export]]
 arma::vec speedbenchmarkXthetallik(const arma::mat & yobs, 
                                    const Rcpp::List & covVr, 
@@ -225,7 +225,7 @@ arma::vec speedbenchmarkXthetallik(const arma::mat & yobs,
 }
 
 //' test for pass by reference for gpcov
-//' @export
+//' @noRd
 // [[Rcpp::export]]
 int changeGPcovFromC(Rcpp::List & covVr){
   gpcov covV = cov_r2cpp(covVr);
@@ -263,7 +263,7 @@ void cov_r2cpp_t3(arma::mat & cov_r){
 }
 
 //' R wrapper for phisigllik
-//' @export
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List phisigllikHard2DC(const arma::vec & phisig, 
                              const arma::mat & yobs, 
@@ -275,7 +275,7 @@ Rcpp::List phisigllikHard2DC(const arma::vec & phisig,
 }
 
 //' R wrapper for xthetallik
-//' @export
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List xthetallikC(const arma::mat & yobs, 
                        const Rcpp::List & covVr, 
@@ -293,7 +293,7 @@ Rcpp::List xthetallikC(const arma::mat & yobs,
 
 
 //' test for output custom object
-//' @export
+//' @noRd
 // [[Rcpp::export]]
 gpcov maternCovTestOutput( const arma::vec & phi, const arma::mat & dist, int complexity = 0){
     gpcov out;
@@ -315,7 +315,7 @@ gpcov maternCovTestOutput( const arma::vec & phi, const arma::mat & dist, int co
 }
 
 //' test for input custom object
-//' @export
+//' @noRd
 // [[Rcpp::export]]
 arma::mat maternCovTestInput( const gpcov & cov_input){
     return cov_input.Cinv;
