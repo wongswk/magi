@@ -317,11 +317,11 @@ arma::cube parallel_temper_hmc_xtheta( const arma::mat & yobs,
 
 
 //' R wrapper for xthetallik
-//' Calculate the log posterior
+//' Calculate the log posterior of x and theta, without sigma
 //' @param yobs matrix of observations
 //' @param covAllDimInput list of covariance kernel objects
 //' @param sigmaInput vector of sigma for each component of y
-//' @param xtheta vector of x and theta, i.e., vectorise x from matrix, and then concatenate the theta vector
+//' @param initial vector of x and theta, i.e., vectorise x from matrix, and then concatenate the theta vector
 //' @param modelName string of model name
 //' @param useBand boolean variable to use band matrix approximation
 //' @param priorTemperatureInput the prior temperature for derivative, level, and observation, in that order

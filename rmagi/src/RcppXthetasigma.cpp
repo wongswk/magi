@@ -12,6 +12,16 @@ using namespace arma;
 
 
 //' R wrapper for xthetasigmallik
+//' Calculate the log posterior of x, theta, and sigma
+//' @param xlatent the matrix of latent ODE curve
+//' @param theta the parameter of ODE function
+//' @param sigma the observation noise for each component of y
+//' @param yobs matrix of observations
+//' @param covAllDimInput list of covariance kernel objects
+//' @param priorTemperatureInput the prior temperature for derivative, level, and observation, in that order
+//' @param useBand boolean variable indicator to use band matrix approximation
+//' @param useMean boolean variable indicator to use mean function in GP
+//' @param modelName string of model name
 //' @export
 // [[Rcpp::export]]
 Rcpp::List xthetasigmallikRcpp( const arma::mat & xlatent, 
@@ -59,7 +69,8 @@ Rcpp::List xthetasigmallikRcpp( const arma::mat & xlatent,
 }
 
 //' sample from GP ODE for latent x, theta, and sigma
-//' @export
+//' Internal function for debugging purpose
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List xthetasigmaSample( const arma::mat & yobs, 
                               const Rcpp::List & covList, 
