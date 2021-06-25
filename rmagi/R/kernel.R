@@ -79,7 +79,8 @@ calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerne
 #' calculate Matern Gaussian process kernel
 #' 
 #' only calculate core part of C, Cprime, Cprimeprime, dCdphi etc.
-#' 
+#'
+#' @noRd
 calCovMatern <- function(phi, r, signr, complexity=3) {
   r2 <- r^2
   C <- phi[1] * (1 + ((sqrt(5)*r)/phi[2]) + ((5*r2)/(3*phi[2]^2))) * exp((-sqrt(5)*r)/phi[2])
@@ -99,7 +100,8 @@ calCovMatern <- function(phi, r, signr, complexity=3) {
 #' calculate general Matern Gaussian process kernel
 #' 
 #' only calculate core part of C, Cprime, Cprimeprime, dCdphi etc.
-#' 
+#'
+#' @noRd
 calCovGeneralMatern <- function(phi, r, signr, complexity=3, df = 2.01) {
   r2 <- r^2
   
@@ -137,7 +139,8 @@ calCovGeneralMatern <- function(phi, r, signr, complexity=3, df = 2.01) {
 #' calculate RBF Gaussian process kernel
 #' 
 #' only calculate core part of C, Cprime, Cprimeprime, dCdphi etc.
-#' 
+#'
+#' @noRd
 calCovRBF <- function(phi, r, signr, complexity=3) {
   r2 <- r^2
   
@@ -158,7 +161,8 @@ calCovRBF <- function(phi, r, signr, complexity=3) {
 #' 
 #' only calculate core part of C, Cprime, Cprimeprime, dCdphi etc. 
 #' See overleaf writeup for details
-#' 
+#'
+#' @noRd
 calCovCompact1 <- function(phi, r, signr, complexity=3, D=3) {
   r2 <- r^2
   jsmooth <- floor(D/2)+2
@@ -185,7 +189,8 @@ calCovCompact1 <- function(phi, r, signr, complexity=3, D=3) {
 #' calculate rational quadratic Gaussian process kernel
 #' 
 #' only calculate core part of C, Cprime, Cprimeprime, dCdphi etc.
-#' 
+#'
+#' @noRd
 calCovRationalQuadratic <- function(phi, r, signr, complexity=3) {
   df = 0.01
   r2 <- r^2
@@ -206,7 +211,8 @@ calCovRationalQuadratic <- function(phi, r, signr, complexity=3) {
 }
 
 #' calculate linear Gaussian process kernel
-#' 
+#'
+#' @noRd
 calCovLinear <- function(phi, x, complexity=3) {
   C <- phi[1] * (1 + outer(x, x)/phi[2]^2)
   
@@ -216,7 +222,8 @@ calCovLinear <- function(phi, x, complexity=3) {
 }
 
 #' calculate Neural Network Gaussian process kernel
-#' 
+#'
+#' @noRd
 calCovNeuralNetwork <- function(phi, x, complexity=3) {
   xtilde <- cbind(1, x)
   sigmaMat <- diag(c(phi[1], phi[2]^2))
@@ -229,7 +236,8 @@ calCovNeuralNetwork <- function(phi, x, complexity=3) {
 }
 
 #' calculate modulated squared exponential Gaussian process kernel
-#' 
+#'
+#' @noRd
 calCovModulatedRBF <- function(phi, x, complexity=3) {
   sigmaG <- phi[2]
   sigmaU <- phi[3]
@@ -248,7 +256,8 @@ calCovModulatedRBF <- function(phi, x, complexity=3) {
 }
 
 #' calculate Periodic Warpped Matern Gaussian process kernel
-#' 
+#'
+#' @noRd
 calCovPeriodicWarpMatern <- function(phi, r, signr, complexity=0) {
   newr <- abs(sin(r*pi/phi[3])*2) # equivalent to cbind(sin(x*2*pi/phi[3]), cos(x*2*pi/phi[3]))
   maternCov <- calCovMatern(phi, newr, signr, complexity)
@@ -261,6 +270,7 @@ calCovPeriodicWarpMatern <- function(phi, r, signr, complexity=0) {
 
 #' calculate number of eigen values to preserve based on frobenius norm
 #'
+#' @noRd
 bandCov <- function(gpCov, bandsize = 20){
   gpCov$CinvBand <- mat2band(gpCov$Cinv, bandsize)
   gpCov$mphiBand <- mat2band(gpCov$mphi, bandsize)
@@ -270,7 +280,8 @@ bandCov <- function(gpCov, bandsize = 20){
 }
 
 #' Converts a matrix to banded form
-#' 
+#'
+#' @noRd
 mat2band <- function(a, bandsize) {
   N <- nrow(a)
   A <- matrix(0,nrow = 2*bandsize+1, ncol = N)
