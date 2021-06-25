@@ -26,7 +26,7 @@ getFrequencyBasedPrior <- function(x, showplot=FALSE){
     outliers = zmodEffective[zmodEffective > upperQuarter + 1.5 * iqr]
     if (length(outliers) == 0) {
       freq <- which.max(zmodEffective)
-      abline(v=xsim$time[id4phi][freq], col=4)
+      abline(v=1+freq, col=4)
     } else {
       outliers <- outliers[outliers > median(zmodEffective)]
       whichOutliers <- which(zmodEffective %in% outliers)
