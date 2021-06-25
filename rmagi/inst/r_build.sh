@@ -80,6 +80,7 @@ if [[ "$1" == "--cran" ]]; then
   R -e 'devtools::build()'
   mv inst/examples examples
   touch src/testingUtilities.cpp
+fi
 
 LIB_PYMAGI_SOURCE=$(cd "$PROJECT"/cmagi && ls -- *.cpp)
 LIB_PYMAGI_HEADERS=$(cd "$PROJECT"/cmagi && ls -- *.h)
