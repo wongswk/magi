@@ -38,7 +38,6 @@ PKG_CXX=clang++
 CXX_STD = CXX11
 PKG_CXXFLAGS = -DNDEBUG -I'../inst/include'
 PKG_LIBS = \$(LAPACK_LIBS) \$(BLAS_LIBS) \$(FLIBS)
-MAKEFLAGS = -j$CPU
 " > src/Makevars
 
 MAKE="make -j$CPU" Rscript -e 'if (!require("devtools")) install.packages("devtools", repos="http://cran.us.r-project.org")'
@@ -67,6 +66,8 @@ rm -r src/rcppmagi/
 if [[ "$1" == "--cran" ]]; then
   rm src/RcppTestingUtilities.cpp
   rm src/testingUtilities.cpp
+else
+  echo "MAKEFLAGS = -j$CPU" >> src/Makevars
 fi
 
 rm NAMESPACE
@@ -75,8 +76,10 @@ MAKE="make -j$CPU" Rscript -e "Rcpp::compileAttributes(); devtools::document(); 
 
 if [[ "$1" == "--cran" ]]; then
   mv examples inst/examples
+  rm tests
   R -e 'devtools::build()'
   mv inst/examples examples
+  touch src/testingUtilities.cpp
 
 LIB_PYMAGI_SOURCE=$(cd "$PROJECT"/cmagi && ls -- *.cpp)
 LIB_PYMAGI_HEADERS=$(cd "$PROJECT"/cmagi && ls -- *.h)
@@ -87,3 +90,4 @@ ln -s "$(pwd)"/../cmagi/*.cpp src/
 ln -s "$(pwd)"/../cmagi/*.h src/
 git checkout -- R/zzz.R
 git checkout -- src/RcppTestingUtilities.cpp
+git checkout tests
