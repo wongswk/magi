@@ -103,7 +103,7 @@ curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
 
 gpsmoothFuncList <- list()
 for(j in 1:3){
-  ynew <- getMeanCurve(xsim.obs$time, xsim.obs[,j+1], xsim$time, 
+  ynew <- magi:::getMeanCurve(xsim.obs$time, xsim.obs[,j+1], xsim$time,
                        t(curphi[,j]), t(cursigma[j]), kerneltype=config$kernel)
   gpsmoothFuncList[[j]] <- approxfun(xsim$time, ynew)
   plot.function(gpsmoothFuncList[[j]], from = min(xsim$time), to = max(xsim$time),
