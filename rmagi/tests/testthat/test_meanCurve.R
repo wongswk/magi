@@ -102,7 +102,7 @@ cursigma <- rep(NA, ncol(xsim)-1)
 curphi <- matrix(NA, 2, ncol(xsim)-1)
 
 for(j in 1:(ncol(xsim)-1)){
-  priorFactor <- getFrequencyBasedPrior(xsim.obs[,1+j])
+  priorFactor <- magi:::getFrequencyBasedPrior(xsim.obs[,1+j])
   
   desiredMode <- priorFactor["meanFactor"]
   betaRate <- uniroot(function(betaRate) pgamma(1, 1 + desiredMode*betaRate, betaRate)-0.95,
@@ -147,7 +147,7 @@ curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
 
 
 for(j in 1:(ncol(xsim)-1)){
-  ydyR <- getMeanCurve(xsim.obs$time, xsim.obs[,j+1], xsim$time, 
+  ydyR <- magi:::getMeanCurve(xsim.obs$time, xsim.obs[,j+1], xsim$time,
                        t(curphi[,j]), t(cursigma[j]), 
                        kerneltype=config$kernel, deriv = TRUE)
   ydyC <- magi:::calcMeanCurve(xsim.obs$time, xsim.obs[,j+1], xsim$time,
@@ -160,7 +160,7 @@ for(j in 1:(ncol(xsim)-1)){
 
 gpsmoothFuncList <- list()
 for(j in 1:(ncol(xsim)-1)){
-  ynew <- getMeanCurve(xsim.obs$time, xsim.obs[,j+1], xsim$time, 
+  ynew <- magi:::getMeanCurve(xsim.obs$time, xsim.obs[,j+1], xsim$time,
                        t(curphi[,j]), t(cursigma[j]), kerneltype=config$kernel)
   gpsmoothFuncList[[j]] <- approxfun(xsim$time, ynew)
   plot.function(gpsmoothFuncList[[j]], from = min(xsim$time), to = max(xsim$time),
@@ -202,7 +202,7 @@ thetaoptim <- function(xInit, thetaInit, curphi, cursigma){
 thetamle <- thetaoptim(xInit, thetaInit, curphi, cursigma)
 
 fnmodel <- list(
-  fOde=magi:::fODE,
+  fOde=magi:::fnmodelODE,
   fOdeDx=magi:::fnmodelDx,
   fOdeDtheta=magi:::fnmodelDtheta,
   thetaLowerBound=c(0,0,0),
@@ -211,4 +211,4 @@ fnmodel <- list(
 
 thetamle2 <- magi:::optimizeThetaInitRcpp(yobs, fnmodel, curCov, cursigma, c(1,1), xInit, TRUE)
 
-testthat::expect_equal(thetamle$thetaInit, thetamle2, check.attributes = FALSE, tolerance=1e-5)
+testthat::expect_equal(thetamle$thetaInit, thetamle2, check.attributes = FALSE, tolerance=1e-4)
