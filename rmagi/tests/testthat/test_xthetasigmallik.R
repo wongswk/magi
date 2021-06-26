@@ -58,7 +58,7 @@ testthat::test_that("xthetasigmallik differs to xthetallik and loglikOrig by con
     
     xthInit <- c(xlatentTest, thetaTest)
     
-    out2 <- loglikWithNormalizingConstants(xlatentTest,
+    out2 <- magi:::loglikWithNormalizingConstants(xlatentTest,
                                            thetaTest,
                                            phiTest,
                                            sigmaTest[1],
@@ -66,7 +66,7 @@ testthat::test_that("xthetasigmallik differs to xthetallik and loglikOrig by con
                                            r,
                                            signr,
                                            kerneltype = "generalMatern")
-    out3 <- xthetasigmallikRcpp(xlatentTest,
+    out3 <- magi:::xthetasigmallikRcpp(xlatentTest,
                                 thetaTest,
                                 sigmaTest,
                                 dataInput,
@@ -94,7 +94,7 @@ testthat::test_that("xthetasigmallik differs to loglikOrig by constant (the pi p
     
     xthInit <- c(xlatentTest, thetaTest)
     
-    out2 <- loglikWithNormalizingConstants(xlatentTest,
+    out2 <- magi:::loglikWithNormalizingConstants(xlatentTest,
                                            thetaTest,
                                            phiTest,
                                            sigmaTest[1],
@@ -102,7 +102,7 @@ testthat::test_that("xthetasigmallik differs to loglikOrig by constant (the pi p
                                            r,
                                            signr,
                                            kerneltype = "generalMatern")
-    out3 <- xthetasigmallikRcpp(xlatentTest,
+    out3 <- magi:::xthetasigmallikRcpp(xlatentTest,
                                 thetaTest,
                                 sigmaTest,
                                 dataInput,
@@ -119,7 +119,7 @@ testthat::test_that("xthetasigmallik derivatives", {
   sigmaTest <- rep(pram.true$sigma * exp(rnorm(1)), 2)
   priorTemperatureTest <- rexp(3)
   
-  out <- xthetasigmallikRcpp(xlatentTest,
+  out <- magi:::xthetasigmallikRcpp(xlatentTest,
                               thetaTest,
                               sigmaTest,
                               dataInput,
@@ -135,7 +135,7 @@ testthat::test_that("xthetasigmallik derivatives", {
     xlatentTest1 <- xlatentTest
     xlatentTest1[it] <- xlatentTest1[it] + delta
     gradNum[it] <- 
-      (xthetasigmallikRcpp(xlatentTest1,
+      (magi:::xthetasigmallikRcpp(xlatentTest1,
                            thetaTest,
                            sigmaTest,
                            dataInput,
@@ -152,7 +152,7 @@ testthat::test_that("xthetasigmallik derivatives", {
     thetaTest1 <- thetaTest
     thetaTest1[it] <- thetaTest1[it] + delta
     gradNum[it] <- 
-      (xthetasigmallikRcpp(xlatentTest,
+      (magi:::xthetasigmallikRcpp(xlatentTest,
                            thetaTest1,
                            sigmaTest,
                            dataInput,
@@ -170,7 +170,7 @@ testthat::test_that("xthetasigmallik derivatives", {
     sigmaTest1 <- sigmaTest
     sigmaTest1[it] <- sigmaTest1[it] + delta
     gradNum[it] <- 
-      (xthetasigmallikRcpp(xlatentTest,
+      (magi:::xthetasigmallikRcpp(xlatentTest,
                            thetaTest,
                            sigmaTest1,
                            dataInput,
@@ -184,7 +184,7 @@ testthat::test_that("xthetasigmallik derivatives", {
   # one combined sigma
   sigmaTest1 <- sigmaTest[1]
   sigmaTest1 <- sigmaTest1 + delta
-  out1sigma <- xthetasigmallikRcpp(xlatentTest,
+  out1sigma <- magi:::xthetasigmallikRcpp(xlatentTest,
                                    thetaTest,
                                    sigmaTest[1],
                                    dataInput,
@@ -192,7 +192,7 @@ testthat::test_that("xthetasigmallik derivatives", {
                                    priorTemperatureInput=priorTemperatureTest)
     
   gradNum <- 
-    (xthetasigmallikRcpp(xlatentTest,
+    (magi:::xthetasigmallikRcpp(xlatentTest,
                          thetaTest,
                          sigmaTest1,
                          dataInput,
@@ -218,7 +218,7 @@ testthat::test_that("xthetasigmallik with band approx or mean component", {
   for(useMean in c(FALSE, TRUE))
     for(useBand in c(FALSE, TRUE))
       outlist <- c(outlist, list(
-        xthetasigmallikRcpp(xlatentTest,
+        magi:::xthetasigmallikRcpp(xlatentTest,
                             thetaTest,
                             sigmaTest,
                             dataInput,
@@ -234,23 +234,26 @@ testthat::test_that("xthetasigmallik with band approx or mean component", {
 
 test_that("xthetasigma sampler can run", {
   stepsize <- rep(0.01, length(c(xlatentTest, thetaTest, sigmaTest)))
-  xthetasigmaSample(dataInputWithMissing,
+  ret <- magi:::xthetasigmaSample(dataInputWithMissing,
                     list(curCovV, curCovR),
                     sigmaTest,
                     c(xlatentTest, thetaTest),
                     stepsize,
                     20,
                     modelName = "FN")
-  xthetasigmaSample(dataInputWithMissing,
+  testthat::expect_equal(length(ret$final), 27)
+
+  ret <- magi:::xthetasigmaSample(dataInputWithMissing,
                     list(curCovV, curCovR),
                     sigmaTest,
                     c(xlatentTest, thetaTest),
                     stepsize,
                     20,
                     modelName = "FN")
+  testthat::expect_equal(length(ret$final), 27)
   
   stepsize <- rep(0.001, length(c(xlatentTest, thetaTest, sigmaTest[1])))
-  xthetasigmaSample(dataInputWithMissing,
+  ret <- magi:::xthetasigmaSample(dataInputWithMissing,
                     list(curCovV, curCovR),
                     sigmaTest[1],
                     c(xlatentTest, thetaTest),
@@ -258,6 +261,7 @@ test_that("xthetasigma sampler can run", {
                     20,
                     loglikflag = "withmeanBand",
                     modelName = "FN")
+  testthat::expect_equal(length(ret$final), 26)
 })
 
 test_that("xthetasigma sampler can run for Hes1", {
@@ -280,7 +284,8 @@ test_that("xthetasigma sampler can run for Hes1", {
     covEach
   })
   stepSize <- rep(1e-4, length(xInit) + length(thetaInit) + length(sigmaInit))
-  xthetasigmaSample(data.matrix(xsim[,-1]), curCov, sigmaInit, c(xInit, thetaInit), 
+  ret <- magi:::xthetasigmaSample(data.matrix(xsim[,-1]), curCov, sigmaInit, c(xInit, thetaInit),
                     stepSize, 20, F, loglikflag = "withmeanBand",
                     priorTemperature = 1, modelName = "Hes1")
+  testthat::expect_equal(length(ret$final), 73)
 })
