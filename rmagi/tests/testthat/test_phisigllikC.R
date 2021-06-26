@@ -53,8 +53,9 @@ for(kerneltype in c("compact1","rbf","matern","periodicMatern","generalMatern"))
     if(kerneltype=="periodicMatern"){
       skip("periodicMatern phisigSample runs with error, needs debug")
     }
-    magi:::phisigSample(data.matrix(fn.sim[,1:2]), r, c(phitrue[[kerneltype]], noise),
+    out <- magi:::phisigSample(data.matrix(fn.sim[,1:2]), r, c(phitrue[[kerneltype]], noise),
                  rep(0.03,5), 20, F, kerneltype)
+    testthat::expect_equal(length(out$final), 5)
   })
 }
 
