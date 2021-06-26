@@ -55,8 +55,8 @@ testthat::test_that("xthetaphisigmallik differs to xthetallik and loglikOrig by 
     
     xthInit <- c(xlatentTest, thetaTest)
     
-    out1 <- magi::xthetallikC(dataInput, curCovV, curCovR, sigmaTest, xthInit)
-    out2 <- loglikWithNormalizingConstants(xlatentTest,
+    out1 <- magi:::xthetallikC(dataInput, curCovV, curCovR, sigmaTest, xthInit)
+    out2 <- magi:::loglikWithNormalizingConstants(xlatentTest,
                                            thetaTest,
                                            phiTest,
                                            sigmaTest[1],
@@ -64,7 +64,7 @@ testthat::test_that("xthetaphisigmallik differs to xthetallik and loglikOrig by 
                                            r,
                                            signr,
                                            kerneltype = "generalMatern")
-    out3 <- xthetaphisigmallikRcpp(xlatentTest,
+    out3 <- magi:::xthetaphisigmallikRcpp(xlatentTest,
                                    thetaTest,
                                    phiTest,
                                    sigmaTest,
@@ -93,7 +93,7 @@ testthat::test_that("xthetaphisigmallik differs to loglikOrig by constant (the p
     
     xthInit <- c(xlatentTest, thetaTest)
     
-    out2 <- loglikWithNormalizingConstants(xlatentTest,
+    out2 <- magi:::loglikWithNormalizingConstants(xlatentTest,
                                            thetaTest,
                                            phiTest,
                                            sigmaTest[1],
@@ -101,7 +101,7 @@ testthat::test_that("xthetaphisigmallik differs to loglikOrig by constant (the p
                                            r,
                                            signr,
                                            kerneltype = "generalMatern")
-    out3 <- xthetaphisigmallikRcpp(xlatentTest,
+    out3 <- magi:::xthetaphisigmallikRcpp(xlatentTest,
                                    thetaTest,
                                    phiTest,
                                    sigmaTest,
@@ -120,7 +120,7 @@ testthat::test_that("xthetaphisigmallik derivatives", {
   phiTest <- cbind(pram.true$vphi, pram.true$rphi) * exp(rnorm(4))
   sigmaTest <- rep(pram.true$sigma * exp(rnorm(1)), 2)
   
-  out <<- xthetaphisigmallikRcpp(xlatentTest,
+  out <<- magi:::xthetaphisigmallikRcpp(xlatentTest,
                                  thetaTest,
                                  phiTest,
                                  sigmaTest,
@@ -136,7 +136,7 @@ testthat::test_that("xthetaphisigmallik derivatives", {
     xlatentTest1 <- xlatentTest
     xlatentTest1[it] <- xlatentTest1[it] + delta
     gradNum[it] <- 
-      (xthetaphisigmallikRcpp(xlatentTest1,
+      (magi:::xthetaphisigmallikRcpp(xlatentTest1,
                               thetaTest,
                               phiTest,
                               sigmaTest,
@@ -153,7 +153,7 @@ testthat::test_that("xthetaphisigmallik derivatives", {
     thetaTest1 <- thetaTest
     thetaTest1[it] <- thetaTest1[it] + delta
     gradNum[it] <- 
-      (xthetaphisigmallikRcpp(xlatentTest,
+      (magi:::xthetaphisigmallikRcpp(xlatentTest,
                               thetaTest1,
                               phiTest,
                               sigmaTest,
@@ -170,7 +170,7 @@ testthat::test_that("xthetaphisigmallik derivatives", {
     phiTest1 <- phiTest
     phiTest1[it] <- phiTest1[it] + delta
     gradNum[it] <- 
-      (xthetaphisigmallikRcpp(xlatentTest,
+      (magi:::xthetaphisigmallikRcpp(xlatentTest,
                               thetaTest,
                               phiTest1,
                               sigmaTest,
@@ -188,7 +188,7 @@ testthat::test_that("xthetaphisigmallik derivatives", {
     sigmaTest1 <- sigmaTest
     sigmaTest1[it] <- sigmaTest1[it] + delta
     gradNum[it] <- 
-      (xthetaphisigmallikRcpp(xlatentTest,
+      (magi:::xthetaphisigmallikRcpp(xlatentTest,
                               thetaTest,
                               phiTest,
                               sigmaTest1,
@@ -202,14 +202,14 @@ testthat::test_that("xthetaphisigmallik derivatives", {
   # one combined sigma
   sigmaTest1 <- sigmaTest[1]
   sigmaTest1 <- sigmaTest1 + delta
-  out1sigma <- xthetaphisigmallikRcpp(xlatentTest,
+  out1sigma <- magi:::xthetaphisigmallikRcpp(xlatentTest,
                                       thetaTest,
                                       phiTest,
                                       sigmaTest[1],
                                       dataInputWithMissing,
                                       fn.sim$time)
   gradNum <- 
-    (xthetaphisigmallikRcpp(xlatentTest,
+    (magi:::xthetaphisigmallikRcpp(xlatentTest,
                             thetaTest,
                             phiTest,
                             sigmaTest1,
@@ -223,7 +223,7 @@ testthat::test_that("xthetaphisigmallik derivatives", {
 
 test_that("xthetaphisigma sampler can run", {
   stepsize <- rep(0.01, length(out$grad))
-  xthetaphisigmaSample(xlatentTest,
+  ret <- magi:::xthetaphisigmaSample(xlatentTest,
                        thetaTest,
                        phiTest,
                        sigmaTest,
@@ -232,9 +232,10 @@ test_that("xthetaphisigma sampler can run", {
                        stepsize,
                        "FN",
                        20)
+  testthat::expect_equal(length(ret$final), 31)
   
   stepsize <- rep(0.001, length(out$grad)-1)
-  xthetaphisigmaSample(xlatentTest,
+  ret <- magi:::xthetaphisigmaSample(xlatentTest,
                        thetaTest,
                        phiTest,
                        sigmaTest[1],
@@ -243,26 +244,27 @@ test_that("xthetaphisigma sampler can run", {
                        stepsize,
                        "FN",
                        200)
+  testthat::expect_equal(length(ret$final), 30)
 })
 
-if(interactive()){
-  # speed benchmark
-  mb <- microbenchmark::microbenchmark(
-  magi::xthetallikC(dataInput, curCovV, curCovR, pram.true$sigma, xthInit),
-  loglikOrig(fn.true[seq(1,nrow(fn.true), length=nobs),],
-             pram.true$abc,
-             c(pram.true$vphi, pram.true$rphi),
-             pram.true$sigma,
-             dataInput,
-             r,
-             signr,
-             kerneltype = "generalMatern"),
-  xthetaphisigmallikRcpp(data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]),
-                         pram.true$abc,
-                         cbind(pram.true$vphi, pram.true$rphi),
-                         rep(pram.true$sigma, 2),
-                         dataInput,
-                         fn.sim$time)
-  )
-  print(mb)
-}
+#if(interactive()){
+#  # speed benchmark
+#  mb <- microbenchmark::microbenchmark(
+#  magi::xthetallikC(dataInput, curCovV, curCovR, pram.true$sigma, xthInit),
+#  loglikOrig(fn.true[seq(1,nrow(fn.true), length=nobs),],
+#             pram.true$abc,
+#             c(pram.true$vphi, pram.true$rphi),
+#             pram.true$sigma,
+#             dataInput,
+#             r,
+#             signr,
+#             kerneltype = "generalMatern"),
+#  xthetaphisigmallikRcpp(data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]),
+#                         pram.true$abc,
+#                         cbind(pram.true$vphi, pram.true$rphi),
+#                         rep(pram.true$sigma, 2),
+#                         dataInput,
+#                         fn.sim$time)
+#  )
+#  print(mb)
+#}
