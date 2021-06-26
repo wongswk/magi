@@ -36,7 +36,8 @@ calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerne
   ret$mu <- rep(0, nrow(ret$C))
   ret$dotmu <- rep(0, nrow(ret$C))
   ret$C <- ret$C + noiseInjection * diag( nrow(rInput))
-  
+  ret$tvecCovInput <- rInput[1,]
+
   if(complexity %in% c(0,1)){
     return(ret)
   }
