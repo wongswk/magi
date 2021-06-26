@@ -1,6 +1,7 @@
 testthat::context("HMC")
 testthat::test_that("HMC runs without error", {
-  magi:::hmcTest()
+  out <- magi:::hmcTest()
+  testthat::expect_equal(out, 0)
 })
 
 testthat::test_that("HMC for normal distribution is correct", {
@@ -39,6 +40,6 @@ testthat::test_that("HMC for generic distribution is correct", {
     gradient = -x
     list(value=value, gradient=gradient)
   }
-  hmc_out <- magi::basic_hmcRcpp(llk, c(0.2, 0.2), c(0.1, 0.1), c(-10, -10), c(Inf, Inf), 200, TRUE)
+  hmc_out <- magi:::basic_hmcRcpp(llk, c(0.2, 0.2), c(0.1, 0.1), c(-10, -10), c(Inf, Inf), 200, TRUE)
   testthat::expect_equal(llk(hmc_out$final)$value, hmc_out$lprvalue, scale=abs(hmc_out$lprvalue))
 })
