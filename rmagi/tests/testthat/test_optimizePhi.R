@@ -161,7 +161,10 @@ phiId <- (thetaId[length(thetaId)]+1):(thetaId[length(thetaId)]+length(pram.true
 sigmaId <- (phiId[length(phiId)]+1):(phiId[length(phiId)]+length(pram.true$sigma))
 obsDim <- dim(data.matrix(xsim[,-1]))
 
-phi3list <- phi3optim(xInit, thetaInit, curphi, cursigma)
+testthat::test_that("xthetaphisigmallikRcpp can run in cpp", {
+  phi3list <- phi3optim(xInit, thetaInit, curphi, cursigma)
+  testthat::expect_equal(length(phi3list), 2)
+})
 
 hes1logmodel <- list(
   fOde=magi:::hes1logmodelODE,
