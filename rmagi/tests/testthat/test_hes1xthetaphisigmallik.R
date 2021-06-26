@@ -39,7 +39,7 @@ modelODE <- function(t, state, parameters) {
 
 xtrue <- deSolve::ode(y = pram.true$x0, times = times, func = modelODE, parms = pram.true$theta)
 xtrue <- data.frame(xtrue)
-matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=1)
+#matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=1)
 
 xtrueFunc <- lapply(2:ncol(xtrue), function(j)
   approxfun(xtrue[, "time"], xtrue[, j]))
@@ -52,7 +52,7 @@ for(j in 1:(ncol(xsim)-1)){
 }
 
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
-matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
+#matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
 
 xsim <- insertNaN(xsim.obs,config$filllevel)
 
@@ -96,11 +96,12 @@ phisigllikC(c(100, 100, cursigma[j]), data.matrix(xsim.obs[,1+j]),
 
 xtrueAtDiscretization <- sapply(xtrueFunc, function(f) f(xsim[,"time"]))
 test_that("xthetaphisigmallikRcpp can run", {
-  xthetaphisigmallikRcpp( xtrueAtDiscretization, 
+  out <- xthetaphisigmallikRcpp( xtrueAtDiscretization,
                           pram.true$theta,
                           matrix(pram.true$phi, nrow = 2),
                           pram.true$sigma,
                           data.matrix(xsim[,-1]),
                           xsim$time,
                           "Hes1")
+  testthat::expect_equal(length(out$grad), 259)
 })
