@@ -113,15 +113,15 @@ testthat::test_that("parallel_temper_hmc_xtheta runs without error", {
   
   cursigma <- marlikmap$par[5]
   
-  curCovV <- calCov(marlikmap$par[1:2], r, signr, bandsize=config$bandsize, 
+  curCovV <- magi:::calCov(marlikmap$par[1:2], r, signr, bandsize=config$bandsize,
                     kerneltype=config$kernel)
-  curCovR <- calCov(marlikmap$par[3:4], r, signr, bandsize=config$bandsize, 
+  curCovR <- magi:::calCov(marlikmap$par[3:4], r, signr, bandsize=config$bandsize,
                     kerneltype=config$kernel)
   
   curCovV$mu <- as.vector(fn.true[,1])  # pretend these are the means
   curCovR$mu <- as.vector(fn.true[,2])
   
-  dotmu <- fODE(pram.true$abc, fn.true[,1:2]) # pretend these are the means for derivatives
+  dotmu <- magi:::fODE(pram.true$abc, fn.true[,1:2]) # pretend these are the means for derivatives
   curCovV$dotmu <- as.vector(dotmu[,1])  
   curCovR$dotmu <- as.vector(dotmu[,2])
   
@@ -140,10 +140,10 @@ testthat::test_that("parallel_temper_hmc_xtheta runs without error", {
   t <- 2
   
   rstep <- stepLow
-  foo <- xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma, 
+  foo <- magi:::xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma,
                       xth.formal[t-1,], rstep, config$hmcSteps, F, loglikflag = config$loglikflag)
   sink("testout_parallel_temper_hmc_xtheta.txt")
-  out <- parallel_temper_hmc_xtheta(
+  out <- magi:::parallel_temper_hmc_xtheta(
     data.matrix(fn.sim[,1:2]),
     curCovV,
     curCovR,
@@ -159,12 +159,12 @@ testthat::test_that("parallel_temper_hmc_xtheta runs without error", {
   xInit <- c(fn.true$Vtrue, fn.true$Rtrue, pram.true$abc)
   stepLowInit <- rep(0.001, 2*nall+3)*config$stepSizeFactor
   
-  singleSampler <- function(xthetaValues, stepSize) 
-    xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma, 
+  singleSampler <- function(xthetaValues, stepSize)
+    magi:::xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma,
                  xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag, 
                  overallTemperature = 7)
   
-  chainSamplesOut <- chainSampler(config, xInit, singleSampler, stepLowInit, verbose=TRUE)
+  chainSamplesOut <- magi:::chainSampler(config, xInit, singleSampler, stepLowInit, verbose=TRUE)
   sink()
   plot(out[405,8,], type="l")
   lines(chainSamplesOut[[1]][,404], col=2)
@@ -173,7 +173,7 @@ testthat::test_that("parallel_temper_hmc_xtheta runs without error", {
   x <- suppressWarnings(ks.test(out[405,8,], chainSamplesOut[[1]][,404]))
   # testthat::expect_gt(x$p.value, 0.01)
   
-  x <- xthetallikBandApproxC(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma,
+  x <- magi:::xthetallikBandApproxC(data.matrix(fn.sim[,1:2]), curCovV, curCovR, cursigma,
                              chainSamplesOut[[1]][2,])
   
   testthat::expect_equal(chainSamplesOut$lliklist[2], x$value/7)
