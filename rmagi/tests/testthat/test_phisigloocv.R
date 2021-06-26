@@ -25,17 +25,17 @@ signr <- -sign(foo)
 
 for(kerneltype in c("compact1","rbf","matern","generalMatern")){
   testpoint <- abs(rnorm(length(phitrue[[kerneltype]])+1))
-  xc <- phisigloocvllikC( testpoint, data.matrix(fn.sim[,1:2]), r, kerneltype)
+  xc <- magi:::phisigloocvllikC( testpoint, data.matrix(fn.sim[,1:2]), r, kerneltype)
   
-  test_that(paste("phisigloocvllikC gradient -", kerneltype), {
+  test_that(paste("magi:::phisigloocvllikC gradient -", kerneltype), {
     x0 <- c(phitrue[[kerneltype]]*exp(rnorm(length(phitrue[[kerneltype]]))/10), noise)
-    gradTrue <- phisigloocvllikC(x0, data.matrix(fn.sim[,1:2]), r, kerneltype)$grad
+    gradTrue <- magi:::phisigloocvllikC(x0, data.matrix(fn.sim[,1:2]), r, kerneltype)$grad
     gradNum <- c()
     for(i in 1:(length(phitrue[[kerneltype]])+1)){
       x1 = x0
       x1[i] = x1[i] + 1e-9
-      gradNum[i] <- ((phisigloocvllikC(x1, data.matrix(fn.sim[,1:2]), r, kerneltype)$value - 
-                        phisigloocvllikC(x0, data.matrix(fn.sim[,1:2]), r, kerneltype)$value)/1e-9)
+      gradNum[i] <- ((magi:::phisigloocvllikC(x1, data.matrix(fn.sim[,1:2]), r, kerneltype)$value -
+                        magi:::phisigloocvllikC(x0, data.matrix(fn.sim[,1:2]), r, kerneltype)$value)/1e-9)
     }
     expect_equal(gradNum, as.numeric(gradTrue), tolerance = 1e-3)
   })
@@ -44,23 +44,23 @@ for(kerneltype in c("compact1","rbf","matern","generalMatern")){
 
 for(kerneltype in c("compact1","rbf","matern","generalMatern")){
   testpoint <- abs(rnorm(length(phitrue[[kerneltype]])+1))
-  xc <- phisigloocvmseC( testpoint, data.matrix(fn.sim[,1:2]), r, kerneltype)
+  xc <- magi:::phisigloocvmseC( testpoint, data.matrix(fn.sim[,1:2]), r, kerneltype)
   testpoint2 <- testpoint
   multiplyer <- rexp(1)
   testpoint[c(1,3)] <- multiplyer*testpoint[c(1,3)]
   testpoint[5] <- sqrt(multiplyer)*testpoint[5]
-  xc2 <- phisigloocvmseC( testpoint2, data.matrix(fn.sim[,1:2]), r, kerneltype)
-  test_that("phisigloocvmseC doesn't know variance", expect_equal(xc, xc2))
+  xc2 <- magi:::phisigloocvmseC( testpoint2, data.matrix(fn.sim[,1:2]), r, kerneltype)
+  test_that("magi:::phisigloocvmseC doesn't know variance", expect_equal(xc, xc2))
   
-  test_that(paste("phisigloocvmseC gradient -", kerneltype), {
+  test_that(paste("magi:::phisigloocvmseC gradient -", kerneltype), {
     x0 <- c(phitrue[[kerneltype]]*exp(rnorm(length(phitrue[[kerneltype]]))/10), noise)
-    gradTrue <- phisigloocvmseC(x0, data.matrix(fn.sim[,1:2]), r, kerneltype)$grad
+    gradTrue <- magi:::phisigloocvmseC(x0, data.matrix(fn.sim[,1:2]), r, kerneltype)$grad
     gradNum <- c()
     for(i in 1:(length(phitrue[[kerneltype]])+1)){
       x1 = x0
       x1[i] = x1[i] + 1e-9
-      gradNum[i] <- ((phisigloocvmseC(x1, data.matrix(fn.sim[,1:2]), r, kerneltype)$value - 
-                        phisigloocvmseC(x0, data.matrix(fn.sim[,1:2]), r, kerneltype)$value)/1e-9)
+      gradNum[i] <- ((magi:::phisigloocvmseC(x1, data.matrix(fn.sim[,1:2]), r, kerneltype)$value -
+                        magi:::phisigloocvmseC(x0, data.matrix(fn.sim[,1:2]), r, kerneltype)$value)/1e-9)
     }
     expect_equal(gradNum, as.numeric(gradTrue), tolerance = 1e-3)
   })
