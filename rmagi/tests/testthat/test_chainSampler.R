@@ -9,7 +9,7 @@ config <- list(
   loglikflag = "band",
   bandsize = 20,
   hmcSteps = 20,
-  n.iter = 4e2,
+  n.iter = 2e2,
   burninRatio = 0.1,
   stepSizeFactor = 1
 )
