@@ -7,7 +7,7 @@ r <- abs(foo)
 signr <- -sign(foo)
 curCovV <- calCov(c(1,1), r, signr)
 test_that("curCovV value changed when call c++ test function", {
-  changeGPcovFromC(curCovV)
+  magi:::changeGPcovFromC(curCovV)
   
   expect_true(all(curCovV$Cinv==1))
   expect_true(all(curCovV$mphi==2))
@@ -25,12 +25,15 @@ test_that("some ad hoc testing on syntax", {
   Bmat <- matrix(rnorm(4),2)
   Alist <- list(Cinv=Amat, Brand=Bmat)
   Alist$Cinv <- Alist$Cinv+1
-  
-  cov_r2cpp_t1(Alist)
-  cov_r2cpp_t2(Alist$Cinv)
-  
-  cov_r2cpp_t2(Amat)
-  cov_r2cpp_t2(Alist$Cinv)
-  
-  cov_r2cpp_t3(Bmat)
+
+  magi:::cov_r2cpp_t1(Alist)
+  magi:::cov_r2cpp_t2(Alist$Cinv)
+  expect_equal(Alist$Cinv[1, 1], 0)
+
+  magi:::cov_r2cpp_t2(Amat)
+  magi:::cov_r2cpp_t2(Alist$Cinv)
+  expect_equal(Amat[1, 1], 0)
+
+  magi:::cov_r2cpp_t3(Bmat)
+  expect_equal(Bmat[1, 1], 0)
 })
