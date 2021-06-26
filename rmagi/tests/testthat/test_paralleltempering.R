@@ -1,9 +1,8 @@
 testthat::context("parallel tempering")
 testthat::test_that("parallel tempering runs without error", {
-  sink("testout_paralleltemperingTest1.txt")
   ret <- magi:::paralleltemperingTest1()
-  sink()
-  
+  testthat::expect_equal(dim(ret), c(5, 8, 10000))
+
   temperature <- 8:1
   for(id in 1:8){
     mydist <- function(x) pnorm(x, sd=sqrt(temperature[id]))
@@ -60,6 +59,7 @@ testthat::test_that("parallel tempering runs without error", {
       (dnorm(x, -4, sd=temperature[id]) + dnorm(x, 4, sd=temperature[id]))/2, 
       from=-20,to=20,col=2,add=T, n=1001)
   }
+  testthat::expect_equal(dim(ret), c(5, 7, 10000))
 })
 
 testthat::test_that("parallel_temper_hmc_xtheta runs without error", {
