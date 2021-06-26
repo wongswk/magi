@@ -29,15 +29,15 @@ testthat::test_that("check C, dCdphi for generalMatern",{
   dim(egcovC$Sigma)
   dim(egcovC$dSigmadphiCube)
   
-  if(interactive()){
-    mb <- microbenchmark::microbenchmark(
-      egcovR <- calCovGeneralMatern(phitrue[[kerneltype]], 
-                                    as.matrix(dist(xtime)),
-                                    -sign(outer(xtime,xtime,'-'))),
-      egcovC <- generalMaternCovRcpp(phitrue[[kerneltype]], outer(xtime,xtime,'-'))
-    )
-    print(mb)
-  }
+  #if(interactive()){
+  #  mb <- microbenchmark::microbenchmark(
+  #    egcovR <- calCovGeneralMatern(phitrue[[kerneltype]],
+  #                                  as.matrix(dist(xtime)),
+  #                                  -sign(outer(xtime,xtime,'-'))),
+  #    egcovC <- generalMaternCovRcpp(phitrue[[kerneltype]], outer(xtime,xtime,'-'))
+  #  )
+  #  print(mb)
+  #}
   
 })
 
@@ -49,7 +49,7 @@ testthat::test_that("underflow for generalMatern when used in hes1 with loocvlli
   foo <- outer(xsim.obs$time, t(xsim.obs$time),'-')[,1,]
   r.nobs <- abs(foo)
   
-  out <- phisigloocvllikC(  c(117.3426722,   0.1,   0.9607398), data.matrix(xsim.obs$X3), 
+  out <- magi:::phisigloocvllikC(  c(117.3426722,   0.1,   0.9607398), data.matrix(xsim.obs$X3),
                             r.nobs, "generalMatern")
   
   expect_true(is.finite(out$value))
