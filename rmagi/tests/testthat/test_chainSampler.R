@@ -36,7 +36,7 @@ tvec.nobs <- fn.sim$time[seq(1,nrow(fn.sim), length=config$nobs)]
 testthat::test_that("c++ calcFrequencyBasedPrior correct", {
   priorFactor <<- magi:::calcFrequencyBasedPrior(fn.sim.obs[,1])
   priorFactor2 <<- magi:::getFrequencyBasedPrior(fn.sim.obs[,1])
-  testthat::expect_true(all(priorFactor == priorFactor2))
+  testthat::expect_true(all(abs(priorFactor - priorFactor2) < 1e-3))
 })
 
 testthat::test_that("c++ gpsmooth correct", {
@@ -57,7 +57,7 @@ testthat::test_that("c++ gpsmooth correct", {
   }
 
   fn(outputc)
-  testthat::expect_true(all(abs(gr(outputc)) < 1e-4))
+  testthat::expect_true(all(abs(gr(outputc)) < 1e-3))
 })
 
 testthat::test_that("c++ gpsmooth correct dim2", {
@@ -78,7 +78,7 @@ testthat::test_that("c++ gpsmooth correct dim2", {
   }
   
   fn(outputc)
-  testthat::expect_true(all(abs(gr(outputc)) < 1e-4))
+  testthat::expect_true(all(abs(gr(outputc)) < 1e-3))
 })
 
 testthat::test_that("c++ gpsmooth correct with fft prior", {
@@ -121,12 +121,14 @@ testthat::test_that("c++ gpsmooth correct with fixed sigma fft prior", {
                              config$kernel,
                              0.1,
                              FALSE)
+  testthat::expect_equal(length(outputc), 2)
   
   outputc <- magi:::gpsmooth(yobs1,
                              r.nobs,
                              config$kernel,
                              0.1,
                              TRUE)
+  testthat::expect_equal(length(outputc), 2)
   
 })
 
@@ -164,6 +166,7 @@ singleSampler <- function(xthetaValues, stepSize)
 
 testthat::test_that("chainSampler can run without error",{
   chainSamplesOut <- magi:::chainSampler(config, xInit, singleSampler, stepLowInit, verbose=FALSE)
+  testthat::expect_equal(length(chainSamplesOut$lliklist), config$n.iter)
 })
 
 testthat::test_that("chainSamplerRcpp can run without error",{
@@ -178,7 +181,7 @@ testthat::test_that("chainSamplerRcpp can run without error",{
     thetaUpperBound=c(Inf,Inf,Inf)
   )
   
-  magi:::chainSamplerRcpp(
+  out <- magi:::chainSamplerRcpp(
     yobs = data.matrix(fn.sim[,1:2]),
     covAllDimInput = list(curCovV, curCovR),
     nstepsInput = config$hmcSteps,
@@ -192,10 +195,11 @@ testthat::test_that("chainSamplerRcpp can run without error",{
     stepLowInit = stepLowXthetasigmaInit,
     verbose = TRUE
   )
+  testthat::expect_equal(length(out$lliklist), config$n.iter)
   
   xthetasigmaInit <- c(fn.true$Vtrue, fn.true$Rtrue, pram.true$abc, c(cursigma))
   stepLowXthetasigmaInit <- c(rep(0.00035, 2*nall+3)*config$stepSizeFactor, 0)
-  magi:::chainSamplerRcpp(
+  out <- magi:::chainSamplerRcpp(
     yobs = data.matrix(fn.sim[,1:2]),
     covAllDimInput = list(curCovV, curCovR),
     nstepsInput = config$hmcSteps,
@@ -209,6 +213,7 @@ testthat::test_that("chainSamplerRcpp can run without error",{
     stepLowInit = stepLowXthetasigmaInit,
     verbose = TRUE
   )
+  testthat::expect_equal(length(out$lliklist), config$n.iter)
 
   ## this gives segfault
   # magi:::optimizeThetaInit(
@@ -219,8 +224,8 @@ testthat::test_that("chainSamplerRcpp can run without error",{
   #   priorTemperatureInput = c(1,1), 
   #   xInitInput = cbind(fn.true$Vtrue, fn.true$Rtrue)
   # )
-  
-  magi:::optimizeThetaInitRcpp(
+
+  out <- magi:::optimizeThetaInitRcpp(
     yobs = data.matrix(fn.sim[,1:2]), 
     modelInput = fnmodel, 
     covAllDimInput = list(curCovV, curCovR), 
@@ -229,5 +234,6 @@ testthat::test_that("chainSamplerRcpp can run without error",{
     xInitInput = cbind(fn.true$Vtrue, fn.true$Rtrue),
     useBandInput = TRUE
   )
+  testthat::expect_equal(length(out), 3)
   
 })
