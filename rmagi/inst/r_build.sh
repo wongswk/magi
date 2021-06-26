@@ -73,7 +73,6 @@ MAKE="make -j$CPU" Rscript -e "Rcpp::compileAttributes(); devtools::document(); 
 
 if [[ "$1" == "--cran" ]]; then
   mv examples inst/examples
-  rm -r tests
   R -e 'devtools::build()'
   mv inst/examples examples
 fi
@@ -86,5 +85,3 @@ rm -r inst/include/cppoptlib
 ln -s "$(pwd)"/../cmagi/*.cpp src/
 ln -s "$(pwd)"/../cmagi/*.h src/
 git checkout -- R/zzz.R
-git checkout -- src/RcppTestingUtilities.cpp
-git checkout tests
