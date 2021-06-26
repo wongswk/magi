@@ -145,8 +145,10 @@ curCovR <- calCov(marlikmap$par[3:4], r, signr, bandsize=config$bandsize,
 cursigma <- marlikmap$par[5]
 curCovV$mu <- as.vector(fn.true[,1])  # pretend these are the means
 curCovR$mu <- as.vector(fn.true[,2])
+curCovV$tvecCovInput <- tvec.full
+curCovR$tvecCovInput <- tvec.full
 
-dotmu <- fODE(pram.true$abc, fn.true[,1:2]) # pretend these are the means for derivatives
+dotmu <- magi:::fODE(pram.true$abc, fn.true[,1:2]) # pretend these are the means for derivatives
 curCovV$dotmu <- as.vector(dotmu[,1])  
 curCovR$dotmu <- as.vector(dotmu[,2])
 
@@ -156,12 +158,12 @@ burnin <- as.integer(config$n.iter*config$burninRatio)
 xInit <- c(fn.true$Vtrue, fn.true$Rtrue, pram.true$abc)
 stepLowInit <- rep(0.00035, 2*nall+3)*config$stepSizeFactor
 
-singleSampler <- function(xthetaValues, stepSize) 
-  xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma, 
+singleSampler <- function(xthetaValues, stepSize)
+  magi:::xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma,
                xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag)
 
 testthat::test_that("chainSampler can run without error",{
-  chainSamplesOut <- chainSampler(config, xInit, singleSampler, stepLowInit, verbose=FALSE)  
+  chainSamplesOut <- magi:::chainSampler(config, xInit, singleSampler, stepLowInit, verbose=FALSE)
 })
 
 testthat::test_that("chainSamplerRcpp can run without error",{
@@ -169,14 +171,14 @@ testthat::test_that("chainSamplerRcpp can run without error",{
   stepLowXthetasigmaInit <- c(rep(0.00035, 2*nall+3)*config$stepSizeFactor, 0, 0)
 
   fnmodel <- list(
-    fOde=magi:::fODE,
+    fOde=magi:::fnmodelODE,
     fOdeDx=magi:::fnmodelDx,
     fOdeDtheta=magi:::fnmodelDtheta,
     thetaLowerBound=c(0,0,0),
     thetaUpperBound=c(Inf,Inf,Inf)
   )
   
-  chainSamplerRcpp(
+  magi:::chainSamplerRcpp(
     yobs = data.matrix(fn.sim[,1:2]),
     covAllDimInput = list(curCovV, curCovR),
     nstepsInput = config$hmcSteps,
@@ -193,7 +195,7 @@ testthat::test_that("chainSamplerRcpp can run without error",{
   
   xthetasigmaInit <- c(fn.true$Vtrue, fn.true$Rtrue, pram.true$abc, c(cursigma))
   stepLowXthetasigmaInit <- c(rep(0.00035, 2*nall+3)*config$stepSizeFactor, 0)
-  chainSamplerRcpp(
+  magi:::chainSamplerRcpp(
     yobs = data.matrix(fn.sim[,1:2]),
     covAllDimInput = list(curCovV, curCovR),
     nstepsInput = config$hmcSteps,
