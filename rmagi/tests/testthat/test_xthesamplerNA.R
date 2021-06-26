@@ -60,20 +60,20 @@ cursigma <- marlikmap$par[5]
 curCovV$mu <- as.vector(fn.true[,1])  # pretend these are the means
 curCovR$mu <- as.vector(fn.true[,2])
 
-dotmu <- fODE(pram.true$abc, fn.true[,1:2]) # pretend these are the means for derivatives
+dotmu <- magi:::fODE(pram.true$abc, fn.true[,1:2]) # pretend these are the means for derivatives
 curCovV$dotmu <- as.vector(dotmu[,1])  
 curCovR$dotmu <- as.vector(dotmu[,2])
 
 xth <- c(fn.true$Vtrue, fn.true$Rtrue, pram.true$abc)
 rstep <- rep(1e10, length(xth))
-foo <- xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma, 
+foo <- magi:::xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma,
                     xth, rstep, config$hmcSteps, F, loglikflag = "usual")
 test_that("NA should not appear after xthetaSample", {
   expect_true(all(!is.na(foo$final)))
 })
 
 rstep <- rep(1e30, length(xth))
-foo <- xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma, 
+foo <- magi:::xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma,
                     xth, rstep, config$hmcSteps, T, loglikflag = "usual")
 test_that("NA should not appear after xthetaSample", {
   expect_true(all(!is.na(foo$final)))
@@ -81,10 +81,10 @@ test_that("NA should not appear after xthetaSample", {
 
 rstep <- rep(0.0001, length(xth))
 set.seed(234)
-foo1 <- xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma, 
+foo1 <- magi:::xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma,
                     xth, rstep, config$hmcSteps, F, loglikflag = "usual")
 set.seed(234)
-foo2 <- xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma, 
+foo2 <- magi:::xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma,
                      xth, rstep, config$hmcSteps, T, loglikflag = "usual")
 test_that("return trajectory or not does not affect result", {
   expect_equal(foo1$final, foo2$final)
