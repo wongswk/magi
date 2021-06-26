@@ -84,7 +84,7 @@ xsim <- insertNaN(xsim.obs,config$filllevel)
 
 # cpp inference ----------------------------
 fnmodel <- list(
-  fOde=magi:::fODE,
+  fOde=magi:::fnmodelODE,
   fOdeDx=magi:::fnmodelDx,
   fOdeDtheta=magi:::fnmodelDtheta,
   thetaLowerBound=c(0,0,0),
