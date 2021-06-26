@@ -13,7 +13,7 @@ phitrue <- list(
   rationalQuadratic = c(85.278, 5.997, 35.098, 14.908)
 )
 
-uprange <- 3
+uprange <- 3.5
 downrange <- 0.4
 
 set.seed(123)
