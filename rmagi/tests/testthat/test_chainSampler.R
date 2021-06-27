@@ -215,25 +215,27 @@ testthat::test_that("chainSamplerRcpp can run without error",{
   )
   testthat::expect_equal(length(out$lliklist), config$n.iter)
 
+})
+
+testthat::test_that("optimizeThetaInit can run without error",{
   ## this gives segfault
   # magi:::optimizeThetaInit(
-  #   yobsInput = data.matrix(fn.sim[,1:2]), 
-  #   fOdeModelInput = fnmodel, 
-  #   covAllDimensionsInput = list(curCovV, curCovR), 
-  #   sigmaAllDimensionsInput = c(cursigma, cursigma), 
-  #   priorTemperatureInput = c(1,1), 
+  #   yobsInput = data.matrix(fn.sim[,1:2]),
+  #   fOdeModelInput = fnmodel,
+  #   covAllDimensionsInput = list(curCovV, curCovR),
+  #   sigmaAllDimensionsInput = c(cursigma, cursigma),
+  #   priorTemperatureInput = c(1,1),
   #   xInitInput = cbind(fn.true$Vtrue, fn.true$Rtrue)
   # )
-
+  testthat::skip_on_os("windows")
   out <- magi:::optimizeThetaInitRcpp(
-    yobs = data.matrix(fn.sim[,1:2]), 
-    modelInput = fnmodel, 
-    covAllDimInput = list(curCovV, curCovR), 
-    sigmaAllDimensionsInput = c(cursigma, cursigma), 
-    priorTemperatureInput = c(1,1), 
+    yobs = data.matrix(fn.sim[,1:2]),
+    modelInput = fnmodel,
+    covAllDimInput = list(curCovV, curCovR),
+    sigmaAllDimensionsInput = c(cursigma, cursigma),
+    priorTemperatureInput = c(1,1),
     xInitInput = cbind(fn.true$Vtrue, fn.true$Rtrue),
     useBandInput = TRUE
   )
   testthat::expect_equal(length(out), 3)
-  
 })
