@@ -396,8 +396,8 @@ public:
     const arma::vec & priorTemperature;
     const arma::mat & xInit;
     const arma::vec & thetaInit;
-    const arma::uvec & missingComponentDim;
     const arma::mat & phiFull;
+    const arma::uvec & missingComponentDim;
 
     double value(const Eigen::VectorXd & phiInput) override {
         if ((phiInput.array() < this->lowerBound().array()).any()){
@@ -537,8 +537,8 @@ public:
     const arma::vec & priorTemperature;
     arma::mat xInit;
     arma::vec thetaInit;
-    const arma::uvec & missingComponentDim;
     arma::mat phiAllDimensions;
+    const arma::uvec & missingComponentDim;
     const double SCALE = 1;
 
     double value(const Eigen::VectorXd & xthetaphiInput) override {
