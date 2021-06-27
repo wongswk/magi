@@ -209,6 +209,8 @@ fnmodel <- list(
   thetaUpperBound=c(Inf,Inf,Inf)
 )
 
-thetamle2 <- magi:::optimizeThetaInitRcpp(yobs, fnmodel, curCov, cursigma, c(1,1), xInit, TRUE)
-
-testthat::expect_equal(thetamle$thetaInit, thetamle2, check.attributes = FALSE, tolerance=1e-4)
+testthat::test_that("optimizeThetaInit in c++ produces the same optimized result as in R",{
+  testthat::skip_on_os("windows")
+  thetamle2 <- magi:::optimizeThetaInitRcpp(yobs, fnmodel, curCov, cursigma, c(1,1), xInit, TRUE)
+  testthat::expect_equal(thetamle$thetaInit, thetamle2, check.attributes = FALSE, tolerance=1e-4)
+})
