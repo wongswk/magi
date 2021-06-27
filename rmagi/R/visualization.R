@@ -45,12 +45,12 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
     xdesolveMAP.obs <- xdesolveMAP[rowId,-1]
     xdesolvePM.obs <- xdesolvePM[rowId,-1]
     
-    xdesolveSamples <- parallel::mclapply(1:16, function(dummy){
+    xdesolveSamples <- lapply(1:16, function(dummy){
       mapId <- sample(1:length(gpode$lglik), 1)
       ttheta <- gpode$theta[mapId,]
       tx0 <- gpode$xsampled[mapId,1,]
       deSolve::ode(y = tx0, times = odemodel$times, func = odemodel$modelODE, parms = ttheta)
-    }, mc.cores = 8)
+    })
     
     rmseTrue <- sqrt(apply((xdesolveTRUE.obs - xsim[,-1])^2, 2, mean, na.rm=TRUE))
     rmseWholeGpode <- sqrt(apply((xpostmean - xsim[,-1])^2, 2, mean, na.rm=TRUE))
