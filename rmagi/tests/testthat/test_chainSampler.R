@@ -169,18 +169,18 @@ testthat::test_that("chainSampler can run without error",{
   testthat::expect_equal(length(chainSamplesOut$lliklist), config$n.iter)
 })
 
+fnmodel <- list(
+  fOde=magi:::fnmodelODE,
+  fOdeDx=magi:::fnmodelDx,
+  fOdeDtheta=magi:::fnmodelDtheta,
+  thetaLowerBound=c(0,0,0),
+  thetaUpperBound=c(Inf,Inf,Inf)
+)
+
 testthat::test_that("chainSamplerRcpp can run without error",{
   xthetasigmaInit <- c(fn.true$Vtrue, fn.true$Rtrue, pram.true$abc, c(cursigma, cursigma))
   stepLowXthetasigmaInit <- c(rep(0.00035, 2*nall+3)*config$stepSizeFactor, 0, 0)
 
-  fnmodel <- list(
-    fOde=magi:::fnmodelODE,
-    fOdeDx=magi:::fnmodelDx,
-    fOdeDtheta=magi:::fnmodelDtheta,
-    thetaLowerBound=c(0,0,0),
-    thetaUpperBound=c(Inf,Inf,Inf)
-  )
-  
   out <- magi:::chainSamplerRcpp(
     yobs = data.matrix(fn.sim[,1:2]),
     covAllDimInput = list(curCovV, curCovR),
