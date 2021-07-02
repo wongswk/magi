@@ -26,4 +26,5 @@ Suggests:
     covr,
     knitr,
     MASS,
-    rmarkdown
+    rmarkdown,
+    markdown
