@@ -37,22 +37,69 @@ getMeanCurve <- function(x, y, x.new, phi.mat, sigma.mat, kerneltype="matern", d
   }
 }
 
-#' insert nan in simulated data for explicit control of discretization
+#' Set discretization level
 #'
-#' @param mydata a data frame that contains at least one column `time`
-#' @param level the level to insert nan: 2^level - 1 points will be inserted between two data points
+#' @description Set the discretization level of a data matrix for input to \code{\link{MagiSolver}}, by inserting time points where the derivatives of the ODEs must match the GPs.
+#' 
+#' @param dat data matrix. Must include a column with name `time`.
+#' @param level discretization level (a positive integer). \code{2^level - 1} equally-spaced points will be inserted between existing data points in \code{dat}.
+#' @param by discretization interval. As an alternative to \code{level}, equally-spaced spaced time points will be inserted with interval \code{by} between successive points.
+#'
+#' @details 
+#' Specify the desired discretization using \code{level} or \code{by}.
+#' 
+#' @return Returns a data matrix with the same columns as \code{dat}, with rows added for the inserted discretization time points.
+#' 
+#' @examples
+#' dat <- data.frame(time = 0:10, x = rnorm(11))
+#' setDiscretization(dat, level = 2)
+#' setDiscretization(dat, by = 0.2)
 #'
 #' @export
-insertNaN <- function(mydata, level){
-  if(level==0){
-    return(mydata)
+setDiscretization <- function(dat, level, by) {
+  if (is.null(dat$time))
+    stop("\"dat\" is missing a column \"time\"")
+  if (ncol(dat) < 2)
+    stop("\"dat\" does not have any components")
+
+  if (!missing(level) & !missing(by))
+    stop("specify either \"level\" or \"by\" but not both")
+  if (missing(level) & missing(by)) {
+    warning("no discretization added")
+    level = 0
   }
-  newdata <- mydata
-  newdata <- newdata[order(newdata$time),]
-  dummydata <- newdata[-1,]
-  dummydata[] <- NaN
-  dummydata$time <- (newdata$time[-1] + newdata$time[-nrow(newdata)])/2
-  newdata <- rbind(newdata, dummydata)
-  newdata <- newdata[order(newdata$time),]
-  return(insertNaN(newdata, level-1))
+  
+  if (!missing(level)) {
+    if (round(level) >= 0) {
+      if(round(level) == 0){
+        return(dat)
+      }
+      newdata <- dat
+      newdata <- newdata[order(newdata$time),]
+      dumdat <- newdata[-1,]
+      dumdat[] <- NaN
+      dumdat$time <- (newdata$time[-1] + newdata$time[-nrow(newdata)])/2
+      newdata <- rbind(newdata, dumdat)
+      newdata <- newdata[order(newdata$time),]
+      return(setDiscretization(newdata, level-1))
+  
+    } else {
+      stop("\"level\" must be a non-negative integer")
+    }
+  }
+  
+  if (!missing(by)) {
+    fillC <- seq(min(dat$time), max(dat$time), by = by)
+    newdata <- data.frame(time = sort(unique(c(fillC, dat$time))))
+    newdata <- cbind(newdata, matrix(NaN, nrow = length(newdata$time), ncol = ncol(dat)-1 ))
+    datd <- dat[,!names(dat)=="time",drop=FALSE]
+    for (i in 1:nrow(newdata)) {
+      loc <- match( newdata$time[i], dat[, "time"])
+      if (!is.na(loc))
+        newdata[i,2:ncol(dat)] = datd[loc,]
+    }
+    colnames(newdata) <- c("time",colnames(datd))
+    
+    return(newdata)
+  }
 }

@@ -1,16 +1,33 @@
-#' R wrapper for MAGI
+#' MAnifold-constrained Gaussian process Inference (MAGI)
 #'
-#' @param y the observation data frame
+#' @description Main function for the MAGI method for inferring the parameters and trajectories of dynamic systems governed by ordinary differential equations.
+#' 
+#' @param y data matrix of observations
 #' @param odeModel list of ODE functions
 #' @param tvec vector of discretization time points
 #' @param control list of control variables, including `sigma`, `phi`, `xInit`, `thetaInit`, `mu`, `dotmu`, `priorTemperature`, `niterHmc`
-#' `burninRatio`, `nstepsHmc`, `stepSizeFactor`, `bandSize`, `useFixedSigma`.
+#' `burninRatio`, `nstepsHmc`, `stepSizeFactor`, `bandSize`, `useFixedSigma`.  See details.
+#' 
+#' @details 
+#' \describe{
+#'   \item{\code{sigma}}{First item}
+#'   \item{\code{phi}}{Second item}
+#' }
 #' 
 #' @export 
 MagiSolver <- function(y, odeModel, tvec, control = list()) {
-
-  if (!is.null(control$sigma))
+  if (missing(tvec) & is.null(y$time))
+    stop("must supply a \"time\" column in y or specify a vector of time points via the argument \"tvec\"")
+  
+  if (missing(tvec)) {
+    tvec <- y$time
+    y <- y[, !names(y)=="time", drop=FALSE]
+  }
+  
+  if (!is.null(control$sigma)) {
     sigmaExogenous = control$sigma
+    sigmaExogenous[!is.finite(sigmaExogenous)] <- 1
+  }
   else
     sigmaExogenous = numeric(0)
 
@@ -60,7 +77,7 @@ MagiSolver <- function(y, odeModel, tvec, control = list()) {
   if (!is.null(control$nstepsHmc))
     nstepsHmc = control$nstepsHmc
   else
-    nstepsHmc = 100
+    nstepsHmc = 200
 
   if (!is.null(control$stepSizeFactor))
     stepSizeFactor = control$stepSizeFactor

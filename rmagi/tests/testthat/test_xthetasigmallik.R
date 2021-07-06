@@ -271,7 +271,7 @@ test_that("xthetasigma sampler can run for Hes1", {
     X2 = c(2.3, 2.4, 1.63, 0.97, 0.58, 1.65, 2.33, 1.54, 0.86, 0.26, 1.16), 
     X3 = c(1.4, 3.41, 1.63, 0.11, 5.3, 13, 1.47, 4.66, -0.52, 2.92, 7.73)
   )
-  xsim <- insertNaN(xsim.obs, 1)
+  xsim <- setDiscretization(xsim.obs, 1)
   xInit <- data.matrix(xsim[,-1])
   xInit[] <- 0
   thetaInit <- c(0.022, 0.3, 0.031, 0.028, 0.5, 20, 0.3)

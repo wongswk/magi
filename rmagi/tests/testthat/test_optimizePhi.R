@@ -66,7 +66,7 @@ if(config$async){
 }
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
 
-xsim <- insertNaN(xsim.obs,config$filllevel)
+xsim <- setDiscretization(xsim.obs,config$filllevel)
 xsim.obs <- xsim.obs[-nrow(xsim.obs), ]
 
 matplot(xsim$time, xsim[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)

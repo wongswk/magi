@@ -144,7 +144,7 @@ Rcpp::List cov_cpp2r(const gpcov & cov_v){
 //' @param phi the GP kernel hyper-parameters
 //' @param distSigned signed distance of time indices
 //' @param complexity the complexity of GP kernel calculation. Refer to documentation of `calCov`
-//' @export
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List generalMaternCovRcpp( const arma::vec & phi, const arma::mat & distSigned, int complexity = 3){
   return cov_cpp2r(generalMaternCov(phi, distSigned, complexity));
@@ -325,7 +325,8 @@ arma::cube parallel_temper_hmc_xtheta( const arma::mat & yobs,
 //' @param modelName string of model name
 //' @param useBand boolean variable to use band matrix approximation
 //' @param priorTemperatureInput the prior temperature for derivative, level, and observation, in that order
-//' @export
+//' export removed: function specific to pre-coded models only
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List xthetallikRcpp(const arma::mat & yobs, 
                           const Rcpp::List & covAllDimInput,

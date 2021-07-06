@@ -6,9 +6,9 @@ Date: 2021-06-24
 Author: Shihao Yang, Samuel Wong
 Maintainer: Shihao Yang <shihao.yang@isye.gatech.edu>
 Encoding: UTF-8
-Description: This software package for the MAGI method (MAnifold-constrained Gaussian process Inference) which
-    has been shown to provide fast and accurate inference  for the parameter estimation problem in Ordinary Differential Equations,
-    including the case when there are unobserved system components.
+Description: This software package implements the MAGI method (MAnifold-constrained Gaussian process Inference) which
+    provides fast and accurate inference for the parameter estimation problem in Ordinary Differential Equations,
+    including the case when there are unobserved system components.  Yang, Wong, and Kou (2021) <doi:10.1073/pnas.2020397118>.
 License: MIT + file LICENSE
 VignetteBuilder: knitr
 Imports: 

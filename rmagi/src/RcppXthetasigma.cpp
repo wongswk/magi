@@ -22,7 +22,8 @@ using namespace arma;
 //' @param useBand boolean variable indicator to use band matrix approximation
 //' @param useMean boolean variable indicator to use mean function in GP
 //' @param modelName string of model name
-//' @export
+//' export removed: function specific to pre-coded models only
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List xthetasigmallikRcpp( const arma::mat & xlatent, 
                                 const arma::vec & theta, 

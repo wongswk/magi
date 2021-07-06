@@ -101,7 +101,8 @@ Rcpp::List xthetaphisigmaSample( const arma::mat & xInitial,
 //' @param yobs matrix of observations
 //' @param xtimes the time index of discretizations
 //' @param modelName string of model name
-//' @export
+//' export removed: function specific to pre-coded models only
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List xthetaphisigmallikRcpp( const arma::mat & xlatent, 
                                    const arma::vec & theta, 

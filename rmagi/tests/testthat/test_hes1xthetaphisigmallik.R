@@ -54,7 +54,7 @@ for(j in 1:(ncol(xsim)-1)){
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
 #matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
 
-xsim <- insertNaN(xsim.obs,config$filllevel)
+xsim <- setDiscretization(xsim.obs,config$filllevel)
 
 tvec.full <- xsim$time
 tvec.nobs <- xsim.obs$time

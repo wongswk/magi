@@ -20,7 +20,7 @@
 #' @importFrom stats approx density dist dlnorm dnorm fft median nobs plot.ts quantile runif sd weighted.mean
 #' @importFrom utils head installed.packages tail
 #'
-#' @export
+#' @noRd
 plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, config, odemodel=NULL){
   npostplot <- config$npostplot
   if(is.null(npostplot)) {
