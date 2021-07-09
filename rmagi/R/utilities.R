@@ -39,7 +39,7 @@ getMeanCurve <- function(x, y, x.new, phi.mat, sigma.mat, kerneltype="matern", d
 
 #' Set discretization level
 #'
-#' @description Set the discretization level of a data matrix for input to \code{\link{MagiSolver}}, by inserting time points where the derivatives of the ODEs must match the GPs.
+#' @description Set the discretization level of a data matrix for input to \code{\link{MagiSolver}}, by inserting time points where the GP is constrained to the derivatives of the ODE system.
 #' 
 #' @param dat data matrix. Must include a column with name `time`.
 #' @param level discretization level (a positive integer). \code{2^level - 1} equally-spaced points will be inserted between existing data points in \code{dat}.
@@ -57,7 +57,7 @@ getMeanCurve <- function(x, y, x.new, phi.mat, sigma.mat, kerneltype="matern", d
 #'
 #' @export
 setDiscretization <- function(dat, level, by) {
-  if (is.null(dat$time))
+  if (is.null(dat[,"time"]))
     stop("\"dat\" is missing a column \"time\"")
   if (ncol(dat) < 2)
     stop("\"dat\" does not have any components")
@@ -89,10 +89,10 @@ setDiscretization <- function(dat, level, by) {
   }
   
   if (!missing(by)) {
-    fillC <- seq(min(dat$time), max(dat$time), by = by)
-    newdata <- data.frame(time = sort(unique(c(fillC, dat$time))))
+    fillC <- seq(min(dat[,"time"]), max(dat[,"time"]), by = by)
+    newdata <- data.frame(time = sort(unique(c(fillC, dat[,"time"]))))
     newdata <- cbind(newdata, matrix(NaN, nrow = length(newdata$time), ncol = ncol(dat)-1 ))
-    datd <- dat[,!names(dat)=="time",drop=FALSE]
+    datd <- dat[,!colnames(dat)=="time",drop=FALSE]
     for (i in 1:nrow(newdata)) {
       loc <- match( newdata$time[i], dat[, "time"])
       if (!is.na(loc))

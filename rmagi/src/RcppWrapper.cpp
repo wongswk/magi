@@ -16,7 +16,7 @@ using namespace Rcpp;
 //' @param yobs matrix of observations. if set each dimension separately, then supply a matrix of only 1 column
 //' @param dist distance matrix on time index
 //' @param kernel the type of kernel, support "matern", "rbf", "compact1", "periodicMatern", "generalMatern"
-//' @export
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List phisigllikC(const arma::vec & phisig, 
                        const arma::mat & yobs, 

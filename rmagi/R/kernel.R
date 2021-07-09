@@ -1,21 +1,79 @@
-#' calculate stationary Gaussian process kernel
+#' Calculate stationary Gaussian process kernel
 #' 
-#' currently supports matern, rbf, compact1, periodicMatern, generalMatern, rationalQuadratic
-#' also returns m_phi and other matrix which will be needed for ODE inference
+#' Covariance calculations for Gaussian process kernels.
+#' Currently supports matern, rbf, compact1, periodicMatern, generalMatern, and rationalQuadratic kernels.
+#' Can also return m_phi and other additional quantities useful for ODE inference.
 #'
-#' @param phi the kernel hyper parameters
-#' @param rInput the distance matrix at two time point, i.e., |s - t|
-#' @param signrInput the sign of the time difference, i.e., sign(s - t)
-#' @param bandsize the size for band matrix approximation
-#' @param complexity integer value for the complexity of the kernel calculation,
-#' 0 includes C;
-#' 1 additionally includes Cprime, Cdoubleprime, dCdphi
-#' 2 or above additionally includes Ceigen1over, CeigenVec, Cinv, mphi, Kphi, Keigen1over, KeigenVec, Kinv, mphiLeftHalf, dCdphiCube
-#' @param kerneltype must be in matern, rbf, compact1, periodicMatern, generalMatern, rationalQuadratic
-#' @param noiseInjection the small value injected in the diagonal elements for numerical stability
+#' @param phi the kernel hyper-parameters. See details for hyper-parameter specification for each \code{kerneltype}.
+#' @param rInput the distance matrix between all time points s and t, i.e., |s - t|
+#' @param signrInput the sign matrix of the time differences, i.e., sign(s - t)
+#' @param bandsize size for band matrix approximation. See details.
+#' @param complexity integer value for the complexity of the kernel calculations desired:
+#' \itemize{
+#'   \item 0 includes C only
+#'   \item 1 additionally includes Cprime, Cdoubleprime, dCdphi
+#'   \item 2 or above additionally includes Ceigen1over, CeigenVec, Cinv, mphi, Kphi, Keigen1over, KeigenVec, Kinv, mphiLeftHalf, dCdphiCube
+#' }
+#' See details for their definitions.
+#' @param kerneltype must be one of \code{matern}, \code{rbf}, \code{compact1}, \code{periodicMatern}, \code{generalMatern}, \code{rationalQuadratic}. See details for the kernel formulae.
+#' @param df degrees of freedom, for \code{generalMatern} and \code{rationalQuadratic} kernels only.  Default is \code{df=2.01} for \code{generalMatern} and \code{df=0.01} for \code{rationalQuadratic}.
+#' @param noiseInjection a small value added to the diagonal elements of C and Kphi for numerical stability
+#' 
+#' @return A list containing the kernel calculations included by the value of \code{complexity}.
+#' 
+#' @details 
+#' The covariance formulae and the hyper-parameters \code{phi} for the supported kernels are as follows.  Stationary kernels have \eqn{C(s,t) = C(r)} where \eqn{r = |s-t|} is the distance between the two time points.   Generally, the hyper-parameter \code{phi[1]} controls the overall variance level while \code{phi[2]} controls the bandwidth.
+#' \describe{
+#'   \item{\code{matern}}{ This is the simplified Matern covariance with \code{df = 5/2}:
+#'   \deqn{C(r) = phi[1] * (1 + \sqrt 5 r/phi[2] + 5r^2/(3 phi[2]^2)) * \exp(-\sqrt 5 r/phi[2])}
+#'   }
+#'   \item{\code{rbf}}{
+#'   \deqn{C(r) = phi[1] * \exp(-r^2/(2 phi[2]^2))}
+#'   }
+#'   \item{\code{compact1}}{
+#'   \deqn{C(r) = phi[1] * \max(1-r/phi[2],0)^4 * (4r/phi[2]+1) }
+#'   }
+#'   \item{\code{periodicMatern}}{
+#'   Define \eqn{r' =  | \sin(r \pi/phi[3])*2 |}.  Then the covariance is given by \eqn{C(r')} using the Matern formula.
+#'   }
+#'   \item{\code{generalMatern}}{
+#'   \deqn{C(r) = phi[1] * 2^(1-df) / \Gamma(df) * ( \sqrt(2.0 * df) * r / phi[2] )^df * besselK( \sqrt(2.0 * df) * r / phi[2] , df)}
+#'   where \code{besselK} is the modified Bessel function of the second kind.
+#'   }
+#'   \item{\code{rationalQuadratic}}{
+#'   \deqn{C(r) = phi[1] * (1 + r^2/(2 df phi[2]^2))^(-df)}
+#'   }
+#' }
+#' 
+#' The kernel calculations available and their definitions are as follows: 
+#' \describe{
+#'   \item{C}{The covariance matrix corresponding to the distance matrix \code{rInput}.}
+#'   \item{Cprime}{The cross-covariance matrix  \eqn{d C(s,t) / ds}.}
+#'   \item{Cdoubleprime}{The cross-covariance matrix  \eqn{d^2 C(s,t) / ds dt}.}
+#'   \item{dCdphi}{A list with the matrices \eqn{dC / dphi} for each element of phi.}
+#'   \item{Ceigen1over}{The reciprocals of the eigenvalues of C.}
+#'   \item{CeigenVec}{Matrix of eigenvectors of C.}
+#'   \item{Cinv}{The inverse of C.}
+#'   \item{mphi}{The matrix \code{Cprime * Cinv}.}
+#'   \item{Kphi}{The matrix \code{Cdoubleprime - Cprime * Kinv * t(Cprime)}.}
+#'   \item{Keigen1over}{The reciprocals of the eigenvalues of Kphi.}
+#'   \item{Kinv}{The inverse of Kphi.}
+#'   \item{mphiLeftHalf}{The matrix \code{Cprime * CeigenVec}.}
+#'   \item{dCdphiCube}{\eqn{dC / dphi} as a 3-D array, with the third dimension corresponding to the elements of phi.}
+#' }
+#' 
+#' If \code{bandsize} is a positive integer, additionally CinvBand, mphiBand, and KinvBand are provided in the return list, which are
+#' band matrix approximations to Cinv, mphi, and Kinv with the specified \code{bandsize}.
+#' 
+#' 
+#' @examples 
+#' foo  <- outer(0:40, t(0:40),'-')[,1,]
+#' r <- abs(foo)
+#' signr <- -sign(foo)
+#' calCov(c(0.2, 2), r, signr, bandsize=20, kerneltype="generalMatern", df=2.01)
 #' 
 #' @export
-calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerneltype="matern",
+calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerneltype="matern", df,
                    noiseInjection = 1e-7) {
   if(kerneltype=="matern"){
     ret <- calCovMatern(phi, rInput, signrInput, complexity)
@@ -26,9 +84,15 @@ calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerne
   }else if(kerneltype=="periodicMatern"){
     ret <- calCovPeriodicWarpMatern(phi, rInput, signrInput, complexity)
   }else if(kerneltype=="generalMatern"){
-    ret <- calCovGeneralMatern(phi, rInput, signrInput, complexity)
+    if (missing(df))
+      ret <- calCovGeneralMatern(phi, rInput, signrInput, complexity)
+    else
+      ret <- calCovGeneralMatern(phi, rInput, signrInput, complexity, df)
   }else if(kerneltype=="rationalQuadratic"){
-    ret <- calCovRationalQuadratic(phi, rInput, signrInput, complexity)
+    if (missing(df))
+      ret <- calCovRationalQuadratic(phi, rInput, signrInput, complexity)
+    else
+      ret <- calCovRationalQuadratic(phi, rInput, signrInput, complexity, df)
   }else{
     stop("kerneltype not specified correctly")
   }
@@ -192,8 +256,8 @@ calCovCompact1 <- function(phi, r, signr, complexity=3, D=3) {
 #' only calculate core part of C, Cprime, Cprimeprime, dCdphi etc.
 #'
 #' @noRd
-calCovRationalQuadratic <- function(phi, r, signr, complexity=3) {
-  df = 0.01
+calCovRationalQuadratic <- function(phi, r, signr, complexity=3, df=0.01) {
+  #df = 0.01
   r2 <- r^2
   
   C <- phi[1] * (1 + r2/(2*phi[2]^2) / df)^(-df)

@@ -227,15 +227,15 @@ testthat::test_that("optimizeThetaInit can run without error",{
   #   priorTemperatureInput = c(1,1),
   #   xInitInput = cbind(fn.true$Vtrue, fn.true$Rtrue)
   # )
-  testthat::skip_on_os("windows")
-  out <- magi:::optimizeThetaInitRcpp(
-    yobs = data.matrix(fn.sim[,1:2]),
-    modelInput = fnmodel,
-    covAllDimInput = list(curCovV, curCovR),
-    sigmaAllDimensionsInput = c(cursigma, cursigma),
-    priorTemperatureInput = c(1,1),
-    xInitInput = cbind(fn.true$Vtrue, fn.true$Rtrue),
-    useBandInput = TRUE
-  )
-  testthat::expect_equal(length(out), 3)
+  # testthat::skip_on_os("windows")
+  # out <- magi:::optimizeThetaInitRcpp(
+  #   yobs = data.matrix(fn.sim[,1:2]),
+  #   modelInput = fnmodel,
+  #   covAllDimInput = list(curCovV, curCovR),
+  #   sigmaAllDimensionsInput = c(cursigma, cursigma),
+  #   priorTemperatureInput = c(1,1),
+  #   xInitInput = cbind(fn.true$Vtrue, fn.true$Rtrue),
+  #   useBandInput = TRUE
+  # )
+  # testthat::expect_equal(length(out), 3)
 })
