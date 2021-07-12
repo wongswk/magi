@@ -95,6 +95,6 @@ testthat::test_that("loglik speed increase", {
 
 # testpoint <- abs(rnorm(5))
 # microbenchmark::microbenchmark(
-#   phisigllikC( testpoint, data.matrix(fn.sim[,1:2]), r, config$kernel),
+#   magi:::phisigllikC( testpoint, data.matrix(fn.sim[,1:2]), r, config$kernel),
 #   magi:::phisigllikHard2DC( testpoint, data.matrix(fn.sim[,1:2]), r, config$kernel)
 # )

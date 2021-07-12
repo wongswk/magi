@@ -110,7 +110,7 @@ for(j in 1:(ncol(xsim)-1)){
   alphaRate <- 1 + desiredMode*betaRate
   
   fn <- function(par) {
-    marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
+    marlik <- magi:::phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
     penalty <- dnorm(par[2], max(xsim.obs$time)*priorFactor["meanFactor"], 
                      max(xsim.obs$time)*priorFactor["sdFactor"], log=TRUE)
     # penalty <- dgamma(par[2], alphaRate, betaRate/max(xsim.obs$time), log=TRUE)
@@ -118,7 +118,7 @@ for(j in 1:(ncol(xsim)-1)){
     -(marlik$value + penalty)
   }
   gr <- function(par) {
-    marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
+    marlik <- magi:::phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
     grad <- -as.vector(marlik$grad)
     penalty <- (par[2] - max(xsim.obs$time)*priorFactor["meanFactor"]) / (max(xsim.obs$time)*priorFactor["sdFactor"])^2
     # penalty <- ((alphaRate-1)/par[2] - betaRate/max(xsim.obs$time))

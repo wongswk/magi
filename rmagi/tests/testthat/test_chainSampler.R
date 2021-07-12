@@ -47,11 +47,11 @@ testthat::test_that("c++ gpsmooth correct", {
                              config$kernel)
   
   fn <- function(par) {
-    marlik <- phisigllikC( par, yobs1, r.nobs, config$kernel)
+    marlik <- magi:::phisigllikC( par, yobs1, r.nobs, config$kernel)
     -marlik$value
   }
   gr <- function(par) {
-    marlik <- phisigllikC( par, yobs1, r.nobs, config$kernel)
+    marlik <- magi:::phisigllikC( par, yobs1, r.nobs, config$kernel)
     grad <- -as.vector(marlik$grad)
     grad
   }
@@ -68,11 +68,11 @@ testthat::test_that("c++ gpsmooth correct dim2", {
                              config$kernel)
   
   fn <- function(par) {
-    marlik <- phisigllikC( par, yobs1, r.nobs, config$kernel)
+    marlik <- magi:::phisigllikC( par, yobs1, r.nobs, config$kernel)
     -marlik$value
   }
   gr <- function(par) {
-    marlik <- phisigllikC( par, yobs1, r.nobs, config$kernel)
+    marlik <- magi:::phisigllikC( par, yobs1, r.nobs, config$kernel)
     grad <- -as.vector(marlik$grad)
     grad
   }
@@ -92,7 +92,7 @@ testthat::test_that("c++ gpsmooth correct with fft prior", {
   xsim.obs <- fn.sim.obs[,c("time", "Vtrue", "Rtrue")]
   j=1
   fn <- function(par) {
-    marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
+    marlik <- magi:::phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
     penalty <- dnorm(par[2], max(xsim.obs$time)*priorFactor[1], 
                      max(xsim.obs$time)*priorFactor[2], log=TRUE)
     # penalty <- dgamma(par[2], alphaRate, betaRate/max(xsim.obs$time), log=TRUE)
@@ -100,7 +100,7 @@ testthat::test_that("c++ gpsmooth correct with fft prior", {
     -(marlik$value + penalty)
   }
   gr <- function(par) {
-    marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
+    marlik <- magi:::phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
     grad <- -as.vector(marlik$grad)
     penalty <- (par[2] - max(xsim.obs$time)*priorFactor[1]) / (max(xsim.obs$time)*priorFactor[2])^2
     # penalty <- ((alphaRate-1)/par[2] - betaRate/max(xsim.obs$time))

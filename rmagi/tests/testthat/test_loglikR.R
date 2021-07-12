@@ -28,25 +28,25 @@ r2 <- r^2
 signr <- -sign(foo)
 
 testthat::test_that("phisigllikC runs without error and is correct", {
-  phisigllikC( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), data.matrix(fn.sim[,1:2]), r)
-  fn <- function(par) -phisigllikC( par, data.matrix(fn.sim[,1:2]), r)$value
-  gr <- function(par) -as.vector(phisigllikC( par, data.matrix(fn.sim[,1:2]), r)$grad)
+  magi:::phisigllikC( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), data.matrix(fn.sim[,1:2]), r)
+  fn <- function(par) -magi:::phisigllikC( par, data.matrix(fn.sim[,1:2]), r)$value
+  gr <- function(par) -as.vector(magi:::phisigllikC( par, data.matrix(fn.sim[,1:2]), r)$grad)
   marlikmap <<- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
   testthat::expect_equal(marlikmap$par,
                          c(1.94957912838359, 1.06073179913222, 0.703951749929781, 2.74496621777115, 
                            0.0497280144187114),
                          tolerance = 1e-5)
   
-  fn <- function(par) -phisigllikC( par, data.matrix(fn.sim[,1:2]), r, "compact1")$value
-  gr <- function(par) -as.vector(phisigllikC( par, data.matrix(fn.sim[,1:2]), r, "compact1")$grad)
+  fn <- function(par) -magi:::phisigllikC( par, data.matrix(fn.sim[,1:2]), r, "compact1")$value
+  gr <- function(par) -as.vector(magi:::phisigllikC( par, data.matrix(fn.sim[,1:2]), r, "compact1")$grad)
   marlikmapCompact1 <<- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
   testthat::expect_equal(marlikmapCompact1$par,
                          c(2.04871398302633, 3.59648132314111, 0.625313733996474, 8.96656240950113, 
                            0.0431289806093459),
                          tolerance = 1e-3)
   
-  fn <- function(par) -phisigllikC( par, data.matrix(fn.sim[,1:2]), r, "rbf")$value
-  gr <- function(par) -as.vector(phisigllikC( par, data.matrix(fn.sim[,1:2]), r, "rbf")$grad)
+  fn <- function(par) -magi:::phisigllikC( par, data.matrix(fn.sim[,1:2]), r, "rbf")$value
+  gr <- function(par) -as.vector(magi:::phisigllikC( par, data.matrix(fn.sim[,1:2]), r, "rbf")$grad)
   marlikmapRbf <<- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
   testthat::expect_equal(marlikmapRbf$par,
                          c(1.58950017432859, 0.594486181493354, 0.452955008218075, 1.57490985649202, 
