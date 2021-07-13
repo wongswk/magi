@@ -3,6 +3,7 @@
 #include "RcppArmadillo.h"
 #include "Sampler.h"
 #include "gpsmoothing.h"
+#include "RcppTranslation.h"
 
 using namespace std;
 using namespace arma;
@@ -479,7 +480,7 @@ Rcpp::List chainSamplerRcpp(const arma::mat & yobs,
 //' @noRd
 // [[Rcpp::export]]
 arma::vec optimizeThetaInitRcpp(const arma::mat & yobs,
-                                const OdeSystem & modelInput,
+                                const List & odeModel,
                                 const Rcpp::List & covAllDimInput,
                                 const arma::vec & sigmaAllDimensionsInput,
                                 const arma::vec & priorTemperatureInput,
@@ -489,8 +490,33 @@ arma::vec optimizeThetaInitRcpp(const arma::mat & yobs,
     for(unsigned j = 0; j < yobs.n_cols; j++){
         covAllDimensions[j] = cov_r2cpp(covAllDimInput[j]);
     }
+
+    OdeSystem modelC;
+    const Rcpp::Function & fOdeR = as<const Function>(odeModel["fOde"]);
+    const Rcpp::Function & fOdeDxR = as<const Function>(odeModel["fOdeDx"]);
+    const Rcpp::Function & fOdeDthetaR = as<const Function>(odeModel["fOdeDtheta"]);
+
+    const Rcpp::NumericVector & thetaLowerBoundR = as<const NumericVector>(odeModel["thetaLowerBound"]);
+    const Rcpp::NumericVector & thetaUpperBoundR = as<const NumericVector>(odeModel["thetaUpperBound"]);
+
+    modelC.thetaUpperBound = arma::vec(const_cast<double*>( &(thetaUpperBoundR[0])), thetaUpperBoundR.size(), false, false);
+    modelC.thetaLowerBound = arma::vec(const_cast<double*>( &(thetaLowerBoundR[0])), thetaLowerBoundR.size(), false, false);
+    modelC.thetaSize = modelC.thetaLowerBound.size();
+
+    modelC.fOde = [& fOdeR](const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) -> arma::mat {
+        return r2armamat(fOdeR(theta, x, tvec));
+    };
+
+    modelC.fOdeDx = [& fOdeDxR](const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) -> arma::cube {
+        return r2armacube(fOdeDxR(theta, x, tvec));
+    };
+
+    modelC.fOdeDtheta = [& fOdeDthetaR](const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) -> arma::cube {
+        return r2armacube(fOdeDthetaR(theta, x, tvec));
+    };
+
     return optimizeThetaInit(yobs,
-                             modelInput,
+                             modelC,
                              covAllDimensions,
                              sigmaAllDimensionsInput,
                              priorTemperatureInput,

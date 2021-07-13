@@ -1,3 +1,6 @@
+#ifndef SAMPLER_H
+#define SAMPLER_H
+
 #include "classDefinition.h"
 
 class Sampler {
@@ -32,3 +35,5 @@ public:
             const unsigned int niterInput,
             const double burninRatioInput);
 };
+
+#endif //SAMPLER_H

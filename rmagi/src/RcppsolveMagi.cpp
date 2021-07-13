@@ -3,19 +3,9 @@
 #include "Sampler.h"
 #include "MagiSolver.h"
 #include "dynamicalSystemModels.h"
+#include "RcppTranslation.h"
 
 using namespace Rcpp;
-
-arma::mat r2armamat(const SEXP & x){
-    const Rcpp::NumericMatrix & xtmp = as<const NumericMatrix>(x);
-    return arma::mat(const_cast<double*>( xtmp.begin()), xtmp.nrow(), xtmp.ncol(), false, false);
-}
-
-arma::cube r2armacube(const SEXP & x){
-    const Rcpp::NumericVector & xtmp = as<const NumericVector>(x);
-    IntegerVector dim = xtmp.attr("dim");
-    return arma::cube(const_cast<double*>( xtmp.begin()), dim[0], dim[1], dim[2], false, false);
-}
 
 // [[Rcpp::export]]
 Rcpp::List solveMagiRcpp(

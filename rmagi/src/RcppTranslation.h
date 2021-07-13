@@ -7,6 +7,10 @@
 
 namespace Rcpp
 {
+    arma::mat r2armamat(const SEXP & x);
+
+    arma::cube r2armacube(const SEXP & x);
+
     // gpcov
     template <>
     gpcov as(SEXP x);
