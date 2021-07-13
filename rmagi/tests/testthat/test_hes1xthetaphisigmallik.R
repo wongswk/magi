@@ -21,8 +21,6 @@ config <- list(
 
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
 
-outDir <- "./"
-
 pram.true <- list(
   theta = c(0.022, 0.3, 0.031, 0.028, 0.5, 20, 0.3),
   x0 = c(0.5, 2, 1),

@@ -37,16 +37,6 @@ if(config$temperPrior){
 }
 
 # initialize global parameters, true x, simulated x ----------------------------
-if(grepl("/n/",getwd())){
-  baseDir <- "/n/regal/kou_lab/shihaoyang/DynamicSys/results/" # tmp folder on cluster 
-  config$seed <- (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9 # random seed on cluster
-}else{
-  baseDir <- "~/Workspace/DynamicSys/results/batch-output/"  
-}
-outDir <- with(config, paste0(baseDir, modelName, "-", loglikflag,"-", kernel,
-                              "-nobs",nobs,"-noise", paste(round(noise,3), collapse = "_"),
-                              "-ndis",ndis,"-",ifelse(config$temperPrior, "temperPrior", "unitHeatPrior"),"/"))
-system(paste("mkdir -p", outDir))
 
 pram.true <- list(
   theta=c(0.2,0.2,3),
