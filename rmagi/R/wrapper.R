@@ -92,7 +92,7 @@
 #'   resultDtheta
 #' }
 #'
-#' # odeModel list 
+#' # Create odeModel list 
 #' fnmodel <- list(
 #'   fOde=fnmodelODE,
 #'   fOdeDx=fnmodelDx,
@@ -113,13 +113,16 @@
 #'  -1.23, -0.37, -0.06, 0.16, 0.43, 0.73, 0.7, 1.37, 1.1, 0.85, 0.23)
 #'
 #' # Set discretization for a total of 161 time points
-#' y <- data.frame(time=tvec, V=V, R=R)  
-#' y <- setDiscretization(y, level=2)
+#' yobs <- data.frame(time=tvec, V=V, R=R)  
+#' yinput <- setDiscretization(yobs, level=2)
 #' 
-#' # Run MAGI
+#' # Call MagiSolver
+#' # short sampler run for demo only, more iterations needed for convergence
+#' MagiSolver(yinput, fnmodel, control = list(nstepsHmc=100, niterHmc = 1000))
 #' \dontrun{
-#' result <- MagiSolver(y, fnmodel, control = list(nstepsHmc=100))
-#' }
+#' # full run with 20000 HMC iterations
+#' result <- MagiSolver(yinput, fnmodel, control = list(nstepsHmc=100))}
+#' 
 #' 
 #' @references 
 #' Shihao Yang, Samuel WK Wong, SC Kou (2021). Inference of dynamic systems from noisy and sparse data via manifold-constrained Gaussian processes.  \emph{Proceedings of the National Academy of Sciences}, 118 (15), e2020397118.
