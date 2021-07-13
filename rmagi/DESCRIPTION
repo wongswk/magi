@@ -12,13 +12,13 @@ Description: This software package implements the MAGI method (MAnifold-constrai
 License: MIT + file LICENSE
 VignetteBuilder: knitr
 Imports: 
-    Rcpp (<= 1.0.6),
+    Rcpp (>= 1.0.6),
     gridExtra,
     gridBase,
     grid,
     methods,
     deSolve
-LinkingTo: Rcpp (<= 1.0.6), RcppArmadillo, BH, RcppEigen
+LinkingTo: Rcpp, RcppArmadillo, BH, RcppEigen
 RoxygenNote: 7.1.1
 Suggests: 
     testthat,
