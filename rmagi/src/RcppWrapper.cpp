@@ -503,15 +503,15 @@ arma::vec optimizeThetaInitRcpp(const arma::mat & yobs,
     modelC.thetaLowerBound = arma::vec(const_cast<double*>( &(thetaLowerBoundR[0])), thetaLowerBoundR.size(), false, false);
     modelC.thetaSize = modelC.thetaLowerBound.size();
 
-    modelC.fOde = [& fOdeR](const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) -> arma::mat {
+    modelC.fOde = [fOdeR](const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) -> arma::mat {
         return r2armamat(fOdeR(theta, x, tvec));
     };
 
-    modelC.fOdeDx = [& fOdeDxR](const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) -> arma::cube {
+    modelC.fOdeDx = [fOdeDxR](const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) -> arma::cube {
         return r2armacube(fOdeDxR(theta, x, tvec));
     };
 
-    modelC.fOdeDtheta = [& fOdeDthetaR](const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) -> arma::cube {
+    modelC.fOdeDtheta = [fOdeDthetaR](const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) -> arma::cube {
         return r2armacube(fOdeDthetaR(theta, x, tvec));
     };
 
