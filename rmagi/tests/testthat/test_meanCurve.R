@@ -142,6 +142,7 @@ curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
   covEach <- calCov(curphi[, j], r, signr, bandsize=config$bandsize, 
                     kerneltype=config$kernel)
   covEach$mu[] <- mean(xsim.obs[,j+1])
+  covEach$tvecCovInput <- tvec.full
   covEach
 })
 
@@ -188,10 +189,10 @@ thetaoptim <- function(xInit, thetaInit, curphi, cursigma){
     covEach
   })
   fn <- function(par) {
-    -xthetallikRcpp( yobs, curCov, cursigma, c(xInit, par), "FN" )$value
+    -magi:::xthetallikRcpp( yobs, curCov, cursigma, c(xInit, par), "FN" )$value
   }
   gr <- function(par) {
-    -as.vector(xthetallikRcpp( yobs, curCov, cursigma, c(xInit, par), "FN" )$grad[-(1:length(xInit))])
+    -as.vector(magi:::xthetallikRcpp( yobs, curCov, cursigma, c(xInit, par), "FN" )$grad[-(1:length(xInit))])
   }
   marlikmap <- optim(c(thetaInit), fn, gr, 
                      method="L-BFGS-B", lower = 0.001, control = list(maxit=1e5))
@@ -210,7 +211,6 @@ fnmodel <- list(
 )
 
 testthat::test_that("optimizeThetaInit in c++ produces the same optimized result as in R",{
-  #testthat::skip_on_os("windows")
-  #thetamle2 <- magi:::optimizeThetaInitRcpp(yobs, fnmodel, curCov, cursigma, c(1,1), xInit, TRUE)
-  #testthat::expect_equal(thetamle$thetaInit, thetamle2, check.attributes = FALSE, tolerance=1e-4)
+  thetamle2 <- magi:::optimizeThetaInitRcpp(yobs, fnmodel, curCov, cursigma, c(1,1), xInit, TRUE)
+  testthat::expect_equal(thetamle$thetaInit, thetamle2, check.attributes = FALSE, tolerance=1e-4)
 })

@@ -53,7 +53,7 @@ matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, ad
 
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
 
-xsim <- insertNaN(xsim.obs,config$filllevel)
+xsim <- setDiscretization(xsim.obs,config$filllevel)
 
 fnmodel <- list(
   fOde=magi:::fnmodelODE,
