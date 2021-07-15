@@ -108,6 +108,7 @@ config <- list(
 pram.true <- list(
   theta=c(36, 0.108, 0.5, 1000, 3), # lambda, rho, delta, N, c
   x0 = c(600, 30, 1e5), # TU, TI, V
+  phi = cbind(c(190^2, 4.5), c(107^2, 3), c(2e4^2, 1)),
   sigma=config$noise
 )
 
@@ -152,9 +153,26 @@ for (j in 1:(ncol(xsim)-1)){
   xInitExogenous[, j] <- approx(xsim.obs$time, xsim.obs[,j+1], xsim$time)$y
 }
 
-OursStartTime <- proc.time()[3]
+phiExogenous <- matrix(0, nrow=2, ncol=ncol(xsim)-1)
+sigmaInit <- rep(0, ncol(xsim)-1)
+for (j in 1:(ncol(xsim)-1)){
+  r.nobs <- abs(outer(xsim.obs$time, t(xsim.obs$time),'-')[,1,])
+  yobs <- data.matrix(xsim.obs)[,j+1,drop=FALSE]
+  hyperparam <- magi:::gpsmooth(yobs-mean(yobs),
+                                r.nobs,
+                                "generalMatern")
+  phiExogenous[,j] <- hyperparam[1:2]
+  sigmaInit[j] <- hyperparam[3]
+}
 
-result <- magi::MagiSolver(xsim[,-1], hivtdmodel, xsim$time, control = list(xInit = xInitExogenous, niterHmc=config$niterHmc, stepSizeFactor = 0.06))
+#' manually override estimated hyper-parameters for component 3 because 
+#' GP smoothing gives bad result for rapidly decreasing curve
+phiExogenous[,3] <- pram.true$phi[,3]
+sigmaInit[3] <- pram.true$sigma[3]
+
+OursStartTime <- proc.time()[3]  # hivtdmodel is implemented in R only, and thus the running will be slow 
+
+result <- magi::MagiSolver(xsim[,-1], hivtdmodel, xsim$time, control = list(xInit = xInitExogenous, niterHmc=config$niterHmc, stepSizeFactor = 0.06, phi=phiExogenous, sigma=sigmaInit))
 
 OursTimeUsed <- proc.time()[3] - OursStartTime
 
