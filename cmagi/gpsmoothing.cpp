@@ -140,7 +140,7 @@ public:
             }
             ub[phiDim * i + 1] = maxDist;
         }
-        std::cout << "ub in PhiGaussianProcessSmoothing is " << ub << "\n";
+//        std::cout << "ub in PhiGaussianProcessSmoothing is " << ub << "\n";
         this->setUpperBound(ub);
 
         priorFactor = arma::zeros(2);
@@ -149,7 +149,7 @@ public:
                 priorFactor += calcFrequencyBasedPrior(yobs.col(j));
             }
             priorFactor /= yobs.n_cols;
-            std::cout << "priorFactor =\n" << priorFactor << "\n";
+//            std::cout << "priorFactor =\n" << priorFactor << "\n";
         }
     }
 };
