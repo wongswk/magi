@@ -142,7 +142,6 @@ testthat::test_that("parallel_temper_hmc_xtheta runs without error", {
   rstep <- stepLow
   foo <- magi:::xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma,
                       xth.formal[t-1,], rstep, config$hmcSteps, F, loglikflag = config$loglikflag)
-  sink("testout_parallel_temper_hmc_xtheta.txt")
   out <- magi:::parallel_temper_hmc_xtheta(
     data.matrix(fn.sim[,1:2]),
     curCovV,
@@ -165,7 +164,6 @@ testthat::test_that("parallel_temper_hmc_xtheta runs without error", {
                  overallTemperature = 7)
   
   chainSamplesOut <- magi:::chainSampler(config, xInit, singleSampler, stepLowInit, verbose=TRUE)
-  sink()
   plot(out[405,8,], type="l")
   lines(chainSamplesOut[[1]][,404], col=2)
   hist(out[405,8,], col=rgb(1,0,0,0.5), probability=T)

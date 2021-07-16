@@ -277,6 +277,6 @@ fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtru
 fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
 
 fn.sim$time <- fn.sim.all$time
-magi:::plotPostSamples(paste0("test-run-HMCv4-",kerneltype,".pdf"),
+magi:::plotPostSamples(paste0(tempdir(), "/test-run-HMCv4-",kerneltype,".pdf"),
                          fn.true, fn.sim, gpode, pram.true, config)
 }
