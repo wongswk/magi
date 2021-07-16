@@ -318,3 +318,35 @@ hes1modelODE  <-function(theta,x,tvec) {
   resultDtheta
 }
 
+testDynamicalModel <- function(modelODE, modelDx, modelDtheta, modelName, x, theta, tvec){
+  testthat::context(paste(modelName, "model, with derivatives"))
+  testthat::test_that(paste(modelName, "- Dx is consistent with f"), {
+    f <- modelODE(theta, x, tvec)
+
+    deltaSmall <- 1e-6
+    numericalDx <- sapply(1:ncol(x), function(j){
+      xnew <- x
+      xnew[,j] <- xnew[,j] + deltaSmall
+      (modelODE(theta, xnew, tvec) - f)/deltaSmall
+    }, simplify = "array")
+
+    fdX <- modelDx(theta, x, tvec)
+
+    testthat::expect_equal(fdX, aperm(numericalDx, c(1,3,2)), tolerance = 1e-4)
+  })
+
+  testthat::test_that(paste(modelName, "- Dtheta is consistent with f"), {
+    f <- modelODE(theta, x, tvec)
+
+    deltaSmall <- 1e-6
+    numericalDtheta <- sapply(1:length(theta), function(i){
+      thetaNew <- theta
+      thetaNew[i] <- theta[i] + deltaSmall
+      (modelODE(thetaNew, x, tvec) - f)/deltaSmall
+    }, simplify = "array")
+
+    fDtheta <- modelDtheta(theta, x, tvec)
+
+    testthat::expect_equal(fDtheta, aperm(numericalDtheta, c(1,3,2)), tolerance = 1e-4)
+  })
+}
