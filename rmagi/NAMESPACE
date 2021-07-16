@@ -3,6 +3,7 @@
 export(MagiSolver)
 export(calCov)
 export(gpsmoothllik)
+export(magiPosterior)
 export(setDiscretization)
 import(Rcpp)
 importFrom(grDevices,dev.off)
