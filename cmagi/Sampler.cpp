@@ -40,8 +40,8 @@ void Sampler::sampleChian(const arma::vec &xthetasigmaInit, const arma::vec &ste
 
         if (verbose && (t % 100 == 1)){
             std::cout << "t = " << t << "; acceptance rate = " << acceptRate << "; theta = "
-                      << xth.submat(arma::span(yobs.size(), yobs.size() + model.thetaSize - 1), arma::span(t, t)).t()
-            << "; log-posterior value = " << hmcpostsample.lprvalue << "\n";
+                      << "; log-posterior value = " << hmcpostsample.lprvalue << "\n"
+                      << xth.submat(arma::span(yobs.size(), yobs.size() + model.thetaSize - 1), arma::span(t, t)).t();
         }
     }
 }
