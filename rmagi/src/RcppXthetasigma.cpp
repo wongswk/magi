@@ -70,19 +70,18 @@ Rcpp::List xthetasigmallikRcpp( const arma::mat & xlatent,
 }
 
 
-//' R wrapper for xthetasigmallik
+//' R wrapper for magiPosterior
 //' Calculate the log posterior of x, theta, and sigma
 //' @param xlatent the matrix of latent ODE curve
 //' @param theta the parameter of ODE function
 //' @param sigma the observation noise for each component of y
 //' @param yobs matrix of observations
 //' @param covAllDimInput list of covariance kernel objects
+//' @param model list of fOde function, fOdeDx function, fOdeDtheta function, thetaLowerBound vector, thetaUpperBound vector
 //' @param priorTemperatureInput the prior temperature for derivative, level, and observation, in that order
 //' @param useBand boolean variable indicator to use band matrix approximation
 //' @param useMean boolean variable indicator to use mean function in GP
-//' @param modelName string of model name
-//' export removed: function specific to pre-coded models only
-//' @noRd
+//' @export
 // [[Rcpp::export]]
 Rcpp::List magiPosterior( const arma::mat & xlatent,
                           const arma::vec & theta,
