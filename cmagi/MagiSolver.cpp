@@ -209,8 +209,8 @@ void MagiSolver::setupPhiSigma() {
         covAllDimensions[j].addBandCov(bandSize);
         
         // Diagnostic information
-        std::cout << "Component " << j << " Cinv max element: " << arma::max(arma::max(arma::abs(covAllDimensions[j].Cinv))) << ", Kinv max element: " << arma::max(arma::max(arma::abs(covAllDimensions[j].Kinv))) << endl;
-        std::cout << "Component " << j << " Cinv min element: " << arma::min(arma::min(arma::abs(covAllDimensions[j].Cinv))) << ", Kinv min element: " << arma::min(arma::min(arma::abs(covAllDimensions[j].Kinv))) << endl;
+//        std::cout << "Component " << j << " Cinv max element: " << arma::max(arma::max(arma::abs(covAllDimensions[j].Cinv))) << ", Kinv max element: " << arma::max(arma::max(arma::abs(covAllDimensions[j].Kinv))) << endl;
+//        std::cout << "Component " << j << " Cinv min element: " << arma::min(arma::min(arma::abs(covAllDimensions[j].Cinv))) << ", Kinv min element: " << arma::min(arma::min(arma::abs(covAllDimensions[j].Kinv))) << endl;
 
         
     }
