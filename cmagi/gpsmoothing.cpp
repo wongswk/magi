@@ -697,7 +697,7 @@ public:
             priorFactor += calcFrequencyBasedPrior(yobsThisDim(arma::find_finite(yobsThisDim)));
         }
         priorFactor /= (yobs.n_cols - missingComponentDim.size());
-        std::cout << "average priorFactor in PhiOptim =\n" << priorFactor << "\n";
+//        std::cout << "average priorFactor in PhiOptim =\n" << priorFactor << "\n";
 
         for(unsigned i = 0; i < missingComponentDim.size(); i++){
             ub[xInit.n_rows * missingComponentDim.size() + thetaInit.size() + 2*i] = maxScale * 5;
