@@ -153,6 +153,8 @@ for (j in 1:(ncol(xsim)-1)){
   xInitExogenous[, j] <- approx(xsim.obs$time, xsim.obs[,j+1], xsim$time)$y
 }
 
+testDynamicalModel(hivtdmodelODE, hivtdmodelDx, hivtdmodelDtheta, "HIV time-dependent system", xInitExogenous, pram.true$theta, xsim$time)
+
 phiExogenous <- matrix(0, nrow=2, ncol=ncol(xsim)-1)
 sigmaInit <- rep(0, ncol(xsim)-1)
 for (j in 1:(ncol(xsim)-1)){
