@@ -57,7 +57,7 @@ getMeanCurve <- function(x, y, x.new, phi.mat, sigma.mat, kerneltype="matern", d
 #'
 #' @export
 setDiscretization <- function(dat, level, by) {
-  if (is.null(dat[,"time"]))
+  if (!("time" %in% colnames(dat)))
     stop("\"dat\" is missing a column \"time\"")
   if (ncol(dat) < 2)
     stop("\"dat\" does not have any components")
