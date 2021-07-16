@@ -54,7 +54,7 @@ xsim.obs$X2[seq(1,nrow(xsim.obs),by=2)] <- NaN
 
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
 
-xsim <- insertNaN(xsim.obs,config$filllevel)
+xsim <- setDiscretization(xsim.obs,config$filllevel)
 
 # cpp inference ----------------------------
 hes1logmodel <- list(
