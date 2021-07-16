@@ -69,6 +69,52 @@ Rcpp::List xthetasigmallikRcpp( const arma::mat & xlatent,
                             Rcpp::Named("grad")=ret.gradient);
 }
 
+
+//' R wrapper for xthetasigmallik
+//' Calculate the log posterior of x, theta, and sigma
+//' @param xlatent the matrix of latent ODE curve
+//' @param theta the parameter of ODE function
+//' @param sigma the observation noise for each component of y
+//' @param yobs matrix of observations
+//' @param covAllDimInput list of covariance kernel objects
+//' @param priorTemperatureInput the prior temperature for derivative, level, and observation, in that order
+//' @param useBand boolean variable indicator to use band matrix approximation
+//' @param useMean boolean variable indicator to use mean function in GP
+//' @param modelName string of model name
+//' export removed: function specific to pre-coded models only
+//' @noRd
+// [[Rcpp::export]]
+Rcpp::List magiPosterior( const arma::mat & xlatent,
+                          const arma::vec & theta,
+                          const arma::vec & sigma,
+                          const arma::mat & yobs,
+                          const Rcpp::List & covAllDimInput,
+                          const OdeSystem model,
+                          const Rcpp::NumericVector & priorTemperatureInput = 1.0,
+                          const bool useBand = false,
+                          const bool useMean = false){
+
+    vector<gpcov> covAllDimensions(yobs.n_cols);
+    for(unsigned j = 0; j < yobs.n_cols; j++){
+        covAllDimensions[j] = cov_r2cpp(covAllDimInput[j]);
+    }
+
+    const arma::vec priorTemperature = Rcpp::as<arma::vec>(priorTemperatureInput);
+
+    lp ret = xthetasigmallik(xlatent,
+                             theta,
+                             sigma,
+                             yobs,
+                             covAllDimensions,
+                             model,
+                             priorTemperature,
+                             useBand,
+                             useMean);
+
+    return Rcpp::List::create(Rcpp::Named("value")=ret.value,
+                              Rcpp::Named("grad")=ret.gradient);
+}
+
 //' sample from GP ODE for latent x, theta, and sigma
 //' Internal function for debugging purpose
 //' @noRd

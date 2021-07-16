@@ -71,7 +71,24 @@ testthat::test_that("xthetasigmallik differs to xthetallik and loglikOrig by con
                                 sigmaTest,
                                 dataInput,
                                 list(curCovV, curCovR))
-    
+
+    fnmodel <- list(
+      fOde=magi:::fnmodelODE,
+      fOdeDx=magi:::fnmodelDx,
+      fOdeDtheta=magi:::fnmodelDtheta,
+      thetaLowerBound=c(0,0,0),
+      thetaUpperBound=c(Inf,Inf,Inf)
+    )
+
+    out4 <- magi:::magiPosterior(xlatentTest,
+                                 thetaTest,
+                                 sigmaTest,
+                                 dataInput,
+                                 list(curCovV, curCovR),
+                                 fnmodel)
+    expect_equal(out3$value, out4$value, tolerance = 1e-4)
+    expect_equal(out3$grad, out4$grad, tolerance = 1e-4)
+
     out3$value - as.numeric(out2) - constDiff23
   })
   expect_gt(mean(realDiff < 1e-3), 0.95)
