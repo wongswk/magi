@@ -80,10 +80,10 @@ testthat::test_that("xthetasigmallik differs to xthetallik and loglikOrig by con
       thetaUpperBound=c(Inf,Inf,Inf)
     )
 
-    out4 <- magi:::magiPosterior(xlatentTest,
+    out4 <- magi:::MagiPosterior(dataInput,
+                                 xlatentTest,
                                  thetaTest,
                                  sigmaTest,
-                                 dataInput,
                                  list(curCovV, curCovR),
                                  fnmodel)
     expect_equal(out3$value, out4$value, tolerance = 1e-4)

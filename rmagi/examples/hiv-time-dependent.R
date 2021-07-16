@@ -153,24 +153,23 @@ for (j in 1:(ncol(xsim)-1)){
   xInitExogenous[, j] <- approx(xsim.obs$time, xsim.obs[,j+1], xsim$time)$y
 }
 
-magi:::testDynamicalModel(hivtdmodelODE, hivtdmodelDx, hivtdmodelDtheta, "HIV time-dependent system", xInitExogenous, pram.true$theta, xsim$time)
+testDynamicalModel(hivtdmodelODE, hivtdmodelDx, hivtdmodelDtheta, "HIV time-dependent system", xInitExogenous, pram.true$theta, xsim$time)
 
 phiExogenous <- matrix(0, nrow=2, ncol=ncol(xsim)-1)
 sigmaInit <- rep(0, ncol(xsim)-1)
 for (j in 1:(ncol(xsim)-1)){
-  r.nobs <- abs(outer(xsim.obs$time, t(xsim.obs$time),'-')[,1,])
-  yobs <- data.matrix(xsim.obs)[,j+1,drop=FALSE]
-  hyperparam <- magi:::gpsmooth(yobs-mean(yobs),
-                                r.nobs,
-                                "generalMatern")
-  phiExogenous[,j] <- hyperparam[1:2]
-  sigmaInit[j] <- hyperparam[3]
+  hyperparam <- gpsmoothing(xsim.obs[,j+1],
+                            xsim.obs$time,
+                            "generalMatern")
+  phiExogenous[,j] <- hyperparam$phi
+  sigmaInit[j] <- hyperparam$sigma
 }
+
 
 #' manually override estimated hyper-parameters for component 3 because 
 #' GP smoothing gives bad result for rapidly decreasing curve
-phiExogenous[,3] <- pram.true$phi[,3]
-sigmaInit[3] <- pram.true$sigma[3]
+phiExogenous[2,3] <- 1
+sigmaInit[3] <- 10
 
 OursStartTime <- proc.time()[3]  # hivtdmodel is implemented in R only, and thus the running will be slow 
 

@@ -127,6 +127,12 @@ fnmodelDtheta <- function(theta,x,t) {
 }
 ```
 
+We may wish to verify that the gradients have been provided correctly. This can be done using `testDynamicalModel`, which tests the analytic gradients using numerical differentiation:
+```{r}
+testDynamicalModel(fnmodelODE, fnmodelDx, fnmodelDtheta, 
+    "FN equations", cbind(V,R), c(.5, .6, 2), tvec)
+```
+
 Now we are ready to create the list `odeModel` for specification of the ODE system and its parameters. It must include five elements: the three functions already defined, together with vectors specifying the upper and lower bounds on $\theta$.  Here, all of the parameters $(a,b,c)$ are non-negative, so we may set the bounds as `0` and `Inf`:
 
 ```{r}
@@ -493,3 +499,5 @@ legend("center", c("truth", "inferred trajectory", "95% interval"), lty=c(1,1,0)
        border=c(0, 0, "skyblue"), pch=c(NA, NA, 15), horiz=TRUE)
 ```
 The system trajectories are recovered well, including for the unobserved $H$ component. Similar to the FN equations, we can also verify that the results are stable if the discretization level is increased (not run here).
+
+## Example with time-dependency in ODE: HIV model with oscillating infection rate

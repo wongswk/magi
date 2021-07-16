@@ -15,7 +15,7 @@ NULL
                "##  Please cite MAGI method as:\n",
                "##  Yang, S., Wong, S.W. and Kou, S.C., 2021.\n",
                "##  Inference of dynamic systems from noisy and sparse data via manifold-constrained Gaussian processes.\n",
-               "##  Proceedings of the National Academy of Sciences, 118(15).\n",
+               "##  Proceedings of the National Academy of Sciences, 118(15), e2020397118.\n",
                sep = "")
   packageStartupMessage(foo)
 }

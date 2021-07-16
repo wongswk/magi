@@ -3,7 +3,7 @@ Type: Package
 Title: MAnifold-Constrained Gaussian Process Inference
 Version: 1.0.0
 Date: 2021-07-16
-Author: Shihao Yang, Samuel Wong
+Author: Shihao Yang, Samuel W.K. Wong
 Maintainer: Shihao Yang <shihao.yang@isye.gatech.edu>
 Encoding: UTF-8
 Description: This software package implements the MAGI method (MAnifold-constrained Gaussian process Inference) which

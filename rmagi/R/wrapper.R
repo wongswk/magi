@@ -23,9 +23,9 @@
 #' 
 #' The list \code{odeModel} is used for specification of the ODE system and its parameters. It must include five elements:
 #' \describe{
-#' \item{\code{fOde}}{the function that computes the ODEs, specified with the form \code{f(theta, x, t)}. See examples.}
-#' \item{\code{fOdeDx}}{the function that computes the gradients of the ODEs with respect to the system components. See examples.}
-#' \item{\code{fOdeDtheta}}{a function that computes the gradients of the ODEs with respect to the parameters \eqn{\theta}. See examples.}
+#' \item{\code{fOde}}{function that computes the ODEs, specified with the form \code{f(theta, x, t)}. See examples.}
+#' \item{\code{fOdeDx}}{function that computes the gradients of the ODEs with respect to the system components. See examples.}
+#' \item{\code{fOdeDtheta}}{function that computes the gradients of the ODEs with respect to the parameters \eqn{\theta}. See examples.}
 #' \item{\code{thetaLowerBound}}{a vector indicating the lower bounds of each parameter in \eqn{\theta}.}
 #' \item{\code{thetaUpperBound}}{a vector indicating the upper bounds of each parameter in \eqn{\theta}.}
 #' }
@@ -44,7 +44,7 @@
 #'   \item{\code{burninRatio}}{the proportion of HMC iterations to be discarded as burn-in. Default is 0.5, which discards the first half of the MCMC samples.}
 #'   \item{\code{stepSizeFactor}}{initial leapfrog step size factor for HMC.  Default is 0.01, and the leapfrog step size is automatically tuned during burn-in to achieve an acceptance rate between 60-90\%.}
 #'   \item{\code{bandSize}}{a band matrix approximation is used to speed up matrix operations, with default band size 20. Can be increased if \code{MagiSolver} returns an error indicating numerical instability.}
-#'   \item{\code{useFixedSigma}}{boolean, set to \code{TRUE} if \code{sigma} is known.  If \code{useFixedSigma=TRUE}, the known values of \eqn{\sigma} must be supplied via the \code{sigma} control variable.}
+#'   \item{\code{useFixedSigma}}{logical, set to \code{TRUE} if \code{sigma} is known.  If \code{useFixedSigma=TRUE}, the known values of \eqn{\sigma} must be supplied via the \code{sigma} control variable.}
 #'   
 #' }
 #' 
@@ -118,7 +118,7 @@
 #' 
 #' # Call MagiSolver
 #' # short sampler run for demo only, more iterations needed for convergence
-#' MagiSolver(yinput, fnmodel, control = list(nstepsHmc=100, niterHmc = 1000))
+#' MagiSolver(yinput, fnmodel, control = list(nstepsHmc=50, niterHmc = 500))
 #' \dontrun{
 #' # full run with 20000 HMC iterations
 #' result <- MagiSolver(yinput, fnmodel, control = list(nstepsHmc=100))}
@@ -277,7 +277,49 @@ MagiSolver <- function(y, odeModel, tvec, control = list()) {
 #' gpsmoothllik(c(0.5,3,0.1), rnorm(10), abs(outer(0:9, t(0:9),'-')[,1,]))
 #' 
 #' @export
-gpsmoothllik <- function(phisig, yobs, rInput, kerneltype = "matern") {
+gpsmoothllik <- function(phisig, yobs, rInput, kerneltype = "generalMatern") {
   phisigllikC(phisig, data.matrix(yobs), rInput, kerneltype)
 }
  
+
+#' Gaussian process smoothing
+#'
+#' Estimate hyper-parameters \code{phi} and noise standard deviation \code{sigma} for a vector of observations using Gaussian process smoothing.
+#' 
+#' @param yobs vector of observations
+#' @param tvec vector of time points corresponding to observations
+#' @param kerneltype the covariance kernel, types \code{matern}, \code{compact1}, \code{periodicMatern}, \code{generalMatern} are supported.  See \code{\link{calCov}} for their definitions.
+#' @param sigma the noise level (if known). By default, both \code{phi} and \code{sigma} are estimated. If a value for \code{sigma} is supplied, then \code{sigma} is held fixed at the supplied value and only \code{phi} is estimated.
+#' 
+#' @return A list containing the elements \code{phi} and \code{sigma} with their estimated values.
+#'
+#' @examples
+#' # Sample data and observation times
+#' tvec <- seq(0, 20, by = 0.5)
+#' y <- c(-1.16, -0.18, 1.57, 1.99, 1.95, 1.85, 1.49, 1.58, 1.47, 0.96, 
+#' 0.75, 0.22, -1.34, -1.72, -2.11, -1.56, -1.51, -1.29, -1.22, 
+#' -0.36, 1.78, 2.36, 1.78, 1.8, 1.76, 1.4, 1.02, 1.28, 1.21, 0.04, 
+#' -1.35, -2.1, -1.9, -1.49, -1.55, -1.35, -0.98, -0.34, 1.9, 1.99, 1.84)
+#'
+#' gpsmoothing(y, tvec)
+#'  
+#'
+#' @export
+gpsmoothing <- function(yobs, tvec, kerneltype = "generalMatern", sigma = NULL) {
+  
+  distInput  <- abs(outer(tvec, t(tvec),'-')[,1,])
+  yInput <- data.matrix(yobs - mean(yobs))
+  ret <- list()
+  
+  if (is.null(sigma)) {
+    res <- gpsmooth(yInput, distInput, kerneltype, sigmaExogenScalar = -1)
+    ret$sigma <- tail(res, 1)
+    ret$phi <- res[-length(res)]
+  } else {
+    res <- gpsmooth(yInput, distInput, kerneltype, sigmaExogenScalar = sigma)
+    ret$sigma <- sigma
+    ret$phi <- res
+  }
+  
+  ret
+}

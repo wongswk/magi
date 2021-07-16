@@ -70,31 +70,119 @@ Rcpp::List xthetasigmallikRcpp( const arma::mat & xlatent,
 }
 
 
-//' R wrapper for magiPosterior
-//' Calculate the log posterior of x, theta, and sigma
-//' @param xlatent the matrix of latent ODE curve
-//' @param theta the parameter of ODE function
-//' @param sigma the observation noise for each component of y
-//' @param yobs matrix of observations
-//' @param covAllDimInput list of covariance kernel objects
-//' @param model list of fOde function, fOdeDx function, fOdeDtheta function, thetaLowerBound vector, thetaUpperBound vector
-//' @param priorTemperatureInput the prior temperature for derivative, level, and observation, in that order
-//' @param useBand boolean variable indicator to use band matrix approximation
-//' @param useMean boolean variable indicator to use mean function in GP
+//' MAGI posterior density
+//' 
+//' Computes the MAGI log-posterior value and gradient for an ODE model with the given inputs: the observations \eqn{Y}, the latent system trajectories \eqn{X},
+//' the parameters \eqn{\theta}, the noise standard deviations \eqn{\sigma}, and covariance kernels.
+//' 
+//' @param y data matrix of observations
+//' @param xlatent matrix of system trajectory values
+//' @param theta vector of parameter values \eqn{\theta}
+//' @param sigma vector of observation noise for each system component
+//' @param covAllDimInput list of covariance kernel objects for each system component. Covariance calculations may be carried out with \code{\link{calCov}}.
+//' @param odeModel list of ODE functions and inputs. See details.
+//' @param priorTemperatureInput  vector of tempering factors for the GP prior, derivatives, and observations, in that order. Controls the influence of the GP prior relative to the likelihood.  Recommended values: the total number of observations divided by the total number of discretization points for the GP prior and derivatives, and 1 for the observations.
+//' @param useBand logical: should the band matrix approximation be used?  If \code{TRUE}, \code{covAllDimInput} must include CinvBand, mphiBand, and KinvBand as computed by \code{\link{calCov}}.
+//' 
+//' @return A list with elements \code{value} for the value of the log-posterior density and \code{grad} for its gradient.
+//' 
+//' @examples
+//' # Trajectories from the Fitzhugh-Nagumo equations
+//' tvec <- seq(0,20,2)
+//' Vtrue <- c(-1, 1.91, 1.38, -1.32, -1.5, 1.73, 1.66, 0.89, -1.82, -0.93, 1.89)
+//' Rtrue <- c(1, 0.33, -0.62, -0.82, 0.5, 0.94, -0.22, -0.9, -0.08, 0.95,  0.3)
+//' 
+//' # Noisy observations
+//' Vobs <- Vtrue + rnorm(length(tvec), sd = 0.05)
+//' Robs <- Rtrue + rnorm(length(tvec), sd = 0.1)
+//' 
+//' # Prepare distance matrix for covariance kernel calculation
+//' foo <- outer(tvec, t(tvec),'-')[,1,]
+//' r <- abs(foo)
+//' r2 <- r^2
+//' signr <- -sign(foo)
+//'   
+//' # Choose some hyperparameter values to illustrate
+//' rphi=c(0.95, 3.27)
+//' vphi=c(1.98, 1.12)
+//' phiTest <- cbind(vphi, rphi)
+//' 
+//' # Covariance computations
+//' curCovV <- calCov(phiTest[,1], r, signr, kerneltype = "generalMatern")
+//' curCovR <- calCov(phiTest[,2], r, signr, kerneltype = "generalMatern")
+//' 
+//' # Y and X inputs to MagiPosterior
+//' yInput <- data.matrix(cbind(Vobs, Robs))
+//' xlatentTest <- data.matrix(cbind(Vtrue, Rtrue))
+//' 
+//' # ODE system for Fitzhugh-Nagumo equations
+//' fnmodelODE <- function(theta,x,t) {
+//'   V <- x[,1]
+//'   R <- x[,2]
+//'
+//'   result <- array(0, c(nrow(x),ncol(x)))
+//'   result[,1] = theta[3] * (V - V^3 / 3.0 + R)
+//'   result[,2] = -1.0/theta[3] * ( V - theta[1] + theta[2] * R)
+//'   
+//'   result
+//' }
+//' 
+//' # Gradient with respect to system components
+//' fnmodelDx <- function(theta,x,t) {
+//'   resultDx <- array(0, c(nrow(x), ncol(x), ncol(x)))
+//'   V = x[,1]
+//'   
+//'   resultDx[,1,1] = theta[3] * (1 - V^2)
+//'   resultDx[,2,1] = theta[3]
+//'   
+//'   resultDx[,1,2] = (-1.0 / theta[3])
+//'   resultDx[,2,2] = ( -1.0*theta[2]/theta[3] )
+//'   
+//'   resultDx
+//' }
+//' 
+//' # Gradient with respect to parameters theta
+//' fnmodelDtheta <- function(theta,x,t) {
+//'   resultDtheta <- array(0, c(nrow(x), length(theta), ncol(x)))
+//'   
+//'   V = x[,1]
+//'   R = x[,2]
+//'   
+//'   resultDtheta[,3,1] = V - V^3 / 3.0 + R
+//'   
+//'   resultDtheta[,1,2] =  1.0 / theta[3] 
+//'   resultDtheta[,2,2] = -R / theta[3]
+//'   resultDtheta[,3,2] = 1.0/(theta[3]^2) * ( V - theta[1] + theta[2] * R)
+//'   
+//'   resultDtheta
+//' }
+//'
+//' # Create odeModel list 
+//' fnmodel <- list(
+//'   fOde=fnmodelODE,
+//'   fOdeDx=fnmodelDx,
+//'   fOdeDtheta=fnmodelDtheta,
+//'   thetaLowerBound=c(0,0,0),
+//'   thetaUpperBound=c(Inf,Inf,Inf)
+//' )
+//' 
+//' MagiPosterior(yInput, xlatentTest, theta = c(0.2, 0.2, 3), sigma = c(0.05, 0.1),
+//'     list(curCovV, curCovR), fnmodel)
+//' 
+//'
 //' @export
 // [[Rcpp::export]]
-Rcpp::List magiPosterior( const arma::mat & xlatent,
+Rcpp::List MagiPosterior( const arma::mat & y,
+                          const arma::mat & xlatent,
                           const arma::vec & theta,
                           const arma::vec & sigma,
-                          const arma::mat & yobs,
                           const Rcpp::List & covAllDimInput,
-                          const OdeSystem model,
+                          const OdeSystem odeModel,
                           const Rcpp::NumericVector & priorTemperatureInput = 1.0,
-                          const bool useBand = false,
-                          const bool useMean = false){
+                          const bool useBand = false){
 
-    vector<gpcov> covAllDimensions(yobs.n_cols);
-    for(unsigned j = 0; j < yobs.n_cols; j++){
+    vector<gpcov> covAllDimensions(y.n_cols);
+    for(unsigned j = 0; j < y.n_cols; j++){
         covAllDimensions[j] = cov_r2cpp(covAllDimInput[j]);
     }
 
@@ -103,12 +191,13 @@ Rcpp::List magiPosterior( const arma::mat & xlatent,
     lp ret = xthetasigmallik(xlatent,
                              theta,
                              sigma,
-                             yobs,
+                             y,
                              covAllDimensions,
-                             model,
+                             odeModel,
                              priorTemperature,
                              useBand,
-                             useMean);
+                             //useMean);
+                             FALSE);
 
     return Rcpp::List::create(Rcpp::Named("value")=ret.value,
                               Rcpp::Named("grad")=ret.gradient);
