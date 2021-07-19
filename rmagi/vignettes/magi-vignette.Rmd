@@ -57,7 +57,7 @@ R <- c(0.94, 1.22, 0.89, 0.13, 0.4, 0.04, -0.21, -0.65, -0.31, -0.65,
 
 MAGI is used to recover the system trajectories and to estimate the parameters, as follows.
 
-First, we create a function `fnmodelODE` that encodes the ODEs. It takes as input the vector of parameters $\theta$ and system states $X$ one per column, and returns an array with the values of the derivatives $\dot{X}$ at each input time point:
+First, we create a function `fnmodelODE` that encodes the ODEs. It takes as input the vector of parameters $\theta$ and system states $X$ one per column and time $t$, and returns an array with the values of the derivatives $\dot{X}$ at each input time point:
 
 ```{r}
 fnmodelODE <- function(theta,x,t) {
@@ -231,7 +231,7 @@ The parameter estimates are stable between `level=1` and `level=2`, indicating t
 
 ## Example with an unobserved component and asynchronous observations: Hes1 system
 
-MAGI can handle systems with unobserved components and asynchronous observations. To illustate, consider the three-component dynamic system $X = (P,M,H)$ introduced in Hirata (2002, Science) governed by the ODE
+MAGI can handle systems with unobserved components and asynchronous observations. To illustrate, consider the three-component dynamic system $X = (P,M,H)$ introduced in Hirata (2002, Science) governed by the ODE
 $$
 \mathbf{f}(X, {\theta}, t) = \begin{pmatrix}
 -aPH + bM - cP \\
@@ -241,7 +241,7 @@ $$
 $$
 where $P$ and $M$ are the protein and messenger ribonucleic acid (mRNA) levels in cultured cells.  In experimental data, $P$ and $M$ levels exhibit oscillatory cycles approximately every 2 hours, and the $H$ component is a hypothesized Hes1-interacting factor the helps regulate this oscillation via a negative feedback loop.  The parameters of this system are ${\theta} = (a, b, c, d, e, f, g)$, where $a, b$ can be interpreted as synthesis rates; $c,d,g$ as decomposition rates; and $e,f$ as inhibition rates.
 
-We define a function for this ODE system, that takes as input the vector of parameters ${\theta}$ and system states $X$ one per column, and returns an array with the values of the derivatives $\dot{X}$:
+We define a function for this ODE system, that takes as input the vector of parameters ${\theta}$ and system states $X$ one per column and time $t$, and returns an array with the values of the derivatives $\dot{X}$:
 
 ```{r}
 hes1modelODE <- function(theta, x, t) {
@@ -501,3 +501,213 @@ legend("center", c("truth", "inferred trajectory", "95% interval"), lty=c(1,1,0)
 The system trajectories are recovered well, including for the unobserved $H$ component. Similar to the FN equations, we can also verify that the results are stable if the discretization level is increased (not run here).
 
 ## Example with time-dependency in ODE: HIV model with oscillating infection rate
+
+MAGI can accommodate systems that explicitly depend on time $t$. As an example, consider the three-component dynamic system $X = (T_U,T_I,V)$ for HIV infection simulated in Liang, Miao and Wu (2010, AOAS):
+
+$$
+\mathbf{f}(X, {\theta}, t) = \begin{pmatrix}
+\lambda - \rho T_U - \eta(t) T_U V \\
+\eta(t) T_U V - \delta T_I \\
+N \delta T_I - c V
+\end{pmatrix}, 
+$$
+where $\eta(t) = 9\times 10^{-5}  \times (1 - 0.9 \cos(\pi t / 1000))$ is an oscillating infection rate over time, and the parameters to be estimated are $\theta = (\lambda, \rho, \delta, N, c)$. The system components $T_U, T_I$ refer to the concentrations of uninfected and infected cells, and $V$ the viral load.
+
+We define functions for this system as in previous examples: the ODE, and gradients with respect to the system components and parameters.
+
+```{r}
+theta.names <- c("lambda", "rho", "delta", "N", "c")
+
+hivtdmodelODE <- function(theta,x,tvec) {
+  TU <- x[,1]
+  TI <- x[,2]
+  V <- x[,3]
+
+  lambda <- theta[1]
+  rho <- theta[2]
+  delta <- theta[3]
+  N <- theta[4]
+  c <- theta[5]
+
+  eta <- 9e-5 * (1 - 0.9 * cos(pi * tvec / 1000))
+
+  result <- array(0, c(nrow(x),ncol(x)))
+  result[,1] = lambda - rho * TU - eta * TU * V
+  result[,2] = eta * TU * V - delta * TI
+  result[,3] = N * delta * TI - c * V
+
+  result
+}
+
+hivtdmodelDx <- function(theta,x,tvec) {
+  resultDx <- array(0, c(nrow(x), ncol(x), ncol(x)))
+
+  TU <- x[,1]
+  TI <- x[,2]
+  V <- x[,3]
+
+  lambda <- theta[1]
+  rho <- theta[2]
+  delta <- theta[3]
+  N <- theta[4]
+  c <- theta[5]
+
+  eta <- 9e-5 * (1 - 0.9 * cos(pi * tvec / 1000))
+
+  resultDx[,1,1] = -rho - eta * V
+  resultDx[,2,1] = 0
+  resultDx[,3,1] = -eta * TU
+
+  resultDx[,1,2] = eta * V
+  resultDx[,2,2] = -delta
+  resultDx[,3,2] = eta * TU
+
+  resultDx[,1,3] = 0
+  resultDx[,2,3] = N * delta
+  resultDx[,3,3] = -c
+
+  resultDx
+}
+
+hivtdmodelDtheta <- function(theta,x,tvec) {
+  resultDtheta <- array(0, c(nrow(x), length(theta), ncol(x)))
+
+  TU <- x[,1]
+  TI <- x[,2]
+  V <- x[,3]
+
+  lambda <- theta[1]
+  rho <- theta[2]
+  delta <- theta[3]
+  N <- theta[4]
+  c <- theta[5]
+
+  eta <- 9e-5 * (1 - 0.9 * cos(pi * tvec / 1000))
+
+  resultDtheta[,1,1] = 1
+  resultDtheta[,2,1] = -TU
+  resultDtheta[,3,1] = 0
+  resultDtheta[,4,1] = 0
+  resultDtheta[,5,1] = 0
+
+  resultDtheta[,1,2] = 0
+  resultDtheta[,2,2] = 0
+  resultDtheta[,3,2] = -TI
+  resultDtheta[,4,2] = 0
+  resultDtheta[,5,2] = 0
+
+  resultDtheta[,1,3] = 0
+  resultDtheta[,2,3] = 0
+  resultDtheta[,3,3] = N * TI
+  resultDtheta[,4,3] = delta * TI
+  resultDtheta[,5,3] = -V
+
+  resultDtheta
+}
+```
+
+We setup a list containing some sample values for simulation that mimic the referenced paper:
+```{r}
+param.true <- list(
+  theta = c(36, 0.108, 0.5, 1000, 3), # lambda, rho, delta, N, c
+  x0 = c(600, 30, 1e5), # TU, TI, V
+  sigma= c(sqrt(10), sqrt(10), 10)
+)
+```
+
+and numerically solve the system trajectories over time $t=0$ to $20$ hours to mimic noisy observations every 0.1 hours with normal measurement error with SD `sigma`. The seed `12321` is set for reproducibility.
+```{r}
+times <- seq(0, 20, 0.1)
+
+modelODE <- function(t, state, parameters) {
+  list(as.vector(hivtdmodelODE(parameters, t(state), t)))
+}
+
+xtrue <- deSolve::ode(y = param.true$x0, times = times,
+                      func = modelODE, parms = param.true$theta)
+xsim <- xtrue
+set.seed(12321)
+for(j in 1:(ncol(xsim)-1)){
+  xsim[,1+j] <- xsim[,1+j]+rnorm(nrow(xsim), sd=param.true$sigma[j])
+}
+```
+
+A plot of the simulated measurements, with the y-axis shown on the log-scale:
+```{r, fig.align = "center", fig.width=6, fig.asp=0.9}
+matplot(xsim[,"time"], xsim[,-1], type="p", col=1:(ncol(xsim)-1),
+        pch=20, log = 'y', ylab="Concentration", xlab="time")
+legend("topright", c("TU", "TI", "V"), pch=20, col=c("black", "red", "green"))
+```
+
+We define the `odeModel` list input, and prepare the input `y` based on the observations with no additional discretization.
+```{r}
+hivtdmodel <- list(
+  fOde=hivtdmodelODE,
+  fOdeDx=hivtdmodelDx,
+  fOdeDtheta=hivtdmodelDtheta,
+  thetaLowerBound=c(0,0,0,0,0),
+  thetaUpperBound=c(Inf,Inf,Inf,Inf,Inf)
+)
+
+y <- setDiscretization(data.frame(xsim), 0)
+```
+
+It can be worth checking that the gradients are specified correctly.
+```{r}
+testDynamicalModel(hivtdmodelODE, hivtdmodelDx, hivtdmodelDtheta,
+    "HIV time-dependent system", y[,2:4], param.true$theta, y[,"time"])
+```
+The inputs to `MagiSolver` are now ready.  Often, MAGI's automatic determination of hyper-parameters $\phi$ and initial noise levels $\sigma$ will be reasonable; however, this is not guaranteed, in which case we may manually override their values.
+
+Let us explicitly call the GP smoothing procedure (`gpsmoothing`) included in MAGI to examine the automatic hyper-parameter setting in this case:
+```{r}
+phiExogenous <- matrix(0, nrow=2, ncol=ncol(y)-1)
+sigmaInit <- rep(0, ncol(y)-1)
+for (j in 1:(ncol(y)-1)){
+  hyperparam <- gpsmoothing(y[,j+1], y[,"time"])
+  phiExogenous[,j] <- hyperparam$phi
+  sigmaInit[j] <- hyperparam$sigma
+}
+
+phiExogenous
+sigmaInit
+```
+Notice that initial guess of `sigma` for $T_U$ and $T_I$ are reasonable, while that for the $V$ component (green trajectory) is very large ($>10000$). This indicates that  automatic Gaussian process smoothing is treating the sharp initial decrease of $V$ seen in the interval $t=0$ to $t=1$ as noise rather than signal, which would lead to undesirable results. This is accompanied by a small `phi[1]` relative to the magnitude of the observations for $V$ and a `phi[2]` that is too large (indicating that successive time points will be too highly correlated, preventing the sharp decrease from being correctly modelled), noting that `phi[1]` controls the overall variance level and `phi[2]` controls the bandwidth.
+
+We can manually specify more appropriate values of `phi` and `sigma` for the $V$ component instead, and then supply them to `MagiSolver` using the optional `phi` and `sigma` control variables to override the automatic setting:
+
+```{r, results="hide"}
+phiExogenous[,3] <- c(5e7, 1)
+sigmaInit[3] <- 1
+HIVresult <- MagiSolver(y, hivtdmodel,
+      control = list(phi=phiExogenous, sigma=sigmaInit, niterHmc=10000))
+```
+
+The $\theta$ parameter estimates (via posterior means) together with 95\% credible intervals (via 2.5 to 97.5 percentiles of the MCMC samples):
+
+```{r}
+theta.est <- apply(HIVresult$theta, 2,
+    function(x) c(mean(x), quantile(x, 0.025), quantile(x, 0.975)))
+colnames(theta.est) <- theta.names
+rownames(theta.est) <- c("Mean", "2.5%", "97.5%")
+signif(theta.est, 3)
+```
+We extract the sampled system trajectories $X$. We treat the posterior means as the inferred trajectories (green curves), and the grey points are the observed data. The true trajectories (red curves) are superimposed and can be seen to be indistinguishable from the inferred trajectories.
+
+```{r, fig.align = "center", fig.width=7, fig.asp=0.45}
+par(mfrow=c(1,3), mar=c(4,3,1.5,1))
+compnames <- c("TU", "TI", "V")
+ylim_lower <- c(100, 0, 0)
+ylim_upper <- c(750, 175, 1e5)
+
+xMean <- apply(HIVresult$xsampled, c(2,3), mean)
+
+for (i in 1:3) {
+  plot(times, xMean[,i], type="n", xlab="time", ylab="", ylim=c(ylim_lower[i], ylim_upper[i]))
+  mtext(compnames[i])
+  points(times, xsim[,i+1], col = "grey50")
+  lines(times, xMean[,i], col="forestgreen", lwd=4)
+  lines(times, xtrue[,i+1], col="red", lwd=1.5)
+}
+```
+

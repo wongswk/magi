@@ -312,11 +312,11 @@ gpsmoothing <- function(yobs, tvec, kerneltype = "generalMatern", sigma = NULL) 
   ret <- list()
   
   if (is.null(sigma)) {
-    res <- gpsmooth(yInput, distInput, kerneltype, sigmaExogenScalar = -1)
+    res <- gpsmooth(yInput, distInput, kerneltype, sigmaExogenScalar = -1, TRUE)
     ret$sigma <- tail(res, 1)
     ret$phi <- res[-length(res)]
   } else {
-    res <- gpsmooth(yInput, distInput, kerneltype, sigmaExogenScalar = sigma)
+    res <- gpsmooth(yInput, distInput, kerneltype, sigmaExogenScalar = sigma, TRUE)
     ret$sigma <- sigma
     ret$phi <- res
   }

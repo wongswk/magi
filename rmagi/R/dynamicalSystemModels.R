@@ -326,7 +326,7 @@ hes1modelODE  <-function(theta,x,tvec) {
 #'
 #' @param modelODE function that computes the ODEs, specified with the form \eqn{f(theta, x, t)}. See examples.
 #' @param modelDx function that computes the gradients of the ODEs with respect to the system components. See examples.
-#' @param modelDtheta function that computes the gradients of the ODEs with respect to the parameters θ. See examples.
+#' @param modelDtheta function that computes the gradients of the ODEs with respect to the parameters \eqn{\theta}. See examples.
 #' @param modelName string giving a name for the model
 #' @param x data matrix of system values, one column for each component, at which to test the gradients
 #' @param theta vector of parameter values for \eqn{\theta}, at which to test the gradients
