@@ -260,10 +260,6 @@ void MagiSolver::initXmudotmu() {
         }
     }
 
-    const arma::uvec & sucessDim = arma::find(sucess == 2);
-    const arma::vec & xMean = arma::mean(xInitAllDim.cols(sucessDim), 1);
-    const arma::uvec & failedDim1 = arma::find(sucess == 1);
-
     xInit = xInitAllDim;
     if(!xInitExogenous.empty()){
         xInit = xInitExogenous;
