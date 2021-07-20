@@ -54,7 +54,7 @@ curCovR$tvecCovInput <- tvec.full
 
 #### testing ####
 testthat::test_that("loglik speed increase", {
-  testthat::skip_on_cran("speed benchmark skipped on cran")
+  testthat::skip_on_cran()
   speedRatio <- magi:::speedbenchmarkXthetallik( data.matrix(fn.sim[,1:2]),
                                           curCovV,
                                           curCovR,
