@@ -172,7 +172,6 @@ To informally assess convergence of the MCMC samples, we may examine traceplots 
 
 ```{r, fig.align = "center", fig.width=6, fig.asp=1}
 oldpar <- par(mfrow=c(2,2), mar=c(5,2,1,1))
-on.exit(par(oldpar))
 theta.names <- c("a", "b", "c")
 for (i in 1:3) {
 	plot(result$theta[,i], main=theta.names[i], type="l", ylab="")
@@ -192,8 +191,7 @@ signif(theta.est, 3)
 We extract the sampled system trajectories $X$. We treat the posterior means as the inferred trajectories (black curves), and add blue shaded areas to represent the 95\% credible intervals. The grey points are the observed data.
 
 ```{r, fig.align = "center", fig.width=7, fig.asp=0.45}
-oldpar <- par(mfrow=c(1,2), mar=c(4,2,1,1))
-on.exit(par(oldpar))
+par(mfrow=c(1,2), mar=c(4,2,1,1))
 compnames <- c("V", "R")
 ylim_lower <- c(-3, -2)
 ylim_upper <- c(3, 2)
@@ -450,9 +448,7 @@ resultHes1 <- MagiSolver(y, hes1logmodel,
 To informally assess convergence of the MCMC samples, we may examine traceplots of `theta` and `lp`:
 
 ```{r, fig.align = "center", fig.width=7.2, fig.asp=0.5}
-oldpar <- par(mfrow=c(2,4), mar=c(5,2,1,1))
-on.exit(par(oldpar))
-oldpar
+par(mfrow=c(2,4), mar=c(5,2,1,1))
 theta.names <- c("a", "b", "c", "d", "e", "f", "g")
 for (i in 1:7) {
   plot(resultHes1$theta[,i], main=theta.names[i], type="l", ylab="")
@@ -497,8 +493,7 @@ for (i in 1:3) {
   lines(times, xMean[,i], col="forestgreen", lwd=2)
 }
 
-oldpar <- par(mar=rep(0,4))
-on.exit(par(oldpar))
+par(mar=rep(0,4))
 plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
 
 legend("center", c("truth", "inferred trajectory", "95% interval"), lty=c(1,1,0), lwd=c(2,2,0),
@@ -702,8 +697,7 @@ signif(theta.est, 3)
 We extract the sampled system trajectories $X$. We treat the posterior means as the inferred trajectories (green curves), and the grey points are the observed data. The true trajectories (red curves) are superimposed and can be seen to be indistinguishable from the inferred trajectories.
 
 ```{r, fig.align = "center", fig.width=7, fig.asp=0.45}
-oldpar <- par(mfrow=c(1,3), mar=c(4,3,1.5,1))
-on.exit(par(oldpar))
+par(mfrow=c(1,3), mar=c(4,3,1.5,1))
 compnames <- c("TU", "TI", "V")
 ylim_lower <- c(100, 0, 0)
 ylim_upper <- c(750, 175, 1e5)
@@ -717,5 +711,6 @@ for (i in 1:3) {
   lines(times, xMean[,i], col="forestgreen", lwd=4)
   lines(times, xtrue[,i+1], col="red", lwd=1.5)
 }
-```
 
+par(oldpar) # reset to previous pars
+```
