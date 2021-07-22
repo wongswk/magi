@@ -90,17 +90,15 @@ plotPostSamples <- function(filename, fn.true, fn.sim, gpode, init, config){
 
   pdf(filename, width = 8, height = 8)
 
-  if(all(c("gridExtra","gridBase") %in% rownames(installed.packages()))){
-    infoPerRow <- 8 # FIXME grid layout not right for now
-    npanel <- ceiling(ncol(infoTab)/infoPerRow)
-    layout(1:npanel)
-    for(i in 1:npanel){
-      plot.new()
-      grid::pushViewport(gridBase::baseViewports()$figure)
-      gridExtra::grid.table(infoTab[,((i-1)*infoPerRow+1):min(ncol(infoTab), i*infoPerRow)])
-    }
-    layout(1)
+  infoPerRow <- 8 # FIXME grid layout not right for now
+  npanel <- ceiling(ncol(infoTab)/infoPerRow)
+  layout(1:npanel)
+  for(i in 1:npanel){
+    plot.new()
+    grid::pushViewport(gridBase::baseViewports()$figure)
+    gridExtra::grid.table(infoTab[,((i-1)*infoPerRow+1):min(ncol(infoTab), i*infoPerRow)])
   }
+  layout(1)
 
   id.plot <- seq(1,nrow(gpode$abc),length=npostplot)
   id.plot <- unique(as.integer(id.plot))

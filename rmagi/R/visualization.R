@@ -18,7 +18,7 @@
 #' @importFrom grDevices dev.off pdf
 #' @importFrom graphics abline hist layout legend lines matplot mtext par plot.function plot.new points title
 #' @importFrom stats approx density dist dlnorm dnorm fft median nobs plot.ts quantile runif sd weighted.mean
-#' @importFrom utils head installed.packages tail
+#' @importFrom utils head tail
 #'
 #' @noRd
 plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, config, odemodel=NULL){
@@ -71,15 +71,13 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
   
   pdf(filename, width = 8, height = 8)
   
-  if(all(c("gridExtra","gridBase") %in% rownames(installed.packages()))){
-    infoPerRow <- 6
-    npanel <- ceiling(ncol(infoTab)/infoPerRow)
-    tbls <- lapply(1:npanel, function(i){
-      gridExtra::tableGrob(infoTab[,((i-1)*infoPerRow+1):min(ncol(infoTab), i*infoPerRow)]) 
-    })
-    do.call(gridExtra::grid.arrange, c(tbls, nrow=length(tbls)))
-  }
-  
+  infoPerRow <- 6
+  npanel <- ceiling(ncol(infoTab)/infoPerRow)
+  tbls <- lapply(1:npanel, function(i){
+    gridExtra::tableGrob(infoTab[,((i-1)*infoPerRow+1):min(ncol(infoTab), i*infoPerRow)])
+  })
+  do.call(gridExtra::grid.arrange, c(tbls, nrow=length(tbls)))
+
   matplot(xtrue$time, xtrue[,-1], type="l", lty=1)
   matplot(xsim$time, xsim[,-1], type="p", pch=20, add=TRUE)
   
