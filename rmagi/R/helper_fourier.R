@@ -12,7 +12,6 @@ getFrequencyBasedPrior <- function(x, showplot=FALSE){
   zmodEffective <- zmod[-1]
   zmodEffective <- zmodEffective[1:(length(zmodEffective)/2)]
   if(showplot) {
-    par(mar=c(5,3,11,3))
     plot(as.numeric(x), xlab="index", ylab="x")
     names(zmod) <- NULL
     plot(zmod, col=c(1,rep(2, (length(zmod)-1)/2),rep(1, (length(zmod)-1)/2)))
