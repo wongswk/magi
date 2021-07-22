@@ -113,19 +113,20 @@ testthat::test_that("xthetaphisigmallik differs to loglikOrig by constant (the p
 })
 
 
+set.seed(123)
+xlatentTest <- data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]) * rexp(length(fn.true[,1:2]))
+thetaTest <- pram.true$abc * rexp(length(pram.true$abc))
+phiTest <- cbind(pram.true$vphi, pram.true$rphi) * exp(rnorm(4))
+sigmaTest <- rep(pram.true$sigma * exp(rnorm(1)), 2)
+
+out <- magi:::xthetaphisigmallikRcpp(xlatentTest,
+                                     thetaTest,
+                                     phiTest,
+                                     sigmaTest,
+                                     dataInputWithMissing,
+                                     fn.sim$time)
+
 testthat::test_that("xthetaphisigmallik derivatives", {
-  set.seed(123)
-  xlatentTest <- data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]) * rexp(length(fn.true[,1:2]))
-  thetaTest <- pram.true$abc * rexp(length(pram.true$abc))
-  phiTest <- cbind(pram.true$vphi, pram.true$rphi) * exp(rnorm(4))
-  sigmaTest <- rep(pram.true$sigma * exp(rnorm(1)), 2)
-  
-  out <<- magi:::xthetaphisigmallikRcpp(xlatentTest,
-                                 thetaTest,
-                                 phiTest,
-                                 sigmaTest,
-                                 dataInputWithMissing,
-                                 fn.sim$time)
   out$value
   
   delta <- 1e-5

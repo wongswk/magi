@@ -165,7 +165,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives, withmean useBand", {
   nophi1Cov[[2]]$mu <- curCovR$mu <- cos(1:nrow(fn.sim))
   nophi1Cov[[2]]$dotmu <- curCovR$dotmu <- -sin(1:nrow(fn.sim))
   
-  out <<- magi:::xthetaphi1sigmallikRcpp(xlatentTest,
+  out <- magi:::xthetaphi1sigmallikRcpp(xlatentTest,
                                   thetaTest,
                                   phi1Test,
                                   sigmaTest,
@@ -294,7 +294,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives", {
   sigmaTest <- rep(pram.true$sigma * exp(rnorm(1)), 2)
   phi1Test <- c(pram.true$vphi[1], pram.true$rphi[1]) * exp(rnorm(2))
   
-  out <<- magi:::xthetaphi1sigmallikRcpp(xlatentTest,
+  out <- magi:::xthetaphi1sigmallikRcpp(xlatentTest,
                                   thetaTest,
                                   phi1Test,
                                   sigmaTest,

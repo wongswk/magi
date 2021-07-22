@@ -33,9 +33,10 @@ fn.sim[-seq(1,nrow(fn.sim), length=config$nobs),] <- NaN
 fn.sim.obs <- fn.sim[seq(1,nrow(fn.sim), length=config$nobs),]
 tvec.nobs <- fn.sim$time[seq(1,nrow(fn.sim), length=config$nobs)]
 
+priorFactor <- magi:::calcFrequencyBasedPrior(fn.sim.obs[,1])
+priorFactor2 <- magi:::getFrequencyBasedPrior(fn.sim.obs[,1])
+
 testthat::test_that("c++ calcFrequencyBasedPrior correct", {
-  priorFactor <<- magi:::calcFrequencyBasedPrior(fn.sim.obs[,1])
-  priorFactor2 <<- magi:::getFrequencyBasedPrior(fn.sim.obs[,1])
   testthat::expect_true(all(abs(priorFactor - priorFactor2) < 1e-3))
 })
 
