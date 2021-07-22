@@ -27,19 +27,20 @@ r <- abs(foo)
 r2 <- r^2
 signr <- -sign(foo)
 
+expected_marlikmap_par <- c(1.94957912838359, 1.06073179913222, 0.703951749929781, 2.74496621777115,
+                            0.0497280144187114)
 testthat::test_that("phisigllikC runs without error and is correct", {
   magi:::phisigllikC( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), data.matrix(fn.sim[,1:2]), r)
   fn <- function(par) -magi:::phisigllikC( par, data.matrix(fn.sim[,1:2]), r)$value
   gr <- function(par) -as.vector(magi:::phisigllikC( par, data.matrix(fn.sim[,1:2]), r)$grad)
-  marlikmap <<- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
+  marlikmap <- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
   testthat::expect_equal(marlikmap$par,
-                         c(1.94957912838359, 1.06073179913222, 0.703951749929781, 2.74496621777115, 
-                           0.0497280144187114),
+                         expected_marlikmap_par,
                          tolerance = 1e-5)
   
   fn <- function(par) -magi:::phisigllikC( par, data.matrix(fn.sim[,1:2]), r, "compact1")$value
   gr <- function(par) -as.vector(magi:::phisigllikC( par, data.matrix(fn.sim[,1:2]), r, "compact1")$grad)
-  marlikmapCompact1 <<- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
+  marlikmapCompact1 <- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
   testthat::expect_equal(marlikmapCompact1$par,
                          c(2.04871398302633, 3.59648132314111, 0.625313733996474, 8.96656240950113, 
                            0.0431289806093459),
@@ -47,7 +48,7 @@ testthat::test_that("phisigllikC runs without error and is correct", {
   
   fn <- function(par) -magi:::phisigllikC( par, data.matrix(fn.sim[,1:2]), r, "rbf")$value
   gr <- function(par) -as.vector(magi:::phisigllikC( par, data.matrix(fn.sim[,1:2]), r, "rbf")$grad)
-  marlikmapRbf <<- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
+  marlikmapRbf <- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
   testthat::expect_equal(marlikmapRbf$par,
                          c(1.58950017432859, 0.594486181493354, 0.452955008218075, 1.57490985649202, 
                            0.0554703243636422),
@@ -55,9 +56,16 @@ testthat::test_that("phisigllikC runs without error and is correct", {
 })
 
 
+curCovVcompact1 <- calCov(expected_marlikmap_par[1:2], r, signr, kerneltype = "compact1")
+curCovRcompact1 <- calCov(expected_marlikmap_par[3:4], r, signr, kerneltype = "compact1")
+
+curCovVrbf <- calCov(expected_marlikmap_par[1:2], r, signr, kerneltype = "rbf")
+curCovRrbf <- calCov(expected_marlikmap_par[3:4], r, signr, kerneltype = "rbf")
+
+curCovV <- calCov(expected_marlikmap_par[1:2], r, signr)
+curCovR <- calCov(expected_marlikmap_par[3:4], r, signr)
+
 testthat::test_that("calCov runs without error and is correct", {
-  curCovV <<- calCov(marlikmap$par[1:2], r, signr)
-  curCovR <<- calCov(marlikmap$par[3:4], r, signr)
   varnames <- c("C", "Cprime", "Cdoubleprime", "Cinv", "mphi", "Kphi", "Kinv")
   curCovV.checksum <- sapply(curCovV[varnames], function(x) sum(abs(x)))
   outExpect <- c(387.258476932602, 289.658301140539, 369.687853445841, 
@@ -70,8 +78,6 @@ testthat::test_that("calCov runs without error and is correct", {
   expect_equal(curCovR.checksum/outExpect, rep(1, length(outExpect)),
                tolerance = 1e-4, check.attributes = FALSE)
   
-  curCovVcompact1 <<- calCov(marlikmap$par[1:2], r, signr, kerneltype = "compact1")
-  curCovRcompact1 <<- calCov(marlikmap$par[3:4], r, signr, kerneltype = "compact1")
   curCovV.checksum <- sapply(curCovVcompact1[varnames], function(x) sum(abs(x)))
   outExpect <- c(115.084361649859, 205.278332612955, 2131.40178197008, 
                  37.6922719587419, 144.786133517796, 2075.23766151204, 2.71838147604252)
@@ -83,8 +89,6 @@ testthat::test_that("calCov runs without error and is correct", {
   expect_equal(curCovR.checksum/outExpect, rep(1, length(outExpect)),
                tolerance = 1e-4, check.attributes = FALSE)
   
-  curCovVrbf <<- calCov(marlikmap$par[1:2], r, signr, kerneltype = "rbf")
-  curCovRrbf <<- calCov(marlikmap$par[3:4], r, signr, kerneltype = "rbf")
   curCovV.checksum <- sapply(curCovVrbf[varnames], function(x) sum(abs(x)))
   outExpect <- c(407.840065042279, 293.008616795784, 338.429857457948, 
                  272835661.009244, 736.757284051975, 0.00565329191451157, 374288748.912434)
@@ -96,13 +100,13 @@ testthat::test_that("calCov runs without error and is correct", {
   expect_equal(curCovR.checksum/outExpect, rep(1, length(outExpect)),
                tolerance = 1e-4, check.attributes = FALSE)
 })
-cursigma <- marlikmap$par[5]
+cursigma <- expected_marlikmap_par[5]
 
 testthat::test_that("getMeanCurve runs without error and is correct", {
-  startVR <<- rbind(magi:::getMeanCurve(fn.sim$time, fn.sim$Vtrue, fn.sim$time,
-                                t(marlikmap$par[1:2]), sigma.mat=matrix(cursigma)),
+  startVR <- rbind(magi:::getMeanCurve(fn.sim$time, fn.sim$Vtrue, fn.sim$time,
+                                t(expected_marlikmap_par[1:2]), sigma.mat=matrix(cursigma)),
                     magi:::getMeanCurve(fn.sim$time, fn.sim$Rtrue, fn.sim$time,
-                                t(marlikmap$par[3:4]), sigma.mat=matrix(cursigma)))
+                                t(expected_marlikmap_par[3:4]), sigma.mat=matrix(cursigma)))
   testthat::expect_equal(sum(startVR), 16.6934654159305, tolerance = 1e-5)
 })
 
@@ -110,7 +114,7 @@ testthat::test_that("getMeanCurve deriv is correct", {
   delta <- 0.1
   timeDense <- seq(0, 20, delta)
   ydy <- magi:::getMeanCurve(fn.sim$time, fn.sim$Vtrue, timeDense,
-               t(marlikmap$par[1:2]), sigma.mat=matrix(cursigma), 
+               t(expected_marlikmap_par[1:2]), sigma.mat=matrix(cursigma),
                kerneltype = "generalMatern", deriv = TRUE)
   y <- ydy[[1]]
   dy <- ydy[[2]]
@@ -119,7 +123,6 @@ testthat::test_that("getMeanCurve deriv is correct", {
   testthat::expect_equal(dyNum, dy, tolerance = 0.1)
 })
 
-startVR <- t(startVR)
 
 testthat::test_that("loglikOrig and loglik runs without error and is correct", {
   out <- magi:::loglikOrig(fn.true[seq(1,nrow(fn.true), length=nobs),],
@@ -156,9 +159,9 @@ testthat::test_that("compact1 - xthetallikC runs without error and is correct", 
 
 bandsize <- 15
 testthat::test_that("compact1 - examine band matrix approximation", {
-  curCovVband <<- magi:::bandCov(curCovVcompact1, bandsize)
-  curCovRband <<- magi:::bandCov(curCovRcompact1, bandsize)
-  outBandApprox <<- magi:::xthetallikBandApproxC(dataInput, curCovVband, curCovRband, cursigma, xthInit)
+  curCovVband <- magi:::bandCov(curCovVcompact1, bandsize)
+  curCovRband <- magi:::bandCov(curCovRcompact1, bandsize)
+  outBandApprox <- magi:::xthetallikBandApproxC(dataInput, curCovVband, curCovRband, cursigma, xthInit)
   testthat::expect_lt(abs((outBandApprox$value - outExpectedvalue)/outExpectedvalue), 1e-3)
   
   delta <- 1e-8
@@ -186,9 +189,9 @@ testthat::test_that("rbf - xthetallikC runs without error and is correct", {
 
 bandsize <- 15
 testthat::test_that("rbf - examine band matrix approximation", {
-  curCovVband <<- magi:::bandCov(curCovVrbf, bandsize)
-  curCovRband <<- magi:::bandCov(curCovRrbf, bandsize)
-  outBandApprox <<- magi:::xthetallikBandApproxC(dataInput, curCovVband, curCovRband, cursigma, xthInit)
+  curCovVband <- magi:::bandCov(curCovVrbf, bandsize)
+  curCovRband <- magi:::bandCov(curCovRrbf, bandsize)
+  outBandApprox <- magi:::xthetallikBandApproxC(dataInput, curCovVband, curCovRband, cursigma, xthInit)
   testthat::expect_gt(abs((outBandApprox$value - outExpectedvalue)/outExpectedvalue), 0.25)
   
   delta <- 1e-8
@@ -242,9 +245,9 @@ testthat::test_that("prior tempered xthetallik is the same as rescaling phi", {
                             useBand = FALSE, priorTemperature = c(pTemp, pTemp, 1))
   
   
-  phiV <- marlikmap$par[1:2]
+  phiV <- expected_marlikmap_par[1:2]
   phiV[1] <- phiV[1]*pTemp
-  phiR <- marlikmap$par[3:4]
+  phiR <- expected_marlikmap_par[3:4]
   phiR[1] <- phiR[1]*pTemp
   curCovVtempered <- calCov(phiV, r, signr)
   curCovRtempered <- calCov(phiR, r, signr)
@@ -358,14 +361,17 @@ testthat::test_that("xthetallik_withmuC derivatives", {
   testthat::expect_true(all(abs(x) < 1e-3)) # gradient is self-consistent
   
   rm(curCovV_withmu, curCovR_withmu)
-  
-  curCovV_withmu <<- curCovV
-  curCovR_withmu <<- curCovR
-  curCovV_withmu$mu <<- sin(fn.sim$time)
-  curCovV_withmu$mu <<- cos(fn.sim$time)
-  curCovV_withmu$dotmu <<- cos(fn.sim$time)
-  curCovR_withmu$dotmu <<- -sin(fn.sim$time)
-  
+})
+
+curCovV_withmu <- curCovV
+curCovR_withmu <- curCovR
+curCovV_withmu$mu <- sin(fn.sim$time)
+curCovV_withmu$mu <- cos(fn.sim$time)
+curCovV_withmu$dotmu <- cos(fn.sim$time)
+curCovR_withmu$dotmu <- -sin(fn.sim$time)
+
+testthat::test_that("xthetallik_withmuC derivatives - fake mu", {
+
   out <- magi:::xthetallik_withmuC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit)
   out2 <- magi:::xthetallikWithmuBandC(dataInput, curCovV_withmu, curCovR_withmu, cursigma, xthInit, FALSE)
   testthat::expect_equal(out, out2)
@@ -447,10 +453,11 @@ testthat::test_that("band matrix approximation for withmean", {
 })
 
 bandsize <- 15
+curCovVband <- magi:::bandCov(curCovV, bandsize)
+curCovRband <- magi:::bandCov(curCovR, bandsize)
+
 testthat::test_that("examine band matrix approximation", {
-  curCovVband <<- magi:::bandCov(curCovV, bandsize)
-  curCovRband <<- magi:::bandCov(curCovR, bandsize)
-  outBandApprox <<- magi:::xthetallikBandApproxC(dataInput, curCovVband, curCovRband, cursigma, xthInit)
+  outBandApprox <- magi:::xthetallikBandApproxC(dataInput, curCovVband, curCovRband, cursigma, xthInit)
   testthat::expect_lt(abs((outBandApprox$value - outExpectedvalue)/outExpectedvalue), 1e-3)
   
   delta <- 1e-8
