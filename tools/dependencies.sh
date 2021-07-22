@@ -29,7 +29,7 @@ fi
 
 if [ ! -f "lib/libarmadillo.dylib" ] && [ ! -f "lib/libarmadillo.so" ]; then
     cd package/armadillo-code
-    git checkout 8.500.x
+    git checkout f33e9e5de01a30e7c37bbb29ef10274821d3d84d  # 8.500.x
     ./configure
     make -j $CPU
     cp -Rf include/* ../../include/
