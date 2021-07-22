@@ -14,8 +14,8 @@ Authors@R:
            role = c("aut", "ctb")),
     person(given = "Patrick",
            family = "Wieschollek",
-           role = "ctb"),
-           comment = c(role = "Contributor of c++ dependency CppNumericalSolvers"))
+           role = "ctb",
+           comment = c(role = "Contributor of c++ dependency CppNumericalSolvers")))
 Encoding: UTF-8
 Description: This software package implements the MAGI method (MAnifold-constrained Gaussian process Inference) which
     provides fast and accurate inference for the parameter estimation problem in Ordinary Differential Equations,
