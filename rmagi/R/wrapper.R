@@ -119,7 +119,7 @@
 #' # Call MagiSolver
 #' # short sampler run for demo only, more iterations needed for convergence
 #' MagiSolver(yinput, fnmodel, control = list(nstepsHmc=5, niterHmc = 402))
-#' \dontrun{
+#' \donttest{
 #' # full run with 20000 HMC iterations
 #' result <- MagiSolver(yinput, fnmodel, control = list(nstepsHmc=100))}
 #' 

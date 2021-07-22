@@ -171,7 +171,7 @@ The output of `MagiSolver` consists of a list with the following elements:
 To informally assess convergence of the MCMC samples, we may examine traceplots of `theta` and `lp`:
 
 ```{r, fig.align = "center", fig.width=6, fig.asp=1}
-par(mfrow=c(2,2), mar=c(5,2,1,1))
+oldpar <- par(mfrow=c(2,2), mar=c(5,2,1,1))
 theta.names <- c("a", "b", "c")
 for (i in 1:3) {
 	plot(result$theta[,i], main=theta.names[i], type="l", ylab="")
@@ -711,5 +711,6 @@ for (i in 1:3) {
   lines(times, xMean[,i], col="forestgreen", lwd=4)
   lines(times, xtrue[,i+1], col="red", lwd=1.5)
 }
-```
 
+par(oldpar) # reset to previous pars
+```

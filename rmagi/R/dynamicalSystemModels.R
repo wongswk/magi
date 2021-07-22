@@ -334,6 +334,8 @@ hes1modelODE  <-function(theta,x,tvec) {
 #' 
 #' @details Calls \code{\link[testthat]{test_that}} to test equality of the analytic and numeric gradients.
 #' 
+#' @return A list with elements \code{testDx} and \code{testDtheta}, each with value \code{TRUE} if the corresponding gradient check passed and \code{FALSE} if not.
+#'  
 #' @examples 
 #' # ODE system for Fitzhugh-Nagumo equations
 #' fnmodelODE <- function(theta,x,t) {
@@ -408,16 +410,15 @@ hes1modelODE  <-function(theta,x,tvec) {
 #' testDynamicalModel(fnmodelODE, fnmodelDx, fnmodelDtheta, 
 #'     "FN equations", cbind(V,R), c(.5, .6, 2), tvec)
 #'     
-#' # Incorrect theta gradient
-#' \dontrun{
+#' # Incorrect theta gradient (test fails)
 #' testDynamicalModel(fnmodelODE, fnmodelDx, fnmodelDthetaWrong, 
-#'     "FN equations", cbind(V,R), c(.5, .6, 2), tvec)}
+#'     "FN equations", cbind(V,R), c(.5, .6, 2), tvec)
 #'     
 #' 
 #' @export
 testDynamicalModel <- function(modelODE, modelDx, modelDtheta, modelName, x, theta, tvec){
   testthat::context(paste(modelName, "model, with derivatives"))
-  testthat::test_that(paste(modelName, "- Dx is consistent with f"), {
+  testDx <- testthat::test_that(paste(modelName, "- Dx is consistent with f"), {
     f <- modelODE(theta, x, tvec)
 
     deltaSmall <- 1e-6
@@ -432,7 +433,7 @@ testDynamicalModel <- function(modelODE, modelDx, modelDtheta, modelName, x, the
     testthat::expect_equal(fdX, aperm(numericalDx, c(1,3,2)), tolerance = 1e-4)
   })
 
-  testthat::test_that(paste(modelName, "- Dtheta is consistent with f"), {
+  testDtheta <- testthat::test_that(paste(modelName, "- Dtheta is consistent with f"), {
     f <- modelODE(theta, x, tvec)
 
     deltaSmall <- 1e-6
@@ -446,4 +447,6 @@ testDynamicalModel <- function(modelODE, modelDx, modelDtheta, modelName, x, the
 
     testthat::expect_equal(fDtheta, aperm(numericalDtheta, c(1,3,2)), tolerance = 1e-4)
   })
+  
+  list(testDx = testDx, testDtheta = testDtheta)
 }

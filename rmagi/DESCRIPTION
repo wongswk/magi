@@ -17,9 +17,9 @@ Authors@R:
            role = "ctb"),
            comment = c(role = "Contributor of c++ dependency CppNumericalSolvers"))
 Encoding: UTF-8
-Description: This software package implements the MAGI method (MAnifold-constrained Gaussian process Inference) which
-    provides fast and accurate inference for the parameter estimation problem in Ordinary Differential Equations,
-    including the case when there are unobserved system components.  Yang, Wong, and Kou (2021) <doi:10.1073/pnas.2020397118>.
+Description: Provides fast and accurate inference for the parameter estimation problem in Ordinary Differential
+    Equations, including the case when there are unobserved system components. Implements the MAGI method
+    (MAnifold-constrained Gaussian process Inference) of Yang, Wong, and Kou (2021) <doi:10.1073/pnas.2020397118>.
 License: MIT + file LICENSE
 VignetteBuilder: knitr
 Imports: 
