@@ -11,10 +11,10 @@ Authors@R:
            comment = c(ORCID = "0000-0003-3910-4969")),
     person(given = "Samuel W.K.",
            family = "Wong",
-           role = c("aut", "ctb")),
+           role = "aut"),
     person(given = "Patrick",
            family = "Wieschollek",
-           role = "ctb"),
+           role = "ctb",
            comment = c(role = "Contributor of c++ dependency CppNumericalSolvers"))
 Encoding: UTF-8
 Description: Provides fast and accurate inference for the parameter estimation problem in Ordinary Differential
