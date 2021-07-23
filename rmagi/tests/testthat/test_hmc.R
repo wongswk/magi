@@ -5,6 +5,7 @@ testthat::test_that("HMC runs without error", {
 })
 
 testthat::test_that("HMC for normal distribution is correct", {
+  testthat::skip_on_cran()  # skip because distribution randomness
   out.all.c <- matrix(nrow=1e4, ncol=4)
   out.all.c[1,] <- rep(0,4)
   for(i in 2:nrow(out.all.c)){
@@ -18,6 +19,7 @@ testthat::test_that("HMC for normal distribution is correct", {
 })
 
 testthat::test_that("HMC for truncated normal distribution is correct", {
+  testthat::skip_on_cran()  # skip because distribution randomness
   out.all.c <- matrix(nrow=1e4, ncol=4)
   out.all.c[1,] <- rep(0,4)
   for(i in 2:nrow(out.all.c)){
