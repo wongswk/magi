@@ -55,7 +55,11 @@ perl -pi -e 's/std::cerr/Rcpp::Rcerr/g' src/rcppmagi/*.cpp
 perl -pi -e 's/std::cout/Rcpp::Rcout/g' src/rcppmagi/*.cpp
 
 git checkout -- R/zzz.R
-COMPILING_INFORMATION="Build Date - $(date); GIT branch - $(git rev-parse --abbrev-ref HEAD); GIT commit number - $(git log -1 --oneline)"
+COMPILING_INFORMATION=""
+if [[ "$1" != "--cran" ]]; then
+  COMPILING_INFORMATION="Build Date - $(date); GIT branch - $(git rev-parse --abbrev-ref HEAD); GIT commit number - $(git log -1 --oneline)"
+fi
+
 export COMPILING_INFORMATION
 perl -pi -e 's/COMPILING_INFORMATION_HERE/$ENV{COMPILING_INFORMATION}/g' R/zzz.R
 
