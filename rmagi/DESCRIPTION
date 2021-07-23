@@ -15,7 +15,7 @@ Authors@R:
     person(given = "Patrick",
            family = "Wieschollek",
            role = "ctb",
-           comment = c(role = "Contributor of c++ dependency CppNumericalSolvers"))
+           comment = c(role = "Contributor of c++ dependency CppNumericalSolvers")),
     person(given = "Tobias",
            family = "Wood",
            role = "ctb",

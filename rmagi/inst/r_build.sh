@@ -26,6 +26,7 @@ rsync -az $PROJECT/include/cppoptlib/problem.h inst/include/cppoptlib/
 rsync -az $PROJECT/include/cppoptlib/solver/isolver.h inst/include/cppoptlib/solver/
 rsync -az $PROJECT/include/cppoptlib/solver/lbfgsbsolver.h inst/include/cppoptlib/solver/
 rsync -az $PROJECT/include/cppoptlib/linesearch/morethuente.h inst/include/cppoptlib/linesearch/
+rsync -az $PROJECT/package/CppNumericalSolvers/LICENSE inst/include/cppoptlib/cppoptlib_license
 
 perl -pi -e 's/\#define META_H/\#define META_H\n\#include <Rcpp.h>/g' inst/include/cppoptlib/meta.h
 perl -pi -e 's/std::cout/Rcpp::Rcout/g' inst/include/cppoptlib/solver/*.h
