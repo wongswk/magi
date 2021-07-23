@@ -14,11 +14,11 @@ Authors@R:
            role = "aut"),
     person(given = "Patrick",
            family = "Wieschollek",
-           role = "ctb",
+           role = c("ctb", "cph"),
            comment = c(role = "Contributor of c++ dependency CppNumericalSolvers")),
     person(given = "Tobias",
            family = "Wood",
-           role = "ctb",
+           role = c("ctb", "cph"),
            comment = c(role = "Contributor of c++ dependency CppNumericalSolvers")))
 Encoding: UTF-8
 Description: Provides fast and accurate inference for the parameter estimation problem in Ordinary Differential
