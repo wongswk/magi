@@ -127,6 +127,7 @@ out <- magi:::xthetaphisigmallikRcpp(xlatentTest,
                                      fn.sim$time)
 
 testthat::test_that("xthetaphisigmallik derivatives", {
+  testthat::skip_on_os("solaris")
   out$value
   
   delta <- 1e-5
