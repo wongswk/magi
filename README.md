@@ -8,7 +8,13 @@ This repository contains the accompanying software for the paper "[Inference of 
 
 User interfaces are available in R, MATLAB, and Python.
 
-A comprehensive shell script `build.sh` is provided, which by default prepares all three interfaces.  Edit `build.sh` to specify the location of your R libraries, and remove the compilation blocks for any of R, MATLAB, Python that either will not be used or is unavailable on your system.  Then execute `build.sh` to install dependencies and compile the library.
+*For R users*: the current version of MAGI is now available as a package on CRAN, and may be installed via
+
+`install.packages("magi")`
+
+Please see https://cran.r-project.org/package=magi for the full documentation and vignette of this latest version, which contains a number of enhancements to facilitate ease of usage.
+
+For manual build, a comprehensive shell script `build.sh` is provided, which by default prepares all three interfaces.  Edit `build.sh` to specify the location of your R libraries, and remove the compilation blocks for any of R, MATLAB, Python that either will not be used or is unavailable on your system.  Then execute `build.sh` to install dependencies and compile the library.
 
 The pre-compiled binary for C++, R, and Python is also available as a Docker image on Docker Hub: https://hub.docker.com/repository/docker/shihaoyangphd/magi
 
