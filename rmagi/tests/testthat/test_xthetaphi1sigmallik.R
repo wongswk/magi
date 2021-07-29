@@ -96,6 +96,7 @@ testthat::test_that("xthetaphi1sigmallik reduces to xthetasigmallik", {
 })
 
 testthat::test_that("xthetaphi1sigmallik compare to full xthetaphisigmallik", {
+  skip_on_cran()  # skip due to chance of failure on cran
   priorTemperature = rexp(2)
   nophi1Cov[[1]]$mu <- curCovV$mu <- sin(1:nrow(fn.sim))
   nophi1Cov[[1]]$dotmu <- curCovV$dotmu <- cos(1:nrow(fn.sim))

@@ -43,7 +43,8 @@ curCovR <- calCov(phiTest[,2], r, signr, kerneltype = "generalMatern")
 curCovR$tvecCovInput = fn.sim$time
 
 testthat::test_that("xthetasigmallik differs to xthetallik and loglikOrig by constant fixing phi sigma", {
-  
+  skip_on_cran()
+
   realDiff <- sapply(1:40, function(dummy){ 
     xlatentTest <- data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]) * rexp(length(fn.true[,1:2]))
     thetaTest <- pram.true$abc * rexp(length(pram.true$abc))
