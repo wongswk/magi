@@ -243,9 +243,9 @@ testthat::test_that("xthetasigmallik with band approx or mean component", {
                             useBand = useBand,
                             useMean = useMean)
       ))
-  
-  expect_true(all(sapply(outlist, function(x) x$value) == outlist[[1]]$value))
-  expect_true(all(sapply(outlist, function(x) x$grad[,1]) == outlist[[1]]$grad[,1]))
+
+  expect_true(all(abs(sapply(outlist, function(x) x$value) - outlist[[1]]$value) < 1e-3))
+  expect_true(all(abs(sapply(outlist, function(x) x$grad[,1]) - outlist[[1]]$grad[,1]) < 1e-3))
 })
 
 
