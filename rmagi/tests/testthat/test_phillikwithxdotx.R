@@ -29,22 +29,22 @@ lines(times, dx, col=2)
 plot(dx - covSim$mphi%*%x)
 
 test_that("MLE for phillikwithxdotx", {
-  fn <- function(par) -phillikwithxdotx( par, x, dx,
+  fn <- function(par) -magi:::phillikwithxdotx( par, x, dx,
                                          r.nobs, signr.nobs, pram.true$kernel)
   marlikmap <- optim(rep(1, 2), fn, method="L-BFGS-B", lower = 0.0001,
                      upper = c(Inf, 60*4*2, Inf), hessian = TRUE)
   
   expect_gt(
-    phillikwithxdotx( marlikmap$par, x, dx,
+    magi:::phillikwithxdotx( marlikmap$par, x, dx,
                       r.nobs, signr.nobs, pram.true$kernel),
-    phillikwithxdotx( c(pram.true$phi), x, dx,
+    magi:::phillikwithxdotx( c(pram.true$phi), x, dx,
                       r.nobs, signr.nobs, pram.true$kernel)
   )
   
   expect_lt(
-    phillikwithxdotx( marlikmap$par, x, dx,
+    magi:::phillikwithxdotx( marlikmap$par, x, dx,
                       r.nobs, signr.nobs, pram.true$kernel) - 
-      phillikwithxdotx( c(pram.true$phi), x, dx,
+      magi:::phillikwithxdotx( c(pram.true$phi), x, dx,
                         r.nobs, signr.nobs, pram.true$kernel),
     1e3
   )
@@ -52,15 +52,15 @@ test_that("MLE for phillikwithxdotx", {
   expect_equal(
     mvtnorm::dmvnorm(t(x), sigma = covSim$C, log = TRUE) +
       mvtnorm::dmvnorm(t(dx), mean = covSim$mphi%*%x, sigma = covSim$Kphi, log = TRUE),
-    phillikwithxdotx( c(pram.true$phi), x, dx,
+    magi:::phillikwithxdotx( c(pram.true$phi), x, dx,
                       r.nobs, signr.nobs, pram.true$kernel),
     tolerance = 1
   )
   
   expect_lt(
-    phillikwithxdotx( marlikmap$par, x, covSim$mphi%*%x,
+    magi:::phillikwithxdotx( marlikmap$par, x, covSim$mphi%*%x,
                       r.nobs, signr.nobs, pram.true$kernel),
-    phillikwithxdotx( c(pram.true$phi), x, covSim$mphi%*%x,
+    magi:::phillikwithxdotx( c(pram.true$phi), x, covSim$mphi%*%x,
                       r.nobs, signr.nobs, pram.true$kernel)
   )
   

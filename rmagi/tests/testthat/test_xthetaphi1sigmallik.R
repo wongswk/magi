@@ -41,8 +41,8 @@ sigmaTest <- rep(pram.true$sigma, 2)
 curCovV <- calCov(phiTest[,1], r, signr, kerneltype = "generalMatern")
 curCovR <- calCov(phiTest[,2], r, signr, kerneltype = "generalMatern")
 nophi1Cov <- list(
-  calCov(c(1, pram.true$vphi[2]), r, signr, kerneltype = "generalMatern"),
-  calCov(c(1, pram.true$rphi[2]), r, signr, kerneltype = "generalMatern")
+  magi:::calCov(c(1, pram.true$vphi[2]), r, signr, kerneltype = "generalMatern"),
+  magi:::calCov(c(1, pram.true$rphi[2]), r, signr, kerneltype = "generalMatern")
 )
 
 testthat::test_that("xthetaphi1sigmallik reduces to xthetasigmallik", {
@@ -67,14 +67,14 @@ testthat::test_that("xthetaphi1sigmallik reduces to xthetasigmallik", {
           dataInput <- dataInputFullObs
         }
         constDiff23 <- 6.95679764561623
-        out3 <- xthetasigmallikRcpp(xlatentTest,
+        out3 <- magi:::xthetasigmallikRcpp(xlatentTest,
                                     thetaTest,
                                     sigmaTest,
                                     dataInput,
                                     list(curCovV, curCovR),
                                     useBand = useBand,
                                     useMean = useMean)
-        out0 <- xthetaphi1sigmallikRcpp(xlatentTest,
+        out0 <- magi:::xthetaphi1sigmallikRcpp(xlatentTest,
                                         thetaTest,
                                         phi1Test,
                                         sigmaTest,
@@ -96,14 +96,15 @@ testthat::test_that("xthetaphi1sigmallik reduces to xthetasigmallik", {
 })
 
 testthat::test_that("xthetaphi1sigmallik compare to full xthetaphisigmallik", {
+  skip_on_cran()  # skip due to chance of failure on cran
   priorTemperature = rexp(2)
   nophi1Cov[[1]]$mu <- curCovV$mu <- sin(1:nrow(fn.sim))
   nophi1Cov[[1]]$dotmu <- curCovV$dotmu <- cos(1:nrow(fn.sim))
   nophi1Cov[[2]]$mu <- curCovR$mu <- cos(1:nrow(fn.sim))
   nophi1Cov[[2]]$dotmu <- curCovR$dotmu <- -sin(1:nrow(fn.sim))
   
-  curCovV <- calCov(phiTest[,1], r, signr, kerneltype = "generalMatern")
-  curCovR <- calCov(phiTest[,2], r, signr, kerneltype = "generalMatern")
+  curCovV <- magi:::calCov(phiTest[,1], r, signr, kerneltype = "generalMatern")
+  curCovR <- magi:::calCov(phiTest[,2], r, signr, kerneltype = "generalMatern")
   
   
   xlatentTest <- data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]) * rexp(length(fn.true[,1:2]))
@@ -125,14 +126,14 @@ testthat::test_that("xthetaphi1sigmallik compare to full xthetaphisigmallik", {
   
   xthInit <- c(xlatentTest, thetaTest)
   
-  out3 <- xthetaphisigmallikRcpp(xlatentTest,
+  out3 <- magi:::xthetaphisigmallikRcpp(xlatentTest,
                                  thetaTest,
                                  phiTest,
                                  sigmaTest,
                                  dataInput,
                                  fn.sim$time)
   phi1Test <- phiTest[1,]
-  out0 <- xthetaphi1sigmallikRcpp(xlatentTest,
+  out0 <- magi:::xthetaphi1sigmallikRcpp(xlatentTest,
                                   thetaTest,
                                   phi1Test,
                                   sigmaTest,
@@ -165,7 +166,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives, withmean useBand", {
   nophi1Cov[[2]]$mu <- curCovR$mu <- cos(1:nrow(fn.sim))
   nophi1Cov[[2]]$dotmu <- curCovR$dotmu <- -sin(1:nrow(fn.sim))
   
-  out <<- xthetaphi1sigmallikRcpp(xlatentTest,
+  out <- magi:::xthetaphi1sigmallikRcpp(xlatentTest,
                                   thetaTest,
                                   phi1Test,
                                   sigmaTest,
@@ -183,7 +184,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives, withmean useBand", {
     xlatentTest1 <- xlatentTest
     xlatentTest1[it] <- xlatentTest1[it] + delta
     gradNum[it] <- 
-      (xthetaphi1sigmallikRcpp(xlatentTest1,
+      (magi:::xthetaphi1sigmallikRcpp(xlatentTest1,
                                thetaTest,
                                phi1Test,
                                sigmaTest,
@@ -203,7 +204,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives, withmean useBand", {
     thetaTest1 <- thetaTest
     thetaTest1[it] <- thetaTest1[it] + delta
     gradNum[it] <- 
-      (xthetaphi1sigmallikRcpp(xlatentTest,
+      (magi:::xthetaphi1sigmallikRcpp(xlatentTest,
                                thetaTest1,
                                phi1Test,
                                sigmaTest,
@@ -223,7 +224,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives, withmean useBand", {
     phi1Test1 <- phi1Test
     phi1Test1[it] <- phi1Test1[it] + delta
     gradNum[it] <- 
-      (xthetaphi1sigmallikRcpp(xlatentTest,
+      (magi:::xthetaphi1sigmallikRcpp(xlatentTest,
                                thetaTest,
                                phi1Test1,
                                sigmaTest,
@@ -244,7 +245,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives, withmean useBand", {
     sigmaTest1 <- sigmaTest
     sigmaTest1[it] <- sigmaTest1[it] + delta
     gradNum[it] <- 
-      (xthetaphi1sigmallikRcpp(xlatentTest,
+      (magi:::xthetaphi1sigmallikRcpp(xlatentTest,
                                thetaTest,
                                phi1Test,
                                sigmaTest1,
@@ -261,7 +262,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives, withmean useBand", {
   # one combined sigma
   sigmaTest1 <- sigmaTest[1]
   sigmaTest1 <- sigmaTest1 + delta
-  out1sigma <-xthetaphi1sigmallikRcpp(xlatentTest,
+  out1sigma <-magi:::xthetaphi1sigmallikRcpp(xlatentTest,
                                       thetaTest,
                                       phi1Test,
                                       sigmaTest[1],
@@ -272,7 +273,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives, withmean useBand", {
                                       useBand = TRUE)
   
   gradNum <- 
-    (xthetaphi1sigmallikRcpp(xlatentTest,
+    (magi:::xthetaphi1sigmallikRcpp(xlatentTest,
                              thetaTest,
                              phi1Test,
                              sigmaTest1,
@@ -294,7 +295,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives", {
   sigmaTest <- rep(pram.true$sigma * exp(rnorm(1)), 2)
   phi1Test <- c(pram.true$vphi[1], pram.true$rphi[1]) * exp(rnorm(2))
   
-  out <<- xthetaphi1sigmallikRcpp(xlatentTest,
+  out <- magi:::xthetaphi1sigmallikRcpp(xlatentTest,
                                   thetaTest,
                                   phi1Test,
                                   sigmaTest,
@@ -309,7 +310,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives", {
     xlatentTest1 <- xlatentTest
     xlatentTest1[it] <- xlatentTest1[it] + delta
     gradNum[it] <- 
-      (xthetaphi1sigmallikRcpp(xlatentTest1,
+      (magi:::xthetaphi1sigmallikRcpp(xlatentTest1,
                                thetaTest,
                                phi1Test,
                                sigmaTest,
@@ -326,7 +327,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives", {
     thetaTest1 <- thetaTest
     thetaTest1[it] <- thetaTest1[it] + delta
     gradNum[it] <- 
-      (xthetaphi1sigmallikRcpp(xlatentTest,
+      (magi:::xthetaphi1sigmallikRcpp(xlatentTest,
                                thetaTest1,
                                phi1Test,
                                sigmaTest,
@@ -343,7 +344,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives", {
     phi1Test1 <- phi1Test
     phi1Test1[it] <- phi1Test1[it] + delta
     gradNum[it] <- 
-      (xthetaphi1sigmallikRcpp(xlatentTest,
+      (magi:::xthetaphi1sigmallikRcpp(xlatentTest,
                                thetaTest,
                                phi1Test1,
                                sigmaTest,
@@ -361,7 +362,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives", {
     sigmaTest1 <- sigmaTest
     sigmaTest1[it] <- sigmaTest1[it] + delta
     gradNum[it] <- 
-      (xthetaphi1sigmallikRcpp(xlatentTest,
+      (magi:::xthetaphi1sigmallikRcpp(xlatentTest,
                                thetaTest,
                                phi1Test,
                                sigmaTest1,
@@ -375,7 +376,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives", {
   # one combined sigma
   sigmaTest1 <- sigmaTest[1]
   sigmaTest1 <- sigmaTest1 + delta
-  out1sigma <-xthetaphi1sigmallikRcpp(xlatentTest,
+  out1sigma <-magi:::xthetaphi1sigmallikRcpp(xlatentTest,
                                       thetaTest,
                                       phi1Test,
                                       sigmaTest[1],
@@ -383,7 +384,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives", {
                                       nophi1Cov)
   
   gradNum <- 
-    (xthetaphi1sigmallikRcpp(xlatentTest,
+    (magi:::xthetaphi1sigmallikRcpp(xlatentTest,
                              thetaTest,
                              phi1Test,
                              sigmaTest1,
@@ -398,7 +399,7 @@ testthat::test_that("xthetaphi1sigmallik derivatives", {
 
 test_that("xthetaphi1sigmaSample sampler can run", {
   stepsize <- rep(0.01, length(c(xlatentTest, thetaTest, phi1Test, sigmaTest)))
-  xthetaphi1sigmaSample(dataInputWithMissing,
+  out <- magi:::xthetaphi1sigmaSample(dataInputWithMissing,
                         nophi1Cov,
                         phi1Test,
                         sigmaTest,
@@ -406,8 +407,9 @@ test_that("xthetaphi1sigmaSample sampler can run", {
                         stepsize,
                         20,
                         modelName = "FN")
-  
-  xthetaphi1sigmaSample(dataInputWithMissing,
+  testthat::expect_equal(length(out$final), 29)
+
+  out <- magi:::xthetaphi1sigmaSample(dataInputWithMissing,
                         nophi1Cov,
                         phi1Test,
                         sigmaTest,
@@ -416,9 +418,10 @@ test_that("xthetaphi1sigmaSample sampler can run", {
                         20,
                         loglikflag = "withmeanBand",
                         modelName = "FN")
+  testthat::expect_equal(length(out$final), 29)
   
   stepsize <- rep(0.0001, length(c(xlatentTest, thetaTest, phi1Test, sigmaTest[1])))
-  xthetaphi1sigmaSample(dataInputWithMissing,
+  out <- magi:::xthetaphi1sigmaSample(dataInputWithMissing,
                         nophi1Cov,
                         phi1Test,
                         sigmaTest[1],
@@ -427,6 +430,7 @@ test_that("xthetaphi1sigmaSample sampler can run", {
                         20,
                         loglikflag = "withmeanBand",
                         modelName = "FN")
+  testthat::expect_equal(length(out$final), 28)
 })
 
 test_that("xthetaphi1sigmaSample sampler can run for Hes1", {
@@ -436,7 +440,7 @@ test_that("xthetaphi1sigmaSample sampler can run for Hes1", {
     X2 = c(2.3, 2.4, 1.63, 0.97, 0.58, 1.65, 2.33, 1.54, 0.86, 0.26, 1.16),
     X3 = c(1.4, 3.41, 1.63, 0.11, 5.3, 13, 1.47, 4.66, -0.52, 2.92, 7.73)
   )
-  xsim <- insertNaN(xsim.obs, 1)
+  xsim <- setDiscretization(xsim.obs, 1)
   xInit <- data.matrix(xsim[,-1])
   xInit[] <- 0
   thetaInit <- c(0.022, 0.3, 0.031, 0.028, 0.5, 20, 0.3)
@@ -445,13 +449,14 @@ test_that("xthetaphi1sigmaSample sampler can run for Hes1", {
   phi1Init <- curphi[1,]
   curphi[1,] <- 1
   curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
-    covEach <- calCov(curphi[, j], abs(outer(xsim$time, xsim$time, '-')), -sign(outer(xsim$time, xsim$time, '-')),
+    covEach <- magi:::calCov(curphi[, j], abs(outer(xsim$time, xsim$time, '-')), -sign(outer(xsim$time, xsim$time, '-')),
                       bandsize=20, kerneltype="generalMatern")
     covEach$mu[] <- mean(xsim.obs[,j+1])
     covEach
   })
   stepSize <- rep(1e-4, length(xInit) + length(thetaInit) + length(phi1Init) + length(sigmaInit))
-  xthetaphi1sigmaSample(data.matrix(xsim[,-1]), curCov, phi1Init, sigmaInit, c(xInit, thetaInit),
+  out <- magi:::xthetaphi1sigmaSample(data.matrix(xsim[,-1]), curCov, phi1Init, sigmaInit, c(xInit, thetaInit),
                         stepSize, 20, F, loglikflag = "withmeanBand",
                         priorTemperature = 1, modelName = "Hes1")
+  testthat::expect_equal(length(out$final), 76)
 })

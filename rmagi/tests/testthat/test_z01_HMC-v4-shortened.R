@@ -49,15 +49,15 @@ r.nobs <- abs(foo)
 r2.nobs <- r.nobs^2
 signr.nobs <- -sign(foo)
 
-phisigllikC( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), r.nobs, kerneltype)
-fn <- function(par) -phisigllikC( par, data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), r.nobs, kerneltype)$value
-gr <- function(par) -as.vector(phisigllikC( par, data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), r.nobs, kerneltype)$grad)
+magi:::phisigllikC( c(1.9840824, 1.1185157, 0.9486433, 3.2682434, noise), data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), r.nobs, kerneltype)
+fn <- function(par) -magi:::phisigllikC( par, data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), r.nobs, kerneltype)$value
+gr <- function(par) -as.vector(magi:::phisigllikC( par, data.matrix(fn.sim[!is.nan(fn.sim[,1]),1:2]), r.nobs, kerneltype)$grad)
 marlikmap <- optim(rep(1,5), fn, gr, method="L-BFGS-B", lower = 0.0001)
 cursigma <- marlikmap$par[5]
 
 testthat::test_that("phisigllik in R is the same as phisigllikC in C", {
-  phisigllikOutR <- phisigllik(marlikmap$par, data.matrix(fn.sim.obs[,1:2]), r.nobs, signr.nobs, TRUE, kerneltype)
-  phisigllikOutC <- phisigllikC( marlikmap$par, data.matrix(fn.sim.obs[,1:2]), r.nobs, kerneltype)
+  phisigllikOutR <- magi:::phisigllik(marlikmap$par, data.matrix(fn.sim.obs[,1:2]), r.nobs, signr.nobs, TRUE, kerneltype)
+  phisigllikOutC <- magi:::phisigllikC( marlikmap$par, data.matrix(fn.sim.obs[,1:2]), r.nobs, kerneltype)
   testthat::expect_equal(as.numeric(phisigllikOutR), phisigllikOutC$value, tolerance = 1e-5)
   testthat::expect_equal(attr(phisigllikOutR,"grad"), as.numeric(phisigllikOutC$grad),
                          tolerance = 1e-5)
@@ -66,24 +66,24 @@ testthat::test_that("phisigllik in R is the same as phisigllikC in C", {
 testthat::test_that("xthetallik in R is the same as in C", {
   #' FIXME rbf log full likelihood on derivative doesn't seem right,
   #' also rbf prior smoothing part seems to have poor goodness of fit
-  xthetallikOurR <- xthetallik( data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs), 1:2]),
+  xthetallikOurR <- magi:::xthetallik( data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs), 1:2]),
                                 c(0.2, 0.2, 3),
                                 calCov(marlikmap$par[1:2], r.nobs, signr.nobs, kerneltype=kerneltype),
                                 calCov(marlikmap$par[3:4], r.nobs, signr.nobs, kerneltype=kerneltype),
                                 cursigma,
                                 data.matrix(fn.sim.obs[,1:2]),
                                 T)
-  xthetallikOurC <- xthetallikC( data.matrix(fn.sim.obs[,1:2]),
+  xthetallikOurC <- magi:::xthetallikC( data.matrix(fn.sim.obs[,1:2]),
                                  calCov(marlikmap$par[1:2], r.nobs, signr.nobs, kerneltype=kerneltype),
                                  calCov(marlikmap$par[3:4], r.nobs, signr.nobs, kerneltype=kerneltype),
                                  cursigma,
                                  c(data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs), 1:2]), 0.2, 0.2, 3))
-  logliknoODEOutR <- logliknoODE( data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs), 1:2]),
+  logliknoODEOutR <- magi:::logliknoODE( data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs), 1:2]),
                                   calCov(marlikmap$par[1:2], r.nobs, signr.nobs, kerneltype=kerneltype),
                                   calCov(marlikmap$par[3:4], r.nobs, signr.nobs, kerneltype=kerneltype),
                                   cursigma,
                                   data.matrix(fn.sim.obs[,1:2]))
-  loglikOutR <- loglik( data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs), 1:2]),
+  loglikOutR <- magi:::loglik( data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs), 1:2]),
                           c(0.2, 0.2, 3),
                           calCov(marlikmap$par[1:2], r.nobs, signr.nobs, kerneltype=kerneltype),
                           calCov(marlikmap$par[3:4], r.nobs, signr.nobs, kerneltype=kerneltype),
@@ -99,13 +99,14 @@ testthat::test_that("xthetallik in R is the same as in C", {
   
 })
 
+if(interactive()){
 curCovV <- calCov(marlikmap$par[1:2], r, signr, bandsize=20, kerneltype=kerneltype)
 curCovR <- calCov(marlikmap$par[3:4], r, signr, bandsize=20, kerneltype=kerneltype)
 cursigma <- marlikmap$par[5]
 
-startVR <- rbind(getMeanCurve(fn.sim.obs$time, fn.sim.obs$Vtrue, fn.sim.obs$time, 
+startVR <- rbind(magi:::getMeanCurve(fn.sim.obs$time, fn.sim.obs$Vtrue, fn.sim.obs$time,
                               t(marlikmap$par[1:2]), sigma.mat=rep(cursigma,nrow(fn.sim.obs)), kerneltype),
-                 getMeanCurve(fn.sim.obs$time, fn.sim.obs$Rtrue, fn.sim.obs$time, 
+                 magi:::getMeanCurve(fn.sim.obs$time, fn.sim.obs$Rtrue, fn.sim.obs$time,
                               t(marlikmap$par[3:4]), sigma.mat=rep(cursigma,nrow(fn.sim.obs)), kerneltype))
 startVR <- t(startVR)
 nfold.pilot <- ceiling(nobs/40)
@@ -113,9 +114,9 @@ nobs.pilot <- nobs%/%nfold.pilot
 numparam.pilot <- nobs.pilot*2+3  # num HMC parameters
 n.iter.pilot <- 50
 if(kerneltype=="matern"){
-  pilotstepsize <-  0.001  
+  pilotstepsize <-  0.001
 }else if(kerneltype=="rbf"){
-  pilotstepsize <-  0.00001  
+  pilotstepsize <-  0.00001
 }else if(kerneltype=="compact1"){
   pilotstepsize <- 0.0001
 }
@@ -135,20 +136,20 @@ it.pilot <- 1
 for(it.pilot in 1:nfold.pilot){
   accepts <- c()
   stepLow <- rep(stepLow.scaler.pilot[1,it.pilot], nobs.pilot*2+3)
-  
+
   fn.sim.pilot <- fn.sim.obs[id.pilot[,it.pilot],]
-  
+
   pilotSignedDist <- outer(fn.sim.pilot$time, t(fn.sim.pilot$time),'-')[,1,]
-  
+
   xth.pilot[,1,it.pilot] <- c(startVR[id.pilot[,it.pilot],],rep(1,3))
-  
+
   pilotCovV <- calCov(marlikmap$par[1:2], abs(pilotSignedDist), -sign(pilotSignedDist), kerneltype=kerneltype)
   pilotCovR <- calCov(marlikmap$par[3:4], abs(pilotSignedDist), -sign(pilotSignedDist), kerneltype=kerneltype)
-  
+
   t <- 2
   for (t in 2:n.iter.pilot) {
     rstep <- runif(length(stepLow), stepLow, 2*stepLow)
-    foo <- xthetaSample(data.matrix(fn.sim.pilot[,1:2]), list(pilotCovV, pilotCovR), cursigma, 
+    foo <- magi:::xthetaSample(data.matrix(fn.sim.pilot[,1:2]), list(pilotCovV, pilotCovR), cursigma,
                         xth.pilot[,t-1,it.pilot], rstep, 20, T)
     xth.pilot[,t,it.pilot] <- foo$final
     accepts.pilot[t,it.pilot] <- foo$acc
@@ -161,9 +162,9 @@ for(it.pilot in 1:nfold.pilot){
       stepLow <- stepLow * .99
     }
     lliklist.pilot[t,it.pilot] <- foo$lpr
-    # if( t %% 100 == 0) show(c(t, mean(tail(accepts.pilot[1:t,it.pilot],100)), 
+    # if( t %% 100 == 0) show(c(t, mean(tail(accepts.pilot[1:t,it.pilot],100)),
     #                           foo$final[(nobs.pilot*2+1):(nobs.pilot*2+3)]))
-  }  
+  }
 }
 
 x <- apply(xth.pilot[-(1:(2*nobs.pilot)),,,drop=FALSE], c(1,3), plot)
@@ -217,7 +218,7 @@ stepLow.scaler[1] <- stepLow
 
 fullscalefac <- rep(NA, numparam)
 fullscalefac[c(obs.ind,nall+obs.ind,(2*nall+1):(2*nall+3))] <- scalefac   ## fill in nearest scales for HMC step size
-for (ii in 2:numparam) { 
+for (ii in 2:numparam) {
   if (is.na(fullscalefac[ii])) {
     fullscalefac[ii] <- fullscalefac[ii-1]
   }
@@ -237,17 +238,17 @@ for (t in 2:n.iter) {
   rstep <- runif(length(stepLow), stepLow, 2*stepLow)
   #rstep <- rstep / 10
   if(t < n.iter.approx){
-    foo <- xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma, 
-                        xth.formal[t-1,], rstep, 1000, T, loglikflag = "band")    
+    foo <- magi:::xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma,
+                        xth.formal[t-1,], rstep, 1000, T, loglikflag = "band")
   }else{
-    foo <- xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma, 
+    foo <- magi:::xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma,
                         xth.formal[t-1,], rstep, 1000, T, loglikflag = "usual")
   }
-  
+
   xth.formal[t,] <- foo$final
   accepts[t] <- foo$acc
   stepLow.scaler[t] <- mean(stepLow)
-  
+
   if (t < burnin & t > 10) {
     if (mean(tail(accepts[1:t],100)) > 0.9) {
       stepLow <- stepLow * 1.005
@@ -256,7 +257,7 @@ for (t in 2:n.iter) {
     }
   }
   lliklist[t] <- foo$lpr
-  
+
    # show(c(t, mean(tail(accepts[1:t],100)), foo$final[(nall*2+1):(nall*2+3)]))
 }
 
@@ -269,12 +270,13 @@ gpode <- list(abc=xth.formal[-(1:burnin), (nall*2+1):(nall*2+3)],
               vtrue=xth.formal[-(1:burnin), 1:nall],
               lp__=lliklist[-(1:burnin)],
               lglik=lliklist[-(1:burnin)])
-gpode$fode <- sapply(1:length(gpode$lp__), function(t) 
-  with(gpode, fODE(abc[t,], cbind(vtrue[t,],rtrue[t,]))), simplify = "array")
+gpode$fode <- sapply(1:length(gpode$lp__), function(t)
+  with(gpode, magi:::fODE(abc[t,], cbind(vtrue[t,],rtrue[t,]))), simplify = "array")
 
 fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtrue))
 fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))
 
 fn.sim$time <- fn.sim.all$time
-magi:::plotPostSamples(paste0("test-run-HMCv4-",kerneltype,".pdf"),
+magi:::plotPostSamples(paste0(tempdir(), "/test-run-HMCv4-",kerneltype,".pdf"),
                          fn.true, fn.sim, gpode, pram.true, config)
+}

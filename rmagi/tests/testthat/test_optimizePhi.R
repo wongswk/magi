@@ -66,7 +66,7 @@ if(config$async){
 }
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
 
-xsim <- insertNaN(xsim.obs,config$filllevel)
+xsim <- setDiscretization(xsim.obs,config$filllevel)
 xsim.obs <- xsim.obs[-nrow(xsim.obs), ]
 
 matplot(xsim$time, xsim[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
@@ -103,7 +103,7 @@ curCov <- lapply(1:(ncol(xsim.obs)-1), function(j){
 
 gpsmoothFuncList <- list()
 for(j in 1:3){
-  ynew <- getMeanCurve(xsim.obs$time, xsim.obs[,j+1], xsim$time, 
+  ynew <- magi:::getMeanCurve(xsim.obs$time, xsim.obs[,j+1], xsim$time,
                        t(curphi[,j]), t(cursigma[j]), kerneltype=config$kernel)
   gpsmoothFuncList[[j]] <- approxfun(xsim$time, ynew)
   plot.function(gpsmoothFuncList[[j]], from = min(xsim$time), to = max(xsim$time),
@@ -161,7 +161,10 @@ phiId <- (thetaId[length(thetaId)]+1):(thetaId[length(thetaId)]+length(pram.true
 sigmaId <- (phiId[length(phiId)]+1):(phiId[length(phiId)]+length(pram.true$sigma))
 obsDim <- dim(data.matrix(xsim[,-1]))
 
-phi3list <- phi3optim(xInit, thetaInit, curphi, cursigma)
+testthat::test_that("xthetaphisigmallikRcpp can run in cpp", {
+  phi3list <- phi3optim(xInit, thetaInit, curphi, cursigma)
+  testthat::expect_equal(length(phi3list), 2)
+})
 
 hes1logmodel <- list(
   fOde=magi:::hes1logmodelODE,

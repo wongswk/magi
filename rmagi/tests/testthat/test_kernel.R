@@ -13,7 +13,7 @@ phitrue <- list(
   rationalQuadratic = c(85.278, 5.997, 35.098, 14.908)
 )
 
-uprange <- 3
+uprange <- 3.5
 downrange <- 0.4
 
 set.seed(123)
@@ -180,7 +180,7 @@ for(kerneltype in c("compact1","rbf","matern","periodicMatern","generalMatern",
 
 testthat::test_that("linear kernel gives linear curve", {
   xtime <- seq(0,5,0.1)
-  egcov <- calCovLinear(c(1,1), xtime, complexity = 0)
+  egcov <- magi:::calCovLinear(c(1,1), xtime, complexity = 0)
   draws <- MASS::mvrnorm(7, rep(0, length(xtime)), egcov$C)
   matplot(xtime, t(draws), type="l", lty = 2:8, col= 2:8)
   mtext("linear kernel")
@@ -191,7 +191,7 @@ testthat::test_that("linear kernel gives linear curve", {
 
 testthat::test_that("Neural Network kernel gives rapid changes around 0", {
   xtime <- seq(-4,4,0.1)
-  egcov <- calCovNeuralNetwork(c(1,1), xtime, complexity = 0)
+  egcov <- magi:::calCovNeuralNetwork(c(1,1), xtime, complexity = 0)
   draws <- MASS::mvrnorm(7, rep(0, length(xtime)), egcov$C)
   matplot(xtime, t(draws), type="l", lty = 2:8, col= 2:8)
   title("Neural Network kernel")
@@ -204,7 +204,7 @@ testthat::test_that("Warping Matern kernel with sin/cos", {
   
   r <- as.matrix(dist(xtime))
   signr <- -sign(outer(xtime, xtime, "-"))
-  egcov2 <- calCovPeriodicWarpMatern(c(1,1, periodicity), r, signr, complexity = 3)
+  egcov2 <- magi:::calCovPeriodicWarpMatern(c(1,1, periodicity), r, signr, complexity = 3)
   
   draws <- MASS::mvrnorm(2, rep(0, length(xtime)), egcov2$C)
   matplot(xtime, t(draws), type="l", lty = 2:8, col= 2:8)
@@ -213,7 +213,7 @@ testthat::test_that("Warping Matern kernel with sin/cos", {
 
 testthat::test_that("modulated squared exponential kernel", {
   xtime <- seq(-6,6,0.1)
-  egcov <- calCovModulatedRBF(c(1,1,1), xtime, complexity = 0)
+  egcov <- magi:::calCovModulatedRBF(c(1,1,1), xtime, complexity = 0)
   draws <- MASS::mvrnorm(7, rep(0, length(xtime)), egcov$C)
   matplot(xtime, t(draws), type="l", lty = 2:8, col= 2:8)
   title("modulated squared exponential kernel")
@@ -225,7 +225,7 @@ testthat::test_that("Rational Quadratic kernel", {
   
   r <- as.matrix(dist(xtime))
   signr <- -sign(outer(xtime, xtime, "-"))
-  egcov2 <- calCovRationalQuadratic(c(1,1), r, signr, complexity = 3)
+  egcov2 <- magi:::calCovRationalQuadratic(c(1,1), r, signr, complexity = 3)
   
   draws <- MASS::mvrnorm(7, rep(0, length(xtime)), egcov2$C)
   matplot(xtime, t(draws), type="l", lty = 2:8, col= 2:8)

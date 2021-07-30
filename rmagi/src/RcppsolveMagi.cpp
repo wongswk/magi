@@ -3,19 +3,9 @@
 #include "Sampler.h"
 #include "MagiSolver.h"
 #include "dynamicalSystemModels.h"
+#include "RcppTranslation.h"
 
 using namespace Rcpp;
-
-arma::mat r2armamat(const SEXP & x){
-    const Rcpp::NumericMatrix & xtmp = as<const NumericMatrix>(x);
-    return arma::mat(const_cast<double*>( xtmp.begin()), xtmp.nrow(), xtmp.ncol(), false, false);
-}
-
-arma::cube r2armacube(const SEXP & x){
-    const Rcpp::NumericVector & xtmp = as<const NumericVector>(x);
-    IntegerVector dim = xtmp.attr("dim");
-    return arma::cube(const_cast<double*>( xtmp.begin()), dim[0], dim[1], dim[2], false, false);
-}
 
 // [[Rcpp::export]]
 Rcpp::List solveMagiRcpp(
@@ -78,16 +68,16 @@ Rcpp::List solveMagiRcpp(
         modelC.thetaLowerBound = arma::vec(const_cast<double*>( &(thetaLowerBoundR[0])), thetaLowerBoundR.size(), false, false);
         modelC.thetaSize = modelC.thetaLowerBound.size();
 
-        modelC.fOde = [& fOdeR](const arma::vec & theta, const arma::mat & x) -> arma::mat {
-            return r2armamat(fOdeR(theta, x));
+        modelC.fOde = [fOdeR](const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) -> arma::mat {
+            return r2armamat(fOdeR(theta, x, tvec));
         };
 
-        modelC.fOdeDx = [& fOdeDxR](const arma::vec & theta, const arma::mat & x) -> arma::cube {
-            return r2armacube(fOdeDxR(theta, x));
+        modelC.fOdeDx = [fOdeDxR](const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) -> arma::cube {
+            return r2armacube(fOdeDxR(theta, x, tvec));
         };
 
-        modelC.fOdeDtheta = [& fOdeDthetaR](const arma::vec & theta, const arma::mat & x) -> arma::cube {
-            return r2armacube(fOdeDthetaR(theta, x));
+        modelC.fOdeDtheta = [fOdeDthetaR](const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) -> arma::cube {
+            return r2armacube(fOdeDthetaR(theta, x, tvec));
         };
     }
 
@@ -120,13 +110,13 @@ Rcpp::List solveMagiRcpp(
 
     solver.setupPhiSigma();
     if(verbose){
-        std::cout << "phi = \n" << solver.phiAllDimensions << "\n";
+        Rcpp::Rcout << "phi = \n" << solver.phiAllDimensions << "\n";
     }
     solver.initXmudotmu();
 
     solver.initTheta();
     if(verbose){
-        std::cout << "thetaInit = \n" << solver.thetaInit << "\n";
+        Rcpp::Rcout << "thetaInit = \n" << solver.thetaInit << "\n";
     }
 
     //return yFull;

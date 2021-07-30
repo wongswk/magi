@@ -8,7 +8,7 @@ from arma import vector, matrix
 class SolveMagiTest(unittest.TestCase):
     def test_solve_fn(self):
         fn_system = OdeSystem()
-        def fOde(theta, x):
+        def fOde(theta, x, tvec):
             theta = vector(theta)
             x = matrix(x)
 
@@ -21,7 +21,7 @@ class SolveMagiTest(unittest.TestCase):
 
             return ArmaMatrix(result.T.copy())
 
-        def fOdeDx(theta, x):
+        def fOdeDx(theta, x, tvec):
             theta = vector(theta)
             x = matrix(x)
 
@@ -35,7 +35,7 @@ class SolveMagiTest(unittest.TestCase):
             resultDx[:,1,1] = -1.0*theta[1]/theta[2]
             return ArmaCube(resultDx.T.copy())
 
-        def fOdeDtheta(theta, x):
+        def fOdeDtheta(theta, x, tvec):
             theta = vector(theta)
             x = matrix(x)
 
@@ -107,7 +107,7 @@ class SolveMagiTest(unittest.TestCase):
 
     def test_solve_hes1log(self):
         hes1_system = OdeSystem()
-        def fOde(theta, x):
+        def fOde(theta, x, tvec):
             theta = vector(theta)
             x = matrix(x)
 
@@ -122,7 +122,7 @@ class SolveMagiTest(unittest.TestCase):
 
             return ArmaMatrix(PMHdt.T.copy())
 
-        def fOdeDx(theta, x):
+        def fOdeDx(theta, x, tvec):
             theta = vector(theta)
             x = matrix(x)
 
@@ -146,7 +146,7 @@ class SolveMagiTest(unittest.TestCase):
 
             return ArmaCube(resultDx.T.copy())
 
-        def fOdeDtheta(theta, x):
+        def fOdeDtheta(theta, x, tvec):
             theta = vector(theta)
             x = matrix(x)
 

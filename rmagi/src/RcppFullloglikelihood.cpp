@@ -7,8 +7,10 @@
 using namespace arma;
 
 
-//' sample from GP ODE for latent x and theta
-//' @export
+//' sample from GP ODE for latent x, theta, sigma, and phi
+//' the phi can be sampled together. However this incurs huge computational cost because the matrix inverse whenever phi2 changed
+//' not used in the final method because of the computational cost.
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List xthetaphisigmaSample( const arma::mat & xInitial, 
                                  const arma::vec & thetaInitial,
@@ -90,8 +92,17 @@ Rcpp::List xthetaphisigmaSample( const arma::mat & xInitial,
 }
 
 
-//' R wrapper for xthetallik
-//' @export
+//' R wrapper for xthetaphisigmallik
+//' Calculate the log posterior of x, theta, sigma, and phi
+//' @param xlatent the matrix of latent ODE curve
+//' @param theta the parameter of ODE function
+//' @param phi the hyper-parameter of GP kernel
+//' @param sigma the observation noise for each component of y
+//' @param yobs matrix of observations
+//' @param xtimes the time index of discretizations
+//' @param modelName string of model name
+//' export removed: function specific to pre-coded models only
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List xthetaphisigmallikRcpp( const arma::mat & xlatent, 
                                    const arma::vec & theta, 

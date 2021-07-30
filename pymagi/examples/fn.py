@@ -3,7 +3,7 @@ from arma import ode_system, solve_magi
 import scipy
 
 
-def fOde(theta, x):
+def fOde(theta, x, tvec):
     V = x[:, 0]
     R = x[:, 1]
     Vdt = theta[2] * (V - pow(V,3) / 3.0 + R)
@@ -11,7 +11,7 @@ def fOde(theta, x):
     result = np.stack([Vdt, Rdt], axis=1)
     return result
 
-def fOdeDx(theta, x):
+def fOdeDx(theta, x, tvec):
     resultDx = np.zeros(shape=[np.shape(x)[0], np.shape(x)[1], np.shape(x)[1]])
     V = x[:, 0]
     R = x[:, 1]
@@ -21,7 +21,7 @@ def fOdeDx(theta, x):
     resultDx[:,1,1] = -1.0*theta[1]/theta[2]
     return resultDx
 
-def fOdeDtheta(theta, x):
+def fOdeDtheta(theta, x, tvec):
     resultDtheta = np.zeros(shape=[np.shape(x)[0], np.shape(theta)[0], np.shape(x)[1]])
     V = x[:, 0]
     R = x[:, 1]

@@ -3,6 +3,7 @@
 #include "RcppArmadillo.h"
 #include "Sampler.h"
 #include "gpsmoothing.h"
+#include "RcppTranslation.h"
 
 using namespace std;
 using namespace arma;
@@ -10,7 +11,13 @@ using namespace Rcpp;
 
 
 //' R wrapper for phisigllik
-//' @export
+//' phi sigma marginal log likelihood in GP smoothing.
+//' used to set hyper-parameters phi
+//' @param phisig vector of phi and sigma
+//' @param yobs matrix of observations. if set each dimension separately, then supply a matrix of only 1 column
+//' @param dist distance matrix on time index
+//' @param kernel the type of kernel, support "matern", "rbf", "compact1", "periodicMatern", "generalMatern"
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List phisigllikC(const arma::vec & phisig, 
                        const arma::mat & yobs, 
@@ -22,7 +29,8 @@ Rcpp::List phisigllikC(const arma::vec & phisig,
 }
 
 //' R wrapper for phisigllik
-//' @export
+//' phi sigma leave-one-out-cross-validation log-likelihood for setting hyper-paramters. This idea is not used in the final method
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List phisigloocvllikC(const arma::vec & phisig, 
                             const arma::mat & yobs, 
@@ -34,7 +42,8 @@ Rcpp::List phisigloocvllikC(const arma::vec & phisig,
 }
 
 //' R wrapper for phisigloocvmse
-//' @export
+//' phi sigma leave-one-out-cross-validation mean-squared-error for setting hyper-paramters. This idea is not used in the final method
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List phisigloocvmseC(const arma::vec & phisig, 
                            const arma::mat & yobs, 
@@ -47,7 +56,8 @@ Rcpp::List phisigloocvmseC(const arma::vec & phisig,
 
 
 //' sample from GP marginal likelihood for phi and sigma
-//' @export
+//' Internal function for debugging purpose
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List phisigSample( const arma::mat & yobs, 
                          const arma::mat & dist, 
@@ -90,6 +100,7 @@ gpcov cov_r2cpp(const Rcpp::List & cov_r){
   const Rcpp::NumericMatrix & KinvBand = as<const NumericMatrix>(cov_r["KinvBand"]);
   const Rcpp::NumericVector & mu = as<const NumericVector>(cov_r["mu"]);
   const Rcpp::NumericVector & dotmu = as<const NumericVector>(cov_r["dotmu"]);
+  const Rcpp::NumericVector & tvecCovInput = as<const NumericVector>(cov_r["tvecCovInput"]);
   
   // *(const_cast<double*>( &(mu[0]))) = -1; // this part is working -- R value changed
   
@@ -103,6 +114,7 @@ gpcov cov_r2cpp(const Rcpp::List & cov_r){
   cov_v.mu = vec(const_cast<double*>( &(mu[0])), mu.size(), false, false);
   cov_v.dotmu = vec(const_cast<double*>( &(dotmu[0])), dotmu.size(), false, false);
   cov_v.bandsize = as<int>(cov_r["bandsize"]);
+  cov_v.tvecCovInput = vec(const_cast<double*>( &(tvecCovInput[0])), tvecCovInput.size(), false, false);
   
   // cov_v.mu(1) = 2; // this part is also working -- R value changed
   // cov_v.CinvBand(0) = 999;
@@ -123,20 +135,25 @@ Rcpp::List cov_cpp2r(const gpcov & cov_v){
     Named("mphi")=cov_v.mphi,
     Named("Kinv")=cov_v.Kinv,
     Named("Sigma")=cov_v.Sigma,
-    Named("dSigmadphiCube")=cov_v.dSigmadphiCube
+    Named("dSigmadphiCube")=cov_v.dSigmadphiCube,
+    Named("tvecCovInput")=cov_v.tvecCovInput
   );
   return cov_r;
 }
 
 //' general matern cov calculation Rcpp wrapper
-//' @export
+//' @param phi the GP kernel hyper-parameters
+//' @param distSigned signed distance of time indices
+//' @param complexity the complexity of GP kernel calculation. Refer to documentation of `calCov`
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List generalMaternCovRcpp( const arma::vec & phi, const arma::mat & distSigned, int complexity = 3){
   return cov_cpp2r(generalMaternCov(phi, distSigned, complexity));
 }
 
-//' sample from GP ODE for latent x and theta
-//' @export
+//' sample from GP ODE for latent x and theta using HMC
+//' Internal function for debugging purpose
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List xthetaSample( const arma::mat & yobs, 
                          const Rcpp::List & covList, 
@@ -227,9 +244,12 @@ Rcpp::List xthetaSample( const arma::mat & yobs,
 }
 
 //' parallel tempered version of hmc for xtheta sample
-//' @export
+//'
+//' not used in the final method, in final method, only one temperature with heating is needed
+//'
+//' @noRd
 // [[Rcpp::export]]
-arma::cube parallel_temper_hmc_xtheta( const arma::mat & yobs, 
+arma::cube parallel_temper_hmc_xtheta( const arma::mat & yobs,
                                        const Rcpp::List & covVr, 
                                        const Rcpp::List & covRr, 
                                        const arma::vec & sigmaInput,
@@ -298,7 +318,16 @@ arma::cube parallel_temper_hmc_xtheta( const arma::mat & yobs,
 
 
 //' R wrapper for xthetallik
-//' @export
+//' Calculate the log posterior of x and theta, without sigma
+//' @param yobs matrix of observations
+//' @param covAllDimInput list of covariance kernel objects
+//' @param sigmaInput vector of sigma for each component of y
+//' @param initial vector of x and theta, i.e., vectorise x from matrix, and then concatenate the theta vector
+//' @param modelName string of model name
+//' @param useBand boolean variable to use band matrix approximation
+//' @param priorTemperatureInput the prior temperature for derivative, level, and observation, in that order
+//' export removed: function specific to pre-coded models only
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List xthetallikRcpp(const arma::mat & yobs, 
                           const Rcpp::List & covAllDimInput,
@@ -343,7 +372,8 @@ Rcpp::List xthetallikRcpp(const arma::mat & yobs,
 
 
 //' R wrapper for xthetallik
-//' @export
+//' Internal function for debugging purpose
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List xthetallikWithmuBandC(const arma::mat & yobs, 
                                  const Rcpp::List & covVr, 
@@ -383,7 +413,8 @@ lp lp_r2cpp(const Rcpp::List & lp_r){
 
 
 //' R wrapper for basic_hmcC
-//' @export
+//' Internal function for debugging purpose
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List basic_hmcRcpp(const Rcpp::Function rlpr,
                          const arma::vec & initial,
@@ -409,7 +440,8 @@ Rcpp::List basic_hmcRcpp(const Rcpp::Function rlpr,
 }
 
 //' R wrapper for chainSamplerRcpp
-//' @export
+//' Internal function for debugging purpose
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List chainSamplerRcpp(const arma::mat & yobs,
                             const Rcpp::List & covAllDimInput,
@@ -443,11 +475,12 @@ Rcpp::List chainSamplerRcpp(const arma::mat & yobs,
     );
 }
 
-//' R wrapper for chainSamplerRcpp
-//' @export
+//' R wrapper for optimizeThetaInit
+//' Internal function for debugging purpose
+//' @noRd
 // [[Rcpp::export]]
 arma::vec optimizeThetaInitRcpp(const arma::mat & yobs,
-                                const OdeSystem & modelInput,
+                                const List & odeModel,
                                 const Rcpp::List & covAllDimInput,
                                 const arma::vec & sigmaAllDimensionsInput,
                                 const arma::vec & priorTemperatureInput,
@@ -457,8 +490,33 @@ arma::vec optimizeThetaInitRcpp(const arma::mat & yobs,
     for(unsigned j = 0; j < yobs.n_cols; j++){
         covAllDimensions[j] = cov_r2cpp(covAllDimInput[j]);
     }
+
+    OdeSystem modelC;
+    const Rcpp::Function & fOdeR = as<const Function>(odeModel["fOde"]);
+    const Rcpp::Function & fOdeDxR = as<const Function>(odeModel["fOdeDx"]);
+    const Rcpp::Function & fOdeDthetaR = as<const Function>(odeModel["fOdeDtheta"]);
+
+    const Rcpp::NumericVector & thetaLowerBoundR = as<const NumericVector>(odeModel["thetaLowerBound"]);
+    const Rcpp::NumericVector & thetaUpperBoundR = as<const NumericVector>(odeModel["thetaUpperBound"]);
+
+    modelC.thetaUpperBound = arma::vec(const_cast<double*>( &(thetaUpperBoundR[0])), thetaUpperBoundR.size(), false, false);
+    modelC.thetaLowerBound = arma::vec(const_cast<double*>( &(thetaLowerBoundR[0])), thetaLowerBoundR.size(), false, false);
+    modelC.thetaSize = modelC.thetaLowerBound.size();
+
+    modelC.fOde = [fOdeR](const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) -> arma::mat {
+        return r2armamat(fOdeR(theta, x, tvec));
+    };
+
+    modelC.fOdeDx = [fOdeDxR](const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) -> arma::cube {
+        return r2armacube(fOdeDxR(theta, x, tvec));
+    };
+
+    modelC.fOdeDtheta = [fOdeDthetaR](const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) -> arma::cube {
+        return r2armacube(fOdeDthetaR(theta, x, tvec));
+    };
+
     return optimizeThetaInit(yobs,
-                             modelInput,
+                             modelC,
                              covAllDimensions,
                              sigmaAllDimensionsInput,
                              priorTemperatureInput,

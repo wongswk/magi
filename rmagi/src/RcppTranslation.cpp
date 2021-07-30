@@ -40,6 +40,7 @@ namespace Rcpp
         const Rcpp::NumericMatrix & KinvBand = as<const NumericMatrix>(cov_r["KinvBand"]);
         const Rcpp::NumericVector & mu = as<const NumericVector>(cov_r["mu"]);
         const Rcpp::NumericVector & dotmu = as<const NumericVector>(cov_r["dotmu"]);
+        const Rcpp::NumericVector & tvecCovInput = as<const NumericVector>(cov_r["tvecCovInput"]);
 
         // *(const_cast<double*>( &(mu[0]))) = -1; // this part is working -- R value changed
 
@@ -53,6 +54,7 @@ namespace Rcpp
         cov_v.mu = arma::vec(const_cast<double*>( &(mu[0])), mu.size(), false, false);
         cov_v.dotmu = arma::vec(const_cast<double*>( &(dotmu[0])), dotmu.size(), false, false);
         cov_v.bandsize = as<int>(cov_r["bandsize"]);
+        cov_v.tvecCovInput = arma::vec(const_cast<double*>( &(tvecCovInput[0])), tvecCovInput.size(), false, false);
 
         // cov_v.mu(1) = 2; // this part is also working -- R value changed
         // cov_v.CinvBand(0) = 999;
@@ -73,7 +75,8 @@ namespace Rcpp
             Named("mphi")=object.mphi,
             Named("Kinv")=object.Kinv,
             Named("Sigma")=object.Sigma,
-            Named("dSigmadphiCube")=object.dSigmadphiCube
+            Named("dSigmadphiCube")=object.dSigmadphiCube,
+            Named("tvecCovInput")=object.tvecCovInput
         );
     }
 
@@ -129,16 +132,16 @@ namespace Rcpp
         modelC.thetaLowerBound = arma::vec(const_cast<double*>( &(thetaLowerBoundR[0])), thetaLowerBoundR.size(), false, false);
         modelC.thetaSize = modelC.thetaLowerBound.size();
 
-        modelC.fOde = [& fOdeR](const arma::vec & theta, const arma::mat & x) -> arma::mat {
-            return r2armamat(fOdeR(theta, x));
+        modelC.fOde = [fOdeR](const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) -> arma::mat {
+            return r2armamat(fOdeR(theta, x, tvec));
         };
 
-        modelC.fOdeDx = [& fOdeDxR](const arma::vec & theta, const arma::mat & x) -> arma::cube {
-            return r2armacube(fOdeDxR(theta, x));
+        modelC.fOdeDx = [fOdeDxR](const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) -> arma::cube {
+            return r2armacube(fOdeDxR(theta, x, tvec));
         };
 
-        modelC.fOdeDtheta = [& fOdeDthetaR](const arma::vec & theta, const arma::mat & x) -> arma::cube {
-            return r2armacube(fOdeDthetaR(theta, x));
+        modelC.fOdeDtheta = [fOdeDthetaR](const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) -> arma::cube {
+            return r2armacube(fOdeDthetaR(theta, x, tvec));
         };
 
         return modelC;

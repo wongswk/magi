@@ -197,10 +197,11 @@ void MagiSolver::setupPhiSigma() {
 
     for(unsigned j = 0; j < ydim; j++){
         covAllDimensions[j] = kernelCov(phiAllDimensions.col(j), distSignedFull, 3);
+        covAllDimensions[j].tvecCovInput = tvecFull;
 
         // Workaround for phi1 getting too large and matrix inverse failing
         while (covAllDimensions[j].Cinv.n_rows == 0 || covAllDimensions[j].Kinv.n_rows == 0) {
-          cout << "Cinv or Kinv failed for component " << j << " with phi1 = " << phiAllDimensions(0,j) << " and phi2 = " << phiAllDimensions(1,j) << endl;
+          std::cout << "Cinv or Kinv failed for component " << j << " with phi1 = " << phiAllDimensions(0,j) << " and phi2 = " << phiAllDimensions(1,j) << endl;
           phiAllDimensions(0,j) *= 0.8;
           covAllDimensions[j] = kernelCov(phiAllDimensions.col(j), distSignedFull, 3);
         }
@@ -208,8 +209,8 @@ void MagiSolver::setupPhiSigma() {
         covAllDimensions[j].addBandCov(bandSize);
         
         // Diagnostic information
-        cout << "Component " << j << " Cinv max element: " << arma::max(arma::max(arma::abs(covAllDimensions[j].Cinv))) << ", Kinv max element: " << arma::max(arma::max(arma::abs(covAllDimensions[j].Kinv))) << endl;
-        cout << "Component " << j << " Cinv min element: " << arma::min(arma::min(arma::abs(covAllDimensions[j].Cinv))) << ", Kinv min element: " << arma::min(arma::min(arma::abs(covAllDimensions[j].Kinv))) << endl;
+//        std::cout << "Component " << j << " Cinv max element: " << arma::max(arma::max(arma::abs(covAllDimensions[j].Cinv))) << ", Kinv max element: " << arma::max(arma::max(arma::abs(covAllDimensions[j].Kinv))) << endl;
+//        std::cout << "Component " << j << " Cinv min element: " << arma::min(arma::min(arma::abs(covAllDimensions[j].Cinv))) << ", Kinv min element: " << arma::min(arma::min(arma::abs(covAllDimensions[j].Kinv))) << endl;
 
         
     }
@@ -258,10 +259,6 @@ void MagiSolver::initXmudotmu() {
             sucess(j) = 0;
         }
     }
-
-    const arma::uvec & sucessDim = arma::find(sucess == 2);
-    const arma::vec & xMean = arma::mean(xInitAllDim.cols(sucessDim), 1);
-    const arma::uvec & failedDim1 = arma::find(sucess == 1);
 
     xInit = xInitAllDim;
     if(!xInitExogenous.empty()){
@@ -348,6 +345,7 @@ void MagiSolver::initMissingComponent() {
         covAllDimensions[j].addBandCov(bandSize);
         covAllDimensions[j].mu = mu;
         covAllDimensions[j].dotmu = dotmu;
+        covAllDimensions[j].tvecCovInput = tvecFull;
     }
 
     // update theta
@@ -524,7 +522,7 @@ void MagiSolver::sampleInEpochs() {
                 covAllDimensions[j].dotmu = covAllDimensions[j].mphi * xPosteriorMean.col(j);
             }
         }else if(epochMethod == "f_bar_x") {
-            arma::mat dotxOde = odeModel.fOde(thetaPosteriorMean, xPosteriorMean);
+            arma::mat dotxOde = odeModel.fOde(thetaPosteriorMean, xPosteriorMean, tvecFull);
             for(unsigned long j = 0; j < covAllDimensions.size(); j++) {
                 covAllDimensions[j].dotmu = dotxOde.col(j);
             }
@@ -536,7 +534,8 @@ void MagiSolver::sampleInEpochs() {
                         arma::reshape(xthetasigmaSamples(
                                 arma::span(0, yFull.size() - 1),
                                 arma::span(it, it)
-                        ), yFull.n_rows, yFull.n_cols));
+                        ), yFull.n_rows, yFull.n_cols),
+                        tvecFull);
             }
             dotxOde /= niterHmc - static_cast<int>(niterHmc * burninRatioHmc);
             for(unsigned long j = 0; j < covAllDimensions.size(); j++) {

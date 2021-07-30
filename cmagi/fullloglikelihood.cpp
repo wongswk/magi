@@ -26,6 +26,7 @@ lp xthetaphisigmallik( const mat & xlatent,
   vector<gpcov> CovAllDimensions(phi.n_cols);
   for(unsigned int j = 0; j < phi.n_cols; j++){
     CovAllDimensions[j] = generalMaternCov( phi.col(j), distSigned, 3);
+    CovAllDimensions[j].tvecCovInput = xtimes;
   }
   
   vec xtheta = join_vert(vectorise(xlatent), theta);
@@ -42,7 +43,7 @@ lp xthetaphisigmallik( const mat & xlatent,
   
   lp numerator = xthetallik(xtheta, CovAllDimensions, sigma, yobs, fOdeModel, false, ones(2));
   
-  const mat & fderiv = fOdeModel.fOde(theta, xlatent);
+  const mat & fderiv = fOdeModel.fOde(theta, xlatent, xtimes);
   mat phiGradient(phi.n_rows, phi.n_cols);
   vec sigmaGradient(sigma.size());
   

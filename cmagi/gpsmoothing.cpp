@@ -1,7 +1,10 @@
+#define NDEBUG
+#define BOOST_DISABLE_ASSERTS
+#define EIGEN_NO_DEBUG
+
 #include <armadillo>
 #include <cppoptlib/boundedproblem.h>
 #include <cppoptlib/solver/lbfgsbsolver.h>
-#include <cppoptlib/solver/bfgssolver.h>
 
 #include "tgtdistr.h"
 #include "fullloglikelihood.h"
@@ -137,7 +140,7 @@ public:
             }
             ub[phiDim * i + 1] = maxDist;
         }
-        std::cout << "ub in PhiGaussianProcessSmoothing is " << ub << "\n";
+//        std::cout << "ub in PhiGaussianProcessSmoothing is " << ub << "\n";
         this->setUpperBound(ub);
 
         priorFactor = arma::zeros(2);
@@ -146,7 +149,7 @@ public:
                 priorFactor += calcFrequencyBasedPrior(yobs.col(j));
             }
             priorFactor /= yobs.n_cols;
-            std::cout << "priorFactor =\n" << priorFactor << "\n";
+//            std::cout << "priorFactor =\n" << priorFactor << "\n";
         }
     }
 };
@@ -233,7 +236,7 @@ arma::cube calcMeanCurve(const arma::vec & xInput,
                         const arma::vec & sigmaCandidates,
                         const std::string kerneltype = "generalMatern",
                         const bool useDeriv = false) {
-    assert(kerneltype == "generalMatern");
+    if(kerneltype != "generalMatern") std::cerr << "kerneltype other than generalMatern is not supported\n";
 
     const arma::vec & tvec = arma::join_vert(xOutput, xInput);
     arma::mat distSigned(tvec.size(), tvec.size());
@@ -393,8 +396,8 @@ public:
     const arma::vec & priorTemperature;
     const arma::mat & xInit;
     const arma::vec & thetaInit;
-    const arma::uvec & missingComponentDim;
     const arma::mat & phiFull;
+    const arma::uvec & missingComponentDim;
 
     double value(const Eigen::VectorXd & phiInput) override {
         if ((phiInput.array() < this->lowerBound().array()).any()){
@@ -487,7 +490,7 @@ public:
             priorFactor += calcFrequencyBasedPrior(yobsThisDim(arma::find_finite(yobsThisDim)));
         }
         priorFactor /= (yobs.n_cols - missingComponentDim.size());
-        std::cout << "average priorFactor in PhiOptim =\n" << priorFactor << "\n";
+//        std::cout << "average priorFactor in PhiOptim =\n" << priorFactor << "\n";
 
         for(unsigned i = 0; i < missingComponentDim.size(); i++){
             ub[2*i] = maxScale * 5;
@@ -534,8 +537,8 @@ public:
     const arma::vec & priorTemperature;
     arma::mat xInit;
     arma::vec thetaInit;
-    const arma::uvec & missingComponentDim;
     arma::mat phiAllDimensions;
+    const arma::uvec & missingComponentDim;
     const double SCALE = 1;
 
     double value(const Eigen::VectorXd & xthetaphiInput) override {
@@ -569,7 +572,7 @@ public:
                     xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * (id + 1) - 1);
 //            std::cout << "value: phiAllDimensions.col(missingComponentDim(id)) = " << phiAllDimensions.col(missingComponentDim(id)) << "\n";
         }
-//        cout << "inside evaluation of value\n";
+//        std::cout << "inside evaluation of value\n";
 
         const lp & out = xthetaphisigmallik( xInit,
                                              thetaInit,
@@ -649,7 +652,7 @@ public:
                         -out.gradient(xInit.size() + thetaInit.size() + phiAllDimensions.n_rows * missingComponentDim(id) + j);
             }
         }
-//        cout << "after gradient assignment =\n" << grad.transpose();
+//        std::cout << "after gradient assignment =\n" << grad.transpose();
     }
 
     XmissingThetaPhiOptim(const arma::mat & yobsInput,
@@ -694,7 +697,7 @@ public:
             priorFactor += calcFrequencyBasedPrior(yobsThisDim(arma::find_finite(yobsThisDim)));
         }
         priorFactor /= (yobs.n_cols - missingComponentDim.size());
-        std::cout << "average priorFactor in PhiOptim =\n" << priorFactor << "\n";
+//        std::cout << "average priorFactor in PhiOptim =\n" << priorFactor << "\n";
 
         for(unsigned i = 0; i < missingComponentDim.size(); i++){
             ub[xInit.n_rows * missingComponentDim.size() + thetaInit.size() + 2*i] = maxScale * 5;

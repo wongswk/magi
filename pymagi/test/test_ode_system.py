@@ -8,7 +8,7 @@ from arma import vector, matrix
 class OdeSystemTest(unittest.TestCase):
     def test_constructor(self):
         ode_system = OdeSystem()
-        def fOde(theta, x):
+        def fOde(theta, x, tvec):
             theta = vector(theta)
             x = matrix(x)
             return theta * x

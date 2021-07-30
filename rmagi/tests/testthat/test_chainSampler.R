@@ -9,7 +9,7 @@ config <- list(
   loglikflag = "band",
   bandsize = 20,
   hmcSteps = 20,
-  n.iter = 4e2,
+  n.iter = 2e2,
   burninRatio = 0.1,
   stepSizeFactor = 1
 )
@@ -33,10 +33,11 @@ fn.sim[-seq(1,nrow(fn.sim), length=config$nobs),] <- NaN
 fn.sim.obs <- fn.sim[seq(1,nrow(fn.sim), length=config$nobs),]
 tvec.nobs <- fn.sim$time[seq(1,nrow(fn.sim), length=config$nobs)]
 
+priorFactor <- magi:::calcFrequencyBasedPrior(fn.sim.obs[,1])
+priorFactor2 <- magi:::getFrequencyBasedPrior(fn.sim.obs[,1])
+
 testthat::test_that("c++ calcFrequencyBasedPrior correct", {
-  priorFactor <<- magi:::calcFrequencyBasedPrior(fn.sim.obs[,1])
-  priorFactor2 <<- magi:::getFrequencyBasedPrior(fn.sim.obs[,1])
-  testthat::expect_true(all(priorFactor == priorFactor2))
+  testthat::expect_true(all(abs(priorFactor - priorFactor2) < 1e-3))
 })
 
 testthat::test_that("c++ gpsmooth correct", {
@@ -47,17 +48,17 @@ testthat::test_that("c++ gpsmooth correct", {
                              config$kernel)
   
   fn <- function(par) {
-    marlik <- phisigllikC( par, yobs1, r.nobs, config$kernel)
+    marlik <- magi:::phisigllikC( par, yobs1, r.nobs, config$kernel)
     -marlik$value
   }
   gr <- function(par) {
-    marlik <- phisigllikC( par, yobs1, r.nobs, config$kernel)
+    marlik <- magi:::phisigllikC( par, yobs1, r.nobs, config$kernel)
     grad <- -as.vector(marlik$grad)
     grad
   }
 
   fn(outputc)
-  testthat::expect_true(all(abs(gr(outputc)) < 1e-4))
+  testthat::expect_true(all(abs(gr(outputc)) < 1e-3))
 })
 
 testthat::test_that("c++ gpsmooth correct dim2", {
@@ -68,17 +69,17 @@ testthat::test_that("c++ gpsmooth correct dim2", {
                              config$kernel)
   
   fn <- function(par) {
-    marlik <- phisigllikC( par, yobs1, r.nobs, config$kernel)
+    marlik <- magi:::phisigllikC( par, yobs1, r.nobs, config$kernel)
     -marlik$value
   }
   gr <- function(par) {
-    marlik <- phisigllikC( par, yobs1, r.nobs, config$kernel)
+    marlik <- magi:::phisigllikC( par, yobs1, r.nobs, config$kernel)
     grad <- -as.vector(marlik$grad)
     grad
   }
   
   fn(outputc)
-  testthat::expect_true(all(abs(gr(outputc)) < 1e-4))
+  testthat::expect_true(all(abs(gr(outputc)) < 1e-3))
 })
 
 testthat::test_that("c++ gpsmooth correct with fft prior", {
@@ -92,7 +93,7 @@ testthat::test_that("c++ gpsmooth correct with fft prior", {
   xsim.obs <- fn.sim.obs[,c("time", "Vtrue", "Rtrue")]
   j=1
   fn <- function(par) {
-    marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
+    marlik <- magi:::phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
     penalty <- dnorm(par[2], max(xsim.obs$time)*priorFactor[1], 
                      max(xsim.obs$time)*priorFactor[2], log=TRUE)
     # penalty <- dgamma(par[2], alphaRate, betaRate/max(xsim.obs$time), log=TRUE)
@@ -100,7 +101,7 @@ testthat::test_that("c++ gpsmooth correct with fft prior", {
     -(marlik$value + penalty)
   }
   gr <- function(par) {
-    marlik <- phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
+    marlik <- magi:::phisigllikC( par, data.matrix(xsim.obs[,1+j]), r.nobs, config$kernel)
     grad <- -as.vector(marlik$grad)
     penalty <- (par[2] - max(xsim.obs$time)*priorFactor[1]) / (max(xsim.obs$time)*priorFactor[2])^2
     # penalty <- ((alphaRate-1)/par[2] - betaRate/max(xsim.obs$time))
@@ -121,12 +122,14 @@ testthat::test_that("c++ gpsmooth correct with fixed sigma fft prior", {
                              config$kernel,
                              0.1,
                              FALSE)
+  testthat::expect_equal(length(outputc), 2)
   
   outputc <- magi:::gpsmooth(yobs1,
                              r.nobs,
                              config$kernel,
                              0.1,
                              TRUE)
+  testthat::expect_equal(length(outputc), 2)
   
 })
 
@@ -145,8 +148,10 @@ curCovR <- calCov(marlikmap$par[3:4], r, signr, bandsize=config$bandsize,
 cursigma <- marlikmap$par[5]
 curCovV$mu <- as.vector(fn.true[,1])  # pretend these are the means
 curCovR$mu <- as.vector(fn.true[,2])
+curCovV$tvecCovInput <- tvec.full
+curCovR$tvecCovInput <- tvec.full
 
-dotmu <- fODE(pram.true$abc, fn.true[,1:2]) # pretend these are the means for derivatives
+dotmu <- magi:::fODE(pram.true$abc, fn.true[,1:2]) # pretend these are the means for derivatives
 curCovV$dotmu <- as.vector(dotmu[,1])  
 curCovR$dotmu <- as.vector(dotmu[,2])
 
@@ -156,27 +161,28 @@ burnin <- as.integer(config$n.iter*config$burninRatio)
 xInit <- c(fn.true$Vtrue, fn.true$Rtrue, pram.true$abc)
 stepLowInit <- rep(0.00035, 2*nall+3)*config$stepSizeFactor
 
-singleSampler <- function(xthetaValues, stepSize) 
-  xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma, 
+singleSampler <- function(xthetaValues, stepSize)
+  magi:::xthetaSample(data.matrix(fn.sim[,1:2]), list(curCovV, curCovR), cursigma,
                xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag)
 
 testthat::test_that("chainSampler can run without error",{
-  chainSamplesOut <- chainSampler(config, xInit, singleSampler, stepLowInit, verbose=FALSE)  
+  chainSamplesOut <- magi:::chainSampler(config, xInit, singleSampler, stepLowInit, verbose=FALSE)
+  testthat::expect_equal(length(chainSamplesOut$lliklist), config$n.iter)
 })
+
+fnmodel <- list(
+  fOde=magi:::fnmodelODE,
+  fOdeDx=magi:::fnmodelDx,
+  fOdeDtheta=magi:::fnmodelDtheta,
+  thetaLowerBound=c(0,0,0),
+  thetaUpperBound=c(Inf,Inf,Inf)
+)
 
 testthat::test_that("chainSamplerRcpp can run without error",{
   xthetasigmaInit <- c(fn.true$Vtrue, fn.true$Rtrue, pram.true$abc, c(cursigma, cursigma))
   stepLowXthetasigmaInit <- c(rep(0.00035, 2*nall+3)*config$stepSizeFactor, 0, 0)
 
-  fnmodel <- list(
-    fOde=magi:::fODE,
-    fOdeDx=magi:::fnmodelDx,
-    fOdeDtheta=magi:::fnmodelDtheta,
-    thetaLowerBound=c(0,0,0),
-    thetaUpperBound=c(Inf,Inf,Inf)
-  )
-  
-  chainSamplerRcpp(
+  out <- magi:::chainSamplerRcpp(
     yobs = data.matrix(fn.sim[,1:2]),
     covAllDimInput = list(curCovV, curCovR),
     nstepsInput = config$hmcSteps,
@@ -190,10 +196,11 @@ testthat::test_that("chainSamplerRcpp can run without error",{
     stepLowInit = stepLowXthetasigmaInit,
     verbose = TRUE
   )
+  testthat::expect_equal(length(out$lliklist), config$n.iter)
   
   xthetasigmaInit <- c(fn.true$Vtrue, fn.true$Rtrue, pram.true$abc, c(cursigma))
   stepLowXthetasigmaInit <- c(rep(0.00035, 2*nall+3)*config$stepSizeFactor, 0)
-  chainSamplerRcpp(
+  out <- magi:::chainSamplerRcpp(
     yobs = data.matrix(fn.sim[,1:2]),
     covAllDimInput = list(curCovV, curCovR),
     nstepsInput = config$hmcSteps,
@@ -207,25 +214,19 @@ testthat::test_that("chainSamplerRcpp can run without error",{
     stepLowInit = stepLowXthetasigmaInit,
     verbose = TRUE
   )
+  testthat::expect_equal(length(out$lliklist), config$n.iter)
 
-  ## this gives segfault
-  # magi:::optimizeThetaInit(
-  #   yobsInput = data.matrix(fn.sim[,1:2]), 
-  #   fOdeModelInput = fnmodel, 
-  #   covAllDimensionsInput = list(curCovV, curCovR), 
-  #   sigmaAllDimensionsInput = c(cursigma, cursigma), 
-  #   priorTemperatureInput = c(1,1), 
-  #   xInitInput = cbind(fn.true$Vtrue, fn.true$Rtrue)
-  # )
-  
-  magi:::optimizeThetaInitRcpp(
-    yobs = data.matrix(fn.sim[,1:2]), 
-    modelInput = fnmodel, 
-    covAllDimInput = list(curCovV, curCovR), 
-    sigmaAllDimensionsInput = c(cursigma, cursigma), 
-    priorTemperatureInput = c(1,1), 
-    xInitInput = cbind(fn.true$Vtrue, fn.true$Rtrue),
-    useBandInput = TRUE
-  )
-  
+})
+
+testthat::test_that("optimizeThetaInit can run without error",{
+   out <- magi:::optimizeThetaInitRcpp(
+     yobs = data.matrix(fn.sim[,1:2]),
+     odeModel = fnmodel,
+     covAllDimInput = list(curCovV, curCovR),
+     sigmaAllDimensionsInput = c(cursigma, cursigma),
+     priorTemperatureInput = c(1,1),
+     xInitInput = cbind(fn.true$Vtrue, fn.true$Rtrue),
+     useBandInput = TRUE
+   )
+   testthat::expect_equal(length(out), 3)
 })

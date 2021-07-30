@@ -1,16 +1,17 @@
+# testhat helper functions
+
 #' calculate frequency of data series and give recommanded bandwidth parameter phi2
 #' 
 #' phi2 rule of thumb should be half of the periodicity
 #' 
 #' 
-#' @export
+#' @noRd
 getFrequencyBasedPrior <- function(x, showplot=FALSE){
   z <- fft(x)
   zmod <- Mod(z)
   zmodEffective <- zmod[-1]
   zmodEffective <- zmodEffective[1:(length(zmodEffective)/2)]
   if(showplot) {
-    par(mar=c(5,3,11,3))
     plot(as.numeric(x), xlab="index", ylab="x")
     names(zmod) <- NULL
     plot(zmod, col=c(1,rep(2, (length(zmod)-1)/2),rep(1, (length(zmod)-1)/2)))
@@ -24,7 +25,7 @@ getFrequencyBasedPrior <- function(x, showplot=FALSE){
     outliers = zmodEffective[zmodEffective > upperQuarter + 1.5 * iqr]
     if (length(outliers) == 0) {
       freq <- which.max(zmodEffective)
-      abline(v=xsim$time[id4phi][freq], col=4)
+      abline(v=1+freq, col=4)
     } else {
       outliers <- outliers[outliers > median(zmodEffective)]
       whichOutliers <- which(zmodEffective %in% outliers)

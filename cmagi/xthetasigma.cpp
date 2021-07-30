@@ -21,7 +21,8 @@ lp xthetasigmallik( const mat & xlatent,
                     const arma::vec & priorTemperatureInput,
                     const bool useBand,
                     const bool useMean) {
-  
+
+  const arma::vec & tvecFull = CovAllDimensions[0].tvecCovInput;
   if(useMean){
     mat xlatentShifted = xlatent;
     mat yobsShifted = yobs;
@@ -38,18 +39,18 @@ lp xthetasigmallik( const mat & xlatent,
     OdeSystem fOdeModelShifted = fOdeModel;
 
     fOdeModelShifted.fOde = [&muAllDimension, &dotmuAllDimension, &fOdeModel]
-    (const vec & theta, const mat & x) -> mat{
-      return fOdeModel.fOde(theta, x+muAllDimension) - dotmuAllDimension;
+    (const vec & theta, const mat & x, const vec & tvec) -> mat{
+      return fOdeModel.fOde(theta, x+muAllDimension, tvec) - dotmuAllDimension;
     };
     
     fOdeModelShifted.fOdeDx = [&muAllDimension, &dotmuAllDimension, &fOdeModel]
-    (const vec & theta, const mat & x) -> cube{ 
-      return fOdeModel.fOdeDx(theta, x+muAllDimension);
+    (const vec & theta, const mat & x, const vec & tvec) -> cube{
+      return fOdeModel.fOdeDx(theta, x+muAllDimension, tvec);
     };
     
     fOdeModelShifted.fOdeDtheta = [&muAllDimension, &dotmuAllDimension, &fOdeModel]
-    (const vec & theta, const mat & x) -> cube{ 
-      return fOdeModel.fOdeDtheta(theta, x+muAllDimension);
+    (const vec & theta, const mat & x, const vec & tvec) -> cube{
+      return fOdeModel.fOdeDtheta(theta, x+muAllDimension, tvec);
     };
 
     return xthetasigmallik(xlatentShifted, theta, sigmaInput, yobsShifted, CovAllDimensions, 
@@ -88,9 +89,9 @@ lp xthetasigmallik( const mat & xlatent,
   }
   vec sigmaSq = square(sigma);
   
-  const mat & fderiv = fOdeModel.fOde(theta, xlatent);
-  const cube & fderivDx = fOdeModel.fOdeDx(theta, xlatent);
-  const cube & fderivDtheta = fOdeModel.fOdeDtheta(theta, xlatent);
+  const mat & fderiv = fOdeModel.fOde(theta, xlatent, tvecFull);
+  const cube & fderivDx = fOdeModel.fOdeDx(theta, xlatent, tvecFull);
+  const cube & fderivDtheta = fOdeModel.fOdeDtheta(theta, xlatent, tvecFull);
   
   mat res(pdimension, 3);
   
@@ -149,7 +150,7 @@ lp xthetasigmallik( const mat & xlatent,
 
   ret.value = accu(res);
   
-  // cout << "lglik = " << ret.value << endl;
+  // std::cout << "lglik = " << ret.value << endl;
   
   // gradient 
   // V contrib

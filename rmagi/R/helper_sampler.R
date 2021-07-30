@@ -1,8 +1,10 @@
+# testhat helper functions
+
 #' chain Sampler generate one MCMC chain
 #' 
 #' @param config need at least `n.iter`, `burninRatio`, `loglikflag`, `hmcSteps`
 #' 
-#' @export 
+#' @noRd 
 chainSampler <- function(config, xInit, singleSampler, stepLowInit, verbose=TRUE, 
                          thetaDim=3){
   numparam <- length(xInit)
@@ -47,8 +49,8 @@ chainSampler <- function(config, xInit, singleSampler, stepLowInit, verbose=TRUE
 #' @param config need at least `n.iter`, `burninRatio`, 
 #' `loglikflag`, `hmcSteps`, `pilotRatio`, `stepSize`, 
 #' 
-#' @export 
-runPilot <- function(pilotIndex, xsim.obs, r.nobs, signr.nobs, curphi,
+#' @noRd 
+runPilot <- function(pilotIndex, xsim.obs, r.nobs, signr.nobs, curphi, cursigma,
                      gpsmoothFuncList, thetaSize, config){
   xsim.obs <- xsim.obs[pilotIndex, ]
   r.nobs <- r.nobs[pilotIndex, pilotIndex]
@@ -74,7 +76,7 @@ runPilot <- function(pilotIndex, xsim.obs, r.nobs, signr.nobs, curphi,
   singleSampler <- function(xthetaValues, stepSize) 
     xthetaSample(data.matrix(xsim.obs[,-1]), pilotCov, cursigma, 
                  xthetaValues, stepSize, config$hmcSteps, F, loglikflag = config$loglikflag,
-                 priorTemperature = config$priorTemperature, modelName = config$modelName)
+                 priorTemperatureInput = config$priorTemperature, modelName = config$modelName)
   # save(list=ls(), file="debug_in_fun.rda")
   chainSamplesOut <- chainSampler(config, xInit, singleSampler, stepLowInit, verbose=TRUE)
   

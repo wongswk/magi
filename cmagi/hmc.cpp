@@ -59,7 +59,7 @@ hmcstate basic_hmcC(const std::function<lp (vec)> & lpr,
     trajq = new mat(zeros<mat>(nsteps+1,initial.size()));
     trajp = new mat(zeros<mat>(nsteps+1,initial.size()));
     trajH = new vec(zeros<vec>(nsteps+1));
-    // cout << "trajq" << (*trajq)(1,1) << endl;
+    // std::cout << "trajq" << (*trajq)(1,1) << endl;
   }
   
   // Evaluate the log probability and gradient at the initial position
@@ -67,7 +67,7 @@ hmcstate basic_hmcC(const std::function<lp (vec)> & lpr,
   if(std::isnan(lpx.value)){
     throw std::runtime_error("hmc evaluates the log target density to be NaN at initial value");
   }
-  // cout << "Finish Evaluate the log probability and gradient at the initial position" << endl;
+  // std::cout << "Finish Evaluate the log probability and gradient at the initial position" << endl;
   
   // Compute the kinetic energy at the start of the trajectory
   vec initialp = randn<vec>(initial.size());
@@ -84,7 +84,7 @@ hmcstate basic_hmcC(const std::function<lp (vec)> & lpr,
     (*trajH)(0) = kineticinitial - lpx.value;
   } 
   double Hinitial = -lpx.value + kineticinitial;
-  // cout << "Finish Compute the trajectory by the leapfrog method" << endl;
+  // std::cout << "Finish Compute the trajectory by the leapfrog method" << endl;
   
   // Make a half step for momentum at the beginning
   p = p + ((step/2.0) % lpx.gradient);
@@ -225,6 +225,6 @@ mat bouncebyconstraint(vec x, vec lb, vec ub){
       }
     }
   }
-  // cout << x << endl;
+  // std::cout << x << endl;
   return join_horiz(x,uturn);
 }

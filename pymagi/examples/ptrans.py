@@ -2,7 +2,7 @@ import numpy as np
 from arma import ode_system, solve_magi
 
 
-def fOde(theta, x):
+def fOde(theta, x, tvec):
     resultdt = np.zeros(shape=np.shape(x))
 
     S = x[:, 0]
@@ -20,7 +20,7 @@ def fOde(theta, x):
     return resultdt
 
 
-def fOdeDx(theta, x):
+def fOdeDx(theta, x, tvec):
     resultDx = np.zeros(shape=[np.shape(x)[0], np.shape(x)[1], np.shape(x)[1]])
 
     S = x[:, 0]
@@ -50,7 +50,7 @@ def fOdeDx(theta, x):
     return resultDx
 
 
-def fOdeDtheta(theta, x):
+def fOdeDtheta(theta, x, tvec):
     resultDtheta = np.zeros(shape=[np.shape(x)[0], np.shape(theta)[0], np.shape(x)[1]])
 
     S = x[:, 0]

@@ -4,6 +4,8 @@
 
 #ifndef MAGI_MULTI_LANG_GPSMOOTHING_H
 #define MAGI_MULTI_LANG_GPSMOOTHING_H
+#define BOOST_DISABLE_ASSERTS
+#define EIGEN_NO_DEBUG
 
 #include "classDefinition.h"
 arma::vec optimizeThetaInit(const arma::mat & yobsInput,

@@ -22,7 +22,7 @@ lp xthetallik_rescaled( const arma::vec & xtheta,
                         const gpcov & CovR,
                         const double & sigma,
                         const arma::mat & yobs,
-                        const std::function<arma::mat (arma::vec, arma::mat)> & fODE);
+                        const std::function<arma::mat (arma::vec, arma::mat, arma::vec)> & fODE);
 lp xthetallikBandApprox( const arma::vec & xtheta, 
                          const std::vector<gpcov> & CovAllDimensions,
                          const double & sigma, 
@@ -39,20 +39,20 @@ lp xthetallikBandApproxHardCode( const vec & xtheta,
                                  const gpcov & CovR, 
                                  const double & sigma, 
                                  const mat & yobs,
-                                 const std::function<mat (vec, mat)> & fODE);
+                                 const std::function<mat (vec, mat, vec)> & fODE);
 lp xthetallikHardCode( const vec & xtheta, 
                        const gpcov & CovV, 
                        const gpcov & CovR, 
                        const double & sigma, 
                        const mat & yobs, 
-                       const std::function<mat (vec, mat)> & fODE);
+                       const std::function<mat (vec, mat, vec)> & fODE);
 
 lp phisigllikHard2D( const arma::vec &, const arma::mat &, const arma::mat &, string kernel = "matern");
 
 // using namespace Rcpp;
 
 //' R wrapper for basic_hmcC for normal distribution
-//' 
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List hmcNormal(arma::vec initial, arma::vec step, arma::vec lb, arma::vec ub,
                int nsteps = 1, bool traj = false){
@@ -84,6 +84,7 @@ gpcov cov_r2cpp_legacy(const Rcpp::List & cov_r){
   cov_v.mphi = as<mat>(cov_r["mphi"]);
   cov_v.Kphi = as<mat>(cov_r["Kphi"]);
   cov_v.Kinv = as<mat>(cov_r["Kinv"]);
+  cov_v.tvecCovInput = as<vec>(cov_r["tvecCovInput"]);
   cov_v.Ceigen1over = as<vec>(cov_r["Ceigen1over"]);
   cov_v.Keigen1over = as<vec>(cov_r["Keigen1over"]);
   cov_v.CeigenVec = as<mat>(cov_r["CeigenVec"]);
@@ -101,7 +102,7 @@ gpcov cov_r2cpp_legacy(const Rcpp::List & cov_r){
 
 
 //' R wrapper for xthetallik
-//' @export
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List xthetallik_rescaledC(const arma::mat & yobs, 
                                 const Rcpp::List & covVr, 
@@ -116,7 +117,7 @@ Rcpp::List xthetallik_rescaledC(const arma::mat & yobs,
 }
 
 //' R wrapper for xthetallikBandApprox
-//' @export
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List xthetallikBandApproxC( arma::mat & yobs, 
                                   const Rcpp::List & covVr, 
@@ -133,7 +134,7 @@ Rcpp::List xthetallikBandApproxC( arma::mat & yobs,
 }
 
 //' R wrapper for xthetallik
-//' @export
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List xthetallik_withmuC(const arma::mat & yobs, 
                               const Rcpp::List & covVr, 
@@ -150,7 +151,7 @@ Rcpp::List xthetallik_withmuC(const arma::mat & yobs,
 }
 
 //' R wrapper for xthetallik
-//' @export
+//' @noRd
 // [[Rcpp::export]]
 arma::vec speedbenchmarkXthetallik(const arma::mat & yobs, 
                                    const Rcpp::List & covVr, 
@@ -224,7 +225,7 @@ arma::vec speedbenchmarkXthetallik(const arma::mat & yobs,
 }
 
 //' test for pass by reference for gpcov
-//' @export
+//' @noRd
 // [[Rcpp::export]]
 int changeGPcovFromC(Rcpp::List & covVr){
   gpcov covV = cov_r2cpp(covVr);
@@ -262,7 +263,7 @@ void cov_r2cpp_t3(arma::mat & cov_r){
 }
 
 //' R wrapper for phisigllik
-//' @export
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List phisigllikHard2DC(const arma::vec & phisig, 
                              const arma::mat & yobs, 
@@ -274,7 +275,7 @@ Rcpp::List phisigllikHard2DC(const arma::vec & phisig,
 }
 
 //' R wrapper for xthetallik
-//' @export
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List xthetallikC(const arma::mat & yobs, 
                        const Rcpp::List & covVr, 
@@ -292,7 +293,7 @@ Rcpp::List xthetallikC(const arma::mat & yobs,
 
 
 //' test for output custom object
-//' @export
+//' @noRd
 // [[Rcpp::export]]
 gpcov maternCovTestOutput( const arma::vec & phi, const arma::mat & dist, int complexity = 0){
     gpcov out;
@@ -314,7 +315,7 @@ gpcov maternCovTestOutput( const arma::vec & phi, const arma::mat & dist, int co
 }
 
 //' test for input custom object
-//' @export
+//' @noRd
 // [[Rcpp::export]]
 arma::mat maternCovTestInput( const gpcov & cov_input){
     return cov_input.Cinv;

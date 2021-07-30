@@ -1,3 +1,7 @@
+// [[Rcpp::depends(BH)]]
+#define NDEBUG
+#define BOOST_DISABLE_ASSERTS
+
 #include "tgtdistr.h"
 #include "band.h"
 #include "dynamicalSystemModels.h"
@@ -16,7 +20,7 @@ gpcov maternCov( const vec & phi, const mat & dist, int complexity = 0){
   out.C = phi(0) * (1.0 + ((sqrt(5.0)*dist)/phi(1)) + 
     ((5.0*dist2)/(3.0*pow(phi(1),2)))) % exp((-sqrt(5.0)*dist)/phi(1));
   out.C.diag() += 1e-7;
-  // cout << out.C << endl;
+  // std::cout << out.C << endl;
   if (complexity == 0) return out;
   
   out.dCdphiCube.set_size(out.C.n_rows, out.C.n_cols, 2);
@@ -192,7 +196,7 @@ gpcov rbfCov( const vec & phi, const mat & dist, int complexity = 0){
   mat dist2 = square(dist);
   out.C = phi(0) * exp(-dist2/(2.0*pow(phi(1), 2)));
   out.C.diag() += 1e-7;
-  // cout << out.C << endl;
+  // std::cout << out.C << endl;
   if (complexity == 0) return out;
   
   out.dCdphiCube.set_size(out.C.n_rows, out.C.n_cols, 2);
@@ -211,7 +215,7 @@ gpcov compact1Cov( const vec & phi, const mat & dist, int complexity = 0){
   mat dist2 = square(dist);
   out.C = phi(0) * pow( arma::max(1 - dist / phi(1), zeromat), p+1) % ((p+1)*dist/phi(1)+1);
   out.C.diag() += 1e-7;
-  // cout << out.C << endl;
+  // std::cout << out.C << endl;
   if (complexity == 0) return out;
   
   out.dCdphiCube.set_size(out.C.n_rows, out.C.n_cols, 2);
@@ -430,6 +434,7 @@ lp xthetallik( const vec & xtheta,
                const OdeSystem & fOdeModel,
                const bool useBand,
                const arma::vec & priorTemperatureInput) {
+  const arma::vec & tvecFull = CovAllDimensions[0].tvecCovInput;
   int n = yobs.n_rows;
   int pdimension = yobs.n_cols;
   const mat & xlatent = mat(const_cast<double*>( xtheta.memptr()), n, pdimension, false, false);
@@ -451,9 +456,9 @@ lp xthetallik( const vec & xtheta,
     throw std::invalid_argument("priorTemperatureInput must be scaler, 2-vector or 3-vector");
   }
 
-  const mat & fderiv = fOdeModel.fOde(theta, xlatent);
-  const cube & fderivDx = fOdeModel.fOdeDx(theta, xlatent);
-  const cube & fderivDtheta = fOdeModel.fOdeDtheta(theta, xlatent);
+  const mat & fderiv = fOdeModel.fOde(theta, xlatent, tvecFull);
+  const cube & fderivDx = fOdeModel.fOdeDx(theta, xlatent, tvecFull);
+  const cube & fderivDtheta = fOdeModel.fOdeDtheta(theta, xlatent, tvecFull);
   
   mat res(pdimension, 3);
   
@@ -500,11 +505,11 @@ lp xthetallik( const vec & xtheta,
   res.col(1) = -0.5 * sum(fitDerivError % KinvfitDerivError).t() / priorTemperature(0);
   res.col(2) = -0.5 * sum(xlatent % CinvX).t() / priorTemperature(1);
   
-  // cout << "lglik component = \n" << res << endl;
+  // std::cout << "lglik component = \n" << res << endl;
   
   ret.value = accu(res);
   
-  // cout << "lglik = " << ret.value << endl;
+  // std::cout << "lglik = " << ret.value << endl;
   
   // gradient 
   // V contrib
@@ -567,18 +572,18 @@ lp xthetallikWithmuBand( const vec & xtheta,
   OdeSystem fOdeModelShifted = fOdeModel;
   
   fOdeModelShifted.fOde = [&muAllDimension, &dotmuAllDimension, &fOdeModel]
-  (const vec & theta, const mat & x) -> mat{
-    return fOdeModel.fOde(theta, x+muAllDimension) - dotmuAllDimension;
+  (const vec & theta, const mat & x, const vec & tvec) -> mat{
+    return fOdeModel.fOde(theta, x+muAllDimension, tvec) - dotmuAllDimension;
   };
   
   fOdeModelShifted.fOdeDx = [&muAllDimension, &dotmuAllDimension, &fOdeModel]
-  (const vec & theta, const mat & x) -> cube{ 
-    return fOdeModel.fOdeDx(theta, x+muAllDimension);
+  (const vec & theta, const mat & x, const vec & tvec) -> cube{
+    return fOdeModel.fOdeDx(theta, x+muAllDimension, tvec);
   };
   
   fOdeModelShifted.fOdeDtheta = [&muAllDimension, &dotmuAllDimension, &fOdeModel]
-  (const vec & theta, const mat & x) -> cube{ 
-    return fOdeModel.fOdeDtheta(theta, x+muAllDimension);
+  (const vec & theta, const mat & x, const vec & tvec) -> cube{
+    return fOdeModel.fOdeDtheta(theta, x+muAllDimension, tvec);
   };
   
   lp ret = xthetallik(xthetaShifted, CovAllDimensions, sigma, yobsShifted, 

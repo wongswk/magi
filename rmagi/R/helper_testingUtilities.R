@@ -1,9 +1,11 @@
+# testhat helper functions
+
 #' full log likelihood in R with contribution from each component
 #' 
 #' value is exact for x, theta, phi, sigma. we simply need to sample from this
 #' if computation is feasible. phi info is supplied explicitly
 #' 
-#' @export
+#' @noRd
 loglikWithNormalizingConstants <- function(x, theta, phi, sigma, y, rInput, signrInput, kerneltype = "matern")  {
   CovV <- calCov(phi[1:2], rInput, signrInput, complexity = 3, kerneltype=kerneltype)
   CovR <- calCov(phi[3:4], rInput, signrInput, complexity = 3, kerneltype=kerneltype)
@@ -42,4 +44,18 @@ loglikWithNormalizingConstants <- function(x, theta, phi, sigma, y, rInput, sign
   attr(ret,"components") <- res
   
   return(ret)
+}
+
+fODE <- function(theta, x) {
+  a <- theta[1]
+  b <- theta[2]
+  c <- theta[3]
+
+  V <- x[,1]
+  R <- x[,2]
+
+  Vdt <- c * (V - V^3 / 3 + R)
+  Rdt <- -1/c * ( V - a + b * R)
+
+  return(cbind(Vdt, Rdt))
 }

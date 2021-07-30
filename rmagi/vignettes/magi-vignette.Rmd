@@ -1,0 +1,716 @@
+---
+title: "magi-vignette"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{magi-vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+```{r, include = FALSE} 
+NOT_CRAN <- identical(tolower(Sys.getenv("NOT_CRAN")), "true")
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  purl = NOT_CRAN,
+  eval = NOT_CRAN
+)
+```
+
+This vignette introduces our R software package for the MAGI (MAnifold-constrained Gaussian process Inference) method ([Yang, Wong, and Kou 2021, PNAS](https://www.pnas.org/content/118/15/e2020397118)) for dynamic systems.
+
+Ordinary differential equations (ODEs) are widely used as models for dynamic systems in application domains, including gene regulation, economics, chemistry, epidemiology and ecology.  We focus on the setting where the ODEs are nonlinear and unknown parameters govern their behavior. The problem of interest is to recover the system trajectories and to estimate the parameters from experimental or observational data, where the observations taken from the system may be subject to measurement noise and may only be available at a sparse number of time points.  Further, some components in the system may not be observable. MAGI has been shown to provide fast and accurate inference  for this parameter estimation problem, including the case when there are unobserved system components.
+
+We provide two example systems in this vignette to illustrate usage of the package. We begin by loading the package.
+
+```{r setup}
+library(magi)
+```
+
+The core function of the package is `MagiSolver`, which generates MCMC samples (via Hamiltonian Monte Carlo) of the parameters and trajectories from their posterior distribution.  The basic syntax of `Magisolver` is
+```
+MagiSolver(y, odeModel, control=list())
+```
+where `y` is a data matrix, `odeModel` is a list of ODE functions and inputs, and `control` provides optional control variables.
+
+
+## Basic usage example: Fitzhugh-Nagumo equations
+
+The Fitzhugh-Nagumo (FN) equations describe spike potentials and consists of two system components $X = (V,R)$, which follow the ODE
+
+$$
+\mathbf{f}(X, \theta, t) = \begin{pmatrix}
+c(V-\dfrac{V^3}{3}+R) \\
+-\dfrac{1}{c}(V-a+bR)
+\end{pmatrix}
+$$
+where $\theta=(a,b,c)$ are the parameters of interest. Suppose noisy measurements are taken for $V$ and $R$ from this system at time points $t= 0, 0.5, 1, \ldots, 20$, as given below:
+
+```{r}
+tvec <- seq(0, 20, by = 0.5)
+V <- c(-1.16, -0.18, 1.57, 1.99, 1.95, 1.85, 1.49, 1.58, 1.47, 0.96, 
+0.75, 0.22, -1.34, -1.72, -2.11, -1.56, -1.51, -1.29, -1.22, 
+-0.36, 1.78, 2.36, 1.78, 1.8, 1.76, 1.4, 1.02, 1.28, 1.21, 0.04, 
+-1.35, -2.1, -1.9, -1.49, -1.55, -1.35, -0.98, -0.34, 1.9, 1.99, 1.84)
+R <- c(0.94, 1.22, 0.89, 0.13, 0.4, 0.04, -0.21, -0.65, -0.31, -0.65, 
+ -0.72, -1.26, -0.56, -0.44, -0.63, 0.21, 1.07, 0.57, 0.85, 1.04, 
+ 0.92, 0.47, 0.27, 0.16, -0.41, -0.6, -0.58, -0.54, -0.59, -1.15, 
+ -1.23, -0.37, -0.06, 0.16, 0.43, 0.73, 0.7, 1.37, 1.1, 0.85, 0.23)
+```
+
+MAGI is used to recover the system trajectories and to estimate the parameters, as follows.
+
+First, we create a function `fnmodelODE` that encodes the ODEs. It takes as input the vector of parameters $\theta$ and system states $X$ one per column and time $t$, and returns an array with the values of the derivatives $\dot{X}$ at each input time point:
+
+```{r}
+fnmodelODE <- function(theta,x,t) {
+  V <- x[,1]
+  R <- x[,2]
+
+  result <- array(0, c(nrow(x),ncol(x)))
+  result[,1] = theta[3] * (V - V^3 / 3.0 + R)
+  result[,2] = -1.0/theta[3] * ( V - theta[1] + theta[2] * R)
+  
+  result
+}
+```
+
+
+Second, to facilitate MCMC sampling via Hamiltonian Monte Carlo (HMC), we also supply functions for the gradients of the ODE with respect to the system components $X$ and the parameters $\theta$.  With respect to $X$, we have the matrix of gradients as follows,
+
+$$
+\frac{\partial \mathbf{f}(X, {\theta}, t)}{\partial X} = \begin{pmatrix}
+c(1-V^2) & c \\
+-1/c & -b/c
+\end{pmatrix}
+$$
+which we specify by defining the function:
+
+```{r}
+# Gradient with respect to system components X
+fnmodelDx <- function(theta,x,t) {
+  resultDx <- array(0, c(nrow(x), ncol(x), ncol(x)))
+  V = x[,1]
+  
+  resultDx[,1,1] = theta[3] * (1 - V^2)
+  resultDx[,2,1] = theta[3]
+  
+  resultDx[,1,2] = (-1.0 / theta[3])
+  resultDx[,2,2] = ( -1.0*theta[2]/theta[3] )
+  
+  resultDx
+}
+```
+
+With respect to $\theta$, we have the matrix of gradients as follows,
+
+$$
+\frac{\partial \mathbf{f}(X, {\theta}, t)}{\partial{\theta}} = \begin{pmatrix}
+0 & 0 & V-V^3/3 + R \\
+1/c & -R/c & (V - a + bR)/c^2
+\end{pmatrix}
+$$
+which we specify by defining the function:
+
+```{r}
+# Gradient with respect to parameters theta 
+fnmodelDtheta <- function(theta,x,t) {
+  resultDtheta <- array(0, c(nrow(x), length(theta), ncol(x)))
+  
+  V = x[,1]
+  R = x[,2]
+  
+  resultDtheta[,3,1] = V - V^3 / 3.0 + R
+  
+  resultDtheta[,1,2] =  1.0 / theta[3] 
+  resultDtheta[,2,2] = -R / theta[3]
+  resultDtheta[,3,2] = 1.0/(theta[3]^2) * ( V - theta[1] + theta[2] * R)
+  
+  resultDtheta
+}
+```
+
+We may wish to verify that the gradients have been provided correctly. This can be done using `testDynamicalModel`, which tests the analytic gradients using numerical differentiation:
+```{r}
+testDynamicalModel(fnmodelODE, fnmodelDx, fnmodelDtheta, 
+    "FN equations", cbind(V,R), c(.5, .6, 2), tvec)
+```
+
+Now we are ready to create the list `odeModel` for specification of the ODE system and its parameters. It must include five elements: the three functions already defined, together with vectors specifying the upper and lower bounds on $\theta$.  Here, all of the parameters $(a,b,c)$ are non-negative, so we may set the bounds as `0` and `Inf`:
+
+```{r}
+fnmodel <- list(
+  fOde=fnmodelODE,
+  fOdeDx=fnmodelDx,
+  fOdeDtheta=fnmodelDtheta,
+  thetaLowerBound=c(0,0,0),
+  thetaUpperBound=c(Inf,Inf,Inf)
+)
+```
+
+We prepare a data frame with columns for the time points and the observed values of the system components:
+```{r}
+yobs <- data.frame(time=tvec, V=V, R=R)  
+```
+ 
+MAGI constrains the Gaussian process to the system derivatives at a user-specified set of discretization points. Increasing the denseness of the discretization can lead to more accurate inference, at the expense of longer computation time. This can be set using the `setDiscretization` function: setting `level=0` corresponds to the original data, and positive integer `level` inserts `2^level - 1` equally-spaced points between existing observations.
+
+Let us first create an input data matrix with `level=1`, and then run MAGI by calling the core function `MagiSolver` to sample $X$ and $\theta$ from their posterior distribution. We run 2000 HMC iterations, each with 100 leapfrog steps, to illustrate. Additional control variables to `MagiSolver` can be passed in the `control` list, see documentation or the Hes1 example below for details.
+
+```{r, results="hide"}
+yinput <- setDiscretization(yobs, level=1)
+result <- MagiSolver(yinput, fnmodel, control=list(niterHmc=2000, nstepsHmc=100))
+```
+The output of `MagiSolver` consists of a list with the following elements:
+
+ * `theta`: matrix of MCMC samples for the system parameters $\theta$, after burn-in.
+ * `xsampled`: array of MCMC samples for the system trajectories at each discretization time point, after burn-in.
+ * `sigma`: matrix of MCMC samples for the observation noise SDs $\sigma$, after burn-in.
+ * `phi`: matrix of estimated GP hyper-parameters, one column for each system component.
+ * `lp`: vector of log-posterior values at each MCMC iteration, after burn-in.
+
+To informally assess convergence of the MCMC samples, we may examine traceplots of `theta` and `lp`:
+
+```{r, fig.align = "center", fig.width=6, fig.asp=1}
+oldpar <- par(mfrow=c(2,2), mar=c(5,2,1,1))
+theta.names <- c("a", "b", "c")
+for (i in 1:3) {
+	plot(result$theta[,i], main=theta.names[i], type="l", ylab="")
+}
+plot(result$lp, main="log-post", type="l", ylab="")
+```
+
+Then, we can compute the $\theta$ parameter estimates (via posterior means) together with 95\% credible intervals (via 2.5 to 97.5 percentiles of the MCMC samples):
+
+```{r}
+theta.est <- apply(result$theta, 2,
+    function(x) c(mean(x), quantile(x, 0.025), quantile(x, 0.975)))
+colnames(theta.est) <- theta.names
+rownames(theta.est) <- c("Mean", "2.5%", "97.5%")
+signif(theta.est, 3)
+```
+We extract the sampled system trajectories $X$. We treat the posterior means as the inferred trajectories (black curves), and add blue shaded areas to represent the 95\% credible intervals. The grey points are the observed data.
+
+```{r, fig.align = "center", fig.width=7, fig.asp=0.45}
+par(mfrow=c(1,2), mar=c(4,2,1,1))
+compnames <- c("V", "R")
+ylim_lower <- c(-3, -2)
+ylim_upper <- c(3, 2)
+times <- yinput[,1]
+
+xLB <- apply(result$xsampled, c(2,3), function(x) quantile(x, 0.025))
+xMean <- apply(result$xsampled, c(2,3), mean)
+xUB <- apply(result$xsampled, c(2,3), function(x) quantile(x, 0.975))
+
+for (i in 1:2) {
+  plot(times, xMean[,i], type="n", xlab="time", ylab="", ylim=c(ylim_lower[i], ylim_upper[i]))
+  mtext(compnames[i])
+
+  polygon(c(times, rev(times)), c(xUB[,i], rev(xLB[,i])),
+          col = "skyblue", border = NA)
+  points(times, yinput[,i+1], col = "grey50")
+  
+  lines(times, xMean[,i], lwd=1)
+}
+```
+
+The inferred trajectories appear to fit the observed data well. We can re-run MAGI at a higher discretization level to confirm that the results are stable:
+
+```{r, results="hide"}
+yinput2 <- setDiscretization(yobs, level=2)
+result2 <- MagiSolver(yinput, fnmodel, control=list(niterHmc=2000, nstepsHmc=100))
+```
+
+```{r}
+theta.est <- apply(result2$theta, 2,
+    function(x) c(mean(x), quantile(x, 0.025), quantile(x, 0.975)))
+colnames(theta.est) <- theta.names
+rownames(theta.est) <- c("Mean", "2.5%", "97.5%")
+signif(theta.est, 3)
+```
+
+The parameter estimates are stable between `level=1` and `level=2`, indicating that discretization level is sufficient for reliable inference.
+
+
+## Example with an unobserved component and asynchronous observations: Hes1 system
+
+MAGI can handle systems with unobserved components and asynchronous observations. To illustrate, consider the three-component dynamic system $X = (P,M,H)$ introduced in Hirata (2002, Science) governed by the ODE
+$$
+\mathbf{f}(X, {\theta}, t) = \begin{pmatrix}
+-aPH + bM - cP \\
+-dM + \frac{e}{1 + P^2} \\
+-aPH + \frac{f}{1+ P^2} - gH
+\end{pmatrix}, 
+$$
+where $P$ and $M$ are the protein and messenger ribonucleic acid (mRNA) levels in cultured cells.  In experimental data, $P$ and $M$ levels exhibit oscillatory cycles approximately every 2 hours, and the $H$ component is a hypothesized Hes1-interacting factor the helps regulate this oscillation via a negative feedback loop.  The parameters of this system are ${\theta} = (a, b, c, d, e, f, g)$, where $a, b$ can be interpreted as synthesis rates; $c,d,g$ as decomposition rates; and $e,f$ as inhibition rates.
+
+We define a function for this ODE system, that takes as input the vector of parameters ${\theta}$ and system states $X$ one per column and time $t$, and returns an array with the values of the derivatives $\dot{X}$:
+
+```{r}
+hes1modelODE <- function(theta, x, t) {
+     P = x[,1]
+     M = x[,2]
+     H = x[,3] 
+     
+     PMHdt = array(0, c(nrow(x), ncol(x)))
+     PMHdt[,1] = -theta[1]*P*H + theta[2]*M - theta[3]*P
+     PMHdt[,2] = -theta[4]*M + theta[5]/(1+P^2)
+     PMHdt[,3] = -theta[1]*P*H + theta[6]/(1+P^2) - theta[7]*H
+     
+     PMHdt
+}
+```
+
+Following the real experimental setup, measurements of $P$ and $M$ are taken every 15 minutes over a four hour period, but asynchronously:  $P$ is observed at $t = 0, 15, 30, \ldots, 240$ minutes, while $M$ is observed at $t = 7.5, 22.5, \ldots, 232.5$ minutes, and $H$ is never observed.
+
+To provide a realistic sample dataset for analysis, we simulate from this system using the parameter values studied theoretically: $a = 0.022$, $b = 0.3$, $c = 0.031$, $d = 0.028$, $e = 0.5$, $f = 20$,  $g = 0.3$; together with initial conditions $P(0) = 1.439$, $M(0) = 2.037$, $H(0) = 17.904$ informed by the authors' reported experimental data.  The observation noise in the experiment is approximately 15\% of both the $P$ and $M$ levels, which we treat as multiplicative noise following a log-normal distribution with known standard deviation 0.15.
+
+For convenience, we setup a list containing these simulation values:
+```{r}
+param.true <- list(
+  theta = c(0.022, 0.3, 0.031, 0.028, 0.5, 20, 0.3),
+  x0 = c(1.439, 2.037, 17.904),
+  sigma = c(0.15, 0.15, NA)
+)
+```
+
+Note that as $H$ is never observed, measurement noise is not applicable to that component. Next, we use a numerical solver to construct the system trajectories implied by the parameter values and initial conditions. We can make use of the ODE solvers available in the  `deSolve` package, by first defining a wrapper that satisfies the syntax of its `ode` function:
+
+```{r}
+modelODE <- function(t, state, parameters) {
+  list(as.vector(hes1modelODE(parameters, t(state), t)))
+}
+```
+
+We may now numerically solve the ODE trajectories over the time period of interest, from $t=0$ to $4$ hours (specified as 240 minutes):
+```{r}
+x <- deSolve::ode(y = param.true$x0, times = seq(0, 60*4, by = 0.01),
+                  func = modelODE, parms = param.true$theta)
+```
+
+Next, we extract the true values of the trajectory at the time points according to the schedule of observations described, and simulate noisy measurements for $P$ and $M$.  The seed `12321` is set for reproducibility of this example dataset.
+
+```{r}
+set.seed(12321)
+y <- as.data.frame(x[ x[, "time"] %in% seq(0, 240, by = 7.5),])
+names(y) <- c("time", "P", "M", "H")
+y$P <- y$P * exp(rnorm(nrow(y), sd=param.true$sigma[1]))
+y$M <- y$M * exp(rnorm(nrow(y), sd=param.true$sigma[2]))
+```
+
+For system components that are unobserved at a time point, we fill in the corresponding  values with `NaN`, recalling that $P$ and $M$ are observed asynchronously and $H$ is never observed:
+
+```{r}
+y$H <- NaN
+y$P[y$time %in% seq(7.5,240,by=15)] <- NaN
+y$M[y$time %in% seq(0,240,by=15)] <- NaN
+```
+
+We plot the observed data, with the points showing the noisy measurements available for $P$ and $M$ and the solid curves showing the true system trajectories:
+
+```{r, fig.align = "center", fig.width=6, fig.asp=1}
+matplot(x[, "time"], x[, -1], type="l", lty=1, xlab="Time (min)", ylab="Level")
+matplot(y$time, y[,-1], type="p", col=1:(ncol(y)-1), pch=20, add = TRUE)
+legend("topright", c("P", "M", "H"), lty=1, col=c("black", "red", "green"))
+```
+
+Since the Hes1 observations for $P$ and $M$ are positive and subject to  multiplicative error, we may apply a log-transform to the data and equations for the analysis. Apply log-transform to the data columns:
+
+```{r}
+y[,2:4] <- log(y[,2:4])
+```
+
+Now the dataset `y` is ready for input into \pkg{MAGI} to infer the system trajectories and estimate the seven parameters in ${\theta}$. 
+
+We set up the functions required for the `odeModel` list input to MAGI.  First, we have the ODE corresponding to the log-transformed equations, namely
+$$
+\mathbf{f}(X, {\theta}, t) = \begin{pmatrix}
+-aH' + bM'/P' - c \\
+-d + \frac{e}{(1 + P'^2)M'} \\
+-aP' + \frac{f}{(1+ P'^2)H'} - g
+\end{pmatrix}
+$$
+where $P' = \exp(P)$, $M' = \exp(M)$, and $H' = \exp(H)$, which we may code via the function
+
+```{r}
+hes1logmodelODE <- function (theta, x, t) {
+  eP = exp(x[, 1])
+  eM = exp(x[, 2])
+  eH = exp(x[, 3])
+  
+  PMHdt <- array(0, c(nrow(x), ncol(x)))
+  PMHdt[, 1] = -theta[1] * eH + theta[2] * eM/eP - theta[3]
+  PMHdt[, 2] = -theta[4] + theta[5]/(1 + eP^2)/eM
+  PMHdt[, 3] = -theta[1] * eP + theta[6]/(1 + eP^2)/eH - theta[7]
+  PMHdt
+}
+```
+
+Second, to facilitate HMC sampling we also supply functions for the gradients of the ODEs with respect to the system components $X$ and the parameters $\theta$.  With respect to $X$, we have the matrix of gradients as follows,
+
+$$
+\frac{\partial \mathbf{f}(X, {\theta}, t)}{\partial X} = \begin{pmatrix}
+-b M'/P' & b M'/P' & -a H' \\
+-\frac{2eP'^2}{ ( 1 + P'^2)^2 M'}  & -\frac{e}{(1 + P'^2)M'} & 0 \\
+-aP' - \frac{2fP'^2}{ ( 1 + P'^2)^2 H'} & 0 &  -\frac{f}{(1 + P'^2)H'} \\
+\end{pmatrix},
+$$
+which we specify by defining the function:
+
+```{r}
+hes1logmodelDx <- function (theta, x, t) {
+  P = x[, 1]
+  M = x[, 2]
+  H = x[, 3]
+  
+  Dx <- array(0, c(nrow(x), ncol(x), ncol(x)))
+  
+  dP = -(1 + exp(2 * P))^(-2) * exp(2 * P) * 2
+  Dx[, 1, 1] = -theta[2] * exp(M - P)
+  Dx[, 2, 1] = theta[2] * exp(M - P)
+  Dx[, 3, 1] = -theta[1] * exp(H)
+  Dx[, 1, 2] = theta[5] * exp(-M) * dP
+  Dx[, 2, 2] = -theta[5] * exp(-M)/(1 + exp(2 * P))
+  Dx[, 1, 3] = -theta[1] * exp(P) + theta[6] * exp(-H) * dP
+  Dx[, 3, 3] = -theta[6] * exp(-H)/(1 + exp(2 * P))
+  
+  Dx
+}
+```
+
+With respect to $\theta$, we have the matrix of gradients as follows,
+$$
+\frac{\partial \mathbf{f}(X, {\theta}, t)}{\partial {\theta}} = \begin{pmatrix}
+-H' &  M'/P' & -1 &  0 & 0 & 0  & 0 \\
+0 & 0 & 0 & -1 &  \frac{1}{ ( 1 + P'^2)^2 M'} & 0 & 0 \\
+-P' & 0 & 0 & 0 & 0 & \frac{1}{ ( 1 + P'^2)^2 H'} & -1 
+\end{pmatrix}
+$$
+
+which we specify by defining the function:
+
+```{r}
+hes1logmodelDtheta <- function (theta, x, t) {
+  
+  P = x[, 1]
+  M = x[, 2]
+  H = x[, 3]
+  
+  Dtheta <- array(0, c(nrow(x), length(theta), ncol(x)))
+  Dtheta[, 1, 1] = -exp(H)
+  Dtheta[, 2, 1] = exp(M - P)
+  Dtheta[, 3, 1] = -1
+  Dtheta[, 4, 2] = -1
+  Dtheta[, 5, 2] = exp(-M)/(1 + exp(2 * P))
+  Dtheta[, 1, 3] = -exp(P)
+  Dtheta[, 6, 3] = exp(-H)/(1 + exp(2 * P))
+  Dtheta[, 7, 3] = -1
+  
+  Dtheta
+}
+```
+
+Third, `odeModel` includes the upper and lower bounds on the parameters `theta`.  Here, all of the seven parameters $(a,b,c,d,e,f,g)$ are non-negative, so we may set the bounds as `0` and `Inf`.  Putting the three ODE model functions and parameter bounds together, we define the list:
+
+```{r}
+hes1logmodel <- list(
+  fOde = hes1logmodelODE,
+  fOdeDx = hes1logmodelDx,
+  fOdeDtheta = hes1logmodelDtheta,
+  thetaLowerBound = rep(0,7),
+  thetaUpperBound = rep(Inf,7)
+)
+```
+
+Additional control variables can be supplied to `MagiSolver` via the optional list `control`, which may include the following:
+
+ * `sigma`: a vector of noise levels (observation noise standard deviations) $\sigma$ for each component, at which to initialize MCMC sampling.  By default, `MagiSolver` computes starting values for `sigma` via Gaussian process (GP) smoothing. If the noise levels are known, specify `sigma` together with `useFixedSigma = TRUE`.
+ * `phi`: a matrix of GP hyper-parameters for each component, with two rows for `phi[1]` and `phi[2]` and a column for each system component. By default, `MagiSolver` estimates `phi` via an optimization routine.
+ * `theta`: a vector of starting values for the parameters $\theta$, at which to initialize MCMC sampling. By default, `MagiSolver` uses an optimization routine to obtain starting values.
+ * `xInit`: a matrix of values for the system trajectories of the same dimension as `y`, at which to initialize MCMC sampling. Default is linear interpolation between the observed (non-missing) values of `y` and an optimization routine for entirely unobserved components of `y`.
+ * `mu`: a matrix of values for the mean function of the GP prior, of the same dimension as `y`. Default is a zero mean function.
+ * `dotmu`: a matrix of values for the derivatives of the GP prior mean function, of the same dimension as `y`. Default is zero.
+ * `priorTemperature`: the tempering factor by which to divide the contribution of the GP prior, to control the influence of the GP prior relative to the likelihood. Default is the total number of observations divided by the total number of discretization points.
+ * `niterHmc`: MCMC sampling from the posterior is carried out via Hamiltonian Monte Carlo (HMC). `niterHmc` specifies the number of HMC iterations to run.  Default is 20000 HMC iterations.
+ * `nstepsHmc`: the number of leapfrog steps per HMC iteration. Default is 200.
+ * `burninRatio`: the proportion of HMC iterations to be discarded as burn-in. Default is 0.5, which discards the first half of the MCMC samples.
+ * `stepSizeFactor`: initial leapfrog step size factor for HMC.  Default is 0.01, and the leapfrog step size is automatically tuned during burn-in to achieve an acceptance rate between 60-90\%.
+ * `bandSize`: a band matrix approximation is used to speed up matrix operations, with default band size 20. Can be increased if `MagiSolver` returns an error indicating numerical instability.
+ * `useFixedSigma`: boolean, set to `TRUE` if `sigma` is known.  If `useFixedSigma=TRUE`, the known values of $\sigma$ must be supplied via the `sigma` control variable.
+
+Note that if the noise standard deviations $\sigma$ are known as in this example, they should be supplied via `sigma` in `control` together with `useFixedSigma=TRUE`.  Otherwise, $\sigma$ will be treated as a parameter in MCMC sampling.
+
+We can now run MAGI by calling the core function `MagiSolver` to sample $X$ and $\theta$ from their posterior distribution. For this run we use `y` as input without inserting any additional discretization points:
+
+```{r, results='hide'}
+resultHes1 <- MagiSolver(y, hes1logmodel,
+           control=list(sigma = c(0.15,0.15,NA), useFixedSigma = TRUE))
+```
+To informally assess convergence of the MCMC samples, we may examine traceplots of `theta` and `lp`:
+
+```{r, fig.align = "center", fig.width=7.2, fig.asp=0.5}
+par(mfrow=c(2,4), mar=c(5,2,1,1))
+theta.names <- c("a", "b", "c", "d", "e", "f", "g")
+for (i in 1:7) {
+  plot(resultHes1$theta[,i], main=theta.names[i], type="l", ylab="")
+}
+plot(resultHes1$lp, main="log-posterior", type="l", ylab="")
+```
+
+Then, we can compute the $\theta$ parameter estimates (via posterior means) together with 95\% credible intervals (via 2.5 to 97.5 percentiles of the MCMC samples):
+
+```{r}
+theta.est <- apply(resultHes1$theta, 2,
+    function(x) c(mean(x), quantile(x, 0.025), quantile(x, 0.975)))
+colnames(theta.est) <- theta.names
+rownames(theta.est) <- c("Post.Mean", "2.5%", "97.5%")
+signif(theta.est, 3)
+```
+The true parameters are well-contained in the credible intervals, except for $g$ which governs the unobserved $H$ component only.
+
+We extract the sampled system trajectories $X$. We treat the posterior means as the inferred trajectories (green curves), and add blue shaded areas to represent the 95\% credible intervals.  The true trajectories are plotted in red.
+
+```{r, fig.align = "center", fig.width=7.2, fig.asp=0.4}
+ylim_lower <- c(1.5, 0.5, 0)
+ylim_upper <- c(10.0, 3.5, 21)
+
+layout(rbind(c(1,2,3), c(4,4,4)), heights = c(5,1))
+compnames <- c("P", "M", "H")
+compobs <- c("17 observations", "16 observations", "unobserved")
+times <- y[,1]
+
+xLB <- exp(apply(resultHes1$xsampled, c(2,3), function(x) quantile(x, 0.025)))
+xMean <- exp(apply(resultHes1$xsampled, c(2,3), mean))
+xUB <- exp(apply(resultHes1$xsampled, c(2,3), function(x) quantile(x, 0.975)))
+
+for (i in 1:3) {
+  plot(times, xMean[,i], type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+  mtext(paste0(compnames[i], " (", compobs[i], ")"), cex=1)  
+
+  polygon(c(times, rev(times)), c(xUB[,i], rev(xLB[,i])),
+          col = "skyblue", border = NA)
+  
+  lines(x[,1], x[,1+i], col="red", lwd=2)
+  lines(times, xMean[,i], col="forestgreen", lwd=2)
+}
+
+par(mar=rep(0,4))
+plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
+
+legend("center", c("truth", "inferred trajectory", "95% interval"), lty=c(1,1,0), lwd=c(2,2,0),
+       col = c("red", "forestgreen", NA), fill=c(0, 0,"skyblue"), text.width=c(0, 0.4, 0.05), bty = "n",
+       border=c(0, 0, "skyblue"), pch=c(NA, NA, 15), horiz=TRUE)
+```
+The system trajectories are recovered well, including for the unobserved $H$ component. Similar to the FN equations, we can also verify that the results are stable if the discretization level is increased (not run here).
+
+## Example with time-dependency in ODE: HIV model with oscillating infection rate
+
+MAGI can accommodate systems that explicitly depend on time $t$. As an example, consider the three-component dynamic system $X = (T_U,T_I,V)$ for HIV infection simulated in Liang, Miao and Wu (2010, AOAS):
+
+$$
+\mathbf{f}(X, {\theta}, t) = \begin{pmatrix}
+\lambda - \rho T_U - \eta(t) T_U V \\
+\eta(t) T_U V - \delta T_I \\
+N \delta T_I - c V
+\end{pmatrix}, 
+$$
+where $\eta(t) = 9\times 10^{-5}  \times (1 - 0.9 \cos(\pi t / 1000))$ is an oscillating infection rate over time, and the parameters to be estimated are $\theta = (\lambda, \rho, \delta, N, c)$. The system components $T_U, T_I$ refer to the concentrations of uninfected and infected cells, and $V$ the viral load.
+
+We define functions for this system as in previous examples: the ODE, and gradients with respect to the system components and parameters.
+
+```{r}
+theta.names <- c("lambda", "rho", "delta", "N", "c")
+
+hivtdmodelODE <- function(theta,x,tvec) {
+  TU <- x[,1]
+  TI <- x[,2]
+  V <- x[,3]
+
+  lambda <- theta[1]
+  rho <- theta[2]
+  delta <- theta[3]
+  N <- theta[4]
+  c <- theta[5]
+
+  eta <- 9e-5 * (1 - 0.9 * cos(pi * tvec / 1000))
+
+  result <- array(0, c(nrow(x),ncol(x)))
+  result[,1] = lambda - rho * TU - eta * TU * V
+  result[,2] = eta * TU * V - delta * TI
+  result[,3] = N * delta * TI - c * V
+
+  result
+}
+
+hivtdmodelDx <- function(theta,x,tvec) {
+  resultDx <- array(0, c(nrow(x), ncol(x), ncol(x)))
+
+  TU <- x[,1]
+  TI <- x[,2]
+  V <- x[,3]
+
+  lambda <- theta[1]
+  rho <- theta[2]
+  delta <- theta[3]
+  N <- theta[4]
+  c <- theta[5]
+
+  eta <- 9e-5 * (1 - 0.9 * cos(pi * tvec / 1000))
+
+  resultDx[,1,1] = -rho - eta * V
+  resultDx[,2,1] = 0
+  resultDx[,3,1] = -eta * TU
+
+  resultDx[,1,2] = eta * V
+  resultDx[,2,2] = -delta
+  resultDx[,3,2] = eta * TU
+
+  resultDx[,1,3] = 0
+  resultDx[,2,3] = N * delta
+  resultDx[,3,3] = -c
+
+  resultDx
+}
+
+hivtdmodelDtheta <- function(theta,x,tvec) {
+  resultDtheta <- array(0, c(nrow(x), length(theta), ncol(x)))
+
+  TU <- x[,1]
+  TI <- x[,2]
+  V <- x[,3]
+
+  lambda <- theta[1]
+  rho <- theta[2]
+  delta <- theta[3]
+  N <- theta[4]
+  c <- theta[5]
+
+  eta <- 9e-5 * (1 - 0.9 * cos(pi * tvec / 1000))
+
+  resultDtheta[,1,1] = 1
+  resultDtheta[,2,1] = -TU
+  resultDtheta[,3,1] = 0
+  resultDtheta[,4,1] = 0
+  resultDtheta[,5,1] = 0
+
+  resultDtheta[,1,2] = 0
+  resultDtheta[,2,2] = 0
+  resultDtheta[,3,2] = -TI
+  resultDtheta[,4,2] = 0
+  resultDtheta[,5,2] = 0
+
+  resultDtheta[,1,3] = 0
+  resultDtheta[,2,3] = 0
+  resultDtheta[,3,3] = N * TI
+  resultDtheta[,4,3] = delta * TI
+  resultDtheta[,5,3] = -V
+
+  resultDtheta
+}
+```
+
+We setup a list containing some sample values for simulation that mimic the referenced paper:
+```{r}
+param.true <- list(
+  theta = c(36, 0.108, 0.5, 1000, 3), # lambda, rho, delta, N, c
+  x0 = c(600, 30, 1e5), # TU, TI, V
+  sigma= c(sqrt(10), sqrt(10), 10)
+)
+```
+
+and numerically solve the system trajectories over time $t=0$ to $20$ hours to mimic noisy observations every 0.1 hours with normal measurement error with SD `sigma`. The seed `12321` is set for reproducibility.
+```{r}
+times <- seq(0, 20, 0.1)
+
+modelODE <- function(t, state, parameters) {
+  list(as.vector(hivtdmodelODE(parameters, t(state), t)))
+}
+
+xtrue <- deSolve::ode(y = param.true$x0, times = times,
+                      func = modelODE, parms = param.true$theta)
+xsim <- xtrue
+set.seed(12321)
+for(j in 1:(ncol(xsim)-1)){
+  xsim[,1+j] <- xsim[,1+j]+rnorm(nrow(xsim), sd=param.true$sigma[j])
+}
+```
+
+A plot of the simulated measurements, with the y-axis shown on the log-scale:
+```{r, fig.align = "center", fig.width=6, fig.asp=0.9}
+matplot(xsim[,"time"], xsim[,-1], type="p", col=1:(ncol(xsim)-1),
+        pch=20, log = 'y', ylab="Concentration", xlab="time")
+legend("topright", c("TU", "TI", "V"), pch=20, col=c("black", "red", "green"))
+```
+
+We define the `odeModel` list input, and prepare the input `y` based on the observations with no additional discretization.
+```{r}
+hivtdmodel <- list(
+  fOde=hivtdmodelODE,
+  fOdeDx=hivtdmodelDx,
+  fOdeDtheta=hivtdmodelDtheta,
+  thetaLowerBound=c(0,0,0,0,0),
+  thetaUpperBound=c(Inf,Inf,Inf,Inf,Inf)
+)
+
+y <- setDiscretization(data.frame(xsim), 0)
+```
+
+It can be worth checking that the gradients are specified correctly.
+```{r}
+testDynamicalModel(hivtdmodelODE, hivtdmodelDx, hivtdmodelDtheta,
+    "HIV time-dependent system", y[,2:4], param.true$theta, y[,"time"])
+```
+The inputs to `MagiSolver` are now ready.  Often, MAGI's automatic determination of hyper-parameters $\phi$ and initial noise levels $\sigma$ will be reasonable; however, this is not guaranteed, in which case we may manually override their values.
+
+Let us explicitly call the GP smoothing procedure (`gpsmoothing`) included in MAGI to examine the automatic hyper-parameter setting in this case:
+```{r}
+phiExogenous <- matrix(0, nrow=2, ncol=ncol(y)-1)
+sigmaInit <- rep(0, ncol(y)-1)
+for (j in 1:(ncol(y)-1)){
+  hyperparam <- gpsmoothing(y[,j+1], y[,"time"])
+  phiExogenous[,j] <- hyperparam$phi
+  sigmaInit[j] <- hyperparam$sigma
+}
+
+phiExogenous
+sigmaInit
+```
+Notice that initial guess of `sigma` for $T_U$ and $T_I$ are reasonable, while that for the $V$ component (green trajectory) is very large ($>10000$). This indicates that  automatic Gaussian process smoothing is treating the sharp initial decrease of $V$ seen in the interval $t=0$ to $t=1$ as noise rather than signal, which would lead to undesirable results. This is accompanied by a small `phi[1]` relative to the magnitude of the observations for $V$ and a `phi[2]` that is too large (indicating that successive time points will be too highly correlated, preventing the sharp decrease from being correctly modelled), noting that `phi[1]` controls the overall variance level and `phi[2]` controls the bandwidth.
+
+We can manually specify more appropriate values of `phi` and `sigma` for the $V$ component instead, and then supply them to `MagiSolver` using the optional `phi` and `sigma` control variables to override the automatic setting:
+
+```{r, results="hide"}
+phiExogenous[,3] <- c(5e7, 1)
+sigmaInit[3] <- 1
+HIVresult <- MagiSolver(y, hivtdmodel,
+      control = list(phi=phiExogenous, sigma=sigmaInit, niterHmc=10000))
+```
+
+The $\theta$ parameter estimates (via posterior means) together with 95\% credible intervals (via 2.5 to 97.5 percentiles of the MCMC samples):
+
+```{r}
+theta.est <- apply(HIVresult$theta, 2,
+    function(x) c(mean(x), quantile(x, 0.025), quantile(x, 0.975)))
+colnames(theta.est) <- theta.names
+rownames(theta.est) <- c("Mean", "2.5%", "97.5%")
+signif(theta.est, 3)
+```
+We extract the sampled system trajectories $X$. We treat the posterior means as the inferred trajectories (green curves), and the grey points are the observed data. The true trajectories (red curves) are superimposed and can be seen to be indistinguishable from the inferred trajectories.
+
+```{r, fig.align = "center", fig.width=7, fig.asp=0.45}
+par(mfrow=c(1,3), mar=c(4,3,1.5,1))
+compnames <- c("TU", "TI", "V")
+ylim_lower <- c(100, 0, 0)
+ylim_upper <- c(750, 175, 1e5)
+
+xMean <- apply(HIVresult$xsampled, c(2,3), mean)
+
+for (i in 1:3) {
+  plot(times, xMean[,i], type="n", xlab="time", ylab="", ylim=c(ylim_lower[i], ylim_upper[i]))
+  mtext(compnames[i])
+  points(times, xsim[,i+1], col = "grey50")
+  lines(times, xMean[,i], col="forestgreen", lwd=4)
+  lines(times, xtrue[,i+1], col="red", lwd=1.5)
+}
+
+par(oldpar) # reset to previous pars
+```

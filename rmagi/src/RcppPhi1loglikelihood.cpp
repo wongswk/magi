@@ -10,8 +10,11 @@
 using namespace arma;
 
 
-//' R wrapper for xthetallik
-//' @export
+//' R wrapper for xthetaphi1sigmallik
+//' the phi1 can be sampled together without hurting computational speed because the kernel matrix is scaled with phi1,
+//'     so we don't need to re-calculate the inverse. This is the function to calculate the log posterior including phi1.
+//' not used in the final method because phi1 sample is not stable.
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List xthetaphi1sigmallikRcpp( const arma::mat & xlatent, 
                                     const arma::vec & theta, 
@@ -60,8 +63,11 @@ Rcpp::List xthetaphi1sigmallikRcpp( const arma::mat & xlatent,
 }
 
 
-//' sample from GP ODE for latent x, theta, and sigma
-//' @export
+//' sample from GP ODE for latent x, theta, sigma, and phi1
+//' the phi1 can be sampled together without hurting computational speed because the kernel matrix is scaled with phi1,
+//'     so we don't need to re-calculate the inverse.
+//' not used in the final method because phi1 sample is not stable.
+//' @noRd
 // [[Rcpp::export]]
 Rcpp::List xthetaphi1sigmaSample( const arma::mat & yobs, 
                                   const Rcpp::List & covList,

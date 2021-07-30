@@ -21,8 +21,6 @@ config <- list(
 
 config$ndis <- (config$nobs-1)*2^config$filllevel+1
 
-outDir <- "./"
-
 pram.true <- list(
   theta = c(0.022, 0.3, 0.031, 0.028, 0.5, 20, 0.3),
   x0 = c(0.5, 2, 1),
@@ -39,7 +37,7 @@ modelODE <- function(t, state, parameters) {
 
 xtrue <- deSolve::ode(y = pram.true$x0, times = times, func = modelODE, parms = pram.true$theta)
 xtrue <- data.frame(xtrue)
-matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=1)
+#matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=1)
 
 xtrueFunc <- lapply(2:ncol(xtrue), function(j)
   approxfun(xtrue[, "time"], xtrue[, j]))
@@ -52,9 +50,9 @@ for(j in 1:(ncol(xsim)-1)){
 }
 
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
-matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
+#matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
 
-xsim <- insertNaN(xsim.obs,config$filllevel)
+xsim <- setDiscretization(xsim.obs,config$filllevel)
 
 tvec.full <- xsim$time
 tvec.nobs <- xsim.obs$time
@@ -73,9 +71,9 @@ cursigma <- rep(NA, ncol(xsim)-1)
 curphi <- matrix(NA, 2, ncol(xsim)-1)
 
 for(j in 1:(ncol(xsim)-1)){
-  fn <- function(par) -phisigllikC( par, data.matrix(xsim.obs[,1+j]), 
+  fn <- function(par) -magi:::phisigllikC( par, data.matrix(xsim.obs[,1+j]),
                                     r.nobs, config$kernel)$value
-  gr <- function(par) -as.vector(phisigllikC( par, data.matrix(xsim.obs[,1+j]), 
+  gr <- function(par) -as.vector(magi:::phisigllikC( par, data.matrix(xsim.obs[,1+j]),
                                               r.nobs, config$kernel)$grad)
   marlikmap <- optim(rep(100, 3), fn, gr, method="L-BFGS-B", lower = 0.0001,
                      upper = c(Inf, 60*4*2, Inf))
@@ -88,19 +86,20 @@ curphi
 
 j <- 1
 # plot(xsim.obs[, "time"], data.matrix(xsim.obs[,1+j]))
-phisigllikC(c(curphi[,j], cursigma[j]), data.matrix(xsim.obs[,1+j]), 
+magi:::phisigllikC(c(curphi[,j], cursigma[j]), data.matrix(xsim.obs[,1+j]),
             r.nobs, config$kernel)
-phisigllikC(c(100, 100, cursigma[j]), data.matrix(xsim.obs[,1+j]), 
+magi:::phisigllikC(c(100, 100, cursigma[j]), data.matrix(xsim.obs[,1+j]),
             r.nobs, config$kernel)
 
 
 xtrueAtDiscretization <- sapply(xtrueFunc, function(f) f(xsim[,"time"]))
 test_that("xthetaphisigmallikRcpp can run", {
-  xthetaphisigmallikRcpp( xtrueAtDiscretization, 
+  out <- xthetaphisigmallikRcpp( xtrueAtDiscretization,
                           pram.true$theta,
                           matrix(pram.true$phi, nrow = 2),
                           pram.true$sigma,
                           data.matrix(xsim[,-1]),
                           xsim$time,
                           "Hes1")
+  testthat::expect_equal(length(out$grad), 259)
 })

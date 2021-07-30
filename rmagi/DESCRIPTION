@@ -1,22 +1,39 @@
 Package: magi
 Type: Package
-Title: Gaussian Process for Dynamical System inference
-Version: 0.2
-Date: 2020-05-05
-Author: Shihao Yang, Samuel Wong
-Maintainer: Shihao Yang <shihao.yang@isye.gatech.edu>
+Title: MAnifold-Constrained Gaussian Process Inference
+Version: 1.0.1
+Date: 2021-07-27
+Authors@R:
+  c(person(given = "Shihao",
+           family = "Yang",
+           role = c("aut", "cre"),
+           email = "shihao.yang@isye.gatech.edu",
+           comment = c(ORCID = "0000-0003-3910-4969")),
+    person(given = "Samuel W.K.",
+           family = "Wong",
+           role = "aut"),
+    person(given = "Patrick",
+           family = "Wieschollek",
+           role = c("ctb", "cph"),
+           comment = c(role = "Contributor of c++ dependency CppNumericalSolvers")),
+    person(given = "Tobias",
+           family = "Wood",
+           role = c("ctb", "cph"),
+           comment = c(role = "Contributor of c++ dependency CppNumericalSolvers")))
 Encoding: UTF-8
-Description: ODE parameter inference using Gaussian Process
+Description: Provides fast and accurate inference for the parameter estimation problem in Ordinary Differential
+    Equations, including the case when there are unobserved system components. Implements the MAGI method
+    (MAnifold-constrained Gaussian process Inference) of Yang, Wong, and Kou (2021) <doi:10.1073/pnas.2020397118>.
 License: MIT + file LICENSE
 VignetteBuilder: knitr
 Imports: 
-    Rcpp (>= 0.12.7),
-    RcppArmadillo (>= 0.7.960.1.2),
+    Rcpp (>= 1.0.6),
     gridExtra,
     gridBase,
     grid,
+    methods,
     deSolve
-LinkingTo: Rcpp, RcppArmadillo
+LinkingTo: Rcpp, RcppArmadillo, BH, RcppEigen
 RoxygenNote: 7.1.1
 Suggests: 
     testthat,
@@ -24,3 +41,5 @@ Suggests:
     covr,
     knitr,
     MASS,
+    rmarkdown,
+    markdown

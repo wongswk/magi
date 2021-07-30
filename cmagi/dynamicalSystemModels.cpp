@@ -4,7 +4,7 @@ using namespace arma;
 using namespace std;
 
 // [[Rcpp::export]]
-arma::mat fnmodelODE(const arma::vec & theta, const arma::mat & x) {
+arma::mat fnmodelODE(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   const vec & V = x.col(0);
   const vec & R = x.col(1);
   
@@ -15,7 +15,7 @@ arma::mat fnmodelODE(const arma::vec & theta, const arma::mat & x) {
 }
 
 // [[Rcpp::export]]
-arma::cube fnmodelDx(const arma::vec & theta, const arma::mat & x) {
+arma::cube fnmodelDx(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDx(x.n_rows, x.n_cols, x.n_cols);
   
   const vec & V = x.col(0);
@@ -31,7 +31,7 @@ arma::cube fnmodelDx(const arma::vec & theta, const arma::mat & x) {
 }
 
 // [[Rcpp::export]]
-arma::cube fnmodelDtheta(const arma::vec & theta, const arma::mat & x) {
+arma::cube fnmodelDtheta(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
   
   const vec & V = x.col(0);
@@ -47,7 +47,7 @@ arma::cube fnmodelDtheta(const arma::vec & theta, const arma::mat & x) {
 }
 
 // [[Rcpp::export]]
-arma::mat hes1modelODE(const arma::vec & theta, const arma::mat & x) {
+arma::mat hes1modelODE(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   const vec & P = x.col(0);
   const vec & M = x.col(1);
   const vec & H = x.col(2); 
@@ -61,7 +61,7 @@ arma::mat hes1modelODE(const arma::vec & theta, const arma::mat & x) {
 }
 
 // [[Rcpp::export]]
-arma::cube hes1modelDx(const arma::vec & theta, const arma::mat & x) {
+arma::cube hes1modelDx(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDx(x.n_rows, x.n_cols, x.n_cols, fill::zeros);
   
   const vec & P = x.col(0);
@@ -81,7 +81,7 @@ arma::cube hes1modelDx(const arma::vec & theta, const arma::mat & x) {
 }
 
 // [[Rcpp::export]]
-arma::cube hes1modelDtheta(const arma::vec & theta, const arma::mat & x) {
+arma::cube hes1modelDtheta(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
   
   const vec & P = x.col(0);
@@ -103,7 +103,7 @@ arma::cube hes1modelDtheta(const arma::vec & theta, const arma::mat & x) {
 }
 
 // [[Rcpp::export]]
-arma::mat hes1logmodelODE(const arma::vec & theta, const arma::mat & x) {
+arma::mat hes1logmodelODE(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   const vec & P = arma::exp(x.col(0));
   const vec & M = arma::exp(x.col(1));
   const vec & H = arma::exp(x.col(2)); 
@@ -117,7 +117,7 @@ arma::mat hes1logmodelODE(const arma::vec & theta, const arma::mat & x) {
 }
 
 // [[Rcpp::export]]
-arma::cube hes1logmodelDx(const arma::vec & theta, const arma::mat & x) {
+arma::cube hes1logmodelDx(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDx(x.n_rows, x.n_cols, x.n_cols, fill::zeros);
   
   const vec & P = x.col(0);
@@ -141,7 +141,7 @@ arma::cube hes1logmodelDx(const arma::vec & theta, const arma::mat & x) {
 }
 
 // [[Rcpp::export]]
-arma::cube hes1logmodelDtheta(const arma::vec & theta, const arma::mat & x) {
+arma::cube hes1logmodelDtheta(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
   
   const vec & P = x.col(0);
@@ -163,7 +163,7 @@ arma::cube hes1logmodelDtheta(const arma::vec & theta, const arma::mat & x) {
 }
 
 // [[Rcpp::export]]
-arma::mat hes1logmodelODEfixg(const arma::vec & theta, const arma::mat & x) {
+arma::mat hes1logmodelODEfixg(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   const vec & P = arma::exp(x.col(0));
   const vec & M = arma::exp(x.col(1));
   const vec & H = arma::exp(x.col(2)); 
@@ -177,7 +177,7 @@ arma::mat hes1logmodelODEfixg(const arma::vec & theta, const arma::mat & x) {
 }
 
 // [[Rcpp::export]]
-arma::cube hes1logmodelDxfixg(const arma::vec & theta, const arma::mat & x) {
+arma::cube hes1logmodelDxfixg(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDx(x.n_rows, x.n_cols, x.n_cols, fill::zeros);
   
   const vec & P = x.col(0);
@@ -201,7 +201,7 @@ arma::cube hes1logmodelDxfixg(const arma::vec & theta, const arma::mat & x) {
 }
 
 // [[Rcpp::export]]
-arma::cube hes1logmodelDthetafixg(const arma::vec & theta, const arma::mat & x) {
+arma::cube hes1logmodelDthetafixg(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
   
   const vec & P = x.col(0);
@@ -224,7 +224,7 @@ arma::cube hes1logmodelDthetafixg(const arma::vec & theta, const arma::mat & x) 
 
 
 // [[Rcpp::export]]
-arma::mat hes1logmodelODEfixf(const arma::vec & theta, const arma::mat & x) {
+arma::mat hes1logmodelODEfixf(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
     const vec & P = arma::exp(x.col(0));
     const vec & M = arma::exp(x.col(1));
     const vec & H = arma::exp(x.col(2));
@@ -238,7 +238,7 @@ arma::mat hes1logmodelODEfixf(const arma::vec & theta, const arma::mat & x) {
 }
 
 // [[Rcpp::export]]
-arma::cube hes1logmodelDxfixf(const arma::vec & theta, const arma::mat & x) {
+arma::cube hes1logmodelDxfixf(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
     cube resultDx(x.n_rows, x.n_cols, x.n_cols, fill::zeros);
 
     const vec & P = x.col(0);
@@ -263,7 +263,7 @@ arma::cube hes1logmodelDxfixf(const arma::vec & theta, const arma::mat & x) {
 
 
 // [[Rcpp::export]]
-arma::cube hes1logmodelDthetafixf(const arma::vec & theta, const arma::mat & x) {
+arma::cube hes1logmodelDthetafixf(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
     cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
 
     const vec & P = x.col(0);
@@ -285,7 +285,7 @@ arma::cube hes1logmodelDthetafixf(const arma::vec & theta, const arma::mat & x) 
 
 
 // [[Rcpp::export]]
-arma::mat HIVmodelODE(const arma::vec & theta, const arma::mat & x) {
+arma::mat HIVmodelODE(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   const vec & T = exp(x.col(0));
   const vec & Tm = exp(x.col(1));
   const vec & Tw = exp(x.col(2));
@@ -307,7 +307,7 @@ arma::mat HIVmodelODE(const arma::vec & theta, const arma::mat & x) {
 }
 
 // [[Rcpp::export]]
-arma::cube HIVmodelDx(const arma::vec & theta, const arma::mat & x) {
+arma::cube HIVmodelDx(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDx(x.n_rows, x.n_cols, x.n_cols, fill::zeros);
   
   const vec & T = exp(x.col(0));
@@ -339,7 +339,7 @@ arma::cube HIVmodelDx(const arma::vec & theta, const arma::mat & x) {
 }
 
 // [[Rcpp::export]]
-arma::cube HIVmodelDtheta(const arma::vec & theta, const arma::mat & x) {
+arma::cube HIVmodelDtheta(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
   
   const vec & T = exp(x.col(0));
@@ -372,7 +372,7 @@ arma::cube HIVmodelDtheta(const arma::vec & theta, const arma::mat & x) {
 }
 
 // [[Rcpp::export]]
-arma::mat ptransmodelODE(const arma::vec & theta, const arma::mat & x) {
+arma::mat ptransmodelODE(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   const vec & S = x.col(0);
   const vec & dS = x.col(1);
   const vec & R = x.col(2);
@@ -391,7 +391,7 @@ arma::mat ptransmodelODE(const arma::vec & theta, const arma::mat & x) {
 }
 
 // [[Rcpp::export]]
-arma::cube ptransmodelDx(const arma::vec & theta, const arma::mat & x) {
+arma::cube ptransmodelDx(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDx(x.n_rows, x.n_cols, x.n_cols, fill::zeros);
   
   const vec & S = x.col(0);
@@ -422,7 +422,7 @@ arma::cube ptransmodelDx(const arma::vec & theta, const arma::mat & x) {
 }
 
 // [[Rcpp::export]]
-arma::cube ptransmodelDtheta(const arma::vec & theta, const arma::mat & x) {
+arma::cube ptransmodelDtheta(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
   
   const vec & S = x.col(0);
