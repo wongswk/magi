@@ -38,6 +38,7 @@ phiTest <- cbind(pram.true$vphi, pram.true$rphi)
 sigmaTest <- rep(pram.true$sigma, 2)
 
 testthat::test_that("xthetaphisigmallik differs to xthetallik and loglikOrig by constant fixing phi sigma", {
+  skip_on_cran()
   curCovV <- calCov(phiTest[,1], r, signr, kerneltype = "generalMatern")
   curCovR <- calCov(phiTest[,2], r, signr, kerneltype = "generalMatern")
  
@@ -78,6 +79,7 @@ testthat::test_that("xthetaphisigmallik differs to xthetallik and loglikOrig by 
 })
 
 testthat::test_that("xthetaphisigmallik differs to loglikOrig by constant (the pi part)", {
+  skip_on_cran()
   # phi could give numerical instability issue
   realDiff <- sapply(1:40, function(dummy){
     xlatentTest <- data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]) * rexp(length(fn.true[,1:2]))
@@ -127,7 +129,7 @@ out <- magi:::xthetaphisigmallikRcpp(xlatentTest,
                                      fn.sim$time)
 
 testthat::test_that("xthetaphisigmallik derivatives", {
-  testthat::skip_on_os("solaris")
+  testthat::skip_on_cran()
   out$value
   
   delta <- 1e-5
