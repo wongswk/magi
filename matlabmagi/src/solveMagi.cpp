@@ -57,19 +57,22 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     mexErrMsgTxt("fOdeDtheta is not a function handle.");
   }
     
-  const std::function<mat (vec, mat)> & fOde = [& fOde_matlab](const vec & theta, const mat & x) -> mat {
+  const std::function<mat (vec, mat, vec)> & fOde = [& fOde_matlab](const vec & theta, const mat & x, const vec & t) -> mat {
       mxArray * theta_matlab = mxCreateDoubleMatrix(theta.size(), 1, mxREAL);
       armaSetPr(theta_matlab, theta);
       mxArray * x_matlab = mxCreateDoubleMatrix(x.n_rows, x.n_cols, mxREAL);
       armaSetPr(x_matlab, x);
+      mxArray * t_matlab = mxCreateDoubleMatrix(t.size(), 1, mxREAL);
+      armaSetPr(t_matlab, t);
       
-      mxArray *rhs_f[3];
+      mxArray *rhs_f[4];
       rhs_f[0] = fOde_matlab;
       rhs_f[1] = theta_matlab;
       rhs_f[2] = x_matlab;
+      rhs_f[3] = t_matlab;
       
       mxArray *lhs_f[1];
-      mexCallMATLAB(1,lhs_f,3,rhs_f,"feval");
+      mexCallMATLAB(1,lhs_f,4,rhs_f,"feval");
       mat temp_ret = armaGetPr(lhs_f[0]);
       mat ret = temp_ret;
     
@@ -80,19 +83,22 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       return ret;
   };
 
-  const std::function<cube (vec, mat)> & fOdeDx = [& fOdeDx_matlab](const vec & theta, const mat & x) -> cube {
+  const std::function<cube (vec, mat, vec)> & fOdeDx = [& fOdeDx_matlab](const vec & theta, const mat & x, const vec & t) -> cube {
       mxArray * theta_matlab = mxCreateDoubleMatrix(theta.size(), 1, mxREAL);
       armaSetPr(theta_matlab, theta);
       mxArray * x_matlab = mxCreateDoubleMatrix(x.n_rows, x.n_cols, mxREAL);
       armaSetPr(x_matlab, x);
-      
-      mxArray *rhs_f[3];
+      mxArray * t_matlab = mxCreateDoubleMatrix(t.size(), 1, mxREAL);
+      armaSetPr(t_matlab, t);
+
+      mxArray *rhs_f[4];
       rhs_f[0] = fOdeDx_matlab;
       rhs_f[1] = theta_matlab;
       rhs_f[2] = x_matlab;
+      rhs_f[3] = t_matlab;
       
       mxArray *lhs_f[1];
-      mexCallMATLAB(1,lhs_f,3,rhs_f,"feval");
+      mexCallMATLAB(1,lhs_f,4,rhs_f,"feval");
       cube temp_ret = armaGetCubePr(lhs_f[0]);
 
       cube ret = temp_ret;
@@ -103,19 +109,22 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       return ret;
   };
   
-  const std::function<cube (vec, mat)> & fOdeDtheta = [& fOdeDtheta_matlab](const vec & theta, const mat & x) -> cube {
+  const std::function<cube (vec, mat, vec)> & fOdeDtheta = [& fOdeDtheta_matlab](const vec & theta, const mat & x, const vec & t) -> cube {
       mxArray * theta_matlab = mxCreateDoubleMatrix(theta.size(), 1, mxREAL);
       armaSetPr(theta_matlab, theta);
       mxArray * x_matlab = mxCreateDoubleMatrix(x.n_rows, x.n_cols, mxREAL);
       armaSetPr(x_matlab, x);
+      mxArray * t_matlab = mxCreateDoubleMatrix(t.size(), 1, mxREAL);
+      armaSetPr(t_matlab, t);
       
-      mxArray *rhs_f[3];
+      mxArray *rhs_f[4];
       rhs_f[0] = fOdeDtheta_matlab;
       rhs_f[1] = theta_matlab;
       rhs_f[2] = x_matlab;
+      rhs_f[3] = t_matlab;
       
       mxArray *lhs_f[1];
-      mexCallMATLAB(1,lhs_f,3,rhs_f,"feval");
+      mexCallMATLAB(1,lhs_f,4,rhs_f,"feval");
       cube temp_ret = armaGetCubePr(lhs_f[0]);
 
       cube ret = temp_ret;
