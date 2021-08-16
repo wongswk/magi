@@ -1,5 +1,6 @@
 import numpy as np
-from arma import ode_system, solve_magi
+from arma import ode_system
+from magi import MagiSolver
 
 
 def fOde(theta, x, tvec):
@@ -107,61 +108,18 @@ yFull[np.linspace(1, 31, num=16).astype(int), 1] = ydataM
 
 tvecFull = np.linspace(0, 240, num=33)
 
-
-result = solve_magi(
-    yFull,
-    hes1_system,
-    tvecFull,
-    sigmaExogenous = np.array([0.15, 0.15, 0.15]),
-    phiExogenous = np.array([[]]),
-    xInitExogenous = np.array([[]]),
-    thetaInitExogenous = np.array([]),
-    muExogenous = np.array([[]]),
-    dotmuExogenous = np.array([[]]),
-    priorTemperatureLevel = yFull.size/np.sum(np.isfinite(yFull)),
-    priorTemperatureDeriv = yFull.size/np.sum(np.isfinite(yFull)),
-    priorTemperatureObs = 1.0,
-    kernel = "generalMatern",
+control=dict(
     nstepsHmc = 500,
-    burninRatioHmc = 0.5,
     niterHmc = 20001,
-    stepSizeFactorHmc = 0.01,
-    nEpoch = 1,
-    bandSize = 20,
-    useFrequencyBasedPrior = True,
-    useBand = True,
-    useMean = True,
-    useScalerSigma = False,
+    sigma = np.array([0.15, 0.15, np.NaN]),
     useFixedSigma = True,
-    verbose = True)
+)
 
-print(result['phiUsed'])
-print(result['samplesCpp'])
+result = MagiSolver(y=yFull, odeModel=hes1_system, tvec=tvecFull, control=control)
 
-# verify trajectory RMSE
-samplesCpp = result['samplesCpp']
-llikId = 0
-xId = range(np.max(llikId)+1, np.max(llikId)+yFull.size+1)
-thetaId = range(np.max(xId)+1, np.max(xId)+7+1)
-sigmaId = range(np.max(thetaId)+1, np.max(thetaId)+yFull.shape[1]+1)
+inferred_trajectory = np.mean(result['xsampled'], axis=-1)
+inferred_theta = np.mean(result['theta'], axis=-1)
 
-burnin = int(20001*0.5)
-xsampled = samplesCpp[xId, (burnin+1):]
-xsampled = xsampled.reshape([yFull.shape[1], yFull.shape[0], -1])
-thetaSampled = samplesCpp[thetaId, (burnin+1):]
-sigmaSampled = samplesCpp[sigmaId, (burnin+1):]
-
-from matplotlib import pyplot as plt
-for j in range(yFull.shape[1]):
-    plt.plot(tvecFull, xsampled[j, :, -1])  # one single sample plot
-
-inferred_trajectory = np.mean(xsampled, axis=-1)
-for j in range(yFull.shape[1]):
-    plt.plot(tvecFull, inferred_trajectory[j, :])  # inferred trajectory plot
-
-
-thetaSampled = samplesCpp[thetaId, (burnin+1):]
-inferred_theta = np.mean(thetaSampled, axis=-1)
 np.savetxt("hes1log_inferred_theta_seed{}.csv".format(SEED), inferred_theta)
 np.savetxt("hes1log_inferred_trajectory_seed{}.csv".format(SEED), inferred_trajectory)
-np.savetxt("hes1log_inferred_sigma_seed{}.csv".format(SEED), np.mean(samplesCpp[sigmaId, (burnin+1):], axis=-1))
+np.savetxt("hes1log_inferred_sigma_seed{}.csv".format(SEED), np.mean(result['sigma'], axis=-1))

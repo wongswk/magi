@@ -1,5 +1,6 @@
 import numpy as np
-from arma import ode_system, solve_magi
+from arma import ode_system
+from magi import MagiSolver
 
 
 def fOde(theta, x, tvec):
@@ -147,115 +148,42 @@ for j in range(5):
     xInitExogenous[:, j] = np.interp(tvecFull, tvecObs, ydata[:, j])
 
 
-hyperInit = solve_magi(
-    yFillI0,
-    ptrans_system,
-    tvecI0,
-    sigmaExogenous = np.array([]),
-    phiExogenous = np.array([[]]),
-    xInitExogenous = np.array([[]]),
-    thetaInitExogenous = np.array([]),
-    muExogenous = np.array([[]]),
-    dotmuExogenous = np.array([[]]),
-    priorTemperatureLevel = yFull.size/np.sum(np.isfinite(yFull)),
-    priorTemperatureDeriv = yFull.size/np.sum(np.isfinite(yFull)),
-    priorTemperatureObs = 1.0,
-    kernel = "generalMatern",
-    nstepsHmc = 100,
-    burninRatioHmc = 0.5,
-    niterHmc = 2,
-    stepSizeFactorHmc = 0.01,
-    nEpoch = 1,
-    bandSize = 40,
-    useFrequencyBasedPrior = True,
-    useBand = True,
-    useMean = True,
-    useScalerSigma = False,
-    useFixedSigma = False,
-    verbose = True)
+### Optimize phi first using equally spaced intervals of 1, i.e., 0,1...,100.
 
-print(hyperInit['phiUsed'])
-print(hyperInit['samplesCpp'])
-sigmaUsed = hyperInit['samplesCpp'][-5:, 0]
+control = dict(
+    nstepsHmc = 100,
+    niterHmc = 2,
+    bandSize = 40,
+    burninRatio = 0,
+)
+
+hyperInit = MagiSolver(y=yFillI0, odeModel=ptrans_system, tvec=tvecI0, control=control)
+sigmaUsed = hyperInit['sigma'][:, 0]
 
 # NEW (Aug 11) ----- plug in sigma estimate and re-estimate phi
-hyperInit = solve_magi(
-    yFillI0,
-    ptrans_system,
-    tvecI0,
-    sigmaExogenous = sigmaUsed,
-    phiExogenous = np.array([[]]),
-    xInitExogenous = np.array([[]]),
-    thetaInitExogenous = np.array([]),
-    muExogenous = np.array([[]]),
-    dotmuExogenous = np.array([[]]),
-    priorTemperatureLevel = yFull.size/np.sum(np.isfinite(yFull)),
-    priorTemperatureDeriv = yFull.size/np.sum(np.isfinite(yFull)),
-    priorTemperatureObs = 1.0,
-    kernel = "generalMatern",
+control = dict(
     nstepsHmc = 100,
-    burninRatioHmc = 0.5,
     niterHmc = 2,
-    stepSizeFactorHmc = 0.01,
-    nEpoch = 1,
     bandSize = 40,
-    useFrequencyBasedPrior = True,
-    useBand = True,
-    useMean = True,
-    useScalerSigma = False,
-    useFixedSigma = False,
-    verbose = True)
-phiUsed = hyperInit['phiUsed']
+    burninRatio = 0,
+    sigma = sigmaUsed,
+)
+hyperInit = MagiSolver(y=yFillI0, odeModel=ptrans_system, tvec=tvecI0, control=control)
+phiUsed = hyperInit['phi']
 
 # sampling
-result = solve_magi(
-    yFull,
-    ptrans_system,
-    tvecFull,
-    sigmaExogenous = sigmaUsed,
-    phiExogenous = phiUsed,
-    xInitExogenous = xInitExogenous,
-    thetaInitExogenous = np.array([]),
-    muExogenous = np.array([[]]),
-    dotmuExogenous = np.array([[]]),
-    priorTemperatureLevel = yFull.size/np.sum(np.isfinite(yFull)),
-    priorTemperatureDeriv = yFull.size/np.sum(np.isfinite(yFull)),
-    priorTemperatureObs = 1.0,
-    kernel = "generalMatern",
+control = dict(
     nstepsHmc = 100,
-    burninRatioHmc = 0.5,
     niterHmc = 20001,
-    stepSizeFactorHmc = 0.01,
-    nEpoch = 1,
     bandSize = 40,
-    useFrequencyBasedPrior = True,
-    useBand = True,
-    useMean = True,
-    useScalerSigma = False,
-    useFixedSigma = False,
-    verbose = True)
+    burninRatio = 0.5,
+    sigma = sigmaUsed,
+    phi = phiUsed,
+    xInit = xInitExogenous,
+)
 
-print(result['phiUsed'])
-print(result['samplesCpp'])
+result = MagiSolver(y=yFull, odeModel=ptrans_system, tvec=tvecFull, control=control)
 
-# verify trajectory RMSE
-samplesCpp = result['samplesCpp']
-llikId = 0
-xId = range(np.max(llikId)+1, np.max(llikId)+yFull.size+1)
-thetaId = range(np.max(xId)+1, np.max(xId)+6+1)
-sigmaId = range(np.max(thetaId)+1, np.max(thetaId)+yFull.shape[1]+1)
 
-burnin = int(20001*0.5)
-xsampled = samplesCpp[xId, (burnin+1):]
-xsampled = xsampled.reshape([yFull.shape[1], yFull.shape[0], -1])
-
-from matplotlib import pyplot as plt
-for j in range(yFull.shape[1]):
-    plt.plot(tvecFull, xsampled[j, :, -1])  # one single sample plot
-
-inferred_trajectory = np.mean(xsampled, axis=-1)
-for j in range(yFull.shape[1]):
-    plt.plot(tvecFull, inferred_trajectory[j, :])  # inferred trajectory plot
-
-thetaSampled = samplesCpp[thetaId, (burnin+1):]
-inferred_theta = np.mean(thetaSampled, axis=-1)
+inferred_trajectory = np.mean(result['xsampled'], axis=-1)
+inferred_theta = np.mean(result['theta'], axis=-1)
