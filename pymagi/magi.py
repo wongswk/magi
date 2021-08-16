@@ -114,7 +114,7 @@ def MagiSolver(y, odeModel, tvec=None, control=dict()):
     llikId = 0
     xId = range(np.max(llikId)+1, np.max(llikId)+y.size+1)
     thetaId = range(np.max(xId)+1, np.max(xId)+3+1)
-    sigmaId = range(np.max(thetaId)+1, np.max(thetaId)+yFull.shape[1]+1)
+    sigmaId = range(np.max(thetaId)+1, np.max(thetaId)+y.shape[1]+1)
 
     burnin = int(niterHmc*burninRatio)
     xsampled = samplesCpp[xId, (burnin+1):]
