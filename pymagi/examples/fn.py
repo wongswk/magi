@@ -1,6 +1,6 @@
 import numpy as np
-from arma import ode_system, solve_magi
-import scipy
+from arma import ode_system
+from magi import MagiSolver
 
 
 def fOde(theta, x, tvec):
@@ -86,58 +86,17 @@ xInitExogenous = np.zeros_like(yFull)
 for j in range(2):
     xInitExogenous[:, j] = np.interp(tvecFull, tvecObs, ydata[:, j])
 
-result = solve_magi(
-    yFull,
-    fn_system,
-    tvecFull,
-    sigmaExogenous = np.array([]),
-    phiExogenous = np.array([[]]),
-    xInitExogenous = xInitExogenous,
-    thetaInitExogenous = np.array([]),
-    muExogenous = np.array([[]]),
-    dotmuExogenous = np.array([[]]),
-    priorTemperatureLevel = yFull.shape[0]/ydata.shape[0],
-    priorTemperatureDeriv = yFull.shape[0]/ydata.shape[0],
-    priorTemperatureObs = 1.0,
-    kernel = "generalMatern",
+control=dict(
     nstepsHmc = 100,
-    burninRatioHmc = 0.5,
     niterHmc = 20001,
-    stepSizeFactorHmc = 0.06,
-    nEpoch = 1,
-    bandSize = 20,
-    useFrequencyBasedPrior = True,
-    useBand = True,
-    useMean = True,
-    useScalerSigma = False,
-    useFixedSigma = False,
-    verbose = True)
+    stepSizeFactor = 0.06,
+    xInit = xInitExogenous,
+)
 
-print(result['phiUsed'])
-print(result['samplesCpp'])
+result = MagiSolver(y=yFull, odeModel=fn_system, tvec=tvecFull, control=control)
 
-# verify trajectory RMSE
-samplesCpp = result['samplesCpp']
-llikId = 0
-xId = range(np.max(llikId)+1, np.max(llikId)+yFull.size+1)
-thetaId = range(np.max(xId)+1, np.max(xId)+3+1)
-sigmaId = range(np.max(thetaId)+1, np.max(thetaId)+yFull.shape[1]+1)
-
-burnin = int(20001*0.5)
-xsampled = samplesCpp[xId, (burnin+1):]
-xsampled = xsampled.reshape([yFull.shape[1], yFull.shape[0], -1])
-
-from matplotlib import pyplot as plt
-for j in range(yFull.shape[1]):
-    plt.plot(tvecFull, xsampled[j, :, -1])  # one single sample plot
-
-inferred_trajectory = np.mean(xsampled, axis=-1)
-for j in range(yFull.shape[1]):
-    plt.plot(tvecFull, inferred_trajectory[j, :])  # inferred trajectory plot
-
-
-thetaSampled = samplesCpp[thetaId, (burnin+1):]
-inferred_theta = np.mean(thetaSampled, axis=-1)
+inferred_trajectory = np.mean(result['xsampled'], axis=-1)
+inferred_theta = np.mean(result['theta'], axis=-1)
 np.savetxt("fn_inferred_theta_seed{}.csv".format(SEED), inferred_theta)
 np.savetxt("fn_inferred_trajectory_seed{}.csv".format(SEED), inferred_trajectory)
-np.savetxt("fn_inferred_sigma_seed{}.csv".format(SEED), np.mean(samplesCpp[sigmaId, (burnin+1):], axis=-1))
+np.savetxt("fn_inferred_sigma_seed{}.csv".format(SEED), np.mean(result['sigma'], axis=-1))
