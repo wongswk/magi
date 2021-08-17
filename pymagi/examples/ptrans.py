@@ -155,10 +155,12 @@ control = dict(
     niterHmc = 2,
     bandSize = 40,
     burninRatio = 0,
+    priorTemperature = yFull.size/np.sum(np.isfinite(yFull)),
 )
 
 hyperInit = MagiSolver(y=yFillI0, odeModel=ptrans_system, tvec=tvecI0, control=control)
 sigmaUsed = hyperInit['sigma'][:, 0]
+print(sigmaUsed)
 
 # NEW (Aug 11) ----- plug in sigma estimate and re-estimate phi
 control = dict(
@@ -167,6 +169,7 @@ control = dict(
     bandSize = 40,
     burninRatio = 0,
     sigma = sigmaUsed,
+    priorTemperature = yFull.size/np.sum(np.isfinite(yFull)),
 )
 hyperInit = MagiSolver(y=yFillI0, odeModel=ptrans_system, tvec=tvecI0, control=control)
 phiUsed = hyperInit['phi']
@@ -180,6 +183,7 @@ control = dict(
     sigma = sigmaUsed,
     phi = phiUsed,
     xInit = xInitExogenous,
+    priorTemperature = yFull.size/np.sum(np.isfinite(yFull)),
 )
 
 result = MagiSolver(y=yFull, odeModel=ptrans_system, tvec=tvecFull, control=control)
