@@ -8,18 +8,18 @@ namespace Rcpp
 
     arma::vec r2armavec(const SEXP & x){
         const Rcpp::NumericVector & xtmp = as<const NumericVector>(x);
-        return arma::vec(const_cast<double*>( xtmp.begin()), xtmp.size(), false, false);
+        return arma::vec(const_cast<double*>( xtmp.begin()), xtmp.size(), true, false);
     }
 
     arma::mat r2armamat(const SEXP & x){
         const Rcpp::NumericMatrix & xtmp = as<const NumericMatrix>(x);
-        return arma::mat(const_cast<double*>( xtmp.begin()), xtmp.nrow(), xtmp.ncol(), false, false);
+        return arma::mat(const_cast<double*>( xtmp.begin()), xtmp.nrow(), xtmp.ncol(), true, false);
     }
 
     arma::cube r2armacube(const SEXP & x){
         const Rcpp::NumericVector & xtmp = as<const NumericVector>(x);
         IntegerVector dim = xtmp.attr("dim");
-        return arma::cube(const_cast<double*>( xtmp.begin()), dim[0], dim[1], dim[2], false, false);
+        return arma::cube(const_cast<double*>( xtmp.begin()), dim[0], dim[1], dim[2], true, false);
     }
 
 
