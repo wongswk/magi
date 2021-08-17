@@ -1,4 +1,4 @@
-function resultDx = hes1logmodelDx(theta,x) 
+function resultDx = hes1logmodelDx(theta,x,t) 
   resultDx= zeros(size(x,1),size(x,2),size(x,2));
 
   P = x(:,1);

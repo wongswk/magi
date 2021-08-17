@@ -1,4 +1,4 @@
-function resultDtheta = fnmodelDtheta(theta,x) 
+function resultDtheta = fnmodelDtheta(theta,x,t) 
   resultDtheta = zeros(size(x,1),length(theta),size(x,2));
 
   V = x(:,1);

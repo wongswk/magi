@@ -1,4 +1,4 @@
-function PMHdt = hes1modelODE(theta,x) 
+function PMHdt = hes1modelODE(theta,x,t) 
   P = x(:,1);
   M = x(:,2);
   H = x(:,3);

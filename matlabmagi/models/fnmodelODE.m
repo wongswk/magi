@@ -1,4 +1,4 @@
-function result = fnmodelODE(theta,x)
+function result = fnmodelODE(theta,x,t)
   V = x(:,1);
   R = x(:,2);
   
