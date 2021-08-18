@@ -45,11 +45,6 @@ def MagiSolver(y, odeModel, tvec=None, control=dict()):
         priorTemperatureLevel = 1/np.mean(np.isfinite(y))
         priorTemperatureDeriv = 1/np.mean(np.isfinite(y))
 
-    if 'dotmu' in control.keys():
-        dotmuExogenous = control['dotmu']
-    else:
-        dotmuExogenous = np.array([])
-
     if 'niterHmc' in control.keys():
         niterHmc = control['niterHmc']
     else:
@@ -112,20 +107,20 @@ def MagiSolver(y, odeModel, tvec=None, control=dict()):
     samplesCpp = result['samplesCpp']
 
     llikId = 0
-    xId = range(np.max(llikId)+1, np.max(llikId)+y.size+1)
-    thetaId = range(np.max(xId)+1, np.max(xId)+3+1)
-    sigmaId = range(np.max(thetaId)+1, np.max(thetaId)+y.shape[1]+1)
+    xId = range(np.max(llikId) + 1, np.max(llikId) + y.size + 1)
+    thetaId = range(np.max(xId) + 1, np.max(xId) + odeModel.thetaSize + 1)
+    sigmaId = range(np.max(thetaId) + 1, np.max(thetaId) + y.shape[1] + 1)
 
     burnin = int(niterHmc*burninRatio)
-    xsampled = samplesCpp[xId, (burnin+1):]
+    xsampled = samplesCpp[xId, burnin:]
     xsampled = xsampled.reshape([y.shape[1], y.shape[0], -1])
 
-    thetaSampled = samplesCpp[thetaId, (burnin+1):]
+    thetaSampled = samplesCpp[thetaId, burnin:]
 
     return dict(
         theta=thetaSampled,
         xsampled=xsampled,
-        lp=samplesCpp[llikId, (burnin+1):],
-        sigma=samplesCpp[sigmaId, (burnin+1):],
+        lp=samplesCpp[llikId, burnin:],
+        sigma=samplesCpp[sigmaId, burnin:],
         phi=phiUsed,
     )
