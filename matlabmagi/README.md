@@ -50,7 +50,9 @@ If you then need to rebuild `solveMagi.mexaw64`, this can be done as follows:
 - Start MATLAB in the matlabmagi working directory.
 - Build with `mex("-IC:\MinGW\x86_64-w64-mingw32\include", "-I../include/","-L../cmagi/", "-lcmagi.dll", "src/solveMagi.cpp")`, remembering to replace the MinGW include with the appropriate directory on your system.
 
-### Preparing the system of differential equations
+## Preparing a system of differential equations
+
+This section details how to set up your own ODE system for inference, using the FitzHugh-Nagumo system  as an illustrative example.
 
 First, we create a function that defines the ODEs.  It takes as input a parameter vector `theta` and matrix `x` where each column of `x` is a system component: 
 
