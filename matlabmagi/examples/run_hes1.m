@@ -1,40 +1,23 @@
 addpath('models/');
 
-% Set location of local libcmagi.so before starting MATLAB
-% (if not installed system-wide)
-% e.g., export LD_LIBRARY_PATH="../cmagi/"
+% Ensure libcmagi.so or libcmagi.dll is accessible to MATLAB
 
 config.nobs = 33;
-config.noise = [0.15 0.15 0.1];
-config.kernel = "generalMatern";
+config.noise = [0.15 0.15 NaN];
 config.seed = rand(1)*1e7;
-config.loglikflag = "withmeanBand";
-config.bandsize = 20;
-config.hmcSteps = 500;
-config.n_iter = 20001;
-config.burninRatio = 0.50;
-config.stepSizeFactor = 0.01;
-config.filllevel = 0;
-config.modelName = "Hes1-log";
-config.async = true;
-config.max_epoch = 1;
-config.useMean = true;
-config.useBand = true;
-config.useFrequencyBasedPrior = true;
-config.useScalerSigma = false;
 config.useFixedSigma =  true;
-
-config.priorTemperature = 3;
+config.t_end=240;
 
 pram_true.theta = [0.022, 0.3, 0.031, 0.028, 0.5, 20, 0.3];
 pram_true.x0 = [log(1.438575), log(2.037488), log(17.90385)];
 pram_true.sigma=config.noise;
 
-times = 0:0.01:240;
+times = 0:0.1:config.t_end;
 [foo, xtrue]=ode45(@hes1logmodelODEsolve,times,pram_true.x0,[],pram_true.theta);
 
 xtrue = horzcat(foo,xtrue); 
 
+% Simulate noisy observations 
 rng(config.seed);
 xsim = xtrue;
 for j=1:(size(xsim,2)-1)
@@ -43,75 +26,54 @@ end
 
 xsim_obs = xsim( linspace(1, size(xsim,1), config.nobs),:);
 
+% Set asynchronous observation schedule
 xsim_obs(:,4) = NaN;
-if config.async
-  xsim_obs(2:2:config.nobs,2) = NaN;
-  xsim_obs(1:2:config.nobs,3) = NaN;
-end
+xsim_obs(2:2:config.nobs,2) = NaN;
+xsim_obs(1:2:config.nobs,3) = NaN;
 
-xsim_obs = insertNaN(xsim_obs,config.filllevel);
-xsim = xsim_obs;
+xsim = setDiscretization(xsim_obs,0);
 
-% linear interpolation for xInit
-xInit = xsim(:,1)';
-xInit = horzcat(xInit',interp1(xsim_obs(1:2:config.nobs,1),xsim_obs(1:2:config.nobs,2),xInit,'linear')',interp1(xsim_obs(2:2:config.nobs,1),xsim_obs(2:2:config.nobs,3),xInit,'linear', 'extrap')',xsim_obs(:,4));
-
-% cpp inference ----------------------------
+% inference ----------------------------
 hes1model.fOde = @hes1logmodelODE;
 hes1model.fOdeDx = @hes1logmodelDx;
 hes1model.fOdeDtheta= @hes1logmodelDtheta;
 hes1model.thetaLowerBound= [0 0 0 0 0 0 0];
 hes1model.thetaUpperBound= [Inf Inf Inf Inf Inf Inf Inf];
 
-[samplesCpp, phiUsed] = solveMagi( xsim(:,2:size(xsim,2)), hes1model, xsim(:,1)', pram_true.sigma, [], [], [], [], [], config.priorTemperature, config.priorTemperature, 1, char(config.kernel), config.hmcSteps, config.burninRatio, config.n_iter, ...
-    config.stepSizeFactor, config.max_epoch, config.bandsize, config.useFrequencyBasedPrior, config.useBand, config.useMean, config.useScalerSigma, config.useFixedSigma, true);
-
-burnin = round(config.n_iter*config.burninRatio);
-
-outCpp = samplesCpp;
-
-gpode.lliklist = outCpp(1,(burnin+1):config.n_iter)';
-gpode.xOut = outCpp(2:( 1+(size(xsim,2)-1)*size(xsim,1)),(burnin+1):config.n_iter)';
-xLen = (size(xsim,2)-1)*size(xsim,1);
-gpode.thOut = outCpp((2+(size(xsim,2)-1)*size(xsim,1)):((2+(size(xsim,2)-1)*size(xsim,1))+length(pram_true.theta)-1),(burnin+1):config.n_iter)';
-gpode.sigmaOut = outCpp(((2+(size(xsim,2)-1)*size(xsim,1))+length(pram_true.theta)):size(outCpp,1),(burnin+1):config.n_iter)';
+gpode = MagiSolver( xsim, hes1model, [], config);
 
 % Inferred trajectory and parameter estimates
-xEst = reshape(mean(gpode.xOut), [config.nobs 3]);
-thetaEst = mean(gpode.thOut);
+xEst = squeeze(mean(gpode.xsampled, 1));
+thetaEst = mean(gpode.theta);
 
 % Sampled trajectories
-for i=1:(size(xsim,2)-1)
-    qlim = zeros(2, xLen/(size(xsim,2)-1));
-    k=0;
-    for j=(1+(i-1)*xLen/(size(xsim,2)-1) ):(xLen/(size(xsim,2)-1)*i)
-        k = k+1;
-        qlim(:,k) = quantile(gpode.xOut(:,j),[0.025 0.975]);
+for i=1:size(xEst,2)
+    qlim = zeros(2, size(gpode.xsampled,2));
+    for j=1:size(xEst,1)
+        qlim(:,j) = quantile(gpode.xsampled(:,j,i),[0.025 0.975]);
     end
 
-    subplot(1,size(xsim,2)-1,i)
-    fill([xsim(:,1)' fliplr(xsim(:,1)')],[exp(qlim(1,:)) exp(fliplr(qlim(2,:)))],[.9 .9 .9],'LineStyle','none')
-    hold on;plot(xsim(:,1)', exp(xsim(:,i+1)),'Marker','*')
+    subplot(1,size(xEst,2),i)
+    fill([xsim(:,1)' fliplr(xsim(:,1)')],[(qlim(1,:)) (fliplr(qlim(2,:)))],[.9 .9 .9],'LineStyle','none')
+    hold on;plot(xsim(:,1)', (xsim(:,i+1)),'Marker','*')
+    plot(xsim(:,1)', xEst(:,i), 'LineWidth', 1, 'Color', 'blue');
     hold off;
 end
 
 % Histograms of parameters
-for i=1:size(gpode.thOut,2)
-    subplot(1, size(gpode.thOut,2), i);
-    histogram(gpode.thOut(:,i));
+for i=1:size(gpode.theta,2)
+    subplot(1, size(gpode.theta,2), i);
+    histogram(gpode.theta(:,i));
     xline(pram_true.theta(i), 'LineWidth', 2, 'Color', 'red');
 end
     
-% Look at whether these estimates are reasonable for reconstructing
-% trajectories using ODE solver
+% Look at whether these estimates are reasonable for reconstructing trajectories using ODE solver
+times = 0:0.1:config.t_end;
 [foo, xRecons]=ode45(@hes1logmodelODEsolve,times,xEst(1,:),[],thetaEst);
-plot(times,xRecons);
-hold on;
-plot(xsim(:,1)', xsim_obs(:,2),'Marker','o','MarkerEdgeColor','blue');
-plot(xsim(:,1)', xsim_obs(:,3),'Marker','o','MarkerEdgeColor','red');
-hold off;
-
-
-outFileName =  sprintf('%s-seed%d-noise%.3f', config.modelName, config.seed, config.noise(1));
-save( sprintf('%s.mat', outFileName));
-
+for i=1:size(xEst,2)
+    subplot(1,size(xEst,2),i);
+    plot(times,xRecons(:,i));
+    hold on;
+    plot(xsim_obs(:,1)', xsim_obs(:,i+1),'Marker','*','LineStyle','none');
+    hold off;
+end
