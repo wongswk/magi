@@ -1,4 +1,4 @@
-function resultDx = HIVmodelDx(theta,x) 
+function resultDx = HIVmodelDx(theta,x,t) 
   resultDx= zeros(size(x,1),size(x,2),size(x,2));
 
   T = exp(x(:,1));

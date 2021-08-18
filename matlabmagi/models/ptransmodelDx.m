@@ -1,4 +1,4 @@
-function resultDx = ptransmodelDx(theta,x) 
+function resultDx = ptransmodelDx(theta,x,t) 
   resultDx = zeros(size(x,1),size(x,2),size(x,2));
 
   S = x(:,1);

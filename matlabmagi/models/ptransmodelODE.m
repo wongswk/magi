@@ -1,4 +1,4 @@
-function resultdt = ptransmodelODE(theta,x) 
+function resultdt = ptransmodelODE(theta,x,t) 
   S = x(:,1);
   dS = x(:,2);
   R = x(:,3);

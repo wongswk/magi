@@ -1,4 +1,4 @@
-function PMHdt = hes1logmodelODE(theta,x) 
+function PMHdt = hes1logmodelODE(theta,x,t) 
   P = exp(x(:,1));
   M = exp(x(:,2));
   H = exp(x(:,3));

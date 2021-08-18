@@ -1,4 +1,4 @@
-function resultDtheta = HIVmodelDtheta(theta,x) 
+function resultDtheta = HIVmodelDtheta(theta,x,t) 
   resultDtheta = zeros(size(x,1),length(theta),size(x,2));
 
   T = exp(x(:,1));
