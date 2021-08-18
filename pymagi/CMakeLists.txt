@@ -12,24 +12,16 @@ add_library(pymagi SHARED ${LIB_PYMAGI_SOURCE})
 set_target_properties(pymagi PROPERTIES LINKER_LANGUAGE CXX)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    set(SUFFIX .cpython-36m-darwin.so)
     set(CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS "${CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS} -undefined dynamic_lookup")
-else ()
-    set(SUFFIX .cpython-36m-x86_64-linux-gnu.so)
 endif ()
 
-find_package (Python3 COMPONENTS NumPy)
+find_package (Python3 COMPONENTS NumPy Interpreter Development)
 
 target_include_directories(pymagi PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../cmagi/)
 target_include_directories(pymagi SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include/)
-target_include_directories(pymagi SYSTEM PUBLIC
-        /usr/local/Cellar/python/3.6.4_4/Frameworks/Python.framework/Versions/3.6/include/python3.6m
-        /usr/local/Cellar/python/3.6.5_1/Frameworks/Python.framework/Versions/3.6/include/python3.6m
-        /usr/include/python3.6m/
-        /usr/local/Frameworks/Python.framework/Headers
-        )
-
+target_include_directories(pymagi SYSTEM PUBLIC ${Python3_INCLUDE_DIRS})
 target_include_directories(pymagi SYSTEM PUBLIC ${Python3_NumPy_INCLUDE_DIRS})
+set(SUFFIX ".${Python3_SOABI}.so")
 
 
 set_target_properties(pymagi PROPERTIES PREFIX "" SUFFIX "${SUFFIX}")
