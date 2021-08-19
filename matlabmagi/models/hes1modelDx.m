@@ -1,4 +1,4 @@
-function resultDx = hes1modelDx(theta,x,t) 
+function resultDx = hes1modelDx(theta,x,tvec) 
   resultDx= zeros(size(x,1),size(x,2),size(x,2));
 
   P = x(:,1);

@@ -1,4 +1,4 @@
-function HIVdt = HIVmodelODE(theta,x,t) 
+function HIVdt = HIVmodelODE(theta,x,tvec) 
   T = exp(x(:,1));
   Tm = exp(x(:,2));
   Tw = exp(x(:,3));

@@ -20,9 +20,9 @@ We provide pre-built binaries for Windows and an automatic build script for Linu
 
 Compiling the `libcmagi.so` library on Linux can be done automatically using `./build.sh` in the base directory of Magi repository.
 
-Compiling the Mex file `solveMagi.mexa64` can be done automatically using `./matab_build.sh` in this directory.
+Compiling the Mex files `solveMagi.mexa64` and `gpsmooth.mexa64` can be done automatically using `./matab_build.sh` in this directory.
 
-Before running `MagiSolver`, ensure `libcmagi.so` and `solveMagi.mexa64` are present in this matlabmagi directory (or another directory that is within Matlab's path).
+Before running `MagiSolver`, ensure `libcmagi.so`, `solveMagi.mexa64` and `gpsmooth.mexa64` are present in this matlabmagi directory (or another directory that is within Matlab's path).
 
 ### Windows
 
@@ -30,7 +30,7 @@ Before running `MagiSolver`, ensure `libcmagi.so` and `solveMagi.mexa64` are pre
 - For ease of use, we recommend using the pre-built binaries `libcmagi.dll` and `solveMagi.mexaw64` provided in the `windows/` subdirectory.
 - The required BLAS and LAPACK libraries `libblas.dll`, `liblapack.dll` can be obtained from https://icl.cs.utk.edu/lapack-for-windows/lapack/ and downloading the `x64_dll` links.
 - The GNU runtime libraries `libgcc_s_seh_64-1.dll` and `libgfortran_64-3.dll` may also be required. Copies are also provided in the `windows/` subdirectory.
-- Before running `MagiSolver`, ensure `libblas.dll`, `liblapack.dll`, `libcmagi.dll`, `solveMagi.mexw64` are present in this matlabmagi folder (or another folder that is within Matlab's path). Place `libgcc_s_seh_64-1.dll` and `libgfortran_64-3.dll` in this directory as well if required. Note that if any DLLs are missing, Matlab will give the message "The specified module could not be found."
+- Before running `MagiSolver`, ensure `libblas.dll`, `liblapack.dll`, `libcmagi.dll`, `solveMagi.mexw64`, `gpsmooth.mexa64` are present in this matlabmagi folder (or another folder that is within Matlab's path). Place `libgcc_s_seh_64-1.dll` and `libgfortran_64-3.dll` in this directory as well if required. Note that if any DLLs are missing, Matlab will give the message "The specified module could not be found."
 
 #### Manual build instructions
 
@@ -44,11 +44,11 @@ If you must rebuild `libcmagi.dll`, this can be done as follows:
 - Edit `cmagi\CMakeFiles\cmagi.dir\linklibs.rsp` to link to -lblas -llapack if CMake did not automatically detect them (if -larmadillo, -lpthread are not found, those flags are not needed and can be removed).
 - In a command prompt, go into `cmagi/` and run `mingw32-make`.
 
-If you then need to rebuild `solveMagi.mexaw64`, this can be done as follows:
+If you then need to rebuild the Mex files, this can be done as follows:
 
 - Ensure MinGW64 compiler support is installed (see https://www.mathworks.com/matlabcentral/fileexchange/52848-matlab-support-for-mingw-w64-c-c-compiler)
 - Start MATLAB in the matlabmagi working directory.
-- Build with `mex("-IC:\MinGW\x86_64-w64-mingw32\include", "-I../include/","-L../cmagi/", "-lcmagi.dll", "src/solveMagi.cpp")`, remembering to replace the MinGW include with the appropriate directory on your system.
+- Build with `mex("-IC:\MinGW\x86_64-w64-mingw32\include", "-I../include/","-L../cmagi/", "-lcmagi.dll", "src/solveMagi.cpp")`, and `mex("-IC:\MinGW\x86_64-w64-mingw32\include", "-I../include/","-L../cmagi/", "-lcmagi.dll", "src/gpsmooth.cpp")` remembering to replace the MinGW include with the appropriate directory on your system.
 
 ## Preparing a system of differential equations
 

@@ -55,7 +55,7 @@ fnmodel.fOdeDtheta= @fnmodelDtheta;
 fnmodel.thetaLowerBound= [0 0 0];
 fnmodel.thetaUpperBound= [Inf Inf Inf];
 
-gpode = MagiSolver( xsim(:,2:size(xsim,2)), fnmodel, xsim(:,1)', config);
+gpode = MagiSolver( xsim, fnmodel, [], config);
 
 % Inferred trajectory and parameter estimates
 xEst = squeeze(mean(gpode.xsampled, 1));

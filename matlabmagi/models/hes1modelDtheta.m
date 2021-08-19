@@ -1,4 +1,4 @@
-function resultDtheta = hes1modelDtheta(theta,x,t) 
+function resultDtheta = hes1modelDtheta(theta,x,tvec) 
   resultDtheta = zeros(size(x,1),length(theta),size(x,2));
 
   P = x(:,1);
