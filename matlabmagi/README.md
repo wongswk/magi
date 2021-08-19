@@ -5,6 +5,7 @@ Three complete, self-contained dynamic system examples are provided in the `exam
   * Hes1 oscillation system
   * FitzHugh-Nagumo (FN) system
   * Protein transduction (PTrans) system
+  * HIV time-dependent system
 
 Each example lays out how to prepare the input to `MagiSolver`, and then use the output to plot inferred trajectories and compute parameter estimates.
 
