@@ -241,7 +241,7 @@ lp phisigllik( const vec & phisig,
   int phiDimension = (phisig.size() - 1) / obsDimension;
   double sigma = phisig(phisig.size() - 1);
   const mat & phiAllDim = mat(const_cast<double*>( phisig.begin()), 
-                              phiDimension, obsDimension, false, false);
+                              phiDimension, obsDimension, true, false);
   
   // likelihood value part
   std::function<gpcov(vec, mat, int)> kernelCov;
@@ -310,7 +310,7 @@ lp phisigloocvllik( const vec & phisig,
   int phiDimension = (phisig.size() - 1) / obsDimension;
   const double sigma = phisig(phisig.size() - 1);
   const mat & phiAllDim = mat(const_cast<double*>( phisig.begin()), 
-                              phiDimension, obsDimension, false, false);
+                              phiDimension, obsDimension, true, false);
   
   std::function<gpcov(vec, mat, int)> kernelCov;
   if(kernel == "matern"){
@@ -374,7 +374,7 @@ lp phisigloocvmse( const vec & phisig,
   int phiDimension = (phisig.size() - 1) / obsDimension;
   const double sigma = phisig(phisig.size() - 1);
   const mat & phiAllDim = mat(const_cast<double*>( phisig.begin()), 
-                              phiDimension, obsDimension, false, false);
+                              phiDimension, obsDimension, true, false);
   
   std::function<gpcov(vec, mat, int)> kernelCov;
   if(kernel == "matern"){

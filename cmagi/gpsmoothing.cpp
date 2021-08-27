@@ -47,7 +47,7 @@ public:
         if ((phisigInput.array() > this->upperBound().array()).any()){
             return INFINITY;
         }
-        arma::vec phisig = arma::vec(const_cast<double*>(phisigInput.data()), numparam, false, false);
+        arma::vec phisig = arma::vec(const_cast<double*>(phisigInput.data()), numparam, true, false);
         if(sigmaExogenScalar > 0){
             phisig = arma::join_vert(phisig, arma::vec({sigmaExogenScalar}));
         }
@@ -80,7 +80,7 @@ public:
             }
             return;
         }
-        arma::vec phisig = arma::vec(const_cast<double*>(phisigInput.data()), numparam, false, false);
+        arma::vec phisig = arma::vec(const_cast<double*>(phisigInput.data()), numparam, true, false);
         if(sigmaExogenScalar > 0){
             phisig = arma::join_vert(phisig, arma::vec({sigmaExogenScalar}));
         }
@@ -223,7 +223,7 @@ arma::vec gpsmooth(const arma::mat & yobsInput,
         phisig = phisigAttempt2;
     }
 
-    const arma::vec & phisigArgmin = arma::vec(phisig.data(), numparam, false, false);
+    const arma::vec & phisigArgmin = arma::vec(phisig.data(), numparam, true, false);
     return phisigArgmin;
 }
 
@@ -382,7 +382,7 @@ arma::vec optimizeThetaInit(const arma::mat & yobsInput,
     Eigen::VectorXd theta(fOdeModelInput.thetaSize);
     theta.fill(1);
     solver.minimize(objective, theta);
-    const arma::vec & thetaArgmin = arma::vec(theta.data(), fOdeModelInput.thetaSize, false, false);
+    const arma::vec & thetaArgmin = arma::vec(theta.data(), fOdeModelInput.thetaSize, true, false);
     return thetaArgmin;
 }
 
@@ -523,7 +523,7 @@ arma::mat optimizePhi(const arma::mat & yobsInput,
         phi[2*i+1] = phiInitInput(1, currentDim);
     }
     solver.minimize(objective, phi);
-    const arma::mat & phiArgmin = arma::mat(phi.data(), 2, missingComponentDim.size(), false, false);
+    const arma::mat & phiArgmin = arma::mat(phi.data(), 2, missingComponentDim.size(), true, false);
     return phiArgmin;
 }
 
@@ -747,15 +747,15 @@ arma::mat optimizeXmissingThetaPhi(const arma::mat & yobsInput,
 
     solver.minimize(objective, xThetaPhi);
     if (! isfinite(objective.value(xThetaPhi))){
-        const arma::vec & xThetaPhiArgmin = arma::vec(xThetaPhiInit.data(), xInitInput.n_rows * missingComponentDim.size() + thetaInitInput.size() + phiInitInput.n_rows * missingComponentDim.size(), false, false);
+        const arma::vec & xThetaPhiArgmin = arma::vec(xThetaPhiInit.data(), xInitInput.n_rows * missingComponentDim.size() + thetaInitInput.size() + phiInitInput.n_rows * missingComponentDim.size(), true, false);
         return xThetaPhiArgmin;
     }
 
     if (objective.value(xThetaPhi) < objective.value(xThetaPhiInit)){
-        const arma::vec & xThetaPhiArgmin = arma::vec(xThetaPhi.data(), xInitInput.n_rows * missingComponentDim.size() + thetaInitInput.size() + phiInitInput.n_rows * missingComponentDim.size(), false, false);
+        const arma::vec & xThetaPhiArgmin = arma::vec(xThetaPhi.data(), xInitInput.n_rows * missingComponentDim.size() + thetaInitInput.size() + phiInitInput.n_rows * missingComponentDim.size(), true, false);
         return xThetaPhiArgmin;
     }else{
-        const arma::vec & xThetaPhiArgmin = arma::vec(xThetaPhiInit.data(), xInitInput.n_rows * missingComponentDim.size() + thetaInitInput.size() + phiInitInput.n_rows * missingComponentDim.size(), false, false);
+        const arma::vec & xThetaPhiArgmin = arma::vec(xThetaPhiInit.data(), xInitInput.n_rows * missingComponentDim.size() + thetaInitInput.size() + phiInitInput.n_rows * missingComponentDim.size(), true, false);
         return xThetaPhiArgmin;
     }
 }
