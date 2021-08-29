@@ -86,16 +86,6 @@ arma::vec gpsmooth(const arma::mat & yobsInput,
     // phi sigma 1st initial value for optimization
     Eigen::VectorXd phisigAttempt1(numparam);
     phisigAttempt1.fill(1);
-    double maxDist = distInput.max();
-    double sdOverall = 0;
-    for(unsigned i = 0; i < yobsInput.n_cols; i++) {
-        phisigAttempt1[phiDim * i] = 0.5 * arma::stddev(yobsInput.col(i));
-        phisigAttempt1[phiDim * i + 1] = 0.5 * maxDist;
-        sdOverall += phisigAttempt1[phiDim * i];
-    }
-    if(sigmaExogenScalar <= 0){
-        phisigAttempt1[phiDim * yobsInput.n_cols] = sdOverall / yobsInput.n_cols;
-    }
     solver.minimize(objective, phisigAttempt1);
 
     arma::vec phisigArgmin(numparam);
