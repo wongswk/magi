@@ -31,14 +31,7 @@ arma::vec calcFrequencyBasedPrior(const arma::vec & x){
 
 class PhiGaussianProcessSmoothing : public cppoptlib::BoundedProblem<double> {
 public:
-    std::string kernel;
-    const arma::mat & yobs;
-    const arma::mat & dist;
     const unsigned int numparam;
-    const double sigmaExogenScalar;
-    const bool useFrequencyBasedPrior;
-    arma::vec priorFactor;
-    double maxDist;
 
     double value(const Eigen::VectorXd & phisigInput) override {
         return phisigInput.sum();
@@ -49,39 +42,12 @@ public:
         return;
     }
 
-    PhiGaussianProcessSmoothing(const arma::mat & yobsInput,
-                                const arma::mat & distInput,
-                                std::string kernelInput,
-                                const unsigned int numparamInput,
-                                const double sigmaExogenScalarInput,
-                                const bool useFrequencyBasedPriorInput) :
+    PhiGaussianProcessSmoothing(const unsigned int numparamInput) :
             BoundedProblem(numparamInput),
-            kernel(std::move(kernelInput)),
-            yobs(yobsInput),
-            dist(distInput),
-            numparam(numparamInput),
-            sigmaExogenScalar(sigmaExogenScalarInput),
-            useFrequencyBasedPrior(useFrequencyBasedPriorInput) {
-        unsigned int phiDim;
-        if(kernel == "generalMatern") {
-            phiDim = 2;
-        }else if(kernel == "matern") {
-            phiDim = 2;
-        }else if(kernel == "compact1") {
-            phiDim = 2;
-        }else if(kernel == "periodicMatern"){
-            phiDim = 3;
-        }else{
-            throw std::invalid_argument("kernelInput invalid");
-        }
-
+            numparam(numparamInput) {
         Eigen::VectorXd lb(numparam);
         lb.fill(1e-4);
         this->setLowerBound(lb);
-
-        maxDist = dist.max();
-        double maxScale = arma::max(arma::abs(yobs(arma::find_finite(yobs))));
-        maxScale = std::max(maxScale, maxDist);
 
         Eigen::VectorXd ub(numparam);
         ub.fill(10);
@@ -115,7 +81,7 @@ arma::vec gpsmooth(const arma::mat & yobsInput,
         numparam = phiDim * yobsInput.n_cols + 1;
     }
 
-    PhiGaussianProcessSmoothing objective(yobsInput, distInput, std::move(kernelInput), numparam, sigmaExogenScalar, useFrequencyBasedPrior);
+    PhiGaussianProcessSmoothing objective(numparam);
     cppoptlib::LbfgsbSolver<PhiGaussianProcessSmoothing> solver;
     // phi sigma 1st initial value for optimization
     Eigen::VectorXd phisigAttempt1(numparam);
@@ -138,7 +104,6 @@ arma::vec gpsmooth(const arma::mat & yobsInput,
     for(unsigned i = 0; i < yobsInput.n_cols; i++) {
         phisigAttempt2[phiDim * i] = arma::stddev(yobsInput.col(i));
         if (useFrequencyBasedPrior){
-            phisigAttempt2[phiDim * i + 1] = maxDist * objective.priorFactor(0);
         }else{
             arma::vec distVec = arma::vectorise(distInput);
             phisigAttempt2[phiDim * i + 1] = distVec(arma::find(distVec > 1e-8)).eval().min();
