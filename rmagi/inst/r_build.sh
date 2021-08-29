@@ -79,8 +79,10 @@ MAKE="make -j$CPU" Rscript -e "Rcpp::compileAttributes(); devtools::document(); 
 if [[ "$1" == "--cran" ]]; then
   export NOT_CRAN=TRUE
   mv examples inst/examples
-  R -e 'Sys.getenv("NOT_CRAN"); devtools::build()'
+#  rm -r tests
+  R -e 'Sys.getenv("NOT_CRAN"); devtools::build(vignettes=FALSE)'
   mv inst/examples examples
+#  git checkout -- tests
 fi
 
 LIB_PYMAGI_SOURCE=$(cd "$PROJECT"/cmagi && ls -- *.cpp)

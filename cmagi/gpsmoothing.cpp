@@ -41,60 +41,12 @@ public:
     double maxDist;
 
     double value(const Eigen::VectorXd & phisigInput) override {
-        if ((phisigInput.array() < this->lowerBound().array()).any()){
-            return INFINITY;
-        }
-        if ((phisigInput.array() > this->upperBound().array()).any()){
-            return INFINITY;
-        }
-        arma::vec phisig = arma::vec(const_cast<double*>(phisigInput.data()), numparam, true, false);
-        if(sigmaExogenScalar > 0){
-            phisig = arma::join_vert(phisig, arma::vec({sigmaExogenScalar}));
-        }
-        const lp & out = phisigllik(phisig, yobs, dist, kernel);
-        double penalty = 0;
-        if (useFrequencyBasedPrior) {
-            for (unsigned j = 0; j < yobs.n_cols; j++){
-                penalty += -0.5 * std::pow((phisig(2*j+1) - maxDist * priorFactor(0)) / (maxDist * priorFactor(1)), 2);
-            }
-        }
-        return -(out.value + penalty);
+        return phisigInput.sum();
     }
 
     void gradient(const Eigen::VectorXd & phisigInput, Eigen::VectorXd & grad) override {
-        if ((phisigInput.array() < this->lowerBound().array()).any()){
-            grad.fill(0);
-            for(unsigned i = 0; i < numparam; i++){
-                if(phisigInput[i] < this->lowerBound()[i]){
-                    grad[i] = -1;
-                }
-            }
-            return;
-        }
-        if ((phisigInput.array() > this->upperBound().array()).any()){
-            grad.fill(0);
-            for(unsigned i = 0; i < numparam; i++){
-                if(phisigInput[i] > this->upperBound()[i]){
-                    grad[i] = 1;
-                }
-            }
-            return;
-        }
-        arma::vec phisig = arma::vec(const_cast<double*>(phisigInput.data()), numparam, true, false);
-        if(sigmaExogenScalar > 0){
-            phisig = arma::join_vert(phisig, arma::vec({sigmaExogenScalar}));
-        }
-        const lp & out = phisigllik(phisig, yobs, dist, kernel);
-        for(unsigned i = 0; i < numparam; i++){
-            grad[i] = -out.gradient(i);
-        }
-        double penalty = 0;
-        if (useFrequencyBasedPrior) {
-            for (unsigned j = 0; j < yobs.n_cols; j++){
-                penalty = (phisig(2*j+1) - maxDist * priorFactor(0)) / std::pow((maxDist * priorFactor(1)), 2);
-                grad[2*j+1] += penalty;
-            }
-        }
+        grad.fill(1);
+        return;
     }
 
     PhiGaussianProcessSmoothing(const arma::mat & yobsInput,
@@ -132,25 +84,7 @@ public:
         maxScale = std::max(maxScale, maxDist);
 
         Eigen::VectorXd ub(numparam);
-        ub.fill(10 * maxScale);
-        for(unsigned i = 0; i < yobsInput.n_cols; i++) {
-            const arma::uvec finite_elem = arma::find_finite(yobs.col(i));
-            if (finite_elem.size() > 0){
-                ub[phiDim * i] = 100 * arma::max(arma::abs((yobs.col(i).eval().elem(finite_elem))));
-            }
-            ub[phiDim * i + 1] = maxDist;
-        }
-//        std::cout << "ub in PhiGaussianProcessSmoothing is " << ub << "\n";
-        this->setUpperBound(ub);
-
-        priorFactor = arma::zeros(2);
-        if(useFrequencyBasedPrior){
-            for (unsigned j = 0; j < yobs.n_cols; j++){
-                priorFactor += calcFrequencyBasedPrior(yobs.col(j));
-            }
-            priorFactor /= yobs.n_cols;
-//            std::cout << "priorFactor =\n" << priorFactor << "\n";
-        }
+        ub.fill(10);
     }
 };
 
@@ -223,7 +157,10 @@ arma::vec gpsmooth(const arma::mat & yobsInput,
         phisig = phisigAttempt2;
     }
 
-    const arma::vec & phisigArgmin = arma::vec(phisig.data(), numparam, true, false);
+    arma::vec phisigArgmin(numparam);
+    for(unsigned i = 0; i < numparam; i++){
+        phisigArgmin(i) = phisig[i];
+    }
     return phisigArgmin;
 }
 
