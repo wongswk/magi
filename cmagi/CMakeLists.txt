@@ -47,6 +47,3 @@ set_target_properties(cmagi PROPERTIES COMPILE_DEFINITIONS "ARMA_BLAS_LONG_LONG"
 target_link_libraries(cmagi ${BLAS} ${ARMADILLO} ${LAPACK} ${PTHREAD})
 
 SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
-add_executable(magi_main ${CMAKE_CURRENT_SOURCE_DIR}/tests/main.cpp)
-target_include_directories(magi_main PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
-target_link_libraries(magi_main cmagi ${ARMADILLO})
