@@ -19,3 +19,6 @@
 	path = package/Arma_Wrapper
 	ignore = dirty
 	url = https://gitlab.com/sangrey/Arma_Wrapper.git
+[submodule "package/LBFGSpp"]
+	path = package/LBFGSpp
+	url = https://github.com/yixuan/LBFGSpp.git
