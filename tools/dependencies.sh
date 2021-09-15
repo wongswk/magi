@@ -72,6 +72,13 @@ if [ ! -d "include/cppoptlib" ]; then
     cp -r package/CppNumericalSolvers/include/* include/
 fi
 
+if [ ! -d "include/LBFGSpp" ]; then
+    cd package/LBFGSpp
+    git checkout 624755d2508daf1a2887c71748c6534c1bcd107e
+    cd $PROJECT
+    cp -r package/LBFGSpp/include/* include/
+fi
+
 #cd package
 #git clone https://gitlab.com/sangrey/Arma_Wrapper.git
 #cd Arma_Wrapper
