@@ -4,7 +4,9 @@
 #include <armadillo>
 #include <cppoptlib/boundedproblem.h>
 #include <cppoptlib/solver/lbfgsbsolver.h>
+#include <Eigen/Core>
 
+// [[Rcpp::depends(RcppEigen)]]
 
 class PhiGaussianProcessSmoothing : public cppoptlib::BoundedProblem<double> {
 public:
@@ -72,3 +74,16 @@ arma::vec gpsmooth(const arma::mat & yobsInput,
     return phisigArgmin;
 }
 
+// [[Rcpp::export]]
+Eigen::VectorXd gpsmoothEigen() {
+    unsigned int numparam = 3;
+
+    PhiGaussianProcessSmoothing objective(numparam);
+    cppoptlib::LbfgsbSolver<PhiGaussianProcessSmoothing> solver;
+    // phi sigma 1st initial value for optimization
+    Eigen::VectorXd phisigAttempt1(numparam);
+    phisigAttempt1.fill(1);
+    solver.minimize(objective, phisigAttempt1);
+
+    return phisigAttempt1;
+}
