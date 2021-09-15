@@ -52,6 +52,8 @@ rsync -az ../cmagi/*.cpp src/rcppmagi/
 rsync -az ../cmagi/*.h src/rcppmagi/
 perl -pi -e 's/\#include <armadillo>/\#include \"RcppArmadillo.h\"/g' src/rcppmagi/*.h
 perl -pi -e 's/\#include <armadillo>/\#include \"RcppArmadillo.h\"/g' src/rcppmagi/*.cpp
+perl -pi -e 's/\#include <Eigen.*>/\#include \"RcppEigen.h\"/g' src/rcppmagi/*.h
+perl -pi -e 's/\#include <Eigen.*>/\#include \"RcppEigen.h\"/g' src/rcppmagi/*.cpp
 perl -pi -e 's/std::cerr/Rcpp::Rcerr/g' src/rcppmagi/*.cpp
 perl -pi -e 's/std::cout/Rcpp::Rcout/g' src/rcppmagi/*.cpp
 
