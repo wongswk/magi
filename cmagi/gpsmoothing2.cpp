@@ -14,31 +14,23 @@
 using Eigen::VectorXd;
 using namespace LBFGSpp;
 
-class Rosenbrock
-{
+class PhiGaussianProcessSmoothing2 {
 private:
     int n;
 public:
-    Rosenbrock(int n_) : n(n_) {}
-    double operator()(const VectorXd& x, VectorXd& grad)
-    {
-        double fx = 0.0;
-        for(int i = 0; i < n; i += 2)
-        {
-            double t1 = 1.0 - x[i];
-            double t2 = 10 * (x[i + 1] - x[i] * x[i]);
-            grad[i + 1] = 20 * t2;
-            grad[i]     = -2.0 * (x[i] * grad[i + 1] + t1);
-            fx += t1 * t1 + t2 * t2;
-        }
-        return fx;
+    PhiGaussianProcessSmoothing2(int n_) : n(n_) {}
+
+    double operator()(const Eigen::VectorXd & phisigInput, Eigen::VectorXd & grad){
+        grad.fill(1);
+        return phisigInput.sum();
     }
+
 };
 
 
 // [[Rcpp::export]]
 Eigen::VectorXd gpsmoothEigen2() {
-    const int n = 10;
+    const int n = 3;
     // Set up parameters
     LBFGSBParam<double> param;  // New parameter class
     param.epsilon = 1e-6;
@@ -46,11 +38,11 @@ Eigen::VectorXd gpsmoothEigen2() {
 
     // Create solver and function object
     LBFGSBSolver<double> solver(param);  // New solver class
-    Rosenbrock fun(n);
+    PhiGaussianProcessSmoothing2 fun(n);
 
     // Bounds
-    VectorXd lb = VectorXd::Constant(n, 2.0);
-    VectorXd ub = VectorXd::Constant(n, 4.0);
+    VectorXd lb = VectorXd::Constant(n, 1e-4);
+    VectorXd ub = VectorXd::Constant(n, INFINITY);
 
     // Initial guess
     VectorXd x = VectorXd::Constant(n, 3.0);
