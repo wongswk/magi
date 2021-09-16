@@ -22,16 +22,18 @@ mkdir -p inst/include/LBFGSpp
 rsync -az $PROJECT/include/LBFGSB.h inst/include/
 rsync -az $PROJECT/include/LBFGSpp/Param.h inst/include/LBFGSpp/
 rsync -az $PROJECT/include/LBFGSpp/BFGSMat.h inst/include/LBFGSpp/
+rsync -az $PROJECT/include/LBFGSpp/BKLDLT.h inst/include/LBFGSpp/
 rsync -az $PROJECT/include/LBFGSpp/Cauchy.h inst/include/LBFGSpp/
 rsync -az $PROJECT/include/LBFGSpp/SubspaceMin.h inst/include/LBFGSpp/
 rsync -az $PROJECT/include/LBFGSpp/LineSearchMoreThuente.h inst/include/LBFGSpp/
 rsync -az $PROJECT/package/LBFGSpp/LICENSE.md inst/include/LBFGSpp_LICENSE
 
-perl -pi -e 's/\#define META_H/\#define META_H\n\#include <Rcpp.h>/g' inst/include/cppoptlib/meta.h
-perl -pi -e 's/std::cout/Rcpp::Rcout/g' inst/include/cppoptlib/solver/*.h
-perl -pi -e 's/std::cerr/Rcpp::Rcerr/g' inst/include/cppoptlib/solver/*.h
-perl -pi -e 's/assert\((.*)\);/if(!(\1)) Rcpp::Rcerr << "!(\1\)\\n\";/g' inst/include/cppoptlib/solver/*.h
-perl -pi -e 's/\#pragma GCC diagnostic ignored \"-Wunused-parameter\"//g' inst/include/cppoptlib/*.h
+perl -pi -e 's/\#define LBFGSPP_BK_LDLT_H/\#define LBFGSPP_BK_LDLT_H\n\#include <Rcpp.h>/g' inst/include/LBFGSpp/BKLDLT.h
+perl -pi -e 's/\#define LBFGSPP_PARAM_H/\#define LBFGSPP_PARAM_H\n\#include <Rcpp.h>/g' inst/include/LBFGSpp/Param.h
+perl -pi -e 's/std::cout/Rcpp::Rcout/g' inst/include/LBFGSpp/*.h
+perl -pi -e 's/std::cerr/Rcpp::Rcerr/g' inst/include/LBFGSpp/*.h
+perl -pi -e 's/assert\((.*)\);/if(!(\1)) Rcpp::Rcerr << "!(\1\)\\n\";/g' inst/include/LBFGSpp/*.h
+perl -pi -e 's/\#pragma GCC diagnostic ignored \"-Wunused-parameter\"//g' inst/include/LBFGSpp/*.h
 
 echo "
 PKG_CXX=clang++
