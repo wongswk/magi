@@ -282,7 +282,7 @@ arma::cube calcMeanCurve(const arma::vec & xInput,
 }
 
 
-class ThetaOptim : public cppoptlib::BoundedProblem<double> {
+class ThetaOptim  {
 public:
     const arma::mat & yobs;
     const OdeSystem & fOdeModel;
@@ -291,47 +291,27 @@ public:
     const arma::vec & priorTemperature;
     const arma::mat & xInit;
     const bool useBand;
+    Eigen::VectorXd lb;
+    Eigen::VectorXd ub;
 
-    double value(const Eigen::VectorXd & thetaInput) override {
-        if ((thetaInput.array() < this->lowerBound().array()).any()){
-            return INFINITY;
-        }
-        if ((thetaInput.array() > this->upperBound().array()).any()){
-            return INFINITY;
-        }
-        const arma::vec & xtheta = arma::join_vert(
-            arma::vectorise(xInit),
-            arma::vec(const_cast<double*>(thetaInput.data()), fOdeModel.thetaSize, false, false)
-        );
-        const lp & out = xthetallik(
-                xtheta,
-                covAllDimensions,
-                sigmaAllDimensions,
-                yobs,
-                fOdeModel,
-                useBand,
-                priorTemperature);
-        return -out.value;
-    }
-
-    void gradient(const Eigen::VectorXd & thetaInput, Eigen::VectorXd & grad) override {
-        if ((thetaInput.array() < this->lowerBound().array()).any()){
+    double operator()(const Eigen::VectorXd & thetaInput, Eigen::VectorXd & grad)  {
+        if ((thetaInput.array() < lb.array()).any()){
             grad.fill(0);
             for(unsigned i = 0; i < fOdeModel.thetaSize; i++){
-                if(thetaInput[i] < this->lowerBound()[i]){
+                if(thetaInput[i] < lb[i]){
                     grad[i] = -1;
                 }
             }
-            return;
+            return INFINITY;
         }
-        if ((thetaInput.array() > this->upperBound().array()).any()){
+        if ((thetaInput.array() > ub.array()).any()){
             grad.fill(0);
             for(unsigned i = 0; i < fOdeModel.thetaSize; i++){
-                if(thetaInput[i] > this->upperBound()[i]){
+                if(thetaInput[i] > ub[i]){
                     grad[i] = 1;
                 }
             }
-            return;
+            return INFINITY;
         }
         const arma::vec & xtheta = arma::join_vert(
                 arma::vectorise(xInit),
@@ -348,6 +328,7 @@ public:
         for(unsigned i = 0; i < fOdeModel.thetaSize; i++){
             grad[i] = -out.gradient(xInit.size() + i);
         }
+        return -out.value;
     }
 
     ThetaOptim(const arma::mat & yobsInput,
@@ -357,7 +338,6 @@ public:
                const arma::vec & priorTemperatureInput,
                const arma::mat & xInitInput,
                const bool useBandInput) :
-            BoundedProblem(fOdeModelInput.thetaSize),
             yobs(yobsInput),
             fOdeModel(fOdeModelInput),
             covAllDimensions(covAllDimensionsInput),
@@ -365,10 +345,8 @@ public:
             priorTemperature(priorTemperatureInput),
             xInit(xInitInput),
             useBand(useBandInput) {
-        const Eigen::Map<Eigen::VectorXd> lb (const_cast<double*>(fOdeModel.thetaLowerBound.memptr()), fOdeModel.thetaSize);
-        this->setLowerBound(lb.array() + 1e-6);
-        const Eigen::Map<Eigen::VectorXd> ub (const_cast<double*>(fOdeModel.thetaUpperBound.memptr()), fOdeModel.thetaSize);
-        this->setUpperBound(ub.array() - 1e-6);
+        lb = Eigen::Map<Eigen::VectorXd> (const_cast<double*>(fOdeModel.thetaLowerBound.memptr()), fOdeModel.thetaSize);
+        ub = Eigen::Map<Eigen::VectorXd> (const_cast<double*>(fOdeModel.thetaUpperBound.memptr()), fOdeModel.thetaSize);
     }
 };
 
@@ -381,10 +359,16 @@ arma::vec optimizeThetaInit(const arma::mat & yobsInput,
                             const arma::mat & xInitInput,
                             const bool useBandInput) {
     ThetaOptim objective(yobsInput, fOdeModelInput, covAllDimensionsInput, sigmaAllDimensionsInput, priorTemperatureInput, xInitInput, useBandInput);
-    cppoptlib::LbfgsbSolver<ThetaOptim> solver;
+    LBFGSpp::LBFGSBParam<double> config;  // New parameter class
+    config.epsilon = 1e-6;
+    config.max_iterations = 100;
+    config.min_step = 0;
+    LBFGSpp::LBFGSBSolver<double> solver(config);
+
     Eigen::VectorXd theta(fOdeModelInput.thetaSize);
     theta.fill(1);
-    solver.minimize(objective, theta);
+    double fx;
+    int niter = solver.minimize(objective, theta, fx, objective.lb, objective.ub);
     const arma::vec & thetaArgmin = arma::vec(theta.data(), fOdeModelInput.thetaSize, true, false);
     return thetaArgmin;
 }
