@@ -90,7 +90,7 @@ LIB_PYMAGI_SOURCE=$(cd "$PROJECT"/cmagi && ls -- *.cpp)
 LIB_PYMAGI_HEADERS=$(cd "$PROJECT"/cmagi && ls -- *.h)
 cd "$PROJECT"/rmagi/src && rm $LIB_PYMAGI_SOURCE $LIB_PYMAGI_HEADERS
 cd "$PROJECT"/rmagi || return
-rm -r inst/include/cppoptlib
+rm -r inst/include/
 ln -s "$(pwd)"/../cmagi/*.cpp src/
 ln -s "$(pwd)"/../cmagi/*.h src/
 git checkout -- R/zzz.R
