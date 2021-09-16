@@ -65,13 +65,6 @@ if [ ! -d "include/Eigen" ]; then
     cd $PROJECT
 fi
 
-if [ ! -d "include/cppoptlib" ]; then
-    cd package/CppNumericalSolvers
-    git checkout dfd4686ef4cde941702024a70ac2edc73d5ee88c
-    cd $PROJECT
-    cp -r package/CppNumericalSolvers/include/* include/
-fi
-
 if [ ! -d "include/LBFGSpp" ]; then
     cd package/LBFGSpp
     git checkout 624755d2508daf1a2887c71748c6534c1bcd107e
