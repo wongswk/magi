@@ -168,7 +168,7 @@ arma::vec gpsmooth(const arma::mat & yobsInput,
     LBFGSpp::LBFGSBParam<double> config;  // New parameter class
     config.epsilon = 1e-6;
     config.max_iterations = 10000;
-    config.max_linesearch = 1000;
+    config.max_linesearch = 10000;
     config.min_step = 0;
 
     LBFGSpp::LBFGSBSolver<double> solver(config);
@@ -361,7 +361,7 @@ arma::vec optimizeThetaInit(const arma::mat & yobsInput,
     LBFGSpp::LBFGSBParam<double> config;  // New parameter class
     config.epsilon = 1e-6;
     config.max_iterations = 10000;
-    config.max_linesearch = 1000;
+    config.max_linesearch = 10000;
     config.min_step = 0;
     LBFGSpp::LBFGSBSolver<double> solver(config);
 
@@ -483,7 +483,7 @@ arma::mat optimizePhi(const arma::mat & yobsInput,
     LBFGSpp::LBFGSBParam<double> config;  // New parameter class
     config.epsilon = 1e-6;
     config.max_iterations = 10000;
-    config.max_linesearch = 1000;
+    config.max_linesearch = 10000;
     config.min_step = 0;
 
     LBFGSpp::LBFGSBSolver<double> solver(config);
@@ -660,7 +660,7 @@ arma::mat optimizeXmissingThetaPhi(const arma::mat & yobsInput,
     LBFGSpp::LBFGSBParam<double> config;  // New parameter class
     config.epsilon = 1e-6;
     config.max_iterations = 10000;
-    config.max_linesearch = 1000;
+    config.max_linesearch = 10000;
     config.min_step = 0;
     LBFGSpp::LBFGSBSolver<double> solver(config);
 

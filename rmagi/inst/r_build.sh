@@ -35,6 +35,7 @@ perl -pi -e 's/std::cerr/Rcpp::Rcerr/g' inst/include/LBFGSpp/*.h
 perl -pi -e 's/assert\((.*)\);/if(!(\1)) Rcpp::Rcerr << "!(\1\)\\n\";/g' inst/include/LBFGSpp/*.h
 perl -pi -e 's/\#pragma GCC diagnostic ignored \"-Wunused-parameter\"//g' inst/include/LBFGSpp/*.h
 perl -pi -e 's/throw std::logic_error\(\"the moving direction does not decrease the objective function value\"\)/{}/g' inst/include/LBFGSpp/LineSearchMoreThuente.h
+perl -pi -e 's/throw std::runtime_error\(\"the line search routine reached the maximum number of iterations\"\)/{}/g' inst/include/LBFGSpp/LineSearchMoreThuente.h
 
 
 echo "
