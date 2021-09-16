@@ -374,7 +374,7 @@ arma::vec optimizeThetaInit(const arma::mat & yobsInput,
 }
 
 
-class PhiOptim : public cppoptlib::BoundedProblem<double> {
+class PhiOptim{
 public:
     const arma::mat & yobs;
     const arma::vec & tvec;
@@ -385,38 +385,18 @@ public:
     const arma::vec & thetaInit;
     const arma::mat & phiFull;
     const arma::uvec & missingComponentDim;
-
-    double value(const Eigen::VectorXd & phiInput) override {
-        if ((phiInput.array() < this->lowerBound().array()).any()){
-            return INFINITY;
-        }
-        const arma::mat phiMissingDimensions(
-                const_cast<double*>(phiInput.data()),
-                2,
-                missingComponentDim.size(),
-                false,
-                false);
-        arma::mat phiAllDimensions = phiFull;
-        phiAllDimensions.cols(missingComponentDim) = phiMissingDimensions;
-        const lp & out = xthetaphisigmallik( xInit,
-                                             thetaInit,
-                                             phiAllDimensions,
-                                             sigmaAllDimensions,
-                                             yobs,
-                                             tvec,
-                                             fOdeModel);
-        return -out.value;
-    }
-
-    void gradient(const Eigen::VectorXd & phiInput, Eigen::VectorXd & grad) override {
-        if ((phiInput.array() < this->lowerBound().array()).any()){
+    Eigen::VectorXd lb;
+    Eigen::VectorXd ub;
+    
+    double operator()(const Eigen::VectorXd & phiInput, Eigen::VectorXd & grad) {
+        if ((phiInput.array() < lb.array()).any()){
             grad.fill(0);
             for(unsigned i = 0; i < phiInput.size(); i++){
-                if(phiInput[i] < this->lowerBound()[i]){
+                if(phiInput[i] < lb[i]){
                     grad[i] = -1;
                 }
             }
-            return;
+            return INFINITY;
         }
         const arma::mat phiMissingDimensions(
                 const_cast<double*>(phiInput.data()),
@@ -440,6 +420,7 @@ public:
             grad[2*i] = -out.gradient(xInit.size() + thetaInit.size() + 2*currentDim);
             grad[2*i+1] = -out.gradient(xInit.size() + thetaInit.size() + 2*currentDim + 1);
         }
+        return -out.value;
     }
 
     PhiOptim(const arma::mat & yobsInput,
@@ -451,7 +432,6 @@ public:
              const arma::vec & thetaInitInput,
              const arma::mat & phiFullInput,
              const arma::uvec & missingComponentDimInput) :
-            BoundedProblem(missingComponentDimInput.size() * 2),
             yobs(yobsInput),
             tvec(tvecInput),
             fOdeModel(fOdeModelInput),
@@ -461,8 +441,8 @@ public:
             thetaInit(thetaInitInput),
             phiFull(phiFullInput),
             missingComponentDim(missingComponentDimInput) {
-        Eigen::VectorXd lb(missingComponentDim.size() * 2);
-        Eigen::VectorXd ub(missingComponentDim.size() * 2);
+        lb = Eigen::VectorXd(missingComponentDim.size() * 2);
+        ub = Eigen::VectorXd(missingComponentDim.size() * 2);
 
         const double maxDist = (arma::max(tvecInput) - arma::min(tvecInput));
         const double minDist = arma::min(arma::abs(arma::diff(tvecInput)));
@@ -485,8 +465,6 @@ public:
             ub[2*i+1] = maxDist * 5;
             lb[2*i+1] = std::min(maxDist * priorFactor(0) * 0.5, minDist);
         }
-        this->setLowerBound(lb);
-        this->setUpperBound(ub);
     }
 };
 
@@ -502,14 +480,22 @@ arma::mat optimizePhi(const arma::mat & yobsInput,
                       const arma::mat & phiInitInput,
                       const arma::uvec & missingComponentDim) {
     PhiOptim objective(yobsInput, tvecInput, fOdeModelInput, sigmaAllDimensionsInput, priorTemperatureInput, xInitInput, thetaInitInput, phiInitInput, missingComponentDim);
-    cppoptlib::LbfgsbSolver<PhiOptim> solver;
+    LBFGSpp::LBFGSBParam<double> config;  // New parameter class
+    config.epsilon = 1e-6;
+    config.max_iterations = 100;
+    config.min_step = 0;
+
+    LBFGSpp::LBFGSBSolver<double> solver(config);
+
     Eigen::VectorXd phi(2 * missingComponentDim.size());
     for(unsigned i = 0; i < missingComponentDim.size(); i++){
         unsigned currentDim = missingComponentDim[i];
         phi[2*i] = phiInitInput(0, currentDim);
         phi[2*i+1] = phiInitInput(1, currentDim);
     }
-    solver.minimize(objective, phi);
+    double fx;
+    int niter = solver.minimize(objective, phi, fx, objective.lb, objective.ub);
+
     const arma::mat & phiArgmin = arma::mat(phi.data(), 2, missingComponentDim.size(), true, false);
     return phiArgmin;
 }
@@ -529,10 +515,10 @@ public:
     const double SCALE = 1;
 
     double value(const Eigen::VectorXd & xthetaphiInput) override {
-        if ((xthetaphiInput.array() < this->lowerBound().array()).any()){
+        if ((xthetaphiInput.array() < lb.array()).any()){
             return INFINITY;
         }
-        if ((xthetaphiInput.array() > this->upperBound().array()).any()){
+        if ((xthetaphiInput.array() > ub.array()).any()){
             return INFINITY;
         }
         if (xthetaphiInput.array().isNaN().any()){
@@ -575,19 +561,19 @@ public:
     }
 
     void gradient(const Eigen::VectorXd & xthetaphiInput, Eigen::VectorXd & grad) override {
-        if ((xthetaphiInput.array() < this->lowerBound().array()).any()){
+        if ((xthetaphiInput.array() < lb.array()).any()){
             grad.fill(0);
             for(unsigned i = 0; i < xthetaphiInput.size(); i++){
-                if(xthetaphiInput[i] < this->lowerBound()[i]){
+                if(xthetaphiInput[i] < lb[i]){
                     grad[i] = -1;
                 }
             }
             return;
         }
-        if ((xthetaphiInput.array() > this->upperBound().array()).any()){
+        if ((xthetaphiInput.array() > ub.array()).any()){
             grad.fill(0);
             for(unsigned i = 0; i < xthetaphiInput.size(); i++){
-                if(xthetaphiInput[i] < this->upperBound()[i]){
+                if(xthetaphiInput[i] < ub[i]){
                     grad[i] = 1;
                 }
             }
