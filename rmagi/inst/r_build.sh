@@ -18,16 +18,14 @@ fi
 cd "$PROJECT"/rmagi || exit 1
 
 # only select the mininum sufficient third party library for compile
-mkdir -p inst/include/cppoptlib/solver
-mkdir -p inst/include/cppoptlib/linesearch
-rsync -az $PROJECT/include/cppoptlib/boundedproblem.h inst/include/cppoptlib/
-rsync -az $PROJECT/include/cppoptlib/meta.h inst/include/cppoptlib/
-rsync -az $PROJECT/include/cppoptlib/problem.h inst/include/cppoptlib/
-rsync -az $PROJECT/include/cppoptlib/solver/isolver.h inst/include/cppoptlib/solver/
-rsync -az $PROJECT/include/cppoptlib/solver/lbfgsbsolver.h inst/include/cppoptlib/solver/
-rsync -az $PROJECT/include/cppoptlib/linesearch/morethuente.h inst/include/cppoptlib/linesearch/
-rsync -az $PROJECT/package/CppNumericalSolvers/LICENSE inst/include/cppoptlib/cppoptlib_license
-rsync -az $PROJECT/package/LBFGSpp/include/ inst/include/
+mkdir -p inst/include/LBFGSpp
+rsync -az $PROJECT/include/LBFGSB.h inst/include/
+rsync -az $PROJECT/include/LBFGSpp/Param.h inst/include/LBFGSpp/
+rsync -az $PROJECT/include/LBFGSpp/BFGSMat.h inst/include/LBFGSpp/
+rsync -az $PROJECT/include/LBFGSpp/Cauchy.h inst/include/LBFGSpp/
+rsync -az $PROJECT/include/LBFGSpp/SubspaceMin.h inst/include/LBFGSpp/
+rsync -az $PROJECT/include/LBFGSpp/LineSearchMoreThuente.h inst/include/LBFGSpp/
+rsync -az $PROJECT/package/LBFGSpp/LICENSE.md inst/include/LBFGSpp_LICENSE
 
 perl -pi -e 's/\#define META_H/\#define META_H\n\#include <Rcpp.h>/g' inst/include/cppoptlib/meta.h
 perl -pi -e 's/std::cout/Rcpp::Rcout/g' inst/include/cppoptlib/solver/*.h
@@ -82,7 +80,7 @@ MAKE="make -j$CPU" Rscript -e "Rcpp::compileAttributes(); devtools::document(); 
 if [[ "$1" == "--cran" ]]; then
   export NOT_CRAN=TRUE
   mv examples inst/examples
-  R -e 'Sys.getenv("NOT_CRAN"); devtools::build()'
+  R -e 'Sys.getenv("NOT_CRAN"); devtools::build(vignettes=FALSE)'
   mv inst/examples examples
 fi
 
