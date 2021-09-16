@@ -5,6 +5,7 @@
 #include <armadillo>
 #include <cppoptlib/boundedproblem.h>
 #include <cppoptlib/solver/lbfgsbsolver.h>
+#include <LBFGSB.h>
 
 #include "tgtdistr.h"
 #include "fullloglikelihood.h"
@@ -29,7 +30,7 @@ arma::vec calcFrequencyBasedPrior(const arma::vec & x){
 }
 
 
-class PhiGaussianProcessSmoothing : public cppoptlib::BoundedProblem<double> {
+class PhiGaussianProcessSmoothing {
 public:
     std::string kernel;
     const arma::mat & yobs;
@@ -39,46 +40,27 @@ public:
     const bool useFrequencyBasedPrior;
     arma::vec priorFactor;
     double maxDist;
+    Eigen::VectorXd lb;
+    Eigen::VectorXd ub;
 
-    double value(const Eigen::VectorXd & phisigInput) override {
-        if ((phisigInput.array() < this->lowerBound().array()).any()){
-            return INFINITY;
-        }
-        if ((phisigInput.array() > this->upperBound().array()).any()){
-            return INFINITY;
-        }
-        arma::vec phisig = arma::vec(const_cast<double*>(phisigInput.data()), numparam, true, false);
-        if(sigmaExogenScalar > 0){
-            phisig = arma::join_vert(phisig, arma::vec({sigmaExogenScalar}));
-        }
-        const lp & out = phisigllik(phisig, yobs, dist, kernel);
-        double penalty = 0;
-        if (useFrequencyBasedPrior) {
-            for (unsigned j = 0; j < yobs.n_cols; j++){
-                penalty += -0.5 * std::pow((phisig(2*j+1) - maxDist * priorFactor(0)) / (maxDist * priorFactor(1)), 2);
-            }
-        }
-        return -(out.value + penalty);
-    }
-
-    void gradient(const Eigen::VectorXd & phisigInput, Eigen::VectorXd & grad) override {
-        if ((phisigInput.array() < this->lowerBound().array()).any()){
+    double operator()(const Eigen::VectorXd & phisigInput, Eigen::VectorXd & grad)  {
+        if ((phisigInput.array() < lb.array()).any()){
             grad.fill(0);
             for(unsigned i = 0; i < numparam; i++){
-                if(phisigInput[i] < this->lowerBound()[i]){
+                if(phisigInput[i] < lb[i]){
                     grad[i] = -1;
                 }
             }
-            return;
+            return INFINITY;
         }
-        if ((phisigInput.array() > this->upperBound().array()).any()){
+        if ((phisigInput.array() > ub.array()).any()){
             grad.fill(0);
             for(unsigned i = 0; i < numparam; i++){
-                if(phisigInput[i] > this->upperBound()[i]){
+                if(phisigInput[i] > ub[i]){
                     grad[i] = 1;
                 }
             }
-            return;
+            return INFINITY;
         }
         arma::vec phisig = arma::vec(const_cast<double*>(phisigInput.data()), numparam, true, false);
         if(sigmaExogenScalar > 0){
@@ -95,6 +77,14 @@ public:
                 grad[2*j+1] += penalty;
             }
         }
+
+        penalty = 0;
+        if (useFrequencyBasedPrior) {
+            for (unsigned j = 0; j < yobs.n_cols; j++){
+                penalty += -0.5 * std::pow((phisig(2*j+1) - maxDist * priorFactor(0)) / (maxDist * priorFactor(1)), 2);
+            }
+        }
+        return -(out.value + penalty);
     }
 
     PhiGaussianProcessSmoothing(const arma::mat & yobsInput,
@@ -103,7 +93,6 @@ public:
                                 const unsigned int numparamInput,
                                 const double sigmaExogenScalarInput,
                                 const bool useFrequencyBasedPriorInput) :
-            BoundedProblem(numparamInput),
             kernel(std::move(kernelInput)),
             yobs(yobsInput),
             dist(distInput),
@@ -123,16 +112,13 @@ public:
             throw std::invalid_argument("kernelInput invalid");
         }
 
-        Eigen::VectorXd lb(numparam);
-        lb.fill(1e-4);
-        this->setLowerBound(lb);
+        lb = Eigen::VectorXd::Constant(numparam, 1e-4);
 
         maxDist = dist.max();
         double maxScale = arma::max(arma::abs(yobs(arma::find_finite(yobs))));
         maxScale = std::max(maxScale, maxDist);
 
-        Eigen::VectorXd ub(numparam);
-        ub.fill(10 * maxScale);
+        ub = Eigen::VectorXd::Constant(numparam, 10 * maxScale);
         for(unsigned i = 0; i < yobsInput.n_cols; i++) {
             const arma::uvec finite_elem = arma::find_finite(yobs.col(i));
             if (finite_elem.size() > 0){
@@ -140,8 +126,6 @@ public:
             }
             ub[phiDim * i + 1] = maxDist;
         }
-//        std::cout << "ub in PhiGaussianProcessSmoothing is " << ub << "\n";
-        this->setUpperBound(ub);
 
         priorFactor = arma::zeros(2);
         if(useFrequencyBasedPrior){
@@ -182,7 +166,14 @@ arma::vec gpsmooth(const arma::mat & yobsInput,
     }
 
     PhiGaussianProcessSmoothing objective(yobsInput, distInput, std::move(kernelInput), numparam, sigmaExogenScalar, useFrequencyBasedPrior);
-    cppoptlib::LbfgsbSolver<PhiGaussianProcessSmoothing> solver;
+
+    LBFGSpp::LBFGSBParam<double> config;  // New parameter class
+    config.epsilon = 1e-6;
+    config.max_iterations = 100;
+    config.min_step = 0;
+
+    LBFGSpp::LBFGSBSolver<double> solver(config);
+
     // phi sigma 1st initial value for optimization
     Eigen::VectorXd phisigAttempt1(numparam);
     phisigAttempt1.fill(1);
@@ -196,7 +187,12 @@ arma::vec gpsmooth(const arma::mat & yobsInput,
     if(sigmaExogenScalar <= 0){
         phisigAttempt1[phiDim * yobsInput.n_cols] = sdOverall / yobsInput.n_cols;
     }
-    solver.minimize(objective, phisigAttempt1);
+    double fx1;
+    int niter = solver.minimize(objective, phisigAttempt1, fx1, objective.lb, objective.ub);
+
+    std::cout << niter << " iterations" << std::endl;
+    std::cout << "x = \n" << phisigAttempt1.transpose() << std::endl;
+    std::cout << "f(x) = " << fx1 << std::endl;
 
     // phi sigma 2nd initial value for optimization
     Eigen::VectorXd phisigAttempt2(numparam);
@@ -214,10 +210,17 @@ arma::vec gpsmooth(const arma::mat & yobsInput,
     if(sigmaExogenScalar <= 0){
         phisigAttempt2[phiDim * yobsInput.n_cols] = sdOverall / yobsInput.n_cols * 0.2;
     }
-    solver.minimize(objective, phisigAttempt2);
+
+    double fx2;
+    niter = solver.minimize(objective, phisigAttempt2, fx2, objective.lb, objective.ub);
+
+    std::cout << niter << " iterations" << std::endl;
+    std::cout << "x = \n" << phisigAttempt2.transpose() << std::endl;
+    std::cout << "f(x) = " << fx2 << std::endl;
+
 
     Eigen::VectorXd phisig;
-    if (objective.value(phisigAttempt1) < objective.value(phisigAttempt2)){
+    if (fx1 < fx2){
         phisig = phisigAttempt1;
     }else{
         phisig = phisigAttempt2;
