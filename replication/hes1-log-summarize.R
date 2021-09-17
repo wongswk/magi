@@ -202,13 +202,13 @@ for (i in 1:(ncol(xsim)-1)) {
   ourUB <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.025)
   ourLB <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.975)
   
-  ourEst <- exp(getMeanCurve(xsim$time, log(ourEst), xdesolveTRUE[,1], 
+  ourEst <- exp(magi:::getMeanCurve(xsim$time, log(ourEst), xdesolveTRUE[,1],
                              t(phiVisualization[,i]), 0, 
                              kerneltype=config$kernel, deriv = FALSE))
-  ourUB <- exp(getMeanCurve(xsim$time, log(ourUB), xdesolveTRUE[,1], 
+  ourUB <- exp(magi:::getMeanCurve(xsim$time, log(ourUB), xdesolveTRUE[,1],
                             t(phiVisualization[,i]), 0, 
                             kerneltype=config$kernel, deriv = FALSE))
-  ourLB <- exp(getMeanCurve(xsim$time, log(ourLB), xdesolveTRUE[,1], 
+  ourLB <- exp(magi:::getMeanCurve(xsim$time, log(ourLB), xdesolveTRUE[,1],
                             t(phiVisualization[,i]), 0, 
                             kerneltype=config$kernel, deriv = FALSE))
   
@@ -268,13 +268,13 @@ for (i in 1:(ncol(xsim)-1)) {
   ourUB <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.025)
   ourLB <- apply(oursPostExpX[,i,], 1, quantile, probs = 0.975)
   
-  ourEst <- exp(getMeanCurve(xsim$time, log(ourEst), xdesolveTRUE[,1], 
+  ourEst <- exp(magi:::getMeanCurve(xsim$time, log(ourEst), xdesolveTRUE[,1],
                              t(phiVisualization[,i]), 0, 
                              kerneltype=config$kernel, deriv = FALSE))
-  ourUB <- exp(getMeanCurve(xsim$time, log(ourUB), xdesolveTRUE[,1], 
+  ourUB <- exp(magi:::getMeanCurve(xsim$time, log(ourUB), xdesolveTRUE[,1],
                             t(phiVisualization[,i]), 0, 
                             kerneltype=config$kernel, deriv = FALSE))
-  ourLB <- exp(getMeanCurve(xsim$time, log(ourLB), xdesolveTRUE[,1], 
+  ourLB <- exp(magi:::getMeanCurve(xsim$time, log(ourLB), xdesolveTRUE[,1],
                             t(phiVisualization[,i]), 0, 
                             kerneltype=config$kernel, deriv = FALSE))
   
