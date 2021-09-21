@@ -7,6 +7,7 @@
 
 // [[Rcpp::depends(RcppEigen)]]
 
+#include <armadillo>
 #include <Eigen/Core>
 #include <iostream>
 #include <LBFGSB.h>  // Note the different header file
@@ -56,4 +57,50 @@ Eigen::VectorXd gpsmoothEigen2() {
     std::cout << "f(x) = " << fx << std::endl;
 
     return x;
+}
+
+
+// changed function return type and
+// the return type of first parameter
+double obj_fun_rcpp(double& beta_hat,
+                    arma::vec& x, arma::vec& y, arma::vec& tar_val){
+
+    // Changed from % to * as it is only appropriate if
+    // `beta_hat` is the same length as x and y.
+    // This is because it performs element-wise multiplication
+    // instead of a scalar multiplication on a vector
+    arma::vec est_val = (pow(x, 2) - pow(y, 2)) * beta_hat;
+
+    // Compute objective value
+    double obj_val = sum( pow( est_val - tar_val, 2) );
+
+    // Return a single value
+    return obj_val;
+}
+
+
+// [[Rcpp::export]]
+arma::vec optim_rcpp(double& init_val,
+                     arma::vec& x, arma::vec& y, arma::vec& tar_val){
+
+    // Extract R's optim function
+    Rcpp::Environment stats("package:stats");
+    Rcpp::Function optim = stats["optim"];
+
+    // Call the optim function from R in C++
+    Rcpp::List opt_results = optim(Rcpp::_["par"]    = init_val,
+            // Make sure this function is not exported!
+                                   Rcpp::_["fn"]     = Rcpp::InternalFunction(&obj_fun_rcpp),
+                                   Rcpp::_["method"] = "BFGS",
+            // Pass in the other parameters as everything
+            // is scoped environmentally
+                                   Rcpp::_["x"] = x,
+                                   Rcpp::_["y"] = y,
+                                   Rcpp::_["tar_val"] = tar_val);
+
+    // Extract out the estimated parameter values
+    arma::vec out = Rcpp::as<arma::vec>(opt_results[0]);
+
+    // Return estimated values
+    return out;
 }
