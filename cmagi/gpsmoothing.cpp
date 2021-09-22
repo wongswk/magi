@@ -913,6 +913,36 @@ arma::vec gpsmooth_roptim(const arma::mat & yobsInput,
     }
 
     opt.minimize(objective, phisigAttempt1);
+    double fx1 = opt.value();
+    phisigAttempt1 = opt.par();
 
-    return opt.par();
+    // phi sigma 2nd initial value for optimization
+    arma::vec phisigAttempt2(numparam);
+    phisigAttempt2.fill(1);
+    for(unsigned i = 0; i < yobsInput.n_cols; i++) {
+        phisigAttempt2[phiDim * i] = arma::stddev(yobsInput.col(i));
+        if (useFrequencyBasedPrior){
+            phisigAttempt2[phiDim * i + 1] = maxDist * objective.priorFactor(0);
+        }else{
+            arma::vec distVec = arma::vectorise(distInput);
+            phisigAttempt2[phiDim * i + 1] = distVec(arma::find(distVec > 1e-8)).eval().min();
+//            std::cout << "phisigAttempt2[phiDim * i + 1] init = " << phisigAttempt2[phiDim * i + 1] << "\n";
+        }
+    }
+    if(sigmaExogenScalar <= 0){
+        phisigAttempt2[phiDim * yobsInput.n_cols] = sdOverall / yobsInput.n_cols * 0.2;
+    }
+
+    opt.minimize(objective, phisigAttempt2);
+    double fx2 = opt.value();
+    phisigAttempt2 = opt.par();
+
+    arma::vec phisig;
+    if (fx1 < fx2){
+        phisig = phisigAttempt1;
+    }else{
+        phisig = phisigAttempt2;
+    }
+
+    return phisig;
 }
