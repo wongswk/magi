@@ -5,6 +5,9 @@
 #include <armadillo>
 #include <LBFGSB.h>
 
+// [[Rcpp::depends(roptim)]]
+#include <roptim.h>
+
 #include "tgtdistr.h"
 #include "fullloglikelihood.h"
 
@@ -701,4 +704,212 @@ arma::mat optimizeXmissingThetaPhi(const arma::mat & yobsInput,
         const arma::vec & xThetaPhiArgmin = arma::vec(xThetaPhiInit.data(), xInitInput.n_rows * missingComponentDim.size() + thetaInitInput.size() + phiInitInput.n_rows * missingComponentDim.size(), true, false);
         return xThetaPhiArgmin;
     }
+}
+
+
+
+
+class PhiGaussianProcessSmoothingRoptim : public roptim::Functor{
+public:
+    std::string kernel;
+    const arma::mat & yobs;
+    const arma::mat & dist;
+    const unsigned int numparam;
+    const double sigmaExogenScalar;
+    const bool useFrequencyBasedPrior;
+    arma::vec priorFactor;
+    double maxDist;
+    arma::vec lb;
+    arma::vec ub;
+
+    double operator()(const arma::vec & phisigInput) override {
+        arma::vec grad(phisigInput.size());
+        if (arma::any(phisigInput < lb)){
+            grad.fill(0);
+            for(unsigned i = 0; i < numparam; i++){
+                if(phisigInput(i) < lb(i)){
+                    grad(i) = -1;
+                }
+            }
+            return INFINITY;
+        }
+        if (arma::any(phisigInput > ub)){
+            grad.fill(0);
+            for(unsigned i = 0; i < numparam; i++){
+                if(phisigInput(i) > ub(i)){
+                    grad(i) = 1;
+                }
+            }
+            return INFINITY;
+        }
+        arma::vec phisig = phisigInput;
+        if(sigmaExogenScalar > 0){
+            phisig = arma::join_vert(phisig, arma::vec({sigmaExogenScalar}));
+        }
+        const lp & out = phisigllik(phisig, yobs, dist, kernel);
+        for(unsigned i = 0; i < numparam; i++){
+            grad(i) = -out.gradient(i);
+        }
+        double penalty = 0;
+        if (useFrequencyBasedPrior) {
+            for (unsigned j = 0; j < yobs.n_cols; j++){
+                penalty = (phisig(2*j+1) - maxDist * priorFactor(0)) / std::pow((maxDist * priorFactor(1)), 2);
+                grad(2*j+1) += penalty;
+            }
+        }
+
+        penalty = 0;
+        if (useFrequencyBasedPrior) {
+            for (unsigned j = 0; j < yobs.n_cols; j++){
+                penalty += -0.5 * std::pow((phisig(2*j+1) - maxDist * priorFactor(0)) / (maxDist * priorFactor(1)), 2);
+            }
+        }
+        return -(out.value + penalty);
+    }
+
+    void Gradient(const arma::vec & phisigInput, arma::vec & grad) override {
+        if (arma::any(phisigInput < lb)){
+            grad.fill(0);
+            for(unsigned i = 0; i < numparam; i++){
+                if(phisigInput(i) < lb(i)){
+                    grad(i) = -1;
+                }
+            }
+            return;
+        }
+        if (arma::any(phisigInput > ub)){
+            grad.fill(0);
+            for(unsigned i = 0; i < numparam; i++){
+                if(phisigInput(i) > ub(i)){
+                    grad(i) = 1;
+                }
+            }
+            return;
+        }
+        arma::vec phisig = phisigInput;
+        if(sigmaExogenScalar > 0){
+            phisig = arma::join_vert(phisig, arma::vec({sigmaExogenScalar}));
+        }
+        const lp & out = phisigllik(phisig, yobs, dist, kernel);
+        for(unsigned i = 0; i < numparam; i++){
+            grad(i) = -out.gradient(i);
+        }
+        double penalty = 0;
+        if (useFrequencyBasedPrior) {
+            for (unsigned j = 0; j < yobs.n_cols; j++){
+                penalty = (phisig(2*j+1) - maxDist * priorFactor(0)) / std::pow((maxDist * priorFactor(1)), 2);
+                grad(2*j+1) += penalty;
+            }
+        }
+
+        penalty = 0;
+        if (useFrequencyBasedPrior) {
+            for (unsigned j = 0; j < yobs.n_cols; j++){
+                penalty += -0.5 * std::pow((phisig(2*j+1) - maxDist * priorFactor(0)) / (maxDist * priorFactor(1)), 2);
+            }
+        }
+        return;
+    }
+
+    PhiGaussianProcessSmoothingRoptim(const arma::mat & yobsInput,
+                                      const arma::mat & distInput,
+                                      std::string kernelInput,
+                                      const unsigned int numparamInput,
+                                      const double sigmaExogenScalarInput,
+                                      const bool useFrequencyBasedPriorInput) :
+            kernel(std::move(kernelInput)),
+            yobs(yobsInput),
+            dist(distInput),
+            numparam(numparamInput),
+            sigmaExogenScalar(sigmaExogenScalarInput),
+            useFrequencyBasedPrior(useFrequencyBasedPriorInput) {
+        unsigned int phiDim;
+        if(kernel == "generalMatern") {
+            phiDim = 2;
+        }else if(kernel == "matern") {
+            phiDim = 2;
+        }else if(kernel == "compact1") {
+            phiDim = 2;
+        }else if(kernel == "periodicMatern"){
+            phiDim = 3;
+        }else{
+            throw std::invalid_argument("kernelInput invalid");
+        }
+
+        lb = arma::ones(numparam);
+        lb.fill(1e-4);
+
+        maxDist = dist.max();
+        double maxScale = arma::max(arma::abs(yobs(arma::find_finite(yobs))));
+        maxScale = std::max(maxScale, maxDist);
+
+        ub = arma::ones(numparam);
+        ub.fill(10 * maxScale);
+        for(unsigned i = 0; i < yobsInput.n_cols; i++) {
+            const arma::uvec finite_elem = arma::find_finite(yobs.col(i));
+            if (finite_elem.size() > 0){
+                ub(phiDim * i) = 100 * arma::max(arma::abs((yobs.col(i).eval().elem(finite_elem))));
+            }
+            ub(phiDim * i + 1) = maxDist;
+        }
+
+        priorFactor = arma::zeros(2);
+        if(useFrequencyBasedPrior){
+            for (unsigned j = 0; j < yobs.n_cols; j++){
+                priorFactor += calcFrequencyBasedPrior(yobs.col(j));
+            }
+            priorFactor /= yobs.n_cols;
+//            std::cout << "priorFactor =\n" << priorFactor << "\n";
+        }
+    }
+};
+
+
+// [[Rcpp::export]]
+arma::vec gpsmooth_roptim(const arma::mat & yobsInput,
+                          const arma::mat & distInput,
+                          std::string kernelInput,
+                          const double sigmaExogenScalar = -1,
+                          bool useFrequencyBasedPrior = false) {
+    unsigned int phiDim;
+    if(kernelInput == "generalMatern") {
+        phiDim = 2;
+    }else if(kernelInput == "matern") {
+        phiDim = 2;
+    }else if(kernelInput == "compact1") {
+        phiDim = 2;
+    }else if(kernelInput == "periodicMatern"){
+        phiDim = 3;
+    }else{
+        throw std::invalid_argument("kernelInput invalid");
+    }
+    unsigned int numparam;
+
+    if(sigmaExogenScalar > 0){
+        numparam = phiDim * yobsInput.n_cols;
+    }else{
+        numparam = phiDim * yobsInput.n_cols + 1;
+    }
+
+    PhiGaussianProcessSmoothingRoptim objective(yobsInput, distInput, std::move(kernelInput), numparam, sigmaExogenScalar, useFrequencyBasedPrior);
+
+    roptim::Roptim<PhiGaussianProcessSmoothingRoptim> opt("L-BFGS-B");
+
+    // phi sigma 1st initial value for optimization
+    arma::vec phisigAttempt1(numparam);
+    phisigAttempt1.fill(1);
+    double maxDist = distInput.max();
+    double sdOverall = 0;
+    for(unsigned i = 0; i < yobsInput.n_cols; i++) {
+        phisigAttempt1[phiDim * i] = 0.5 * arma::stddev(yobsInput.col(i));
+        phisigAttempt1[phiDim * i + 1] = 0.5 * maxDist;
+        sdOverall += phisigAttempt1[phiDim * i];
+    }
+    if(sigmaExogenScalar <= 0){
+        phisigAttempt1[phiDim * yobsInput.n_cols] = sdOverall / yobsInput.n_cols;
+    }
+
+    opt.minimize(objective, phisigAttempt1);
+
+    return opt.par();
 }
