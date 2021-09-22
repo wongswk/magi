@@ -85,7 +85,7 @@ MAKE="make -j$CPU" Rscript -e "Rcpp::compileAttributes(); devtools::document(); 
 if [[ "$1" == "--cran" ]]; then
   export NOT_CRAN=TRUE
   mv examples inst/examples
-  R -e 'Sys.getenv("NOT_CRAN"); devtools::build()'
+  R -e 'Sys.getenv("NOT_CRAN"); devtools::build(vignettes=FALSE)'
   mv inst/examples examples
 fi
 
