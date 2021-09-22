@@ -33,7 +33,7 @@ Imports:
     grid,
     methods,
     deSolve
-LinkingTo: Rcpp, RcppArmadillo, BH, RcppEigen
+LinkingTo: Rcpp, RcppArmadillo, BH, RcppEigen, roptim
 RoxygenNote: 7.1.1
 Suggests: 
     testthat,
