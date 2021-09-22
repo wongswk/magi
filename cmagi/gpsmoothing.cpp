@@ -51,7 +51,7 @@ public:
                     grad(i) = -1;
                 }
             }
-            return INFINITY;
+            return 1E16;
         }
         if (arma::any(phisigInput > ub)){
             grad.fill(0);
@@ -60,7 +60,7 @@ public:
                     grad(i) = 1;
                 }
             }
-            return INFINITY;
+            return 1E16;
         }
         arma::vec phisig = phisigInput;
         if(sigmaExogenScalar > 0){
@@ -307,7 +307,7 @@ public:
                     grad[i] = -1;
                 }
             }
-            return INFINITY;
+            return 1E16;
         }
         if (arma::any(thetaInput > ub)){
             grad.fill(0);
@@ -316,7 +316,7 @@ public:
                     grad[i] = 1;
                 }
             }
-            return INFINITY;
+            return 1E16;
         }
         const arma::vec & xtheta = arma::join_vert(
                 arma::vectorise(xInit),
@@ -413,7 +413,7 @@ public:
                     grad[i] = -1;
                 }
             }
-            return INFINITY;
+            return 1E16;
         }
         const arma::mat phiMissingDimensions(
                 const_cast<double*>(phiInput.begin()),
@@ -550,7 +550,7 @@ public:
                     grad[i] = -1;
                 }
             }
-            return INFINITY;
+            return 1E16;
         }
         if (arma::any(xthetaphiInput > ub)){
             grad.fill(0);
@@ -559,10 +559,10 @@ public:
                     grad[i] = 1;
                 }
             }
-            return INFINITY;
+            return 1E16;
         }
         if (xthetaphiInput.has_nan()){
-            return INFINITY;
+            return 1E16;
         }
 
         const arma::vec & xthetaphi = xthetaphiInput;
@@ -590,7 +590,7 @@ public:
                                      tvec,
                                      fOdeModel);
         if (out.gradient.has_nan() || isnan(out.value)){
-            return INFINITY;
+            return 1E16;
         }
         out.gradient *= SCALE;
         out.value *= SCALE;
@@ -645,9 +645,9 @@ public:
             phiAllDimensions(phiFullInput),
             missingComponentDim(missingComponentDimInput) {
         lb = arma::vec(xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * missingComponentDim.size());
-        lb.fill(-INFINITY);
+        lb.fill(-1E16);
         ub = arma::vec(xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * missingComponentDim.size());
-        ub.fill(INFINITY);
+        ub.fill(1E16);
 
         for (unsigned j = 0; j < thetaInit.size(); j++){
             lb[xInit.n_rows * missingComponentDim.size() + j] = fOdeModel.thetaLowerBound(j) + 1e-6;
