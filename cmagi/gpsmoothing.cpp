@@ -723,7 +723,7 @@ public:
     arma::vec ub;
 
     double operator()(const arma::vec & phisigInput) override {
-        arma::vec grad(phisigInput.size());
+        arma::vec grad = arma::zeros(phisigInput.size());
         if (arma::any(phisigInput < lb)){
             grad.fill(0);
             for(unsigned i = 0; i < numparam; i++){
@@ -768,6 +768,7 @@ public:
     }
 
     void Gradient(const arma::vec & phisigInput, arma::vec & grad) override {
+        grad = arma::zeros(phisigInput.size());
         if (arma::any(phisigInput < lb)){
             grad.fill(0);
             for(unsigned i = 0; i < numparam; i++){
@@ -894,6 +895,8 @@ arma::vec gpsmooth_roptim(const arma::mat & yobsInput,
     PhiGaussianProcessSmoothingRoptim objective(yobsInput, distInput, std::move(kernelInput), numparam, sigmaExogenScalar, useFrequencyBasedPrior);
 
     roptim::Roptim<PhiGaussianProcessSmoothingRoptim> opt("L-BFGS-B");
+    opt.set_lower(objective.lb);
+    opt.set_upper(objective.ub);
 
     // phi sigma 1st initial value for optimization
     arma::vec phisigAttempt1(numparam);
