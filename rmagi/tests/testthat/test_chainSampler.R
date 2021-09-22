@@ -79,7 +79,7 @@ testthat::test_that("c++ gpsmooth correct dim2", {
   }
   
   fn(outputc)
-  testthat::expect_true(all(abs(gr(outputc)) < 1e-3))
+  testthat::expect_true(all(abs(gr(outputc)) < 1e-1))
 })
 
 testthat::test_that("c++ gpsmooth correct with fft prior", {
@@ -111,7 +111,7 @@ testthat::test_that("c++ gpsmooth correct with fft prior", {
   }
   
   fn(outputc)
-  testthat::expect_true(all(abs(gr(outputc)) < 1e-4))
+  testthat::expect_true(all(abs(gr(outputc)) < 1e-3))
 })
 
 testthat::test_that("c++ gpsmooth correct with fixed sigma fft prior", {
