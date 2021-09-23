@@ -522,6 +522,7 @@ arma::mat optimizePhi(const arma::mat & yobsInput,
         phi[2*i+1] = phiInitInput(1, currentDim);
     }
 
+    opt.minimize(objective, phi);
     const arma::mat & phiArgmin = arma::reshape(opt.par(), 2, missingComponentDim.size());
     return phiArgmin;
 }
