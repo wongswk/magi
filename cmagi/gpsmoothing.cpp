@@ -523,6 +523,7 @@ arma::mat optimizePhi(const arma::mat & yobsInput,
     }
 
     opt.minimize(objective, phi);
+    std::cout << "starting from phi = " << phi.t() << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
     double fx_best = opt.value();
     arma::vec phi_argmin_best = opt.par();
 
@@ -537,10 +538,23 @@ arma::mat optimizePhi(const arma::mat & yobsInput,
         }
 
         opt.minimize(objective, phi);
+        std::cout << "starting from phi = " << phi.t() << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
         if (opt.value() < fx_best){
             fx_best = opt.value();
             phi_argmin_best = opt.par();
         }
+    }
+
+    for(unsigned i = 0; i < missingComponentDim.size(); i++){
+        phi[2*i] = 0.24;
+        phi[2*i+1] = 20;
+    }
+
+    opt.minimize(objective, phi);
+    std::cout << "starting from phi = " << phi.t() << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
+    if (opt.value() < fx_best){
+        fx_best = opt.value();
+        phi_argmin_best = opt.par();
     }
 
     const arma::mat & phiArgmin = arma::reshape(phi_argmin_best, 2, missingComponentDim.size());
