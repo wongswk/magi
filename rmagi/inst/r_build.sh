@@ -97,3 +97,4 @@ rm -r inst/include/
 ln -s "$(pwd)"/../cmagi/*.cpp src/
 ln -s "$(pwd)"/../cmagi/*.h src/
 git checkout -- R/zzz.R
+git checkout -- inst/include/magi.h
