@@ -512,6 +512,9 @@ arma::mat optimizePhi(const arma::mat & yobsInput,
     PhiOptim objective(yobsInput, tvecInput, fOdeModelInput, sigmaAllDimensionsInput, priorTemperatureInput, xInitInput, thetaInitInput, phiInitInput, missingComponentDim);
 
     roptim::Roptim<PhiOptim> opt("L-BFGS-B");
+    opt.control.maxit = 1000;
+    opt.control.lmm = 100;
+    opt.control.fnscale = 0.1;
     opt.set_lower(objective.lb);
     opt.set_upper(objective.ub);
 
