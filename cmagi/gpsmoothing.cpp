@@ -523,7 +523,27 @@ arma::mat optimizePhi(const arma::mat & yobsInput,
     }
 
     opt.minimize(objective, phi);
-    const arma::mat & phiArgmin = arma::reshape(opt.par(), 2, missingComponentDim.size());
+    double fx_best = opt.value();
+    arma::vec phi_argmin_best = opt.par();
+
+    for (unsigned obs_component_each = 0; obs_component_each < yobsInput.n_cols; obs_component_each++){
+        if (arma::any(missingComponentDim == obs_component_each)){
+            continue;
+        }
+
+        for(unsigned i = 0; i < missingComponentDim.size(); i++){
+            phi[2*i] = phiInitInput(0, obs_component_each);
+            phi[2*i+1] = phiInitInput(1, obs_component_each);
+        }
+
+        opt.minimize(objective, phi);
+        if (opt.value() < fx_best){
+            fx_best = opt.value();
+            phi_argmin_best = opt.par();
+        }
+    }
+
+    const arma::mat & phiArgmin = arma::reshape(phi_argmin_best, 2, missingComponentDim.size());
     return phiArgmin;
 }
 
