@@ -525,9 +525,9 @@ arma::mat optimizePhi(const arma::mat & yobsInput,
         phi[2*i+1] = phiInitInput(1, currentDim);
     }
 
-    std::cout << "starting from phi = " << phi.t();
+//    std::cout << "starting from phi = " << phi.t();
     opt.minimize(objective, phi);
-    std::cout << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
+//    std::cout << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
     //std::cout << "Diagnostics: opt.fncount() = " << opt.fncount() << "; opt.grcount() = " << opt.grcount() << "; opt.convergence() = " << opt.convergence() << "\n";
     double fx_best = opt.value();
     arma::vec phi_argmin_best = opt.par();
@@ -542,9 +542,9 @@ arma::mat optimizePhi(const arma::mat & yobsInput,
             phi[2*i+1] = phiInitInput(1, obs_component_each);
         }
 
-        std::cout << "starting from phi = " << phi.t();
+//        std::cout << "starting from phi = " << phi.t();
         opt.minimize(objective, phi);
-        std::cout << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
+//        std::cout << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
         //std::cout << "Diagnostics: opt.fncount() = " << opt.fncount() << "; opt.grcount() = " << opt.grcount() << "; opt.convergence() = " << opt.convergence() << "\n";
         if (opt.value() < fx_best){
             fx_best = opt.value();
@@ -557,9 +557,9 @@ arma::mat optimizePhi(const arma::mat & yobsInput,
         phi[2*i+1] = 20;
     }
 
-    std::cout << "starting from phi = " << phi.t();
+//    std::cout << "starting from phi = " << phi.t();
     opt.minimize(objective, phi);
-    std::cout << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
+//    std::cout << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
     //std::cout << "Diagnostics: opt.fncount() = " << opt.fncount() << "; opt.grcount() = " << opt.grcount() << "; opt.convergence() = " << opt.convergence() << "\n";
     
     if (opt.value() < fx_best){
