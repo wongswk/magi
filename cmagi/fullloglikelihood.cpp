@@ -48,6 +48,7 @@ lp xthetaphisigmallik( const mat & xlatent,
   vec sigmaGradient(sigma.size());
   
   lp bigpost;
+  bigpost.value = 0.0;
   for(unsigned int pDimEach = 0; pDimEach < yobs.n_cols; pDimEach++){
     const gpcov & covThisDim = CovAllDimensions[pDimEach];
     vec eigval(covThisDim.Sigma.n_cols);

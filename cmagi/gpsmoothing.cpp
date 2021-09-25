@@ -512,9 +512,9 @@ arma::mat optimizePhi(const arma::mat & yobsInput,
     PhiOptim objective(yobsInput, tvecInput, fOdeModelInput, sigmaAllDimensionsInput, priorTemperatureInput, xInitInput, thetaInitInput, phiInitInput, missingComponentDim);
 
     roptim::Roptim<PhiOptim> opt("L-BFGS-B");
-    opt.control.maxit = 1000;
-    opt.control.lmm = 100;
-    opt.control.fnscale = 0.1;
+    //opt.control.maxit = 1000;
+    //opt.control.lmm = 100;
+    //opt.control.fnscale = 0.1;
     opt.set_lower(objective.lb);
     opt.set_upper(objective.ub);
 
@@ -525,8 +525,10 @@ arma::mat optimizePhi(const arma::mat & yobsInput,
         phi[2*i+1] = phiInitInput(1, currentDim);
     }
 
+    std::cout << "starting from phi = " << phi.t();
     opt.minimize(objective, phi);
-    std::cout << "starting from phi = " << phi.t() << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
+    std::cout << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
+    //std::cout << "Diagnostics: opt.fncount() = " << opt.fncount() << "; opt.grcount() = " << opt.grcount() << "; opt.convergence() = " << opt.convergence() << "\n";
     double fx_best = opt.value();
     arma::vec phi_argmin_best = opt.par();
 
@@ -540,8 +542,10 @@ arma::mat optimizePhi(const arma::mat & yobsInput,
             phi[2*i+1] = phiInitInput(1, obs_component_each);
         }
 
+        std::cout << "starting from phi = " << phi.t();
         opt.minimize(objective, phi);
-        std::cout << "starting from phi = " << phi.t() << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
+        std::cout << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
+        //std::cout << "Diagnostics: opt.fncount() = " << opt.fncount() << "; opt.grcount() = " << opt.grcount() << "; opt.convergence() = " << opt.convergence() << "\n";
         if (opt.value() < fx_best){
             fx_best = opt.value();
             phi_argmin_best = opt.par();
@@ -553,8 +557,11 @@ arma::mat optimizePhi(const arma::mat & yobsInput,
         phi[2*i+1] = 20;
     }
 
+    std::cout << "starting from phi = " << phi.t();
     opt.minimize(objective, phi);
-    std::cout << "starting from phi = " << phi.t() << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
+    std::cout << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
+    //std::cout << "Diagnostics: opt.fncount() = " << opt.fncount() << "; opt.grcount() = " << opt.grcount() << "; opt.convergence() = " << opt.convergence() << "\n";
+    
     if (opt.value() < fx_best){
         fx_best = opt.value();
         phi_argmin_best = opt.par();
