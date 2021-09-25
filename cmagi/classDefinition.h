@@ -18,7 +18,7 @@ struct lp{
     double value;
     arma::vec gradient;
     lp (const double & tgtv) : value(tgtv) {}
-    lp (){}
+    lp () : value(0.0) {}
     lp (const lp & lp2) : value(lp2.value), gradient(lp2.gradient) {}
 };
 
