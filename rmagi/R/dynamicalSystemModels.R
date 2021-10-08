@@ -417,36 +417,52 @@ hes1modelODE  <-function(theta,x,tvec) {
 #' 
 #' @export
 testDynamicalModel <- function(modelODE, modelDx, modelDtheta, modelName, x, theta, tvec){
-  testthat::context(paste(modelName, "model, with derivatives"))
-  testDx <- testthat::test_that(paste(modelName, "- Dx is consistent with f"), {
-    f <- modelODE(theta, x, tvec)
+  msg <- paste(modelName, "model, with derivatives\n")
+  success <- TRUE
 
-    deltaSmall <- 1e-6
-    numericalDx <- sapply(1:ncol(x), function(j){
-      xnew <- x
-      xnew[,j] <- xnew[,j] + deltaSmall
-      (modelODE(theta, xnew, tvec) - f)/deltaSmall
-    }, simplify = "array")
+  f <- modelODE(theta, x, tvec)
 
-    fdX <- modelDx(theta, x, tvec)
+  deltaSmall <- 1e-6
+  numericalDx <- sapply(1:ncol(x), function(j){
+    xnew <- x
+    xnew[,j] <- xnew[,j] + deltaSmall
+    (modelODE(theta, xnew, tvec) - f)/deltaSmall
+  }, simplify = "array")
 
-    testthat::expect_equal(fdX, aperm(numericalDx, c(1,3,2)), tolerance = 1e-4)
-  })
+  fdX <- modelDx(theta, x, tvec)
 
-  testDtheta <- testthat::test_that(paste(modelName, "- Dtheta is consistent with f"), {
-    f <- modelODE(theta, x, tvec)
+  if(!all(abs(fdX - aperm(numericalDx, c(1,3,2))) < 1e-4)){
+    success <- FALSE
+    testDx <- FALSE
+    msg <- paste0(msg, "Dx may not be consistent with f, further checking is advised\n")
+  }else{
+    testDx <- TRUE
+  }
 
-    deltaSmall <- 1e-6
-    numericalDtheta <- sapply(1:length(theta), function(i){
-      thetaNew <- theta
-      thetaNew[i] <- theta[i] + deltaSmall
-      (modelODE(thetaNew, x, tvec) - f)/deltaSmall
-    }, simplify = "array")
+  #testDtheta <- testthat::test_that(paste(modelName, "- Dtheta is consistent with f"), {
+  f <- modelODE(theta, x, tvec)
 
-    fDtheta <- modelDtheta(theta, x, tvec)
+  deltaSmall <- 1e-6
+  numericalDtheta <- sapply(1:length(theta), function(i){
+    thetaNew <- theta
+    thetaNew[i] <- theta[i] + deltaSmall
+    (modelODE(thetaNew, x, tvec) - f)/deltaSmall
+  }, simplify = "array")
 
-    testthat::expect_equal(fDtheta, aperm(numericalDtheta, c(1,3,2)), tolerance = 1e-4)
-  })
-  
-  list(testDx = testDx, testDtheta = testDtheta)
+  fDtheta <- modelDtheta(theta, x, tvec)
+
+  if(!all(abs(fDtheta - aperm(numericalDtheta, c(1,3,2))) < 1e-4)){
+    success <- FALSE
+    msg <- paste0(msg, "Dtheta may not be consistent with f, further checking is advised\n")
+    testDtheta <- FALSE
+  }else{
+    testDtheta <- TRUE
+  }
+
+  if(success){
+    msg <- paste0(msg, "Dx and Dtheta appear to be correct\n")
+  }
+  cat(msg)
+
+  list(testDx=testDx, testDtheta=testDtheta)
 }
