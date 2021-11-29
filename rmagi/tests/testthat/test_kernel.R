@@ -14,12 +14,12 @@ phitrue <- list(
 )
 
 uprange <- 3.5
-downrange <- 0.4
+downrange <- 0.3
 
 set.seed(123)
 for(kerneltype in c("compact1","rbf","matern","periodicMatern","generalMatern",
                     "rationalQuadratic")){
-  if(kerneltype=="rationalQuadratic") downrange <- 0.07
+  if(kerneltype=="rationalQuadratic") downrange <- 0.06
   testthat::test_that("check Cprime and Cdoubleprime", {
     xtime <- seq(0,2,0.01)
     delta <- mean(diff(xtime))
