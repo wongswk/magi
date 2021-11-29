@@ -1,7 +1,7 @@
 Package: magi
 Type: Package
 Title: MAnifold-Constrained Gaussian Process Inference
-Version: 1.1.1
+Version: 1.1.2
 Date: 2021-10-08
 Authors@R:
   c(person(given = "Shihao",
