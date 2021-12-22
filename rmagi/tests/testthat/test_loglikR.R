@@ -361,7 +361,6 @@ testthat::test_that("xthetallik_withmuC derivatives", {
   x <- (gradNum - out$grad)
   testthat::expect_true(all(abs(x) < 1e-3)) # gradient is self-consistent
   
-  rm(curCovV_withmu, curCovR_withmu)
 })
 
 curCovV_withmu <- curCovV
