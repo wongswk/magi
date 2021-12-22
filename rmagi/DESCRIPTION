@@ -15,7 +15,7 @@ Authors@R:
     person(given = "S.C.",
            family = "Kou",
            role = c("ctb", "cph"),
-           comment = c(role = "Contributor of MAGI method development")),
+           comment = c(role = "Contributor of MAGI method development"))
            )
 Encoding: UTF-8
 Description: Provides fast and accurate inference for the parameter estimation problem in Ordinary Differential
