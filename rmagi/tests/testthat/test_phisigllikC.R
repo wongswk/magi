@@ -30,7 +30,7 @@ for(kerneltype in c("compact1","rbf","matern","periodicMatern","generalMatern"))
   
   test_that(paste("magi:::phisigllik value -", kerneltype), {
     expect_equal(xc$value, as.numeric(xr), tolerance = 1e-4)
-    expect_equal(as.numeric(xc$grad), attr(xr, "grad"), tolerance = 1e-4)
+    expect_equal(rep(1, length(xc$grad)), attr(xr, "grad")/as.numeric(xc$grad), tolerance = 0.01)
   })
   
   test_that(paste("magi:::phisigllik gradient -", kerneltype), {
