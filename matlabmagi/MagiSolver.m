@@ -89,8 +89,8 @@ function out = MagiSolver(y, odeModel, tvec, control)
         xInitExogenous = [];
     end
     
-    if isfield(control,'thetaInit') && ~isempty(control.thetaInit)
-        thetaInitExogenous = control.thetaInit;
+    if isfield(control,'theta') && ~isempty(control.theta)
+        thetaInitExogenous = control.theta;
     else
         thetaInitExogenous = [];
     end

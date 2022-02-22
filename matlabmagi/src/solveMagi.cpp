@@ -77,6 +77,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       mat ret = temp_ret;
     
       mxDestroyArray(x_matlab);
+      mxDestroyArray(t_matlab);
       mxDestroyArray(theta_matlab);
       mxDestroyArray(lhs_f[0]);      
       
@@ -103,6 +104,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
       cube ret = temp_ret;
       mxDestroyArray(x_matlab);
+      mxDestroyArray(t_matlab);
       mxDestroyArray(theta_matlab);
       mxDestroyArray(lhs_f[0]);
 
@@ -129,6 +131,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
       cube ret = temp_ret;
       mxDestroyArray(x_matlab);
+      mxDestroyArray(t_matlab);
       mxDestroyArray(theta_matlab);
       mxDestroyArray(lhs_f[0]);           
       

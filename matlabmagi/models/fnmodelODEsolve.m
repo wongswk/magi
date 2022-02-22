@@ -1,4 +1,4 @@
-function dx = fnmodelODE(t,x,pars)
+function dx = fnmodelODEsolve(t,x,pars)
     a = pars(1);
     b = pars(2);
     c = pars(3);
