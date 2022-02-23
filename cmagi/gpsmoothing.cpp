@@ -3,9 +3,8 @@
 #define EIGEN_NO_DEBUG
 
 #include <armadillo>
-
-// [[Rcpp::depends(roptim)]]
-#include <roptim.h>
+#include <cppoptlib/boundedproblem.h>
+#include <cppoptlib/solver/lbfgsbsolver.h>
 
 #include "tgtdistr.h"
 #include "fullloglikelihood.h"
@@ -30,7 +29,7 @@ arma::vec calcFrequencyBasedPrior(const arma::vec & x){
 }
 
 
-class PhiGaussianProcessSmoothing : public roptim::Functor{
+class PhiGaussianProcessSmoothing : public cppoptlib::BoundedProblem<double> {
 public:
     std::string kernel;
     const arma::mat & yobs;
@@ -40,45 +39,20 @@ public:
     const bool useFrequencyBasedPrior;
     arma::vec priorFactor;
     double maxDist;
-    arma::vec lb;
-    arma::vec ub;
 
-    double operator()(const arma::vec & phisigInput, arma::vec & grad)  {
-        if (arma::any(phisigInput < lb)){
-            grad.fill(0);
-            for(unsigned i = 0; i < numparam; i++){
-                if(phisigInput(i) < lb(i)){
-                    grad(i) = -1;
-                }
-            }
-            return 1E16;
+    double value(const Eigen::VectorXd & phisigInput) override {
+        if ((phisigInput.array() < this->lowerBound().array()).any()){
+            return INFINITY;
         }
-        if (arma::any(phisigInput > ub)){
-            grad.fill(0);
-            for(unsigned i = 0; i < numparam; i++){
-                if(phisigInput(i) > ub(i)){
-                    grad(i) = 1;
-                }
-            }
-            return 1E16;
+        if ((phisigInput.array() > this->upperBound().array()).any()){
+            return INFINITY;
         }
-        arma::vec phisig = phisigInput;
+        arma::vec phisig = arma::vec(const_cast<double*>(phisigInput.data()), numparam, true, false);
         if(sigmaExogenScalar > 0){
             phisig = arma::join_vert(phisig, arma::vec({sigmaExogenScalar}));
         }
         const lp & out = phisigllik(phisig, yobs, dist, kernel);
-        for(unsigned i = 0; i < numparam; i++){
-            grad(i) = -out.gradient(i);
-        }
         double penalty = 0;
-        if (useFrequencyBasedPrior) {
-            for (unsigned j = 0; j < yobs.n_cols; j++){
-                penalty = (phisig(2*j+1) - maxDist * priorFactor(0)) / std::pow((maxDist * priorFactor(1)), 2);
-                grad(2*j+1) += penalty;
-            }
-        }
-
-        penalty = 0;
         if (useFrequencyBasedPrior) {
             for (unsigned j = 0; j < yobs.n_cols; j++){
                 penalty += -0.5 * std::pow((phisig(2*j+1) - maxDist * priorFactor(0)) / (maxDist * priorFactor(1)), 2);
@@ -87,17 +61,40 @@ public:
         return -(out.value + penalty);
     }
 
-    double operator()(const arma::vec & phisigInput) override {
-        arma::vec grad = arma::zeros(phisigInput.size());
-        double value = this->operator()(phisigInput, grad);
-        return value;
-    }
-
-    void Gradient(const arma::vec & phisigInput, arma::vec & grad) override {
-        if (grad.size() != phisigInput.size()){
-            grad = arma::zeros(phisigInput.size());
+    void gradient(const Eigen::VectorXd & phisigInput, Eigen::VectorXd & grad) override {
+        if ((phisigInput.array() < this->lowerBound().array()).any()){
+            grad.fill(0);
+            for(unsigned i = 0; i < numparam; i++){
+                if(phisigInput[i] < this->lowerBound()[i]){
+                    grad[i] = -1;
+                }
+            }
+            return;
         }
-        this->operator()(phisigInput, grad);
+        if ((phisigInput.array() > this->upperBound().array()).any()){
+            grad.fill(0);
+            for(unsigned i = 0; i < numparam; i++){
+                if(phisigInput[i] > this->upperBound()[i]){
+                    grad[i] = 1;
+                }
+            }
+            return;
+        }
+        arma::vec phisig = arma::vec(const_cast<double*>(phisigInput.data()), numparam, true, false);
+        if(sigmaExogenScalar > 0){
+            phisig = arma::join_vert(phisig, arma::vec({sigmaExogenScalar}));
+        }
+        const lp & out = phisigllik(phisig, yobs, dist, kernel);
+        for(unsigned i = 0; i < numparam; i++){
+            grad[i] = -out.gradient(i);
+        }
+        double penalty = 0;
+        if (useFrequencyBasedPrior) {
+            for (unsigned j = 0; j < yobs.n_cols; j++){
+                penalty = (phisig(2*j+1) - maxDist * priorFactor(0)) / std::pow((maxDist * priorFactor(1)), 2);
+                grad[2*j+1] += penalty;
+            }
+        }
     }
 
     PhiGaussianProcessSmoothing(const arma::mat & yobsInput,
@@ -106,6 +103,7 @@ public:
                                 const unsigned int numparamInput,
                                 const double sigmaExogenScalarInput,
                                 const bool useFrequencyBasedPriorInput) :
+            BoundedProblem(numparamInput),
             kernel(std::move(kernelInput)),
             yobs(yobsInput),
             dist(distInput),
@@ -125,22 +123,25 @@ public:
             throw std::invalid_argument("kernelInput invalid");
         }
 
-        lb = arma::ones(numparam);
+        Eigen::VectorXd lb(numparam);
         lb.fill(1e-4);
+        this->setLowerBound(lb);
 
         maxDist = dist.max();
         double maxScale = arma::max(arma::abs(yobs(arma::find_finite(yobs))));
         maxScale = std::max(maxScale, maxDist);
 
-        ub = arma::ones(numparam);
+        Eigen::VectorXd ub(numparam);
         ub.fill(10 * maxScale);
         for(unsigned i = 0; i < yobsInput.n_cols; i++) {
             const arma::uvec finite_elem = arma::find_finite(yobs.col(i));
             if (finite_elem.size() > 0){
-                ub(phiDim * i) = 100 * arma::max(arma::abs((yobs.col(i).eval().elem(finite_elem))));
+                ub[phiDim * i] = 100 * arma::max(arma::abs((yobs.col(i).eval().elem(finite_elem))));
             }
-            ub(phiDim * i + 1) = maxDist;
+            ub[phiDim * i + 1] = maxDist;
         }
+//        std::cout << "ub in PhiGaussianProcessSmoothing is " << ub << "\n";
+        this->setUpperBound(ub);
 
         priorFactor = arma::zeros(2);
         if(useFrequencyBasedPrior){
@@ -181,13 +182,9 @@ arma::vec gpsmooth(const arma::mat & yobsInput,
     }
 
     PhiGaussianProcessSmoothing objective(yobsInput, distInput, std::move(kernelInput), numparam, sigmaExogenScalar, useFrequencyBasedPrior);
-
-    roptim::Roptim<PhiGaussianProcessSmoothing> opt("L-BFGS-B");
-    opt.set_lower(objective.lb);
-    opt.set_upper(objective.ub);
-
+    cppoptlib::LbfgsbSolver<PhiGaussianProcessSmoothing> solver;
     // phi sigma 1st initial value for optimization
-    arma::vec phisigAttempt1(numparam);
+    Eigen::VectorXd phisigAttempt1(numparam);
     phisigAttempt1.fill(1);
     double maxDist = distInput.max();
     double sdOverall = 0;
@@ -199,13 +196,10 @@ arma::vec gpsmooth(const arma::mat & yobsInput,
     if(sigmaExogenScalar <= 0){
         phisigAttempt1[phiDim * yobsInput.n_cols] = sdOverall / yobsInput.n_cols;
     }
-
-    opt.minimize(objective, phisigAttempt1);
-    double fx1 = opt.value();
-    phisigAttempt1 = opt.par();
+    solver.minimize(objective, phisigAttempt1);
 
     // phi sigma 2nd initial value for optimization
-    arma::vec phisigAttempt2(numparam);
+    Eigen::VectorXd phisigAttempt2(numparam);
     phisigAttempt2.fill(1);
     for(unsigned i = 0; i < yobsInput.n_cols; i++) {
         phisigAttempt2[phiDim * i] = arma::stddev(yobsInput.col(i));
@@ -220,19 +214,17 @@ arma::vec gpsmooth(const arma::mat & yobsInput,
     if(sigmaExogenScalar <= 0){
         phisigAttempt2[phiDim * yobsInput.n_cols] = sdOverall / yobsInput.n_cols * 0.2;
     }
+    solver.minimize(objective, phisigAttempt2);
 
-    opt.minimize(objective, phisigAttempt2);
-    double fx2 = opt.value();
-    phisigAttempt2 = opt.par();
-
-    arma::vec phisig;
-    if (fx1 < fx2){
+    Eigen::VectorXd phisig;
+    if (objective.value(phisigAttempt1) < objective.value(phisigAttempt2)){
         phisig = phisigAttempt1;
     }else{
         phisig = phisigAttempt2;
     }
 
-    return phisig;
+    const arma::vec & phisigArgmin = arma::vec(phisig.data(), numparam, true, false);
+    return phisigArgmin;
 }
 
 
@@ -287,7 +279,7 @@ arma::cube calcMeanCurve(const arma::vec & xInput,
 }
 
 
-class ThetaOptim : public roptim::Functor {
+class ThetaOptim : public cppoptlib::BoundedProblem<double> {
 public:
     const arma::mat & yobs;
     const OdeSystem & fOdeModel;
@@ -296,31 +288,51 @@ public:
     const arma::vec & priorTemperature;
     const arma::mat & xInit;
     const bool useBand;
-    arma::vec lb;
-    arma::vec ub;
 
-    double operator()(const arma::vec & thetaInput, arma::vec & grad) {
-        if (arma::any(thetaInput < lb)){
+    double value(const Eigen::VectorXd & thetaInput) override {
+        if ((thetaInput.array() < this->lowerBound().array()).any()){
+            return INFINITY;
+        }
+        if ((thetaInput.array() > this->upperBound().array()).any()){
+            return INFINITY;
+        }
+        const arma::vec & xtheta = arma::join_vert(
+            arma::vectorise(xInit),
+            arma::vec(const_cast<double*>(thetaInput.data()), fOdeModel.thetaSize, false, false)
+        );
+        const lp & out = xthetallik(
+                xtheta,
+                covAllDimensions,
+                sigmaAllDimensions,
+                yobs,
+                fOdeModel,
+                useBand,
+                priorTemperature);
+        return -out.value;
+    }
+
+    void gradient(const Eigen::VectorXd & thetaInput, Eigen::VectorXd & grad) override {
+        if ((thetaInput.array() < this->lowerBound().array()).any()){
             grad.fill(0);
             for(unsigned i = 0; i < fOdeModel.thetaSize; i++){
-                if(thetaInput[i] < lb[i]){
+                if(thetaInput[i] < this->lowerBound()[i]){
                     grad[i] = -1;
                 }
             }
-            return 1E16;
+            return;
         }
-        if (arma::any(thetaInput > ub)){
+        if ((thetaInput.array() > this->upperBound().array()).any()){
             grad.fill(0);
             for(unsigned i = 0; i < fOdeModel.thetaSize; i++){
-                if(thetaInput[i] > ub[i]){
+                if(thetaInput[i] > this->upperBound()[i]){
                     grad[i] = 1;
                 }
             }
-            return 1E16;
+            return;
         }
         const arma::vec & xtheta = arma::join_vert(
                 arma::vectorise(xInit),
-                thetaInput
+                arma::vec(const_cast<double*>(thetaInput.data()), fOdeModel.thetaSize, false, false)
         );
         const lp & out = xthetallik(
                 xtheta,
@@ -333,22 +345,7 @@ public:
         for(unsigned i = 0; i < fOdeModel.thetaSize; i++){
             grad[i] = -out.gradient(xInit.size() + i);
         }
-        return -out.value;
     }
-
-    double operator()(const arma::vec & x) override {
-        arma::vec grad = arma::zeros(x.size());
-        double value = this->operator()(x, grad);
-        return value;
-    }
-
-    void Gradient(const arma::vec & x, arma::vec & grad) override {
-        if (grad.size() != x.size()){
-            grad = arma::zeros(x.size());
-        }
-        this->operator()(x, grad);
-    }
-
 
     ThetaOptim(const arma::mat & yobsInput,
                const OdeSystem & fOdeModelInput,
@@ -357,6 +354,7 @@ public:
                const arma::vec & priorTemperatureInput,
                const arma::mat & xInitInput,
                const bool useBandInput) :
+            BoundedProblem(fOdeModelInput.thetaSize),
             yobs(yobsInput),
             fOdeModel(fOdeModelInput),
             covAllDimensions(covAllDimensionsInput),
@@ -364,8 +362,10 @@ public:
             priorTemperature(priorTemperatureInput),
             xInit(xInitInput),
             useBand(useBandInput) {
-        lb = fOdeModel.thetaLowerBound;
-        ub = fOdeModel.thetaUpperBound;
+        const Eigen::Map<Eigen::VectorXd> lb (const_cast<double*>(fOdeModel.thetaLowerBound.memptr()), fOdeModel.thetaSize);
+        this->setLowerBound(lb.array() + 1e-6);
+        const Eigen::Map<Eigen::VectorXd> ub (const_cast<double*>(fOdeModel.thetaUpperBound.memptr()), fOdeModel.thetaSize);
+        this->setUpperBound(ub.array() - 1e-6);
     }
 };
 
@@ -378,20 +378,16 @@ arma::vec optimizeThetaInit(const arma::mat & yobsInput,
                             const arma::mat & xInitInput,
                             const bool useBandInput) {
     ThetaOptim objective(yobsInput, fOdeModelInput, covAllDimensionsInput, sigmaAllDimensionsInput, priorTemperatureInput, xInitInput, useBandInput);
-    roptim::Roptim<ThetaOptim> opt("L-BFGS-B");
-    opt.set_lower(objective.lb);
-    opt.set_upper(objective.ub);
-
-    arma::vec theta(fOdeModelInput.thetaSize);
+    cppoptlib::LbfgsbSolver<ThetaOptim> solver;
+    Eigen::VectorXd theta(fOdeModelInput.thetaSize);
     theta.fill(1);
-
-    opt.minimize(objective, theta);
-
-    return opt.par();
+    solver.minimize(objective, theta);
+    const arma::vec & thetaArgmin = arma::vec(theta.data(), fOdeModelInput.thetaSize, true, false);
+    return thetaArgmin;
 }
 
 
-class PhiOptim : public roptim::Functor{
+class PhiOptim : public cppoptlib::BoundedProblem<double> {
 public:
     const arma::mat & yobs;
     const arma::vec & tvec;
@@ -402,21 +398,41 @@ public:
     const arma::vec & thetaInit;
     const arma::mat & phiFull;
     const arma::uvec & missingComponentDim;
-    arma::vec lb;
-    arma::vec ub;
-    
-    double operator()(const arma::vec & phiInput, arma::vec & grad) {
-        if (arma::any(phiInput < lb)){
+
+    double value(const Eigen::VectorXd & phiInput) override {
+        if ((phiInput.array() < this->lowerBound().array()).any()){
+            return INFINITY;
+        }
+        const arma::mat phiMissingDimensions(
+                const_cast<double*>(phiInput.data()),
+                2,
+                missingComponentDim.size(),
+                false,
+                false);
+        arma::mat phiAllDimensions = phiFull;
+        phiAllDimensions.cols(missingComponentDim) = phiMissingDimensions;
+        const lp & out = xthetaphisigmallik( xInit,
+                                             thetaInit,
+                                             phiAllDimensions,
+                                             sigmaAllDimensions,
+                                             yobs,
+                                             tvec,
+                                             fOdeModel);
+        return -out.value;
+    }
+
+    void gradient(const Eigen::VectorXd & phiInput, Eigen::VectorXd & grad) override {
+        if ((phiInput.array() < this->lowerBound().array()).any()){
             grad.fill(0);
             for(unsigned i = 0; i < phiInput.size(); i++){
-                if(phiInput[i] < lb[i]){
+                if(phiInput[i] < this->lowerBound()[i]){
                     grad[i] = -1;
                 }
             }
-            return 1E16;
+            return;
         }
         const arma::mat phiMissingDimensions(
-                const_cast<double*>(phiInput.begin()),
+                const_cast<double*>(phiInput.data()),
                 2,
                 missingComponentDim.size(),
                 false,
@@ -437,20 +453,6 @@ public:
             grad[2*i] = -out.gradient(xInit.size() + thetaInit.size() + 2*currentDim);
             grad[2*i+1] = -out.gradient(xInit.size() + thetaInit.size() + 2*currentDim + 1);
         }
-        return -out.value;
-    }
-
-    double operator()(const arma::vec & x) override {
-        arma::vec grad = arma::zeros(x.size());
-        double value = this->operator()(x, grad);
-        return value;
-    }
-
-    void Gradient(const arma::vec & x, arma::vec & grad) override {
-        if (grad.size() != x.size()){
-            grad = arma::zeros(x.size());
-        }
-        this->operator()(x, grad);
     }
 
     PhiOptim(const arma::mat & yobsInput,
@@ -462,6 +464,7 @@ public:
              const arma::vec & thetaInitInput,
              const arma::mat & phiFullInput,
              const arma::uvec & missingComponentDimInput) :
+            BoundedProblem(missingComponentDimInput.size() * 2),
             yobs(yobsInput),
             tvec(tvecInput),
             fOdeModel(fOdeModelInput),
@@ -471,8 +474,8 @@ public:
             thetaInit(thetaInitInput),
             phiFull(phiFullInput),
             missingComponentDim(missingComponentDimInput) {
-        lb = arma::vec(missingComponentDim.size() * 2);
-        ub = arma::vec(missingComponentDim.size() * 2);
+        Eigen::VectorXd lb(missingComponentDim.size() * 2);
+        Eigen::VectorXd ub(missingComponentDim.size() * 2);
 
         const double maxDist = (arma::max(tvecInput) - arma::min(tvecInput));
         const double minDist = arma::min(arma::abs(arma::diff(tvecInput)));
@@ -495,6 +498,8 @@ public:
             ub[2*i+1] = maxDist * 5;
             lb[2*i+1] = std::min(maxDist * priorFactor(0) * 0.5, minDist);
         }
+        this->setLowerBound(lb);
+        this->setUpperBound(ub);
     }
 };
 
@@ -510,69 +515,20 @@ arma::mat optimizePhi(const arma::mat & yobsInput,
                       const arma::mat & phiInitInput,
                       const arma::uvec & missingComponentDim) {
     PhiOptim objective(yobsInput, tvecInput, fOdeModelInput, sigmaAllDimensionsInput, priorTemperatureInput, xInitInput, thetaInitInput, phiInitInput, missingComponentDim);
-
-    roptim::Roptim<PhiOptim> opt("L-BFGS-B");
-    //opt.control.maxit = 1000;
-    //opt.control.lmm = 100;
-    //opt.control.fnscale = 0.1;
-    opt.set_lower(objective.lb);
-    opt.set_upper(objective.ub);
-
-    arma::vec phi(2 * missingComponentDim.size());
+    cppoptlib::LbfgsbSolver<PhiOptim> solver;
+    Eigen::VectorXd phi(2 * missingComponentDim.size());
     for(unsigned i = 0; i < missingComponentDim.size(); i++){
         unsigned currentDim = missingComponentDim[i];
         phi[2*i] = phiInitInput(0, currentDim);
         phi[2*i+1] = phiInitInput(1, currentDim);
     }
-
-//    std::cout << "starting from phi = " << phi.t();
-    opt.minimize(objective, phi);
-//    std::cout << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
-    //std::cout << "Diagnostics: opt.fncount() = " << opt.fncount() << "; opt.grcount() = " << opt.grcount() << "; opt.convergence() = " << opt.convergence() << "\n";
-    double fx_best = opt.value();
-    arma::vec phi_argmin_best = opt.par();
-
-    for (unsigned obs_component_each = 0; obs_component_each < yobsInput.n_cols; obs_component_each++){
-        if (arma::any(missingComponentDim == obs_component_each)){
-            continue;
-        }
-
-        for(unsigned i = 0; i < missingComponentDim.size(); i++){
-            phi[2*i] = phiInitInput(0, obs_component_each);
-            phi[2*i+1] = phiInitInput(1, obs_component_each);
-        }
-
-//        std::cout << "starting from phi = " << phi.t();
-        opt.minimize(objective, phi);
-//        std::cout << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
-        //std::cout << "Diagnostics: opt.fncount() = " << opt.fncount() << "; opt.grcount() = " << opt.grcount() << "; opt.convergence() = " << opt.convergence() << "\n";
-        if (opt.value() < fx_best){
-            fx_best = opt.value();
-            phi_argmin_best = opt.par();
-        }
-    }
-
-    for(unsigned i = 0; i < missingComponentDim.size(); i++){
-        phi[2*i] = 0.24;
-        phi[2*i+1] = 20;
-    }
-
-//    std::cout << "starting from phi = " << phi.t();
-    opt.minimize(objective, phi);
-//    std::cout << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
-    //std::cout << "Diagnostics: opt.fncount() = " << opt.fncount() << "; opt.grcount() = " << opt.grcount() << "; opt.convergence() = " << opt.convergence() << "\n";
-    
-    if (opt.value() < fx_best){
-        fx_best = opt.value();
-        phi_argmin_best = opt.par();
-    }
-
-    const arma::mat & phiArgmin = arma::reshape(phi_argmin_best, 2, missingComponentDim.size());
+    solver.minimize(objective, phi);
+    const arma::mat & phiArgmin = arma::mat(phi.data(), 2, missingComponentDim.size(), true, false);
     return phiArgmin;
 }
 
 
-class XmissingThetaPhiOptim : public roptim::Functor{
+class XmissingThetaPhiOptim : public cppoptlib::BoundedProblem<double> {
 public:
     const arma::mat & yobs;
     const arma::vec & tvec;
@@ -584,33 +540,78 @@ public:
     arma::mat phiAllDimensions;
     const arma::uvec & missingComponentDim;
     const double SCALE = 1;
-    arma::vec lb;
-    arma::vec ub;
 
-    double operator()(const arma::vec & xthetaphiInput, arma::vec & grad) {
-        if (arma::any(xthetaphiInput < lb)){
+    double value(const Eigen::VectorXd & xthetaphiInput) override {
+        if ((xthetaphiInput.array() < this->lowerBound().array()).any()){
+            return INFINITY;
+        }
+        if ((xthetaphiInput.array() > this->upperBound().array()).any()){
+            return INFINITY;
+        }
+        if (xthetaphiInput.array().isNaN().any()){
+            return INFINITY;
+        }
+
+        const arma::vec xthetaphi(
+                const_cast<double*>(xthetaphiInput.data()),
+                xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * missingComponentDim.size(),
+                false,
+                false);
+
+        for (unsigned id = 0; id < missingComponentDim.size(); id++){
+            xInit.col(missingComponentDim(id)) = xthetaphi.subvec(
+                    xInit.n_rows * (id), xInit.n_rows * (id + 1) - 1);
+        }
+
+        thetaInit = xthetaphi.subvec(
+                xInit.n_rows * missingComponentDim.size(), xInit.n_rows * missingComponentDim.size() + thetaInit.size() - 1);
+
+        for (unsigned id = 0; id < missingComponentDim.size(); id++){
+            phiAllDimensions.col(missingComponentDim(id)) = xthetaphi.subvec(
+                    xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * id,
+                    xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * (id + 1) - 1);
+//            std::cout << "value: phiAllDimensions.col(missingComponentDim(id)) = " << phiAllDimensions.col(missingComponentDim(id)) << "\n";
+        }
+//        std::cout << "inside evaluation of value\n";
+
+        const lp & out = xthetaphisigmallik( xInit,
+                                             thetaInit,
+                                             phiAllDimensions,
+                                             sigmaAllDimensions,
+                                             yobs,
+                                             tvec,
+                                             fOdeModel);
+        if (out.gradient.has_nan() || isnan(out.value)){
+            return INFINITY;
+        }
+        return -out.value*SCALE;
+    }
+
+    void gradient(const Eigen::VectorXd & xthetaphiInput, Eigen::VectorXd & grad) override {
+        if ((xthetaphiInput.array() < this->lowerBound().array()).any()){
             grad.fill(0);
             for(unsigned i = 0; i < xthetaphiInput.size(); i++){
-                if(xthetaphiInput[i] < lb[i]){
+                if(xthetaphiInput[i] < this->lowerBound()[i]){
                     grad[i] = -1;
                 }
             }
-            return 1E16;
+            return;
         }
-        if (arma::any(xthetaphiInput > ub)){
+        if ((xthetaphiInput.array() > this->upperBound().array()).any()){
             grad.fill(0);
             for(unsigned i = 0; i < xthetaphiInput.size(); i++){
-                if(xthetaphiInput[i] < ub[i]){
+                if(xthetaphiInput[i] < this->upperBound()[i]){
                     grad[i] = 1;
                 }
             }
-            return 1E16;
-        }
-        if (xthetaphiInput.has_nan()){
-            return 1E16;
+            return;
         }
 
-        const arma::vec & xthetaphi = xthetaphiInput;
+        const arma::vec xthetaphi(
+                const_cast<double*>(xthetaphiInput.data()),
+                xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * missingComponentDim.size(),
+                false,
+                false);
 
         for (unsigned id = 0; id < missingComponentDim.size(); id++){
             xInit.col(missingComponentDim(id)) = xthetaphi.subvec(
@@ -628,15 +629,12 @@ public:
         }
 
         lp out = xthetaphisigmallik( xInit,
-                                     thetaInit,
-                                     phiAllDimensions,
-                                     sigmaAllDimensions,
-                                     yobs,
-                                     tvec,
-                                     fOdeModel);
-        if (out.gradient.has_nan() || isnan(out.value)){
-            return 1E16;
-        }
+                                             thetaInit,
+                                             phiAllDimensions,
+                                             sigmaAllDimensions,
+                                             yobs,
+                                             tvec,
+                                             fOdeModel);
         out.gradient *= SCALE;
         out.value *= SCALE;
 
@@ -655,20 +653,6 @@ public:
             }
         }
 //        std::cout << "after gradient assignment =\n" << grad.transpose();
-        return -out.value;
-    }
-
-    double operator()(const arma::vec & x) override {
-        arma::vec grad = arma::zeros(x.size());
-        double value = this->operator()(x, grad);
-        return value;
-    }
-
-    void Gradient(const arma::vec & x, arma::vec & grad) override {
-        if (grad.size() != x.size()){
-            grad = arma::zeros(x.size());
-        }
-        this->operator()(x, grad);
     }
 
     XmissingThetaPhiOptim(const arma::mat & yobsInput,
@@ -680,6 +664,7 @@ public:
              const arma::vec & thetaInitInput,
              const arma::mat & phiFullInput,
              const arma::uvec & missingComponentDimInput) :
+            BoundedProblem(missingComponentDimInput.size() * 2),
             yobs(yobsInput),
             tvec(tvecInput),
             fOdeModel(fOdeModelInput),
@@ -689,10 +674,10 @@ public:
             thetaInit(thetaInitInput),
             phiAllDimensions(phiFullInput),
             missingComponentDim(missingComponentDimInput) {
-        lb = arma::vec(xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * missingComponentDim.size());
-        lb.fill(-1E16);
-        ub = arma::vec(xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * missingComponentDim.size());
-        ub.fill(1E16);
+        Eigen::VectorXd lb(xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * missingComponentDim.size());
+        lb.fill(-INFINITY);
+        Eigen::VectorXd ub(xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * missingComponentDim.size());
+        ub.fill(INFINITY);
 
         for (unsigned j = 0; j < thetaInit.size(); j++){
             lb[xInit.n_rows * missingComponentDim.size() + j] = fOdeModel.thetaLowerBound(j) + 1e-6;
@@ -720,6 +705,8 @@ public:
             ub[xInit.n_rows * missingComponentDim.size() + thetaInit.size() + 2*i+1] = maxDist * 5;
             lb[xInit.n_rows * missingComponentDim.size() + thetaInit.size() + 2*i+1] = std::min(maxDist * priorFactor(0) * 0.5, minDist);
         }
+        this->setLowerBound(lb);
+        this->setUpperBound(ub);
 //        std::cout << "finish set up of the problem\n";
 //        std::cout << "ub = \n" << ub << "\nlb = \n" << lb << "\n";
     }
@@ -735,12 +722,9 @@ arma::mat optimizeXmissingThetaPhi(const arma::mat & yobsInput,
                                    const arma::mat & phiInitInput,
                                    const arma::uvec & missingComponentDim) {
     XmissingThetaPhiOptim objective(yobsInput, tvecInput, fOdeModelInput, sigmaAllDimensionsInput, priorTemperatureInput, xInitInput, thetaInitInput, phiInitInput, missingComponentDim);
+    cppoptlib::LbfgsbSolver<XmissingThetaPhiOptim> solver;
 
-    roptim::Roptim<XmissingThetaPhiOptim> opt("L-BFGS-B");
-    opt.set_lower(objective.lb);
-    opt.set_upper(objective.ub);
-
-    arma::vec xThetaPhi(xInitInput.n_rows * missingComponentDim.size() + thetaInitInput.size() + phiInitInput.n_rows * missingComponentDim.size());
+    Eigen::VectorXd xThetaPhi(xInitInput.n_rows * missingComponentDim.size() + thetaInitInput.size() + phiInitInput.n_rows * missingComponentDim.size());
 
     for (unsigned id = 0; id < missingComponentDim.size(); id++){
         for (unsigned j = 0; j < xInitInput.n_rows; j++){
@@ -759,22 +743,19 @@ arma::mat optimizeXmissingThetaPhi(const arma::mat & yobsInput,
 
 //    std::cout << "inside optimizeXmissingThetaPhi\n"
 //    << "init xThetaPhi = " << xThetaPhi;
-    arma::vec xThetaPhiInit = xThetaPhi;
-    arma::vec grad = arma::vec(xThetaPhi.size());
+    Eigen::VectorXd xThetaPhiInit = xThetaPhi;
 
-    opt.minimize(objective, xThetaPhiInit);
-    xThetaPhi = opt.par();
-
-    if (! isfinite(objective(xThetaPhi, grad))){
-        const arma::vec & xThetaPhiArgmin = arma::vec(xThetaPhiInit.begin(), xInitInput.n_rows * missingComponentDim.size() + thetaInitInput.size() + phiInitInput.n_rows * missingComponentDim.size(), true, false);
+    solver.minimize(objective, xThetaPhi);
+    if (! isfinite(objective.value(xThetaPhi))){
+        const arma::vec & xThetaPhiArgmin = arma::vec(xThetaPhiInit.data(), xInitInput.n_rows * missingComponentDim.size() + thetaInitInput.size() + phiInitInput.n_rows * missingComponentDim.size(), true, false);
         return xThetaPhiArgmin;
     }
 
-    if (objective(xThetaPhi, grad) < objective(xThetaPhiInit, grad)){
-        const arma::vec & xThetaPhiArgmin = arma::vec(xThetaPhi.begin(), xInitInput.n_rows * missingComponentDim.size() + thetaInitInput.size() + phiInitInput.n_rows * missingComponentDim.size(), true, false);
+    if (objective.value(xThetaPhi) < objective.value(xThetaPhiInit)){
+        const arma::vec & xThetaPhiArgmin = arma::vec(xThetaPhi.data(), xInitInput.n_rows * missingComponentDim.size() + thetaInitInput.size() + phiInitInput.n_rows * missingComponentDim.size(), true, false);
         return xThetaPhiArgmin;
     }else{
-        const arma::vec & xThetaPhiArgmin = arma::vec(xThetaPhiInit.begin(), xInitInput.n_rows * missingComponentDim.size() + thetaInitInput.size() + phiInitInput.n_rows * missingComponentDim.size(), true, false);
+        const arma::vec & xThetaPhiArgmin = arma::vec(xThetaPhiInit.data(), xInitInput.n_rows * missingComponentDim.size() + thetaInitInput.size() + phiInitInput.n_rows * missingComponentDim.size(), true, false);
         return xThetaPhiArgmin;
     }
 }
