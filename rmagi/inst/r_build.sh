@@ -32,7 +32,7 @@ MAKE="make -j$CPU" Rscript -e 'devtools::install_deps(dependencies = TRUE, repos
 
 find src/ -lname '*' -delete
 mkdir src/rcppmagi
-rsync -az ../cmagi/*.cpp src/rcppmagi/
+rsync -az --exclude 'gpsmoothing.cpp' ../cmagi/*.cpp src/rcppmagi/
 rsync -az ../cmagi/*.h src/rcppmagi/
 perl -pi -e 's/\#include <armadillo>/\#include \"RcppArmadillo.h\"/g' src/rcppmagi/*.h
 perl -pi -e 's/\#include <armadillo>/\#include \"RcppArmadillo.h\"/g' src/rcppmagi/*.cpp
