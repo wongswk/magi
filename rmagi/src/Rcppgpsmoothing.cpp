@@ -2,7 +2,7 @@
 #define BOOST_DISABLE_ASSERTS
 #define EIGEN_NO_DEBUG
 
-#include <armadillo>
+#include "RcppArmadillo.h"
 
 // [[Rcpp::depends(roptim)]]
 #include <roptim.h>
@@ -148,7 +148,7 @@ public:
                 priorFactor += calcFrequencyBasedPrior(yobs.col(j));
             }
             priorFactor /= yobs.n_cols;
-//            std::cout << "priorFactor =\n" << priorFactor << "\n";
+//            Rcpp::Rcout << "priorFactor =\n" << priorFactor << "\n";
         }
     }
 };
@@ -214,7 +214,7 @@ arma::vec gpsmooth(const arma::mat & yobsInput,
         }else{
             arma::vec distVec = arma::vectorise(distInput);
             phisigAttempt2[phiDim * i + 1] = distVec(arma::find(distVec > 1e-8)).eval().min();
-//            std::cout << "phisigAttempt2[phiDim * i + 1] init = " << phisigAttempt2[phiDim * i + 1] << "\n";
+//            Rcpp::Rcout << "phisigAttempt2[phiDim * i + 1] init = " << phisigAttempt2[phiDim * i + 1] << "\n";
         }
     }
     if(sigmaExogenScalar <= 0){
@@ -244,7 +244,7 @@ arma::cube calcMeanCurve(const arma::vec & xInput,
                          const arma::vec & sigmaCandidates,
                          const std::string kerneltype = "generalMatern",
                          const bool useDeriv = false) {
-    if(kerneltype != "generalMatern") std::cerr << "kerneltype other than generalMatern is not supported\n";
+    if(kerneltype != "generalMatern") Rcpp::Rcerr << "kerneltype other than generalMatern is not supported\n";
 
     const arma::vec & tvec = arma::join_vert(xOutput, xInput);
     arma::mat distSigned(tvec.size(), tvec.size());
@@ -487,7 +487,7 @@ public:
             priorFactor += calcFrequencyBasedPrior(yobsThisDim(arma::find_finite(yobsThisDim)));
         }
         priorFactor /= (yobs.n_cols - missingComponentDim.size());
-//        std::cout << "average priorFactor in PhiOptim =\n" << priorFactor << "\n";
+//        Rcpp::Rcout << "average priorFactor in PhiOptim =\n" << priorFactor << "\n";
 
         for(unsigned i = 0; i < missingComponentDim.size(); i++){
             ub[2*i] = maxScale * 5;
@@ -525,10 +525,10 @@ arma::mat optimizePhi(const arma::mat & yobsInput,
         phi[2*i+1] = phiInitInput(1, currentDim);
     }
 
-//    std::cout << "starting from phi = " << phi.t();
+//    Rcpp::Rcout << "starting from phi = " << phi.t();
     opt.minimize(objective, phi);
-//    std::cout << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
-    //std::cout << "Diagnostics: opt.fncount() = " << opt.fncount() << "; opt.grcount() = " << opt.grcount() << "; opt.convergence() = " << opt.convergence() << "\n";
+//    Rcpp::Rcout << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
+    //Rcpp::Rcout << "Diagnostics: opt.fncount() = " << opt.fncount() << "; opt.grcount() = " << opt.grcount() << "; opt.convergence() = " << opt.convergence() << "\n";
     double fx_best = opt.value();
     arma::vec phi_argmin_best = opt.par();
 
@@ -542,10 +542,10 @@ arma::mat optimizePhi(const arma::mat & yobsInput,
             phi[2*i+1] = phiInitInput(1, obs_component_each);
         }
 
-//        std::cout << "starting from phi = " << phi.t();
+//        Rcpp::Rcout << "starting from phi = " << phi.t();
         opt.minimize(objective, phi);
-//        std::cout << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
-        //std::cout << "Diagnostics: opt.fncount() = " << opt.fncount() << "; opt.grcount() = " << opt.grcount() << "; opt.convergence() = " << opt.convergence() << "\n";
+//        Rcpp::Rcout << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
+        //Rcpp::Rcout << "Diagnostics: opt.fncount() = " << opt.fncount() << "; opt.grcount() = " << opt.grcount() << "; opt.convergence() = " << opt.convergence() << "\n";
         if (opt.value() < fx_best){
             fx_best = opt.value();
             phi_argmin_best = opt.par();
@@ -557,10 +557,10 @@ arma::mat optimizePhi(const arma::mat & yobsInput,
         phi[2*i+1] = 20;
     }
 
-//    std::cout << "starting from phi = " << phi.t();
+//    Rcpp::Rcout << "starting from phi = " << phi.t();
     opt.minimize(objective, phi);
-//    std::cout << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
-    //std::cout << "Diagnostics: opt.fncount() = " << opt.fncount() << "; opt.grcount() = " << opt.grcount() << "; opt.convergence() = " << opt.convergence() << "\n";
+//    Rcpp::Rcout << "; opt.value() = " << opt.value() << "; opt.par() = " << opt.par().t() << "\n";
+    //Rcpp::Rcout << "Diagnostics: opt.fncount() = " << opt.fncount() << "; opt.grcount() = " << opt.grcount() << "; opt.convergence() = " << opt.convergence() << "\n";
 
     if (opt.value() < fx_best){
         fx_best = opt.value();
@@ -624,7 +624,7 @@ public:
             phiAllDimensions.col(missingComponentDim(id)) = xthetaphi.subvec(
                     xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * id,
                     xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * (id + 1) - 1);
-//            std::cout << "gradient: phiAllDimensions.col(missingComponentDim(id)) = " << phiAllDimensions.col(missingComponentDim(id)) << "\n";
+//            Rcpp::Rcout << "gradient: phiAllDimensions.col(missingComponentDim(id)) = " << phiAllDimensions.col(missingComponentDim(id)) << "\n";
         }
 
         lp out = xthetaphisigmallik( xInit,
@@ -654,7 +654,7 @@ public:
                         -out.gradient(xInit.size() + thetaInit.size() + phiAllDimensions.n_rows * missingComponentDim(id) + j);
             }
         }
-//        std::cout << "after gradient assignment =\n" << grad.transpose();
+//        Rcpp::Rcout << "after gradient assignment =\n" << grad.transpose();
         return -out.value;
     }
 
@@ -712,7 +712,7 @@ public:
             priorFactor += calcFrequencyBasedPrior(yobsThisDim(arma::find_finite(yobsThisDim)));
         }
         priorFactor /= (yobs.n_cols - missingComponentDim.size());
-//        std::cout << "average priorFactor in PhiOptim =\n" << priorFactor << "\n";
+//        Rcpp::Rcout << "average priorFactor in PhiOptim =\n" << priorFactor << "\n";
 
         for(unsigned i = 0; i < missingComponentDim.size(); i++){
             ub[xInit.n_rows * missingComponentDim.size() + thetaInit.size() + 2*i] = maxScale * 5;
@@ -720,8 +720,8 @@ public:
             ub[xInit.n_rows * missingComponentDim.size() + thetaInit.size() + 2*i+1] = maxDist * 5;
             lb[xInit.n_rows * missingComponentDim.size() + thetaInit.size() + 2*i+1] = std::min(maxDist * priorFactor(0) * 0.5, minDist);
         }
-//        std::cout << "finish set up of the problem\n";
-//        std::cout << "ub = \n" << ub << "\nlb = \n" << lb << "\n";
+//        Rcpp::Rcout << "finish set up of the problem\n";
+//        Rcpp::Rcout << "ub = \n" << ub << "\nlb = \n" << lb << "\n";
     }
 };
 
@@ -757,7 +757,7 @@ arma::mat optimizeXmissingThetaPhi(const arma::mat & yobsInput,
         }
     }
 
-//    std::cout << "inside optimizeXmissingThetaPhi\n"
+//    Rcpp::Rcout << "inside optimizeXmissingThetaPhi\n"
 //    << "init xThetaPhi = " << xThetaPhi;
     arma::vec xThetaPhiInit = xThetaPhi;
     arma::vec grad = arma::vec(xThetaPhi.size());
