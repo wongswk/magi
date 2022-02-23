@@ -72,7 +72,7 @@ else
 fi
 mv inst/examples examples
 
-LIB_PYMAGI_SOURCE=$(cd "$PROJECT"/cmagi && ls -- *.cpp)
+LIB_PYMAGI_SOURCE=$(cd "$PROJECT"/cmagi && ls -- *.cpp | grep -v "gpsmoothing\.cpp")
 LIB_PYMAGI_HEADERS=$(cd "$PROJECT"/cmagi && ls -- *.h)
 cd "$PROJECT"/rmagi/src && rm $LIB_PYMAGI_SOURCE $LIB_PYMAGI_HEADERS
 cd "$PROJECT"/rmagi || return
