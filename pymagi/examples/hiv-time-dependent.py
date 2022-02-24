@@ -162,7 +162,7 @@ ydata[:, 2] = ydataTruth[:, 2] + np.random.normal(0, true_sigma[2], ydataTruth[:
 
 yFull = np.ndarray([201, 3])
 yFull.fill(np.nan)
-yFull[np.linspace(0, 20, num=101).astype(int), :] = ydata
+yFull[np.linspace(0, 200, num=101).astype(int), :] = ydata
 
 xInitExogenous = np.zeros_like(yFull)
 for j in range(3):
