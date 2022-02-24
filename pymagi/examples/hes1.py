@@ -1,6 +1,8 @@
 import numpy as np
 from arma import ode_system
 from magi import MagiSolver
+from matplotlib import pyplot as plt
+from scipy.integrate import solve_ivp
 
 
 def fOde(theta, x, tvec):
@@ -123,3 +125,28 @@ inferred_theta = np.mean(result['theta'], axis=-1)
 np.savetxt("hes1log_inferred_theta_seed{}.csv".format(SEED), inferred_theta)
 np.savetxt("hes1log_inferred_trajectory_seed{}.csv".format(SEED), inferred_trajectory)
 np.savetxt("hes1log_inferred_sigma_seed{}.csv".format(SEED), np.mean(result['sigma'], axis=-1))
+
+# Inferred trajectories visualization
+for j in range(inferred_trajectory.shape[0]):
+    plt.plot(tvecFull, inferred_trajectory[j,:])
+plt.show()
+
+for j in range(inferred_trajectory.shape[0]):
+    plt.plot(tvecFull, np.quantile(result['xsampled'], 0.025, axis=-1)[j,:])
+    plt.plot(tvecFull, np.quantile(result['xsampled'], 0.975, axis=-1)[j,:])
+plt.show()
+
+# Histogram of parameters
+for j in range(result['theta'].shape[0]):
+    plt.hist(result['theta'][j,:])
+    plt.show()
+
+# Look at whether these estimates are reasonable for reconstructing trajectories using ODE solver
+def fOdeScipy(t, y):
+    return fOde(inferred_theta, y.transpose(), t).transpose()
+sol = solve_ivp(fun=fOdeScipy, t_span=[0, tvecFull[-1]], y0=inferred_trajectory[:, 0], t_eval=tvecFull, vectorized=True)
+
+for j in range(inferred_trajectory.shape[0]):
+    plt.plot(sol.t, sol.y[j,:])
+    plt.scatter(tvecFull, yFull[:, j])
+plt.show()
