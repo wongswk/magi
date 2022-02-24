@@ -2,7 +2,7 @@ import numpy as np
 from arma import ode_system
 from magi import MagiSolver
 from scipy.integrate import solve_ivp
-
+from matplotlib import pyplot as plt
 
 def fOde(theta, x, tvec):
     V = x[:, 0]
