@@ -81,8 +81,8 @@ ydataM = [0.91, 0.82, 0.71, -0.11, 0.08, -0.45, -0.05, 0.2,
 
 SEED = np.random.randint(1, 100000)
 np.random.seed(SEED)
-ydataP = ydataTruth[np.linspace(0, 32, num=17).astype(int), 0] + np.random.normal(0, 0.15, 17)
-ydataM = ydataTruth[np.linspace(1, 31, num=16).astype(int), 1] + np.random.normal(0, 0.15, 16)
+ydataP = ydataTruth[np.linspace(0, 32, num=17).astype(int), 0] + np.random.normal(0, true_sigma[0], 17)
+ydataM = ydataTruth[np.linspace(1, 31, num=16).astype(int), 1] + np.random.normal(0, true_sigma[1], 16)
 
 yFull = np.ndarray([33, 3])
 yFull.fill(np.nan)

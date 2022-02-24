@@ -1,6 +1,7 @@
 import numpy as np
 from arma import ode_system
 from magi import MagiSolver
+from scipy.integrate import solve_ivp
 
 
 def fOde(theta, x, tvec):
@@ -34,29 +35,18 @@ def fOdeDtheta(theta, x, tvec):
 fn_system = ode_system("FN-python", fOde, fOdeDx, fOdeDtheta,
                        thetaLowerBound=np.array([0,0,0]), thetaUpperBound=np.array([np.inf, np.inf, np.inf]))
 
-ydataTruth = [[-1, -0.20925154659207, 1.83568745612659,
-               2.0135309104164, 1.90873019346171, 1.79486115820876, 1.67211213239152,
-               1.53662974499158, 1.38120073986218, 1.19013170106295, 0.919484435213506,
-               0.383547960005714, -1.29912297158911, -1.94703008843896, -1.82621515345628,
-               -1.67605296462337, -1.50179855978052, -1.28453002771101, -0.968149651951442,
-               -0.289583787997096, 1.69708215851227, 2.00615161512914, 1.90282235165016,
-               1.78857976062948, 1.6652708465063, 1.52895166419629, 1.37214013119417,
-               1.17838132678723, 0.900810540853709, 0.335888855600565, -1.40628542040035,
-               -1.94307261810271, -1.81869966439223, -1.66749000485501, -1.49157844936251,
-               -1.27103410403028, -0.945810196662687, -0.225460500531252, 1.77161890315082,
-               2.00150473412179, 1.89693950309839],
-              [1, 1.10971573208142,
-               0.973971505460551, 0.645805849456405, 0.335798626053281, 0.0539770521943058,
-               -0.199245124193061, -0.423064123771236, -0.615830984225796, -0.774184003197497,
-               -0.890478676998256, -0.941793805684236, -0.824808213741384, -0.468260373942925,
-               -0.110108123580818, 0.213525581109257, 0.50010099996594, 0.745568908212889,
-               0.940528043027411, 1.0548657257884, 0.949537453201733, 0.628529925666569,
-               0.320093849068738, 0.0397833888090213, -0.211900330950493, -0.43412034922384,
-               -0.625162798467007, -0.78153058734626, -0.895191437797031, -0.941542148713408,
-               -0.809587454312223, -0.448430208702261, -0.0919986870657319,
-               0.229726996465537, 0.514243895516946, 0.757337477682966, 0.949110759701012,
-               1.05705510574894, 0.934260823997242, 0.611444769682256, 0.304475451953246
-               ]]
+true_theta = [0.2,0.2,3]
+true_x0 = [-1, 1]
+true_sigma = [0.2, 0.2]
+
+tvecObs = np.linspace(0, 20, num=41)
+tvecFull = np.linspace(0, 20, num=161)
+
+sol = solve_ivp(lambda t, y: fOde(true_theta, y.transpose(), t).transpose(),
+                t_span=[0, tvecFull[-1]], y0=true_x0, t_eval=tvecObs, vectorized=True)
+
+ydataTruth = sol.y
+
 ydataTruth = np.array(ydataTruth).transpose()
 
 ydataV = [-0.86, -0.26, 2.14, 1.94, 1.63, 1.75,
@@ -72,12 +62,10 @@ ydataR = [0.94, 0.87, 0.62, 0.44,
 
 SEED = np.random.randint(1, 100000)
 np.random.seed(SEED)
-ydataV = ydataTruth[:, 0] + np.random.normal(0, 0.2, ydataTruth[:, 0].size)
-ydataR = ydataTruth[:, 1] + np.random.normal(0, 0.2, ydataTruth[:, 1].size)
+ydataV = ydataTruth[:, 0] + np.random.normal(0, true_sigma[0], ydataTruth[:, 0].size)
+ydataR = ydataTruth[:, 1] + np.random.normal(0, true_sigma[1], ydataTruth[:, 1].size)
 
 ydata = np.stack([np.array(ydataV), np.array(ydataR)], axis=1)
-tvecObs = np.linspace(0, 20, num=41)
-tvecFull = np.linspace(0, 20, num=161)
 yFull = np.ndarray([161, 2])
 yFull.fill(np.nan)
 yFull[np.linspace(0, 160, num=41).astype(int), :] = ydata
@@ -100,3 +88,27 @@ inferred_theta = np.mean(result['theta'], axis=-1)
 np.savetxt("fn_inferred_theta_seed{}.csv".format(SEED), inferred_theta)
 np.savetxt("fn_inferred_trajectory_seed{}.csv".format(SEED), inferred_trajectory)
 np.savetxt("fn_inferred_sigma_seed{}.csv".format(SEED), np.mean(result['sigma'], axis=-1))
+
+# Inferred trajectories visualization
+for j in range(inferred_trajectory.shape[0]):
+    plt.plot(tvecFull, inferred_trajectory[j,:])
+plt.show()
+
+for j in range(inferred_trajectory.shape[0]):
+    plt.plot(tvecFull, np.quantile(result['xsampled'], 0.025, axis=-1)[j,:])
+    plt.plot(tvecFull, np.quantile(result['xsampled'], 0.975, axis=-1)[j,:])
+plt.show()
+
+# Histogram of parameters
+for j in range(result['theta'].shape[0]):
+    plt.hist(result['theta'][j,:])
+    plt.show()
+
+# Look at whether these estimates are reasonable for reconstructing trajectories using ODE solver
+sol = solve_ivp(lambda t, y: fOde(inferred_theta, y.transpose(), t).transpose(),
+                t_span=[0, tvecFull[-1]], y0=inferred_trajectory[:, 0], t_eval=tvecFull, vectorized=True)
+
+for j in range(inferred_trajectory.shape[0]):
+    plt.plot(sol.t, sol.y[j,:])
+    plt.scatter(tvecFull, yFull[:, j])
+plt.show()
