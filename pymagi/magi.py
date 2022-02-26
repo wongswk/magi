@@ -3,8 +3,8 @@ from arma import ode_system, solve_magi
 
 def MagiSolver(y, odeModel, tvec=None, control=dict()):
     if tvec is None:
-        tvec = y[:, 0]
-        y = y[:, 1:]
+        tvec = y[:, 0].copy()
+        y = y[:, 1:].copy()
         print('tvec is not specified, first column in y will be used as time')
 
     if 'sigma' in control.keys():
