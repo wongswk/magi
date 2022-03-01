@@ -1,5 +1,5 @@
 import numpy as np
-from pymagi import ArmaVector, ArmaMatrix, ArmaCube, OdeSystem, solveMagiPy
+from pymagi import ArmaVector, ArmaMatrix, ArmaCube, OdeSystem, solveMagiPy, gpsmooth
 
 
 def vector(arma_vector):
@@ -109,6 +109,25 @@ def setDiscretization(dat, level = 0, by = None):
         newdat = newdat[np.argsort(newdat[:,0])]
         return newdat;
 
+def gpsmoothing(yobs, tvec, kerneltype = 'generalMatern', sigma = None):
+    distInput = np.abs(tvec[:, None] - tvec)
+    yInput = yobs - np.mean(yobs)
+
+    if sigma is None:
+        res = gpsmooth(yobsInput = ArmaMatrix(yInput.reshape(1,-1)),
+                       distInput = ArmaMatrix(distInput),
+                       kernelInput = kerneltype,
+                       sigmaExogenScalar = -1.0,
+                       useFrequencyBasedPrior = True)
+        return dict(sigma = res[2], phi = [res[0], res[1]])
+
+    if sigma > 0:
+        res = gpsmooth(yobsInput = ArmaMatrix(yInput.reshape(1,-1)),
+                       distInput = ArmaMatrix(distInput),
+                       kernelInput = kerneltype,
+                       sigmaExogenScalar = sigma,
+                       useFrequencyBasedPrior = True)
+        return dict(sigma = sigma, phi = [res[0], res[1]])
 
 def solve_magi(
         yFull,

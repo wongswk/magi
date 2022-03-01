@@ -9,7 +9,7 @@ from scipy.integrate import solve_ivp
 # Add path to MAGI library directory (containing pymagi.so) here if necessary
 # sys.path.append('...')
 
-from arma import ode_system, testDynamicalModel, setDiscretization
+from arma import ode_system, testDynamicalModel, setDiscretization, gpsmoothing
 from magi import MagiSolver
 
 ## Hes1 example
@@ -156,7 +156,7 @@ for j in range(xMean.shape[0]):
     plt.plot(tvecObs, xMean[j,:], label='inferred trajectory')
     plt.fill_between(tvecObs, xLB[j,:], xUB[j,:],
                     alpha=0.2, label='95% credible interval')
-    plt.scatter(tvecObs, np.exp(y[:,j]), label='noisy observations')
+    plt.scatter(tvecObs, np.exp(y[:,j]), label='noisy observations', c='black')
     plt.plot(tvecOde, sol.y[j, :], label='truth')
     plt.title(comp_names[j])
     plt.xlabel('Time')
@@ -258,3 +258,164 @@ pd.DataFrame(list(map(FN_rmsd, FNtr)), index = FNtr_labels).T
 
 
 ## HIV time-dependent example
+
+def hivtdmodelOde(theta, x, tvec):
+    TU = x[:,0]
+    TI = x[:,1]
+    V = x[:,2]
+
+    lambda_val = theta[0]
+    rho = theta[1]
+    delta = theta[2]
+    N = theta[3]
+    c = theta[4]
+
+    eta = 9e-5 * (1 - 0.9 * np.cos(np.pi * tvec / 1000))
+
+    result = np.zeros_like(x)
+    result[:,0] = lambda_val - rho * TU - eta * TU * V
+    result[:,1] = eta * TU * V - delta * TI
+    result[:,2] = N * delta * TI - c * V
+
+    return result
+
+def hivtdmodelDx(theta, x, tvec):
+    resultDx = np.zeros(shape=[np.shape(x)[0], np.shape(x)[1], np.shape(x)[1]])
+
+    TU = x[:,0]
+    TI = x[:,1]
+    V = x[:,2]
+
+    lambda_val = theta[0]
+    rho = theta[1]
+    delta = theta[2]
+    N = theta[3]
+    c = theta[4]
+
+    eta = 9e-5 * (1 - 0.9 * np.cos(np.pi * tvec / 1000))
+
+    resultDx[:,0,0] = -rho - eta * V
+    resultDx[:,1,0] = 0
+    resultDx[:,2,0] = -eta * TU
+
+    resultDx[:,0,1] = eta * V
+    resultDx[:,1,1] = -delta
+    resultDx[:,2,1] = eta * TU
+
+    resultDx[:,0,2] = 0
+    resultDx[:,1,2] = N * delta
+    resultDx[:,2,2] = -c
+
+    return resultDx
+
+def hivtdmodelDtheta(theta, x, tvec):
+    resultDtheta = np.zeros(shape=[np.shape(x)[0], np.shape(theta)[0], np.shape(x)[1]])
+
+    TU = x[:,0]
+    TI = x[:,1]
+    V = x[:,2]
+
+    lambda_val = theta[0]
+    rho = theta[1]
+    delta = theta[2]
+    N = theta[3]
+    c = theta[4]
+
+    eta = 9e-5 * (1 - 0.9 * np.cos(np.pi * tvec / 1000))
+
+    resultDtheta[:,0,0] = 1
+    resultDtheta[:,1,0] = -TU
+    resultDtheta[:,2,0] = 0
+    resultDtheta[:,3,0] = 0
+    resultDtheta[:,4,0] = 0
+
+    resultDtheta[:,0,1] = 0
+    resultDtheta[:,1,1] = 0
+    resultDtheta[:,2,1] = -TI
+    resultDtheta[:,3,1] = 0
+    resultDtheta[:,4,1] = 0
+
+    resultDtheta[:,0,2] = 0
+    resultDtheta[:,1,2] = 0
+    resultDtheta[:,2,2] = N * TI
+    resultDtheta[:,3,2] = delta * TI
+    resultDtheta[:,4,2] = -V
+
+    return resultDtheta
+
+hiv_time_dependent_system = ode_system("hiv-time-dependent-python", hivtdmodelOde, hivtdmodelDx, hivtdmodelDtheta,
+                                       thetaLowerBound=np.array([0,0,0,0,0]), thetaUpperBound=np.array([np.inf, np.inf, np.inf, np.inf, np.inf]))
+
+true_theta = [36, 0.108, 0.5, 1000, 3] # lambda, rho, delta, N, c
+true_x0 = [600, 30, 1e5] # TU, TI, V initial values
+true_sigma = [np.sqrt(10), np.sqrt(10), 10] # noise levels
+tvecObs = np.linspace(0, 20, 101) #observation times
+
+sol = solve_ivp(lambda t, y: hivtdmodelOde(true_theta, y.transpose(), t).transpose(),
+                t_span=[0, tvecObs[-1]], y0=true_x0, t_eval=tvecObs, vectorized=True)
+
+np.random.seed(12321)
+
+y = sol.y.transpose().copy()
+
+for j in range(np.shape(y)[1]):
+    y[:, j] +=  np.random.normal(0, true_sigma[0], np.shape(y)[0])
+
+compnames = ["TU", "TI", "V"]
+complabels = ["Concentration", "Concentration", "Load"]
+
+for j in range(np.shape(y)[1]):
+    plt.plot(tvecObs, sol.y[j,:])
+    plt.scatter(tvecObs, y[:,j], facecolors='none', edgecolors='black')
+    plt.title(compnames[j])
+    plt.ylabel(complabels[j])
+    plt.xlabel('Time')
+    plt.show()
+
+
+# use gpsmoothing to determine phi/sigma
+phiEst = np.zeros(shape=[2, np.shape(y)[1]])
+sigmaInit = np.zeros(np.shape(y)[1])
+
+for j in range(np.shape(y)[1]):
+    hyperparam = gpsmoothing(y[:,j], tvecObs)
+    phiEst[:,j] = hyperparam['phi']
+    sigmaInit[j] = hyperparam['sigma']
+
+phiEst
+sigmaInit
+
+# override phi/sigma for V (3rd) component
+phiEst[:,2] = [1e7, 0.5]
+sigmaInit[2] = 100.0
+
+yFull = np.append(tvecObs.reshape(-1,1), y, axis = 1)
+y_I = setDiscretization(yFull, level=1)
+
+control=dict(
+    phi=phiEst,
+    sigma=sigmaInit,
+)
+
+HIVresult = MagiSolver(y=y_I, odeModel=hiv_time_dependent_system, control=control)
+
+# Parameter estimates
+theta_names = ["lambda", "rho", "delta", "N", "c"]
+theta_est = np.vstack((np.mean(HIVresult['theta'], axis=-1),
+                   np.quantile(HIVresult['theta'], q=[0.025, 0.975], axis=-1)))
+pd.DataFrame(theta_est, columns=theta_names, index=['Mean', '2.5%', '97.5%'])
+
+# Inferred trajectories
+xMean = np.mean(HIVresult['xsampled'], axis=-1)
+xLB = np.quantile(HIVresult['xsampled'], 0.025, axis=-1)
+xUB = np.quantile(HIVresult['xsampled'], 0.975, axis=-1)
+for j in range(xMean.shape[0]):
+    plt.plot(y_I[:,0], xMean[j,:], label='inferred trajectory', linewidth=2)
+    plt.fill_between(y_I[:,0], xLB[j,:], xUB[j,:],
+                    alpha=0.2, label='95% credible interval')
+    plt.plot(tvecObs, sol.y[j, :], label='truth')
+    plt.title(compnames[j])
+    plt.ylabel(complabels[j])
+    plt.xlabel('Time')
+    plt.legend()
+    plt.show()
