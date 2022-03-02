@@ -10,6 +10,7 @@
 
 #include <tgtdistr.h>
 #include <hmc.h>
+#include <gpsmoothing.h>
 #include <classDefinition.h>
 #include "magi_main_py.h"
 
@@ -328,6 +329,16 @@ PYBIND11_MODULE(pymagi, macro)
         py::arg("useScalerSigma"),
         py::arg("useFixedSigma"),
         py::arg("verbose"));
+
+    macro.def(
+        "gpsmooth",
+        &gpsmooth,
+        "",
+        py::arg("yobsInput"),
+        py::arg("distInput"),
+        py::arg("kernelInput"),
+        py::arg("sigmaExogenScalar"),
+        py::arg("useFrequencyBasedPrior"));
 
 }
 

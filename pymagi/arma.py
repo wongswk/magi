@@ -1,5 +1,5 @@
 import numpy as np
-from pymagi import ArmaVector, ArmaMatrix, ArmaCube, OdeSystem, solveMagiPy
+from pymagi import ArmaVector, ArmaMatrix, ArmaCube, OdeSystem, solveMagiPy, gpsmooth
 
 
 def vector(arma_vector):
@@ -56,6 +56,78 @@ def ode_system(name, fOde, fOdeDx, fOdeDtheta, thetaLowerBound, thetaUpperBound)
     system.thetaSize = thetaLowerBound.size
     return system
 
+def testDynamicalModel(modelODE, modelDx, modelDtheta, modelName, x, theta, tvec):
+    deltaSmall = 1e-06
+    tolerance = 1e-04
+
+    f = modelODE(theta, x, tvec)
+    fdX = modelDx(theta, x, tvec)
+
+    numericalDx = np.ndarray(shape=[np.shape(tvec)[0], np.shape(x)[1], np.shape(x)[1]]);
+    numericalDx.fill(np.nan)
+    for j in range(np.shape(x)[1]):
+        xnew = x.copy()
+        xnew[:,j] = xnew[:,j] + deltaSmall
+        numericalDx[:,j,:] = (modelODE(theta, xnew, tvec) - f) / deltaSmall
+    
+    passedDx = np.amax( np.abs(numericalDx - fdX)) < tolerance
+    
+    fDtheta = modelDtheta(theta, x, tvec)
+    
+    numericalDtheta = np.ndarray(shape=[np.shape(tvec)[0], np.shape(theta)[0], np.shape(x)[1]])
+    numericalDtheta.fill(np.nan)
+    
+    for j in range(np.shape(theta)[0]):
+        thetanew = theta.copy()
+        thetanew[j] = thetanew[j] + deltaSmall
+        numericalDtheta[:,j,:] = (modelODE(thetanew, x, tvec) - f) / deltaSmall
+    
+    passedDtheta = np.amax( np.abs(numericalDtheta - fDtheta))  < tolerance
+    
+    return(dict(modelName = modelName, Dx = passedDx, Dtheta = passedDtheta))
+        
+def setDiscretization(dat, level = 0, by = None):
+    if by is None:
+        if level == 0:
+            return dat
+        newdat = dat.copy()        
+        newdat = newdat[np.argsort(newdat[:,0])]
+        dumdat = newdat[1:,:].copy()
+        dumdat.fill(np.nan)
+        dumdat[:,0] = (newdat[1:,0] + newdat[:-1,0])/2
+        newdat = np.append(newdat, dumdat, axis = 0)
+        newdat = newdat[np.argsort(newdat[:,0])]
+        return setDiscretization(newdat, level = level - 1)
+    
+    if by > 0:
+        tvec = np.arange(np.amin(dat[:,0]), np.amax(dat[:,0]) + by, by)
+        tvecAdd = np.setdiff1d(tvec, np.intersect1d(tvec, dat[:,0]))
+        newdat = np.ndarray(shape=[np.shape(tvecAdd)[0], np.shape(dat)[1]])
+        newdat.fill(np.nan)
+        newdat[:,0] = tvecAdd
+        newdat = np.append(newdat, dat, axis = 0)
+        newdat = newdat[np.argsort(newdat[:,0])]
+        return newdat;
+
+def gpsmoothing(yobs, tvec, kerneltype = 'generalMatern', sigma = None):
+    distInput = np.abs(tvec[:, None] - tvec)
+    yInput = yobs - np.mean(yobs)
+
+    if sigma is None:
+        res = gpsmooth(yobsInput = ArmaMatrix(yInput.reshape(1,-1)),
+                       distInput = ArmaMatrix(distInput),
+                       kernelInput = kerneltype,
+                       sigmaExogenScalar = -1.0,
+                       useFrequencyBasedPrior = True)
+        return dict(sigma = res[2], phi = [res[0], res[1]])
+
+    if sigma > 0:
+        res = gpsmooth(yobsInput = ArmaMatrix(yInput.reshape(1,-1)),
+                       distInput = ArmaMatrix(distInput),
+                       kernelInput = kerneltype,
+                       sigmaExogenScalar = sigma,
+                       useFrequencyBasedPrior = True)
+        return dict(sigma = sigma, phi = [res[0], res[1]])
 
 def solve_magi(
         yFull,
