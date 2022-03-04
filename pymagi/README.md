@@ -1,10 +1,17 @@
 # Usage in Python
 
-Three complete, self-contained dynamic system examples are provided in the `examples/` directory.
+### Installation
+
+Compile the Python MAGI library by running `py_build.sh`. Before running the examples, ensure that this `pymagi` directory is within Python's path.
+
+### Examples
+
+Four complete, self-contained dynamic system examples are provided in the `examples/` directory.
 
   * Hes1 oscillation system
   * FitzHugh-Nagumo (FN) system
   * Protein transduction (PTrans) system
+  * HIV time-dependent system
 
 Each example lays out how to prepare the input to `MagiSolver`, and then use the output to plot inferred trajectories and compute parameter estimates.
 
@@ -12,10 +19,10 @@ Further details on how to set up your own ODE system for inference are provided 
 
 ### Preparing the system of differential equations
 
-First, we create a function that defines the ODEs.  It takes as input a parameter vector `theta` and matrix `x` where each column of `x` is a system component: 
+First, we create a function that defines the ODEs.  It takes as input a parameter vector `theta`, matrix `x` (where each column of `x` is a system component), and time vector `tvec`: 
 
 ```
-def fOde(theta, x):
+def fOde(theta, x, tvec):
     V = x[:, 0]
     R = x[:, 1]
     Vdt = theta[2] * (V - pow(V,3) / 3.0 + R)
@@ -27,7 +34,7 @@ def fOde(theta, x):
 Next, we create functions that calculate the gradient of the ODEs, (1) with respect to the components `x`, and (2) with respect to the parameters `theta`, that provide output as 3-D arrays as follows:
 
 ```
-def fOdeDx(theta, x):
+def fOdeDx(theta, x, tvec):
     resultDx = np.zeros(shape=[np.shape(x)[0], np.shape(x)[1], np.shape(x)[1]])
     V = x[:, 0]
     R = x[:, 1]
@@ -37,7 +44,7 @@ def fOdeDx(theta, x):
     resultDx[:,1,1] = -1.0*theta[1]/theta[2]
     return resultDx
 
-def fOdeDtheta(theta, x):
+def fOdeDtheta(theta, x, tvec):
     resultDtheta = np.zeros(shape=[np.shape(x)[0], np.shape(theta)[0], np.shape(x)[1]])
     V = x[:, 0]
     R = x[:, 1]
