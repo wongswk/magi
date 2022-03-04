@@ -1,9 +1,9 @@
-cmake_minimum_required(VERSION 3.17)
+cmake_minimum_required(VERSION 3.16)
 
 set(pybind11_DIR ${CMAKE_CURRENT_LIST_DIR}/../include/pybind11/)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -flto -O3 -W -Wall -Wformat=2 -Wnull-dereference -Wold-style-cast -pedantic -fprofile-arcs -ftest-coverage -fPIC ")
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_COMPILER g++-6)
+set(CMAKE_CXX_COMPILER g++)
 
 file(GLOB LIB_PYMAGI_HEADERS "src/*.h")
 file(GLOB LIB_PYMAGI_SOURCE "src/*.cpp")

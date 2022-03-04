@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.9)
 
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_COMPILER g++-6)
+set(CMAKE_CXX_COMPILER g++)
 
 
 if (IS_DIRECTORY $ENV{HOME}/R/library)
