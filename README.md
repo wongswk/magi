@@ -29,7 +29,7 @@ MagiSolver(y, odeModel, control)
 ```
 where `y` is the a data matrix, `odeModel` specifies the functions and parameters of the system, and `control` passes additional options.
 
-See our vignette and examples for details.
+For fully-documented examples and details, please refer to our MAGI software manuscript: https://arxiv.org/abs/2203.06066
 
 ## Examples
 
@@ -39,4 +39,6 @@ There, we provide specific examples of how to set up and call `MagiSolver` in ea
 
 ### Reference
 
-For a full discussion of our method and examples, please see our paper "Inference of dynamic systems from noisy and sparse data via manifold-constrained Gaussian processes", PNAS 118 (15), e2020397118 (https://doi.org/10.1073/pnas.2020397118).
+For a full discussion of the method, please see our paper "Inference of dynamic systems from noisy and sparse data via manifold-constrained Gaussian processes", PNAS 118 (15), e2020397118 (https://doi.org/10.1073/pnas.2020397118).
+
+For a full discussion of the software package and examples, please see our accompanying manuscript "MAGI: A Package for Inference of Dynamic Systems from Noisy and Sparse Data via Manifold-constrained Gaussian Processes", https://arxiv.org/abs/2203.06066
