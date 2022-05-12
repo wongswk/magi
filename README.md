@@ -14,51 +14,22 @@ User interfaces are available in R, MATLAB, and Python.
 
 Please see https://cran.r-project.org/package=magi for the full documentation and vignette of this latest version, which contains a number of enhancements to facilitate ease of usage.
 
-For manual build, a comprehensive shell script `build.sh` is provided, which by default prepares all three interfaces.  Edit `build.sh` to specify the location of your R libraries, and remove the compilation blocks for any of R, MATLAB, Python that either will not be used or is unavailable on your system.  Then execute `build.sh` to install dependencies and compile the library.
+*For MATLAB users*: Run `build.sh` to first build the C++ library. Then navigate to `matlabmagi` and run `matlab_build.sh` to compile the required MEX files. See README in `matlabmagi` for further details.
 
-The pre-compiled binary for C++, R, and Python is also available as a Docker image on Docker Hub: https://hub.docker.com/repository/docker/shihaoyangphd/magi
+*For Python users*: Run `build.sh` to first build the C++ library. Then navigate to `pymagi` and run `py_build.sh` to build the corresponding Python library.
+
+Pre-compiled binaries for C++, R, and Python are also available as a Docker image on Docker Hub: https://hub.docker.com/repository/docker/shihaoyangphd/magi
 
 ## Usage
 
-Inference is performed via the unified function `MagiSolver` which can be called from R, MATLAB, Python.  A description of its basic syntax is as follows, where D is the number of components in the dynamic system, and |I| is the number of discretization points for computation.
+Inference is performed via the unified function `MagiSolver` which can be called from R, MATLAB, Python. The basic syntax is
 
-     MagiSolver(
-       yFull,                 # |I|-by-D data matrix of observations Y, with unobserved entries set to NA
-       model,                 # ODE model specification (see examples)
-       tvecFull,              # length |I| vector of time points
-       sigmaExogenous,        # (optional) length D vector of starting values of Gaussian noise SD sigma,
-                                   recommended value: supply if known, else leave blank
-       phiExogenous,          # (optional) 2-by-D matrix of GP hyperparameters phi
-                                   recommended value: supply if known, else leave blank
-       xInitExogenous,        # (optional) |I|-by-D matrix of starting values for X_I
-                                   recommended value: linearly interpolate between observed points of Y
-       thetaInitExogenous,    # (optional) starting value of theta
-                                   recommended value: leave blank
-       muExogenous,           # (optional) starting GP mean curve
-                                   recommended value: leave blank
-       dotmuExogenous,        # (optional) starting GP derivative of mean curve
-                                   recommended value: leave blank
-       priorTemperatureLevel, # tempering factor on GP prior
-                                   recommended value: D|I| / (number of observed data values in Y)
-       priorTemperatureDeriv, # tempering factor on GP derivative
-                                   recommended value: D|I| / (number of observed data values in Y)
-       priorTemperatureObs,   # tempering factor on observations
-                                   recommended value: 1
-       kernel,                # currently supported GP kernel is "generalMatern"
-       nstepsHmc,             # number of leapfrog steps per HMC iteration
-       burninRatioHmc,        # proportion of HMC iterations to treat as burn-in
-       niterHmc,              # number of HMC iterations to run
-       stepSizeFactorHmc,     # initial step size for HMC sampler
-       nEpoch,                # currently supported value is 1
-       bandSize,              # band size for band matrix approximation
-       useFrequencyBasedPrior,  # recommended value: TRUE
-       useBand,               # recommended value: TRUE
-       useMean,               # recommended value: TRUE
-       useScalerSigma,        # set to FALSE each component has its own noise level sigma, else TRUE
-       useFixedSigma,         # set to TRUE if sigma known (must supply sigmaExogenous)
-       verbose)               # set to TRUE to print out additional diagnostic information
+```
+MagiSolver(y, odeModel, control)
+```
+where `y` is the a data matrix, `odeModel` specifies the functions and parameters of the system, and `control` passes additional options.
 
-
+For fully-documented examples and details, please refer to our MAGI software manuscript: https://arxiv.org/abs/2203.06066
 
 ## Examples
 
@@ -68,4 +39,6 @@ There, we provide specific examples of how to set up and call `MagiSolver` in ea
 
 ### Reference
 
-For a full discussion of our method and examples, please see our paper "Inference of dynamic systems from noisy and sparse data via manifold-constrained Gaussian processes", PNAS 118 (15), e2020397118 (https://doi.org/10.1073/pnas.2020397118).
+For a full discussion of the method, please see our paper "Inference of dynamic systems from noisy and sparse data via manifold-constrained Gaussian processes", PNAS 118 (15), e2020397118 (https://doi.org/10.1073/pnas.2020397118).
+
+For a full discussion of the software package and examples, please see our accompanying manuscript "MAGI: A Package for Inference of Dynamic Systems from Noisy and Sparse Data via Manifold-constrained Gaussian Processes", https://arxiv.org/abs/2203.06066

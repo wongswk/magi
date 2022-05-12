@@ -1,6 +1,6 @@
 # MAGI usage in MATLAB
 
-Three complete, self-contained dynamic system examples are provided in the `examples/` directory.
+Four complete, self-contained dynamic system examples are provided in the `examples/` directory.
 
   * Hes1 oscillation system
   * FitzHugh-Nagumo (FN) system
@@ -9,7 +9,7 @@ Three complete, self-contained dynamic system examples are provided in the `exam
 
 Each example lays out how to prepare the input to `MagiSolver`, and then use the output to plot inferred trajectories and compute parameter estimates.
 
-Further details on how to set up your own ODE system for inference are provided following the installation instructions below, using the FitzHugh-Nagumo system  as an illustrative example.
+Further details on how to set up your own ODE system for inference are provided following the installation instructions below, using the FitzHugh-Nagumo system as an illustrative example.
 
 ## Installation
 
@@ -23,7 +23,7 @@ Compiling the `libcmagi.so` library on Linux can be done automatically using `./
 
 Compiling the Mex files `solveMagi.mexa64` and `gpsmooth.mexa64` can be done automatically using `./matab_build.sh` in this directory.
 
-Before running `MagiSolver`, ensure `libcmagi.so`, `solveMagi.mexa64` and `gpsmooth.mexa64` are present in this matlabmagi directory (or another directory that is within Matlab's path).
+Before running the examples, ensure that the directory containing `libcmagi.so`, `solveMagi.mexa64` and `gpsmooth.mexa64` is within Matlab's path.
 
 ### Windows
 

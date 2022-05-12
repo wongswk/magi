@@ -127,8 +127,6 @@ control=dict(
 )
 
 yIn = np.append(tvecObs.reshape(-1,1), y, axis = 1)
-
-# hes1result = MagiSolver(y=yIn[:,1:], odeModel=hes1_system, tvec = tvecObs, control=control)
 hes1result = MagiSolver(y=yIn, odeModel=hes1_system, control=control)
 
 # Traceplots of parameters and log-posterior

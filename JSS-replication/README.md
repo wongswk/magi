@@ -1,0 +1,1 @@
+This directory contains the replication materials for our manuscript "MAGI: A Package for Inference of Dynamic Systems from Noisy and Sparse Data via Manifold-constrained Gaussian Processes", https://arxiv.org/abs/2203.06066

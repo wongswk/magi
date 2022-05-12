@@ -43,7 +43,7 @@ y(:,2:4) = log(y(:,2:4));
 yTest = rand( size(y,1), size(y,2)-1);
 thetaTest = rand(size(pram_true.theta));
 testDynamicalModel(@hes1logmodelODE, @hes1logmodelDx, @hes1logmodelDtheta, ... 
-                   "Hes1 log", yTest, thetaTest, y(:,1));
+                   "Hes1 log", yTest, thetaTest, y(:,1))
                
 hes1model.fOde = @hes1logmodelODE;
 hes1model.fOdeDx = @hes1logmodelDx;
