@@ -6,7 +6,7 @@ if(!exists("config")){
     nobs = 15,
     noise = rep(0.01, 5), # 0.001 = low noise, 0.01 = high noise
     kernel = "generalMatern",
-    loglikflag = "withmeanBand",
+    loglikflag = "withmean",
     bandsize = 40,
     hmcSteps = 100,
     n.iter = 20001,

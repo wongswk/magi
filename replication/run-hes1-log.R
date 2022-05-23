@@ -19,7 +19,7 @@ if(!exists("config")){
     kernel = "generalMatern",
     seed = seed,
     npostplot = 50,
-    loglikflag = "withmeanBand",
+    loglikflag = "withmean",
     bandsize = 20,
     hmcSteps = 500,
     n.iter = 2e4,
