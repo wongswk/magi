@@ -19,7 +19,7 @@ if(!exists("config")){
     noise = c(0.2, 0.2),
     kernel = "generalMatern",
     seed = seed,
-    loglikflag = "withmeanBand",
+    loglikflag = "withmean",
     bandsize = 20,
     hmcSteps = 100,
     n.iter = 20001,
