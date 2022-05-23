@@ -1,9 +1,9 @@
-FROM ubuntu:18.04
+FROM ubuntu:22.04
 LABEL maintainer="shihao.yang@isye.gatech.edu"
 ENV PROJECT_DIR=/usr/src/app
 WORKDIR $PROJECT_DIR
 
-RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install gcc-6 g++-6 python3-tk python3-pip python3-venv python3-dev ipython3 libblas-dev liblapack-dev gfortran git wget software-properties-common libxml2-dev build-essential libssl-dev libcurl4-openssl-dev rsync -y
+RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install htop python3-tk python3-pip python3-venv python3-dev ipython3 libblas-dev liblapack-dev gfortran git wget software-properties-common libxml2-dev build-essential libssl-dev libcurl4-openssl-dev rsync -y
 RUN wget https://cmake.org/files/v3.18/cmake-3.18.1-Linux-x86_64.sh && sh cmake-3.18.1-Linux-x86_64.sh  --skip-license && ln -s $(pwd)/bin/cmake /usr/local/bin/cmake
 #RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 && add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran40/'
 RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install r-base r-base-core r-recommended r-base-dev r-cran-rgl r-cran-rjags r-cran-snow r-cran-ggplot2 r-cran-igraph r-cran-lme4 r-cran-rjava r-cran-devtools r-cran-rjava -y
@@ -22,6 +22,11 @@ RUN export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PROJECT_DIR/cmagi/
 RUN export PYTHONPATH=$PROJECT_DIR/pymagi
 
 RUN ./build.sh --skip-tests
+
+RUN cd $PROJECT_DIR/pymagi && pip3 install -r pip/requirements.txt && cmake . && make -j $CPU
+
+RUN cd $PROJECT_DIR/rmagi && ./inst/r_build.sh
+
 RUN pip3 install jupyter
 RUN pip3 install Pygments==2.6.1
 RUN pip3 install --upgrade --force jupyter-console
