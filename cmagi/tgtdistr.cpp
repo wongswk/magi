@@ -49,7 +49,7 @@ gpcov generalMaternCov( const vec & phi,
                         const mat & distSigned,
                         int complexity){
   double noiseInjection = 1e-7;
-  double df = 3.01;
+  double df = 2.01;
   gpcov out;
   out.C.set_size(distSigned.n_rows, distSigned.n_cols);
   mat x4bessel = sqrt(2.0 * df) * abs(distSigned) / phi(1);
