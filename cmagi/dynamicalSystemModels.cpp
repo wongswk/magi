@@ -463,9 +463,9 @@ arma::mat MichaelisMentenModelODE(const arma::vec & theta, const arma::mat & x, 
 
     mat resultdt(x.n_rows, x.n_cols);
 
-    resultdt.col(0) = -theta[0] * e * s + (theta[1]+theta[2]) * es;
-    resultdt.col(1) = -theta[0] * e * s + (theta[1]) * es;
-    resultdt.col(2) = theta[0] * e * s - (theta[1]+theta[2]) * es;
+    resultdt.col(0) = -theta[0] * e % s + (theta[1]+theta[2]) * es;
+    resultdt.col(1) = -theta[0] * e % s + (theta[1]) * es;
+    resultdt.col(2) = theta[0] * e % s - (theta[1]+theta[2]) * es;
     resultdt.col(3) = theta[2] * es;
 
     return resultdt;
@@ -510,14 +510,14 @@ arma::cube MichaelisMentenModelDtheta(const arma::vec & theta, const arma::mat &
     const vec & p = x.col(3);
 
 
-    resultDtheta.slice(0).col(0) = -e * s;
+    resultDtheta.slice(0).col(0) = -e % s;
     resultDtheta.slice(0).col(1) = es;
     resultDtheta.slice(0).col(2) = es;
 
-    resultDtheta.slice(1).col(0) = -e * s;
+    resultDtheta.slice(1).col(0) = -e % s;
     resultDtheta.slice(1).col(1) = es;
 
-    resultDtheta.slice(2).col(0) = e * s;
+    resultDtheta.slice(2).col(0) = e % s;
     resultDtheta.slice(2).col(1) = -es;
     resultDtheta.slice(2).col(2) = -es;
 
