@@ -9,12 +9,12 @@ matplot(realdata$t, realdata[,-1], type="b")
 if(!exists("config")){
   config <- list(
     nobs = nrow(realdata),
-    noise = c(NaN, 0.005, NaN, 0.005),
+    noise = c(0.005, 0.005, 0.005, 0.005),
     kernel = "generalMatern",
     seed = 123,
-    bandsize = 80,
+    bandsize = 100,
     hmcSteps = 100,
-    n.iter = 20001,
+    n.iter = 2001,
     stepSizeFactor = 0.01,
     linfillspace = 0.5, 
     t.end = 70,
@@ -27,6 +27,7 @@ if(!exists("config")){
 pram.true <- list(
   theta=c(0.02, 0.02, 0.005),
   x0 = c(2, 1, 0, 0),
+  phi = cbind(c(1, 50), c(1, 50), c(1, 50), c(1, 50)),
   sigma=config$noise
 )
 
@@ -73,24 +74,34 @@ dynamicalModelList <- list(
   fOdeDtheta=magi:::MichaelisMentenModelDtheta,
   thetaLowerBound=c(0,0,0),
   thetaUpperBound=c(Inf,Inf,Inf),
-  name="MichaelisMenten"
+  name="Michaelis-Menten"
 )
 
 config$ndis <- config$t.end / config$linfillspace + 1
 
+sigma_fixed <- pram.true$sigma
+sigma_fixed[1] <- 0.005
+sigma_fixed[3] <-  0.005
+
+
+# MAGI off-the-shelf ----
+# sampler with a good phi supplied, no missing component
+
 OursStartTime <- proc.time()[3]
 
 result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control = 
-                             list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = config$stepSizeFactor))
+                             list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = config$stepSizeFactor,
+                                  burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, discardBurnin=FALSE))
 
 OursTimeUsed <- proc.time()[3] - OursStartTime
+
 
 gpode <- result
 gpode$fode <- sapply(1:length(gpode$lp), function(t)
   with(gpode, dynamicalModelList$fOde(theta[t,], xsampled[t,,], xsim$time)), simplify = "array")
 gpode$fode <- aperm(gpode$fode, c(3,1,2))
 
-dotxtrue = dynamicalModelList$fOde(pram.true$theta, data.matrix(xtrue[,-1]))
+dotxtrue = dynamicalModelList$fOde(pram.true$theta, data.matrix(xtrue[,-1]), xtrue$time)
 
 odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 
@@ -99,11 +110,9 @@ for(j in 1:(ncol(xsim)-1)){
 }
 
 gpode$lglik <- gpode$lp
+pram.true$sigma[1] <- pram.true$sigma[3] <- 0
 magi:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".pdf"),
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+tail(gpode$theta)
 
-save(xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel, OursTimeUsed, file= paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".rda"))
-
-write.csv(apply(gpode$xsampled, 2:3, mean), paste0(outDir, config$modelName,"-",config$seed,"-MichaelisMenten_inferred_trajectory.csv"))
-write.csv(apply(gpode$theta, 2, mean), paste0(outDir, config$modelName,"-",config$seed,"-MichaelisMenten_inferred_theta.csv"))
