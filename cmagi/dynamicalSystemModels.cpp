@@ -484,17 +484,17 @@ arma::cube MichaelisMentenModelDx(const arma::vec & theta, const arma::mat & x, 
 
     resultDx.slice(0).col(0) = -theta[0] * s;
     resultDx.slice(0).col(1) = -theta[0] * e;
-    resultDx.slice(0).col(2) = theta[1] + theta[2];
+    resultDx.slice(0).col(2).fill(theta[1] + theta[2]);
 
     resultDx.slice(1).col(0) = -theta[0] * s;
     resultDx.slice(1).col(1) = -theta[0] * e;
-    resultDx.slice(1).col(2) = theta[1];
+    resultDx.slice(1).col(2).fill(theta[1]);
 
     resultDx.slice(2).col(0) = theta[0] * s;
     resultDx.slice(2).col(1) = theta[0] * e;
-    resultDx.slice(2).col(2) = -theta[1] - theta[2];
+    resultDx.slice(2).col(2).fill(-theta[1] - theta[2]);
 
-    resultDx.slice(3).col(2) = theta[2];
+    resultDx.slice(3).col(2).fill(theta[2]);
 
     return resultDx;
 }
@@ -592,8 +592,8 @@ arma::cube MichaelisMentenLogModelDtheta(const arma::vec & theta, const arma::ma
     resultDtheta.slice(1).col(1) = arma::exp(logES-logS);
 
     resultDtheta.slice(2).col(0) = arma::exp(logE+logS-logES);
-    resultDtheta.slice(2).col(1) = -1;
-    resultDtheta.slice(2).col(2) = -1;
+    resultDtheta.slice(2).col(1).fill(-1);
+    resultDtheta.slice(2).col(2).fill(-1);
 
     resultDtheta.slice(3).col(2) = arma::exp(logES-logP);
 
