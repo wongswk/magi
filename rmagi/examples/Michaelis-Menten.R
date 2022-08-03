@@ -2,16 +2,20 @@ library(magi)
 
 outDir <- "../results/Michaelis-Menten/"
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
-
+realdata <- read.csv(paste0(outDir, "hydrolysis.csv"))
+matplot(realdata$t, realdata[,-1], type="b")
 
 # set up configuration if not already exist ------------------------------------
 if(!exists("config")){
   config <- list(
-    nobs = 11,
-    noise = c(NaN, 0.01, NaN, 0.01),
-    seed = 123,
-    niterHmc = 200,
-    filllevel = 2,
+    nobs = nrow(realdata),
+    noise = c(NaN, 0.005, NaN, 0.005),
+    kernel = "generalMatern",
+    bandsize = 40,
+    hmcSteps = 100,
+    n.iter = 20001,
+    stepSizeFactor = 0.01,
+    linfillspace = 0.5, 
     t.end = 70,
     modelName = "Michaelis-Menten"
   )
@@ -25,7 +29,7 @@ pram.true <- list(
   sigma=config$noise
 )
 
-times <- seq(0,config$t.end,length=241)
+times <- seq(0,config$t.end,length=1001)
 
 modelODE <- function(t, state, parameters) {
   list(as.vector(magi:::MichaelisMentenModelODE(parameters, t(state), t)))
@@ -38,7 +42,7 @@ matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=1)
 xtrueFunc <- lapply(2:ncol(xtrue), function(j)
   approxfun(xtrue[, "time"], xtrue[, j]))
 
-xsim <- data.frame(time = seq(0, config$t.end,length=config$nobs))
+xsim <- data.frame(time = round(realdata$t / config$linfillspace) * config$linfillspace)
 xsim <- cbind(xsim, sapply(xtrueFunc, function(f) f(xsim$time)))
 
 set.seed(config$seed)
@@ -51,8 +55,17 @@ matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, ad
 
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
 
-xsim <- setDiscretization(xsim.obs,config$filllevel)
+## Linearly interpolate using fixed interval widths
+fillC <- seq(0, config$t.end, by = config$linfillspace)
+xsim <- data.frame(time = fillC)
+xsim <- cbind(xsim, matrix(NaN, nrow = length(fillC), ncol = ncol(xsim.obs)-1 ))
+for (i in 1:length(fillC)) {
+  loc <- match( fillC[i], xsim.obs[, "time"])
+  if (!is.na(loc))
+    xsim[i,2:ncol(xsim)] = xsim.obs[loc,2:ncol(xsim)];
+}
 
+# cpp inference ----------------------------
 dynamicalModelList <- list(
   fOde=magi:::MichaelisMentenModelODE,
   fOdeDx=magi:::MichaelisMentenModelDx,
@@ -62,14 +75,12 @@ dynamicalModelList <- list(
   name="MichaelisMenten"
 )
 
-xInitExogenous <- data.matrix(xsim[,-1])
-for (j in 1:(ncol(xsim)-1)){
-  xInitExogenous[, j] <- approx(xsim.obs$time, xsim.obs[,j+1], xsim$time)$y
-}
+config$ndis <- config$t.end / config$linfillspace + 1
 
 OursStartTime <- proc.time()[3]
 
-result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control = list(xInit = xInitExogenous, niterHmc=config$niterHmc, stepSizeFactor = 0.06))
+result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control = 
+                             list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = config$stepSizeFactor))
 
 OursTimeUsed <- proc.time()[3] - OursStartTime
 
