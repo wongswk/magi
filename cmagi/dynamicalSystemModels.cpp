@@ -453,4 +453,149 @@ arma::cube ptransmodelDtheta(const arma::vec & theta, const arma::mat & x, const
   return resultDtheta;
 }
 
-  
+
+// [[Rcpp::export]]
+arma::mat MichaelisMentenModelODE(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
+    const vec & e = x.col(0);
+    const vec & s = x.col(1);
+    const vec & es = x.col(2);
+    const vec & p = x.col(3);
+
+    mat resultdt(x.n_rows, x.n_cols);
+
+    resultdt.col(0) = -theta[0] * e * s + (theta[1]+theta[2]) * es;
+    resultdt.col(1) = -theta[0] * e * s + (theta[1]) * es;
+    resultdt.col(2) = theta[0] * e * s - (theta[1]+theta[2]) * es;
+    resultdt.col(3) = theta[2] * es;
+
+    return resultdt;
+}
+
+
+// [[Rcpp::export]]
+arma::cube MichaelisMentenModelDx(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
+    cube resultDx(x.n_rows, x.n_cols, x.n_cols, fill::zeros);
+
+    const vec & e = x.col(0);
+    const vec & s = x.col(1);
+    const vec & es = x.col(2);
+    const vec & p = x.col(3);
+
+
+    resultDx.slice(0).col(0) = -theta[0] * s;
+    resultDx.slice(0).col(1) = -theta[0] * e;
+    resultDx.slice(0).col(2) = theta[1] + theta[2];
+
+    resultDx.slice(1).col(0) = -theta[0] * s;
+    resultDx.slice(1).col(1) = -theta[0] * e;
+    resultDx.slice(1).col(2) = theta[1];
+
+    resultDx.slice(2).col(0) = theta[0] * s;
+    resultDx.slice(2).col(1) = theta[0] * e;
+    resultDx.slice(2).col(2) = -theta[1] - theta[2];
+
+    resultDx.slice(3).col(2) = theta[2];
+
+    return resultDx;
+}
+
+
+// [[Rcpp::export]]
+arma::cube MichaelisMentenModelDtheta(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
+    cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
+
+    const vec & e = x.col(0);
+    const vec & s = x.col(1);
+    const vec & es = x.col(2);
+    const vec & p = x.col(3);
+
+
+    resultDtheta.slice(0).col(0) = -e * s;
+    resultDtheta.slice(0).col(1) = es;
+    resultDtheta.slice(0).col(2) = es;
+
+    resultDtheta.slice(1).col(0) = -e * s;
+    resultDtheta.slice(1).col(1) = es;
+
+    resultDtheta.slice(2).col(0) = e * s;
+    resultDtheta.slice(2).col(1) = -es;
+    resultDtheta.slice(2).col(2) = -es;
+
+    resultDtheta.slice(3).col(2) = es;
+
+    return resultDtheta;
+}
+
+
+
+// [[Rcpp::export]]
+arma::mat MichaelisMentenLogModelODE(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
+    const vec & logE = x.col(0);
+    const vec & logS = x.col(1);
+    const vec & logES = x.col(2);
+    const vec & logP = x.col(3);
+
+    mat resultdt(x.n_rows, x.n_cols);
+
+    resultdt.col(0) = -theta[0] * arma::exp(logS) + (theta[1]+theta[2]) * arma::exp(logES-logE);
+    resultdt.col(1) = -theta[0] * arma::exp(logE) + (theta[1]) * arma::exp(logES-logS);
+    resultdt.col(2) = theta[0] * arma::exp(logE+logS-logES) - (theta[1]+theta[2]);
+    resultdt.col(3) = theta[2] * arma::exp(logES-logP);
+
+    return resultdt;
+}
+
+
+// [[Rcpp::export]]
+arma::cube MichaelisMentenLogModelDx(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
+    cube resultDx(x.n_rows, x.n_cols, x.n_cols, fill::zeros);
+
+    const vec & logE = x.col(0);
+    const vec & logS = x.col(1);
+    const vec & logES = x.col(2);
+    const vec & logP = x.col(3);
+
+
+    resultDx.slice(0).col(0) = -(theta[1] + theta[2]) * arma::exp(logES-logE);
+    resultDx.slice(0).col(1) = -theta[0] * arma::exp(logS);
+    resultDx.slice(0).col(2) = (theta[1] + theta[2]) * arma::exp(logES-logE);
+
+    resultDx.slice(1).col(0) = -theta[0] * arma::exp(logE);
+    resultDx.slice(1).col(1) = -theta[1] * arma::exp(logES-logS);
+    resultDx.slice(1).col(2) = theta[1] * arma::exp(logES-logS);
+
+    resultDx.slice(2).col(0) = theta[0] * arma::exp(logE+logS-logES);
+    resultDx.slice(2).col(1) = theta[0] * arma::exp(logE+logS-logES);
+    resultDx.slice(2).col(2) = -theta[0] * arma::exp(logE+logS-logES);
+
+    resultDx.slice(3).col(2) = theta[2] * arma::exp(logES-logP);
+
+    return resultDx;
+}
+
+
+// [[Rcpp::export]]
+arma::cube MichaelisMentenLogModelDtheta(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
+    cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
+
+    const vec & logE = x.col(0);
+    const vec & logS = x.col(1);
+    const vec & logES = x.col(2);
+    const vec & logP = x.col(3);
+
+
+    resultDtheta.slice(0).col(0) = -arma::exp(logS);
+    resultDtheta.slice(0).col(1) = arma::exp(logES-logE);
+    resultDtheta.slice(0).col(2) = arma::exp(logES-logE);
+
+    resultDtheta.slice(1).col(0) = -arma::exp(logE);
+    resultDtheta.slice(1).col(1) = arma::exp(logES-logS);
+
+    resultDtheta.slice(2).col(0) = arma::exp(logE+logS-logES);
+    resultDtheta.slice(2).col(1) = -1;
+    resultDtheta.slice(2).col(2) = -1;
+
+    resultDtheta.slice(3).col(2) = arma::exp(logES-logP);
+
+    return resultDtheta;
+}

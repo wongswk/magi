@@ -31,4 +31,13 @@ arma::mat ptransmodelODE(const arma::vec &, const arma::mat &, const arma::vec &
 arma::cube ptransmodelDx(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube ptransmodelDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
 
+arma::mat MichaelisMentenModelODE(const arma::vec &, const arma::mat &, const arma::vec &);
+arma::cube MichaelisMentenModelDx(const arma::vec &, const arma::mat &, const arma::vec &);
+arma::cube MichaelisMentenModelDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
+
+
+arma::mat MichaelisMentenLogModelODE(const arma::vec &, const arma::mat &, const arma::vec &);
+arma::cube MichaelisMentenLogModelDx(const arma::vec &, const arma::mat &, const arma::vec &);
+arma::cube MichaelisMentenLogModelDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
+
 #endif
