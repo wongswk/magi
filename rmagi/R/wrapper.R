@@ -207,6 +207,11 @@ MagiSolver <- function(y, odeModel, tvec, control = list()) {
   else
     useFixedSigma = FALSE
 
+  if (!is.null(control$discardBurnin))
+    discardBurnin = control$discardBurnin
+  else
+    discardBurnin = TRUE
+
 
   samplesCpp <- solveMagiRcpp(
     yFull = data.matrix(y),
@@ -247,13 +252,18 @@ MagiSolver <- function(y, odeModel, tvec, control = list()) {
   thetaId <- (max(xId)+1):(max(xId)+length(odeModel$thetaLowerBound))
   sigmaId <- (max(thetaId)+1):(max(thetaId)+ncol(y))
 
-  burnin <- as.integer(niterHmc*burninRatio)
+  if (discardBurnin) {
+    burnin <- as.integer(niterHmc*burninRatio)
+  }else{
+    burnin <- 0
+  }
+  idOutput <- (burnin+1):niterHmc
   return(
-    list(theta=t(samplesCpp[thetaId, -(1:burnin)]),
-         xsampled=array(t(samplesCpp[xId, -(1:burnin)]),
-                        dim=c(niterHmc-burnin, nrow(y), ncol(y))),
-         lp=samplesCpp[llikId,-(1:burnin)],
-         sigma = t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]),
+    list(theta=t(samplesCpp[thetaId, idOutput]),
+         xsampled=array(t(samplesCpp[xId, idOutput]),
+                        dim=c(length(idOutput), nrow(y), ncol(y))),
+         lp=samplesCpp[llikId, idOutput],
+         sigma = t(samplesCpp[sigmaId, idOutput, drop=FALSE]),
          phi = phiUsed)
   )
 }
