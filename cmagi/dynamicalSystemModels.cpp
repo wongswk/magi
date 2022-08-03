@@ -569,6 +569,7 @@ arma::cube MichaelisMentenLogModelDx(const arma::vec & theta, const arma::mat & 
     resultDx.slice(2).col(2) = -theta[0] * arma::exp(logE+logS-logES);
 
     resultDx.slice(3).col(2) = theta[2] * arma::exp(logES-logP);
+    resultDx.slice(3).col(3) = -theta[2] * arma::exp(logES-logP);
 
     return resultDx;
 }
