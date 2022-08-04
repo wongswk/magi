@@ -101,3 +101,13 @@ dynamicalModelList <- list(
   modelDx=magi:::MichaelisMentenModelVc5pDx
 )
 with(dynamicalModelList, testDynamicalModel(modelODE, modelDx, modelDtheta, "MichaelisMentenModelVc5p", x, theta, tvec=1:4))
+
+set.seed(123)
+x <- matrix(runif(40), ncol=10)
+theta <- runif(17)
+dynamicalModelList <- list(
+  modelODE=magi:::lacOperonODE,
+  modelDtheta=magi:::lacOperonDtheta,
+  modelDx=magi:::lacOperonDx
+)
+with(dynamicalModelList, testDynamicalModel(modelODE, modelDx, modelDtheta, "lacOperon", x, theta, tvec=1:4))
