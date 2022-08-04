@@ -9,12 +9,12 @@ matplot(realdata$t, realdata[,-1], type="b")
 if(!exists("config")){
   config <- list(
     nobs = nrow(realdata),
-    noise = c(0.005, 0.005, 0.005, 0.005),
+    noise = c(NaN, 0.005, NaN, 0.005),
     kernel = "generalMatern",
     seed = 123,
     bandsize = 100,
     hmcSteps = 100,
-    n.iter = 2001,
+    n.iter = 20001,
     stepSizeFactor = 0.01,
     linfillspace = 0.5, 
     t.end = 70,
@@ -27,7 +27,7 @@ if(!exists("config")){
 pram.true <- list(
   theta=c(0.02, 0.02, 0.005),
   x0 = c(2, 1, 0, 0),
-  phi = cbind(c(1, 50), c(1, 50), c(1, 50), c(1, 50)),
+  phi = cbind(c(1, 50), c(1, 50), c(1, 50), c(0.2, 50)),
   sigma=config$noise
 )
 
@@ -91,7 +91,7 @@ OursStartTime <- proc.time()[3]
 
 result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control = 
                              list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = config$stepSizeFactor,
-                                  burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, discardBurnin=FALSE))
+                                  burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, discardBurnin=TRUE))
 
 OursTimeUsed <- proc.time()[3] - OursStartTime
 
@@ -116,3 +116,31 @@ magi:::plotPostSamplesFlex(
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 tail(gpode$theta)
 
+# real-data ----
+xreal <- xsim
+colnames(xreal) <- c("time", "E", "S", "ES", "P")
+xreal$S[is.finite(xreal$S)] <- realdata$S
+xreal$P[is.finite(xreal$P)] <- realdata$P
+result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control = 
+                             list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = config$stepSizeFactor,
+                                  burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, discardBurnin=TRUE))
+
+gpode <- result
+gpode$fode <- sapply(1:length(gpode$lp), function(t)
+  with(gpode, dynamicalModelList$fOde(theta[t,], xsampled[t,,], xsim$time)), simplify = "array")
+gpode$fode <- aperm(gpode$fode, c(3,1,2))
+
+dotxtrue = dynamicalModelList$fOde(pram.true$theta, data.matrix(xtrue[,-1]), xtrue$time)
+
+odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
+
+for(j in 1:(ncol(xsim)-1)){
+  config[[paste0("phiD", j)]] <- paste(round(gpode$phi[,j], 2), collapse = "; ")
+}
+
+gpode$lglik <- gpode$lp
+pram.true$sigma[1] <- pram.true$sigma[3] <- 0
+magi:::plotPostSamplesFlex(
+  paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], "-real-data.pdf"),
+  xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+tail(gpode$theta)
