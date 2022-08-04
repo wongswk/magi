@@ -83,3 +83,21 @@ dynamicalModelList <- list(
   modelDx=magi:::MichaelisMentenModelVb4pDx
 )
 with(dynamicalModelList, testDynamicalModel(modelODE, modelDx, modelDtheta, "MichaelisMentenModelVb4p", x, theta, tvec=1:4))
+
+x <- cbind(1:4, 4:1, sin(1:4), cos(1:4), log(1:4))
+theta <- c(0.022, 0.3, 0.031, 0.1, 0.5, 0.4, 0.01)
+dynamicalModelList <- list(
+  modelODE=magi:::MichaelisMentenModelVc7pODE,
+  modelDtheta=magi:::MichaelisMentenModelVc7pDtheta,
+  modelDx=magi:::MichaelisMentenModelVc7pDx
+)
+with(dynamicalModelList, testDynamicalModel(modelODE, modelDx, modelDtheta, "MichaelisMentenModelVc7p", x, theta, tvec=1:4))
+
+x <- cbind(1:4, 4:1, sin(1:4), cos(1:4), log(1:4))
+theta <- c(0.022, 0.3, 0.031, 0.1, 0.2)
+dynamicalModelList <- list(
+  modelODE=magi:::MichaelisMentenModelVc5pODE,
+  modelDtheta=magi:::MichaelisMentenModelVc5pDtheta,
+  modelDx=magi:::MichaelisMentenModelVc5pDx
+)
+with(dynamicalModelList, testDynamicalModel(modelODE, modelDx, modelDtheta, "MichaelisMentenModelVc5p", x, theta, tvec=1:4))
