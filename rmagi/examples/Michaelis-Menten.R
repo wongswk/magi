@@ -132,20 +132,20 @@ sigma_fixed[3] <-  1e-8
 
 pram.true$phi = cbind(c(1, 50), c(1, 50), c(1, 50), c(0.2, 50))
 
-result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control = 
+result <- magi::MagiSolver(xreal[,-1], dynamicalModelList, xreal$time, control = 
                              list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = config$stepSizeFactor,
                                   burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, discardBurnin=TRUE, useFixedSigma=TRUE))
 
 gpode <- result
 gpode$fode <- sapply(1:length(gpode$lp), function(t)
-  with(gpode, dynamicalModelList$fOde(theta[t,], xsampled[t,,], xsim$time)), simplify = "array")
+  with(gpode, dynamicalModelList$fOde(theta[t,], xsampled[t,,], xreal$time)), simplify = "array")
 gpode$fode <- aperm(gpode$fode, c(3,1,2))
 
 dotxtrue = dynamicalModelList$fOde(pram.true$theta, data.matrix(xtrue[,-1]), xtrue$time)
 
 odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 
-for(j in 1:(ncol(xsim)-1)){
+for(j in 1:(ncol(xreal)-1)){
   config[[paste0("phiD", j)]] <- paste(round(gpode$phi[,j], 2), collapse = "; ")
 }
 
@@ -153,5 +153,5 @@ gpode$lglik <- gpode$lp
 pram.true$sigma[1] <- pram.true$sigma[3] <- 0
 magi:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], "-real-data.pdf"),
-  xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+  xtrue, dotxtrue, xreal, gpode, pram.true, config, odemodel)
 tail(gpode$theta)
