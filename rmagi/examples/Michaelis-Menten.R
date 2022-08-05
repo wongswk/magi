@@ -25,8 +25,8 @@ if(!exists("config")){
 
 # initialize global parameters, true x, simulated x ----------------------------
 pram.true <- list(
-  theta=c(0.02, 0.02, 0.005),
-  x0 = c(2, 1, 0, 0),
+  theta=c(0.05 * 1e5, 0.02, 0.005),
+  x0 = c(7.5e-5, 1, 0, 0),
   phi = cbind(c(1, 50), c(1, 50), c(1, 50), c(0.2, 50)),
   sigma=config$noise
 )
@@ -121,9 +121,20 @@ xreal <- xsim
 colnames(xreal) <- c("time", "E", "S", "ES", "P")
 xreal$S[is.finite(xreal$S)] <- realdata$S
 xreal$P[is.finite(xreal$P)] <- realdata$P
+
+xreal$ES[1] <- 0
+xreal$P[1] <- 0
+xreal$E[1] <- 2
+xreal$S[1] <- 1
+
+sigma_fixed[1] <- 1e-8
+sigma_fixed[3] <-  1e-8
+
+pram.true$phi = cbind(c(1, 50), c(1, 50), c(1, 50), c(0.2, 50))
+
 result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control = 
                              list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = config$stepSizeFactor,
-                                  burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, discardBurnin=TRUE))
+                                  burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, discardBurnin=TRUE, useFixedSigma=TRUE))
 
 gpode <- result
 gpode$fode <- sapply(1:length(gpode$lp), function(t)
