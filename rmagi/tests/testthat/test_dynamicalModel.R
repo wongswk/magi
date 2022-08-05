@@ -111,3 +111,13 @@ dynamicalModelList <- list(
   modelDx=magi:::lacOperonDx
 )
 with(dynamicalModelList, testDynamicalModel(modelODE, modelDx, modelDtheta, "lacOperon", x, theta, tvec=1:4))
+
+set.seed(321)
+x <- matrix(runif(24), ncol=6)
+theta <- runif(4)
+dynamicalModelList <- list(
+  modelODE=magi:::repressilatorGeneRegulationODE,
+  modelDtheta=magi:::repressilatorGeneRegulationDtheta,
+  modelDx=magi:::repressilatorGeneRegulationDx
+)
+with(dynamicalModelList, testDynamicalModel(modelODE, modelDx, modelDtheta, "repressilatorGeneRegulation", x, theta, tvec=1:4))
