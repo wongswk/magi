@@ -61,6 +61,8 @@ Rcpp::List solveMagiRcpp(
         modelC = OdeSystem(MichaelisMentenLogModelODE, MichaelisMentenLogModelDx, MichaelisMentenLogModelDtheta, arma::zeros(3), arma::ones(3)*INFINITY);
     }else if(modelName == "lac-operon"){
         modelC = OdeSystem(lacOperonODE, lacOperonDx, lacOperonDtheta, arma::zeros(17), arma::ones(17)*INFINITY);
+    }else if(modelName == "repressilator-gene-regulation"){
+        modelC = OdeSystem(repressilatorGeneRegulationODE, repressilatorGeneRegulationDx, repressilatorGeneRegulationDtheta, arma::zeros(4), arma::ones(4)*INFINITY);
     }else{
         Rcpp::Rcout << "use R odeModel implementation\n";
         const Rcpp::Function & fOdeR = as<const Function>(odeModel["fOde"]);
