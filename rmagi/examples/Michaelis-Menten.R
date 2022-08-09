@@ -31,6 +31,14 @@ pram.true <- list(
   sigma=config$noise
 )
 
+# parametes and initial conditions that seem ok?
+pram.true <- list( 
+  theta=c(0.05, 0.01, 0.05),
+  x0 = c(2, 1, 0, 0),
+  phi = cbind(c(1, 50), c(1, 50), c(1, 50), c(0.2, 50)),
+  sigma=config$noise
+)
+
 times <- seq(0,config$t.end,length=1001)
 
 modelODE <- function(t, state, parameters) {
@@ -86,6 +94,7 @@ sigma_fixed[3] <-  0.005
 
 # MAGI off-the-shelf ----
 # sampler with a good phi supplied, no missing component
+# hyper-parameters affect the inference of missing components (especially if initial condition is not known
 
 OursStartTime <- proc.time()[3]
 
