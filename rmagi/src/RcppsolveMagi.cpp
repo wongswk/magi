@@ -62,6 +62,7 @@ Rcpp::List solveMagiRcpp(
     }else if(modelName == "lac-operon"){
         modelC = OdeSystem(lacOperonODE, lacOperonDx, lacOperonDtheta, arma::zeros(17), arma::ones(17)*INFINITY);
     }else{
+        Rcpp::Rcout << "use R odeModel implementation\n";
         const Rcpp::Function & fOdeR = as<const Function>(odeModel["fOde"]);
         const Rcpp::Function & fOdeDxR = as<const Function>(odeModel["fOdeDx"]);
         const Rcpp::Function & fOdeDthetaR = as<const Function>(odeModel["fOdeDtheta"]);

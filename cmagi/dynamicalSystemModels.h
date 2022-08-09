@@ -40,4 +40,8 @@ arma::mat MichaelisMentenLogModelODE(const arma::vec &, const arma::mat &, const
 arma::cube MichaelisMentenLogModelDx(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube MichaelisMentenLogModelDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
 
+arma::mat lacOperonODE(const arma::vec &, const arma::mat &, const arma::vec &);
+arma::cube lacOperonDx(const arma::vec &, const arma::mat &, const arma::vec &);
+arma::cube lacOperonDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
+
 #endif
