@@ -59,6 +59,8 @@ Rcpp::List solveMagiRcpp(
         modelC = OdeSystem(MichaelisMentenModelODE, MichaelisMentenModelDx, MichaelisMentenModelDtheta, arma::zeros(3), arma::ones(3)*INFINITY);
     }else if(modelName == "Michaelis-Menten-Log"){
         modelC = OdeSystem(MichaelisMentenLogModelODE, MichaelisMentenLogModelDx, MichaelisMentenLogModelDtheta, arma::zeros(3), arma::ones(3)*INFINITY);
+    }else if(modelName == "lac-operon"){
+        modelC = OdeSystem(lacOperonODE, lacOperonDx, lacOperonDtheta, arma::zeros(17), arma::ones(17)*INFINITY);
     }else{
         const Rcpp::Function & fOdeR = as<const Function>(odeModel["fOde"]);
         const Rcpp::Function & fOdeDxR = as<const Function>(odeModel["fOdeDx"]);

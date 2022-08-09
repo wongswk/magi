@@ -67,7 +67,8 @@ dynamicalModelList <- list(
   fOdeDx=magi:::lacOperonDx,
   fOdeDtheta=magi:::lacOperonDtheta,
   thetaLowerBound=rep(0, 17),
-  thetaUpperBound=rep(Inf, 17)
+  thetaUpperBound=rep(Inf, 17),
+  name="lac-operon"
 )
 
 xInitExogenous <- data.matrix(xsim[,-1])
