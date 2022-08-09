@@ -100,6 +100,8 @@ phiExogenous[1,10] <- 0.01
 
 
 #' burn-in takes a long time
+#' use interpolated xinit gives bad mixing and low posterior value
+#' use GP xinit gives poor fit
 OursStartTime <- proc.time()[3] 
 result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, 
                            control = list(niterHmc=config$niterHmc, stepSizeFactor = config$stepSizeFactor, phi=phiExogenous, sigma=sigmaInit))
