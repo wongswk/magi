@@ -1,6 +1,7 @@
 library(magi)
 
 outDir <- "../results/lac-operon/"
+dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 
 # set up configuration if not already exist ------------------------------------
 if(!exists("config")){
@@ -11,8 +12,8 @@ if(!exists("config")){
     seed = 123,
     bandsize = 100,
     hmcSteps = 100,
-    niterHmc = 2001,
-    stepSizeFactor = 0.01,
+    niterHmc = 20001,
+    stepSizeFactor = 0.001,
     filllevel = 1,
     t.end = 1000,
     modelName = "lac-operon"
@@ -98,7 +99,27 @@ for (j in 1:(ncol(xsim)-1)){
 phiExogenous[1,10] <- 0.01
 
 
+#' burn-in takes a long time
 OursStartTime <- proc.time()[3] 
 result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, 
-                           control = list(xInit = xInitExogenous, niterHmc=config$niterHmc, stepSizeFactor = config$stepSizeFactor, phi=phiExogenous, sigma=sigmaInit))
+                           control = list(niterHmc=config$niterHmc, stepSizeFactor = config$stepSizeFactor, phi=phiExogenous, sigma=sigmaInit))
 OursTimeUsed <- proc.time()[3] - OursStartTime
+
+gpode <- result
+gpode$fode <- sapply(1:length(gpode$lp), function(t)
+  with(gpode, dynamicalModelList$fOde(theta[t,], xsampled[t,,], xsim$time)), simplify = "array")
+gpode$fode <- aperm(gpode$fode, c(3,1,2))
+
+dotxtrue = dynamicalModelList$fOde(pram.true$theta, data.matrix(xtrue[,-1]), xtrue$time)
+
+odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
+
+for(j in 1:(ncol(xsim)-1)){
+  config[[paste0("phiD", j)]] <- paste(round(gpode$phi[,j], 2), collapse = "; ")
+}
+
+gpode$lglik <- gpode$lp
+magi:::plotPostSamplesFlex(
+  paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".pdf"),
+  xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+
