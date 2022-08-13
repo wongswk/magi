@@ -15,18 +15,20 @@ if(!exists("config")){
     niterHmc = 20001,
     stepSizeFactor = 0.001,
     filllevel = 1,
-    t.end = 10,
+    t.end = 300,
     modelName = "repressilator-gene-regulation"
   )
 }
 
 
 # initialize global parameters, true x, simulated x ----------------------------
+alpha <- 240 # obtain from Fig 1b in Elowitz and Leibler (2000)
+KM <- 40     # scale factor only, to convert protein number to match Fig 1c in paper
 pram.true <- list(
-  theta=c(5e-4, 0.5, 2, 5),
+  theta=c(0.001*alpha, alpha, 2, 1/5),  # alpha0/alpha = 0.001
   # initial condition cannot be the same, otherwise the system degenerates to two-components 
   # -- all the m and all the p will be the same
-  x0 = c(1700, 800, 300, 2200, 100, 30),
+  x0 = c(0.4, 20, 40, 0, 0, 0),
   # phi = cbind(c(1, 50), c(1, 50), c(1, 50)),
   sigma=config$noise
 )
@@ -40,7 +42,8 @@ modelODE <- function(t, state, parameters) {
 
 xtrue <- deSolve::ode(y = pram.true$x0, times = times, func = modelODE, parms = pram.true$theta)
 xtrue <- data.frame(xtrue)
-matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=1)
+# Plot proteins only (times KM factor), compare to Fig 1c (left panel) in Elowitz and Leibler (2000)
+matplot(xtrue[, "time"], xtrue[, -(1:4)] * KM, type="l", lty=1)
 
 xtrueFunc <- lapply(2:ncol(xtrue), function(j)
   approxfun(xtrue[, "time"], xtrue[, j]))

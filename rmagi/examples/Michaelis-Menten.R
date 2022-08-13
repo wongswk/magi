@@ -24,16 +24,9 @@ if(!exists("config")){
 
 
 # initialize global parameters, true x, simulated x ----------------------------
-pram.true <- list(
-  theta=c(0.05 * 1e5, 0.02, 0.005),
-  x0 = c(7.5e-5, 1, 0, 0),
-  phi = cbind(c(1, 50), c(1, 50), c(1, 50), c(0.2, 50)),
-  sigma=config$noise
-)
-
-# parametes and initial conditions that seem ok?
+# parameters and initial conditions that seem to mimic the real data well
 pram.true <- list( 
-  theta=c(0.05, 0.01, 0.05),
+  theta=c(0.035, 0.01, 0.3),
   x0 = c(2, 1, 0, 0),
   phi = cbind(c(1, 50), c(1, 50), c(1, 50), c(0.2, 50)),
   sigma=config$noise
@@ -47,7 +40,7 @@ modelODE <- function(t, state, parameters) {
 
 xtrue <- deSolve::ode(y = pram.true$x0, times = times, func = modelODE, parms = pram.true$theta)
 xtrue <- data.frame(xtrue)
-matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=1)
+matplot(xtrue[, "time"], xtrue[, c(3,5)], type="l", lty=1)
 
 xtrueFunc <- lapply(2:ncol(xtrue), function(j)
   approxfun(xtrue[, "time"], xtrue[, j]))

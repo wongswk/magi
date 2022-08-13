@@ -15,7 +15,7 @@ if(!exists("config")){
     niterHmc = 20001,
     stepSizeFactor = 0.001,
     filllevel = 1,
-    t.end = 1000,
+    t.end = 1200,
     modelName = "lac-operon"
   )
 }
@@ -23,7 +23,7 @@ if(!exists("config")){
 
 # initialize global parameters, true x, simulated x ----------------------------
 pram.true <- list(
-  theta=c(1, 0.02, 0.1, 0.005, 0.1, 1, 0.01, 0.1, 0.01, 0.03, 0.1, 0.01, 0.01, 0.002, 0.002, 0.01, 0.001),
+  theta=c(1, 0.02, 0.1, 0.005, 0.1, 1, 0.01, 0.1, 0.01, 0.03, 0.1, 0.001, 0.01, 0.002, 0.002, 0.01, 0.001),
   x0 = c(0, 50, 1000, 0, 1, 0, 100, 0, 0, 0),
   phi = cbind(c(1, 50), c(1, 50), c(1, 50), c(0.2, 50)),
   sigma=config$noise
@@ -40,7 +40,7 @@ xtrue <- deSolve::ode(y = pram.true$x0, times = times, func = modelODE, parms = 
 xtrue <- data.frame(xtrue)
 matplot(xtrue[, "time"], xtrue[, c(-1, -4)], type="l", lty=1)
 
-# FIXME different from figure 3(a) in Barbuti, R., Gori, R., Milazzo, P., and Nasti, L. (2020). A survey of gene regula- tory networks modelling methods: from differential equations, to boolean and qualitative bioinspired models. Journal of Membrane Computing, 2(3):207– 226.
+# Compare to figure 3(a) in Barbuti, R., Gori, R., Milazzo, P., and Nasti, L. (2020). A survey of gene regula- tory networks modelling methods: from differential equations, to boolean and qualitative bioinspired models. Journal of Membrane Computing, 2(3):207– 226.
 plot(xtrue[, "time"], xtrue[, "X10"], type="l", lty=1, main="Z")
 
 matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=1)

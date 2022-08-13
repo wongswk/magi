@@ -1179,7 +1179,7 @@ arma::mat lacOperonODE(const arma::vec & theta, const arma::mat & x, const arma:
     resultdt.col(6) = (k(8) + k(9)) * rnapo - k(7) * op % rnap;
     resultdt.col(7) = k(7) * op % rnap - (k(8)+k(9)) * rnapo;
     resultdt.col(8) = k(9) * rnapo - k(15) * r;
-    resultdt.col(9) = k(10)*r - k(11) * lactose % z - k(16) * z;
+    resultdt.col(9) = k(10)*r - k(16) * z;
 
     return resultdt;
 }
@@ -1241,9 +1241,8 @@ arma::cube lacOperonDx(const arma::vec & theta, const arma::mat & x, const arma:
     resultDx.slice(8).col(7).fill(k(9));
     resultDx.slice(8).col(8).fill(-k(15));
 
-    resultDx.slice(9).col(2) = -k(11)*z;
     resultDx.slice(9).col(8).fill(k(10));
-    resultDx.slice(9).col(9) = -k(11)*lactose - k(16);
+    resultDx.slice(9).col(9).fill(-k(16));
 
     return resultDx;
 }
@@ -1307,7 +1306,6 @@ arma::cube lacOperonDtheta(const arma::vec & theta, const arma::mat & x, const a
     resultDtheta.slice(8).col(15) = -r;
 
     resultDtheta.slice(9).col(10) = r;
-    resultDtheta.slice(9).col(11) = -lactose%z;
     resultDtheta.slice(9).col(16) = -z;
 
     return resultDtheta;
