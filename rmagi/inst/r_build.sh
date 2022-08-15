@@ -40,7 +40,6 @@ rsync -az band.* classDefinition.* dynamicalSystemModels.* fullloglikelihood.* g
 #keep only testing utilities, remove parallel tempering, other types of GP kernels, and phi1
 rsync -az testingUtilities.* ../rmagi/src/rcppmagi/
 rsync -az tgtdistr.* ../rmagi/src/rcppmagi/
-rsync -az paralleltempering.* ../rmagi/src/rcppmagi/
 rsync -az phi1loglikelihood.* ../rmagi/src/rcppmagi/
 rsync -az gpsmoothing.h ../rmagi/src/rcppmagi/
 

@@ -3,7 +3,6 @@
 //
 #include "../hmc.h"
 #include "../band.h"
-#include "../paralleltempering.h"
 #include "../tgtdistr.h"
 #include "../dynamicalSystemModels.h"
 
