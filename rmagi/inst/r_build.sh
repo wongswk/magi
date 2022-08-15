@@ -34,14 +34,10 @@ find src/ -lname '*' -delete
 mkdir src/rcppmagi
 
 cd ../cmagi/
-rsync -az band.* classDefinition.* dynamicalSystemModels.* fullloglikelihood.* gpcov.* hmc.* MagiMain.* MagiSolver.* Sampler.* xthetasigma.* ../rmagi/src/rcppmagi/
-
-# no need ot parallel tempering, testing utilities, and other types of GP kernels
-#keep only testing utilities, remove parallel tempering, other types of GP kernels, and phi1
-rsync -az testingUtilities.* ../rmagi/src/rcppmagi/
-rsync -az tgtdistr.* ../rmagi/src/rcppmagi/
+rsync -az band.* classDefinition.* dynamicalSystemModels.* fullloglikelihood.* gpcov.* hmc.* MagiMain.* MagiSolver.* Sampler.* xthetasigma.* tgtdistr.* ../rmagi/src/rcppmagi/
 rsync -az gpsmoothing.h ../rmagi/src/rcppmagi/
-
+#keep testing utilities, functions here are exported only for testing
+rsync -az testingUtilities.* ../rmagi/src/rcppmagi/
 cd ../rmagi/
 
 perl -pi -e 's/\#include <armadillo>/\#include \"RcppArmadillo.h\"/g' src/rcppmagi/*.h
