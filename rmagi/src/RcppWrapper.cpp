@@ -28,32 +28,6 @@ Rcpp::List phisigllikC(const arma::vec & phisig,
                       Named("grad")=ret.gradient);
 }
 
-//' R wrapper for phisigllik
-//' phi sigma leave-one-out-cross-validation log-likelihood for setting hyper-paramters. This idea is not used in the final method
-//' @noRd
-// [[Rcpp::export]]
-Rcpp::List phisigloocvllikC(const arma::vec & phisig, 
-                            const arma::mat & yobs, 
-                            const arma::mat & dist, 
-                            std::string kernel="matern"){
-  lp ret = phisigloocvllik(phisig, yobs, dist, kernel);
-  return List::create(Named("value")=ret.value,
-                      Named("grad")=ret.gradient);
-}
-
-//' R wrapper for phisigloocvmse
-//' phi sigma leave-one-out-cross-validation mean-squared-error for setting hyper-paramters. This idea is not used in the final method
-//' @noRd
-// [[Rcpp::export]]
-Rcpp::List phisigloocvmseC(const arma::vec & phisig, 
-                           const arma::mat & yobs, 
-                           const arma::mat & dist, 
-                           std::string kernel="matern"){
-  lp ret = phisigloocvmse(phisig, yobs, dist, kernel);
-  return List::create(Named("value")=ret.value,
-                      Named("grad")=ret.gradient);
-}
-
 
 //' sample from GP marginal likelihood for phi and sigma
 //' Internal function for debugging purpose
