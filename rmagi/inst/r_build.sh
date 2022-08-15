@@ -32,8 +32,20 @@ MAKE="make -j$CPU" Rscript -e 'devtools::install_deps(dependencies = TRUE, repos
 
 find src/ -lname '*' -delete
 mkdir src/rcppmagi
-rsync -az --exclude 'gpsmoothing.cpp' ../cmagi/*.cpp src/rcppmagi/
-rsync -az ../cmagi/*.h src/rcppmagi/
+
+cd ../cmagi/
+rsync -az band.* classDefinition.* dynamicalSystemModels.* fullloglikelihood.* gpcov.* hmc.* MagiMain.* MagiSolver.* Sampler.* xthetasigma.* ../rmagi/src/rcppmagi/
+
+# no need ot parallel tempering, testing utilities, and other types of GP kernels
+#keep only testing utilities, remove parallel tempering, other types of GP kernels, and phi1
+rsync -az testingUtilities.* ../rmagi/src/rcppmagi/
+rsync -az tgtdistr.* ../rmagi/src/rcppmagi/
+rsync -az paralleltempering.* ../rmagi/src/rcppmagi/
+rsync -az phi1loglikelihood.* ../rmagi/src/rcppmagi/
+rsync -az gpsmoothing.h ../rmagi/src/rcppmagi/
+
+cd ../rmagi/
+
 perl -pi -e 's/\#include <armadillo>/\#include \"RcppArmadillo.h\"/g' src/rcppmagi/*.h
 perl -pi -e 's/\#include <armadillo>/\#include \"RcppArmadillo.h\"/g' src/rcppmagi/*.cpp
 perl -pi -e 's/\#include <Eigen.*>/\#include \"RcppEigen.h\"/g' src/rcppmagi/*.h

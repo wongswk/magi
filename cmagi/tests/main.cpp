@@ -15,10 +15,10 @@ int main(){
     step.fill(0.05);
     int nsteps = 20;
     bool traj = true;
-    hmcstate post = basic_hmcC(lpnormal, initial, step,
-                               {-arma::datum::inf},
-                               {arma::datum::inf},
-                               nsteps, traj);
+//    hmcstate post = basic_hmcC(lpnormal, initial, step,
+//                               {-arma::datum::inf},
+//                               {arma::datum::inf},
+//                               nsteps, traj);
     // for(int i; i < post.final.size(); i++)`
     //   std::cout << post.final(i) << endl;
     // std::cout << post.final << endl;

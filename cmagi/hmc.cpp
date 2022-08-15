@@ -181,14 +181,6 @@ hmcstate basic_hmcC(const std::function<lp (vec)> & lpr,
   return ret;
 }
 
-lp lpnormal(vec x){
-  lp lpx;
-  lpx.value = -sum(square(x))/2.0;
-  lpx.gradient = -x;
-  return lpx;
-}
-
-
 
 
 
