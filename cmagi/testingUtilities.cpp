@@ -1,6 +1,5 @@
 #include "hmc.h"
 #include "band.h"
-#include "paralleltempering.h"
 #include "tgtdistr.h"
 #include "dynamicalSystemModels.h"
 
@@ -299,49 +298,6 @@ double bandTest(std::string filename="data_band.txt"){
     return std::accumulate(grad, grad + datasize * 2 + 3, ret);
 };
 
-
-
-// [[Rcpp::export]]
-arma::cube paralleltemperingTest1() {
-    std::ofstream out("testout.txt");
-    std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
-    std::cout.rdbuf(out.rdbuf()); //redirect std::cout to out.txt!
-
-    function<lp(vec)> lpnormal = [](vec x) {return lp(-arma::sum(arma::square(x))/2.0);};
-    vec temperature = arma::linspace<vec>(8, 1, 8);
-    std::function<mcmcstate(function<lp(vec)>, mcmcstate)> metropolis_tuned =
-            std::bind(metropolis, std::placeholders::_1, std::placeholders::_2, 1.0);
-
-    cube samples = parallel_termperingC(lpnormal,
-                                        metropolis_tuned,
-                                        temperature,
-                                        arma::zeros<vec>(4),
-                                        0.05,
-                                        1e4,
-                                        true);
-    std::cout.rdbuf(coutbuf); //reset to standard output again
-    return samples;
-}
-
-// [[Rcpp::export]]
-arma::cube paralleltemperingTest2() {
-    function<lp(vec)> lpnormalvalue = [](vec x) {
-        return lp(log(exp(-arma::sum(arma::square(x+4))/2.0) + exp(-arma::sum(arma::square(x-4))/2.0)));
-    };
-    vec temperature = {1, 1.3, 1.8, 2.5, 3.8, 5.7, 8};
-    function<mcmcstate(function<lp(vec)>, mcmcstate)> metropolis_tuned =
-            std::bind(metropolis, std::placeholders::_1, std::placeholders::_2, 1.0);
-
-    cube samples = parallel_termperingC(lpnormalvalue,
-                                        metropolis_tuned,
-                                        temperature,
-                                        arma::zeros<vec>(4),
-                                        0.125,
-                                        1e4,
-                                        false);
-    // std::cout << "parallel_termperingC finished, before returning from paralleltemperingTest2\n";
-    return samples;
-}
 
 //' log likelihood for latent states and ODE theta conditional on phi sigma
 //'   latent states have a mean mu
