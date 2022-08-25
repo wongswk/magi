@@ -151,7 +151,7 @@ curCovR$mu <- as.vector(fn.true[,2])
 curCovV$tvecCovInput <- tvec.full
 curCovR$tvecCovInput <- tvec.full
 
-dotmu <- magi:::fODE(pram.true$abc, fn.true[,1:2]) # pretend these are the means for derivatives
+dotmu <- fnmodelODE(pram.true$abc, fn.true[,1:2]) # pretend these are the means for derivatives
 curCovV$dotmu <- as.vector(dotmu[,1])  
 curCovR$dotmu <- as.vector(dotmu[,2])
 

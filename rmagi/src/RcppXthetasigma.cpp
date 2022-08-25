@@ -88,23 +88,23 @@ Rcpp::List xthetasigmallikRcpp( const arma::mat & xlatent,
 //' 
 //' @examples
 //' # Trajectories from the Fitzhugh-Nagumo equations
-//' tvec <- seq(0,20,2)
+//' tvec <- seq(0, 20, 2)
 //' Vtrue <- c(-1, 1.91, 1.38, -1.32, -1.5, 1.73, 1.66, 0.89, -1.82, -0.93, 1.89)
-//' Rtrue <- c(1, 0.33, -0.62, -0.82, 0.5, 0.94, -0.22, -0.9, -0.08, 0.95,  0.3)
+//' Rtrue <- c(1, 0.33, -0.62, -0.82, 0.5, 0.94, -0.22, -0.9, -0.08, 0.95,0.3)
 //' 
 //' # Noisy observations
 //' Vobs <- Vtrue + rnorm(length(tvec), sd = 0.05)
 //' Robs <- Rtrue + rnorm(length(tvec), sd = 0.1)
 //' 
 //' # Prepare distance matrix for covariance kernel calculation
-//' foo <- outer(tvec, t(tvec),'-')[,1,]
+//' foo <- outer(tvec, t(tvec), '-')[, 1, ]
 //' r <- abs(foo)
 //' r2 <- r^2
 //' signr <- -sign(foo)
 //'   
 //' # Choose some hyperparameter values to illustrate
-//' rphi=c(0.95, 3.27)
-//' vphi=c(1.98, 1.12)
+//' rphi <- c(0.95, 3.27)
+//' vphi <- c(1.98, 1.12)
 //' phiTest <- cbind(vphi, rphi)
 //' 
 //' # Covariance computations
@@ -115,55 +115,13 @@ Rcpp::List xthetasigmallikRcpp( const arma::mat & xlatent,
 //' yInput <- data.matrix(cbind(Vobs, Robs))
 //' xlatentTest <- data.matrix(cbind(Vtrue, Rtrue))
 //' 
-//' # ODE system for Fitzhugh-Nagumo equations
-//' fnmodelODE <- function(theta,x,t) {
-//'   V <- x[,1]
-//'   R <- x[,2]
-//'
-//'   result <- array(0, c(nrow(x),ncol(x)))
-//'   result[,1] = theta[3] * (V - V^3 / 3.0 + R)
-//'   result[,2] = -1.0/theta[3] * ( V - theta[1] + theta[2] * R)
-//'   
-//'   result
-//' }
-//' 
-//' # Gradient with respect to system components
-//' fnmodelDx <- function(theta,x,t) {
-//'   resultDx <- array(0, c(nrow(x), ncol(x), ncol(x)))
-//'   V = x[,1]
-//'   
-//'   resultDx[,1,1] = theta[3] * (1 - V^2)
-//'   resultDx[,2,1] = theta[3]
-//'   
-//'   resultDx[,1,2] = (-1.0 / theta[3])
-//'   resultDx[,2,2] = ( -1.0*theta[2]/theta[3] )
-//'   
-//'   resultDx
-//' }
-//' 
-//' # Gradient with respect to parameters theta
-//' fnmodelDtheta <- function(theta,x,t) {
-//'   resultDtheta <- array(0, c(nrow(x), length(theta), ncol(x)))
-//'   
-//'   V = x[,1]
-//'   R = x[,2]
-//'   
-//'   resultDtheta[,3,1] = V - V^3 / 3.0 + R
-//'   
-//'   resultDtheta[,1,2] =  1.0 / theta[3] 
-//'   resultDtheta[,2,2] = -R / theta[3]
-//'   resultDtheta[,3,2] = 1.0/(theta[3]^2) * ( V - theta[1] + theta[2] * R)
-//'   
-//'   resultDtheta
-//' }
-//'
-//' # Create odeModel list 
+//' # Create odeModel list for FN equations
 //' fnmodel <- list(
-//'   fOde=fnmodelODE,
-//'   fOdeDx=fnmodelDx,
-//'   fOdeDtheta=fnmodelDtheta,
-//'   thetaLowerBound=c(0,0,0),
-//'   thetaUpperBound=c(Inf,Inf,Inf)
+//'   fOde = fnmodelODE,
+//'   fOdeDx = fnmodelDx,
+//'   fOdeDtheta = fnmodelDtheta,
+//'   thetaLowerBound = c(0, 0, 0),
+//'   thetaUpperBound = c(Inf, Inf, Inf)
 //' )
 //' 
 //' MagiPosterior(yInput, xlatentTest, theta = c(0.2, 0.2, 3), sigma = c(0.05, 0.1),

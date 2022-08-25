@@ -1,8 +1,8 @@
 Package: magi
 Type: Package
 Title: MAnifold-Constrained Gaussian Process Inference
-Version: 1.1.5
-Date: 2022-01-12
+Version: 1.2.0
+Date: 2022-08-25
 Authors@R:
   c(person(given = "Shihao",
            family = "Yang",
@@ -11,7 +11,8 @@ Authors@R:
            comment = c(ORCID = "0000-0003-3910-4969")),
     person(given = "Samuel W.K.",
            family = "Wong",
-           role = "aut"),
+           role = "aut",
+           comment = c(ORCID = "0000-0002-7325-7267")),
     person(given = "S.C.",
            family = "Kou",
            role = c("ctb", "cph"),
@@ -21,6 +22,7 @@ Encoding: UTF-8
 Description: Provides fast and accurate inference for the parameter estimation problem in Ordinary Differential
     Equations, including the case when there are unobserved system components. Implements the MAGI method
     (MAnifold-constrained Gaussian process Inference) of Yang, Wong, and Kou (2021) <doi:10.1073/pnas.2020397118>.
+URL: https://arxiv.org/abs/2203.06066
 License: MIT + file LICENSE
 VignetteBuilder: knitr
 Imports: 
@@ -31,7 +33,7 @@ Imports:
     methods,
     deSolve
 LinkingTo: Rcpp, RcppArmadillo, BH, roptim
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.1
 Suggests: 
     testthat,
     mvtnorm,
@@ -40,3 +42,4 @@ Suggests:
     MASS,
     rmarkdown,
     markdown
+Depends: R (>= 3.5.0)

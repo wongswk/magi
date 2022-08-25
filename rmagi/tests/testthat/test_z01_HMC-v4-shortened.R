@@ -271,7 +271,7 @@ gpode <- list(abc=xth.formal[-(1:burnin), (nall*2+1):(nall*2+3)],
               lp__=lliklist[-(1:burnin)],
               lglik=lliklist[-(1:burnin)])
 gpode$fode <- sapply(1:length(gpode$lp__), function(t)
-  with(gpode, magi:::fODE(abc[t,], cbind(vtrue[t,],rtrue[t,]))), simplify = "array")
+  with(gpode, fnmodelODE(abc[t,], cbind(vtrue[t,],rtrue[t,]))), simplify = "array")
 
 fn.true$dVtrue = with(c(fn.true,pram.true), abc[3] * (Vtrue - Vtrue^3/3.0 + Rtrue))
 fn.true$dRtrue = with(c(fn.true,pram.true), -1.0/abc[3] * (Vtrue - abc[1] + abc[2]*Rtrue))

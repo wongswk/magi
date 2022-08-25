@@ -60,7 +60,7 @@ cursigma <- marlikmap$par[5]
 curCovV$mu <- as.vector(fn.true[,1])  # pretend these are the means
 curCovR$mu <- as.vector(fn.true[,2])
 
-dotmu <- magi:::fODE(pram.true$abc, fn.true[,1:2]) # pretend these are the means for derivatives
+dotmu <- fnmodelODE(pram.true$abc, fn.true[,1:2]) # pretend these are the means for derivatives
 curCovV$dotmu <- as.vector(dotmu[,1])  
 curCovR$dotmu <- as.vector(dotmu[,2])
 

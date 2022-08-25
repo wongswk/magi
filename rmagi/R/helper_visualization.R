@@ -206,16 +206,3 @@ plotPostSamples <- function(filename, fn.true, fn.sim, gpode, init, config){
   dev.off()
 }
 
-#### small utility functions for visualization ####
-mode.density <- function(x){
-  den <- density(x)
-  den$x[which.max(den$y)]
-}
-
-plot.add.dlnorm <- function(samples, col=6){
-  plot.function(function(x) dlnorm(x, mean(log(samples)), sd(log(samples))),
-                add=TRUE, from = min(samples), to = max(samples), n=1001, col=col)
-  c(mean=mean(log(samples)), sd=sd(log(samples)))
-}
-
-

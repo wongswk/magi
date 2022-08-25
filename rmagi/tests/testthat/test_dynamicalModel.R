@@ -29,11 +29,11 @@ dynamicalModelList <- list(
 with(dynamicalModelList, testDynamicalModel(modelODE, modelDx, modelDtheta, "Hes1-log system", x, theta))
 
 
-x <- cbind(1:4, 4:1, sin(1:4), cos(1:4))
-theta <- c(0.014, 1.16e-9, 1.3e-9, 5e-10, 3.62e-9, 1.56e-9, 1e-8, 1e-8, 1e-8)
-dynamicalModelList <- list(
-  modelODE = magi:::HIVmodelODE,
-  modelDtheta = magi:::HIVmodelDtheta,
-  modelDx = magi:::HIVmodelDx
-)
-with(dynamicalModelList, testDynamicalModel(modelODE, modelDx, modelDtheta, "HIV system", x, theta))
+# x <- cbind(1:4, 4:1, sin(1:4), cos(1:4))
+# theta <- c(0.014, 1.16e-9, 1.3e-9, 5e-10, 3.62e-9, 1.56e-9, 1e-8, 1e-8, 1e-8)
+# dynamicalModelList <- list(
+#   modelODE = magi:::HIVmodelODE,
+#   modelDtheta = magi:::HIVmodelDtheta,
+#   modelDx = magi:::HIVmodelDx
+# )
+# with(dynamicalModelList, testDynamicalModel(modelODE, modelDx, modelDtheta, "HIV system", x, theta))

@@ -46,16 +46,3 @@ loglikWithNormalizingConstants <- function(x, theta, phi, sigma, y, rInput, sign
   return(ret)
 }
 
-fODE <- function(theta, x) {
-  a <- theta[1]
-  b <- theta[2]
-  c <- theta[3]
-
-  V <- x[,1]
-  R <- x[,2]
-
-  Vdt <- c * (V - V^3 / 3 + R)
-  Rdt <- -1/c * ( V - a + b * R)
-
-  return(cbind(Vdt, Rdt))
-}

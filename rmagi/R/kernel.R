@@ -67,10 +67,10 @@
 #' 
 #' 
 #' @examples 
-#' foo  <- outer(0:40, t(0:40),'-')[,1,]
+#' foo  <- outer(0:40, t(0:40), '-')[, 1, ]
 #' r <- abs(foo)
 #' signr <- -sign(foo)
-#' calCov(c(0.2, 2), r, signr, bandsize=20, kerneltype="generalMatern", df=2.01)
+#' calCov(c(0.2, 2), r, signr, bandsize = 20, kerneltype = "generalMatern", df = 2.01)
 #' 
 #' @export
 calCov <- function(phi, rInput, signrInput, bandsize = NULL, complexity=3, kerneltype="matern", df,

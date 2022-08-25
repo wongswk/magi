@@ -1,6 +1,6 @@
 #' MAnifold-constrained Gaussian process Inference (MAGI)
 #'
-#' @description Core function of the MAGI method for inferring the parameters and trajectories of dynamic systems governed by ordinary differential equations.  See vignette for detailed usage examples.
+#' @description Core function of the MAGI method for inferring the parameters and trajectories of dynamic systems governed by ordinary differential equations.
 #' 
 #' @param y data matrix of observations
 #' @param odeModel list of ODE functions and inputs. See details.
@@ -9,13 +9,14 @@
 #' `burninRatio`, `nstepsHmc`, `stepSizeFactor`, `bandSize`, `useFixedSigma`.  See details.
 #' 
 #' @return 
-#' \code{MagiSolver} returns a list with the following elements:
+#' \code{MagiSolver} returns an object of class \code{\link{magioutput}} which contains the following elements:
 #' \describe{
 #' \item{\code{theta}}{matrix of MCMC samples for the system parameters \eqn{\theta}, after burn-in.}
 #' \item{\code{xsampled}}{array of MCMC samples for the system trajectories at each discretization time point, after burn-in.}
 #' \item{\code{sigma}}{matrix of MCMC samples for the observation noise SDs \eqn{\sigma}, after burn-in.}
 #' \item{\code{phi}}{matrix of estimated GP hyper-parameters, one column for each system component.}
 #' \item{\code{lp}}{vector of log-posterior values at each MCMC iteration, after burn-in.}
+#' \item{\code{y, tvec, odeModel}}{from the inputs to \code{MagiSolver}.}
 #' }
 #' 
 #' @details 
@@ -45,87 +46,40 @@
 #'   \item{\code{stepSizeFactor}}{initial leapfrog step size factor for HMC.  Default is 0.01, and the leapfrog step size is automatically tuned during burn-in to achieve an acceptance rate between 60-90\%.}
 #'   \item{\code{bandSize}}{a band matrix approximation is used to speed up matrix operations, with default band size 20. Can be increased if \code{MagiSolver} returns an error indicating numerical instability.}
 #'   \item{\code{useFixedSigma}}{logical, set to \code{TRUE} if \code{sigma} is known.  If \code{useFixedSigma=TRUE}, the known values of \eqn{\sigma} must be supplied via the \code{sigma} control variable.}
+#'   \item{\code{verbose}}{logical, set to \code{TRUE} to output diagnostic and progress messages to the console.}
 #'   
 #' }
 #' 
 #' @examples
-#' # Setting up the Fitzhugh-Nagumo system equations, see vignette for details
-#' # ODE system
-#' fnmodelODE <- function(theta,x,t) {
-#'   V <- x[,1]
-#'   R <- x[,2]
-#'
-#'   result <- array(0, c(nrow(x),ncol(x)))
-#'   result[,1] = theta[3] * (V - V^3 / 3.0 + R)
-#'   result[,2] = -1.0/theta[3] * ( V - theta[1] + theta[2] * R)
-#'   
-#'   result
-#' }
-#' 
-#' # Gradient with respect to system components
-#' fnmodelDx <- function(theta,x,t) {
-#'   resultDx <- array(0, c(nrow(x), ncol(x), ncol(x)))
-#'   V = x[,1]
-#'   
-#'   resultDx[,1,1] = theta[3] * (1 - V^2)
-#'   resultDx[,2,1] = theta[3]
-#'   
-#'   resultDx[,1,2] = (-1.0 / theta[3])
-#'   resultDx[,2,2] = ( -1.0*theta[2]/theta[3] )
-#'   
-#'   resultDx
-#' }
-#' 
-#' # Gradient with respect to parameters theta
-#' fnmodelDtheta <- function(theta,x,t) {
-#'   resultDtheta <- array(0, c(nrow(x), length(theta), ncol(x)))
-#'   
-#'   V = x[,1]
-#'   R = x[,2]
-#'   
-#'   resultDtheta[,3,1] = V - V^3 / 3.0 + R
-#'   
-#'   resultDtheta[,1,2] =  1.0 / theta[3] 
-#'   resultDtheta[,2,2] = -R / theta[3]
-#'   resultDtheta[,3,2] = 1.0/(theta[3]^2) * ( V - theta[1] + theta[2] * R)
-#'   
-#'   resultDtheta
-#' }
-#'
-#' # Create odeModel list 
+#' # Set up odeModel list for the Fitzhugh-Nagumo equations
 #' fnmodel <- list(
-#'   fOde=fnmodelODE,
-#'   fOdeDx=fnmodelDx,
-#'   fOdeDtheta=fnmodelDtheta,
-#'   thetaLowerBound=c(0,0,0),
-#'   thetaUpperBound=c(Inf,Inf,Inf)
+#'   fOde = fnmodelODE,
+#'   fOdeDx = fnmodelDx,
+#'   fOdeDtheta = fnmodelDtheta,
+#'   thetaLowerBound = c(0, 0, 0),
+#'   thetaUpperBound = c(Inf, Inf, Inf)
 #' )
 #' 
 #' # Example noisy data observed from the FN system
-#' tvec <- seq(0, 20, by = 0.5)
-#' V <- c(-1.16, -0.18, 1.57, 1.99, 1.95, 1.85, 1.49, 1.58, 1.47, 0.96, 
-#' 0.75, 0.22, -1.34, -1.72, -2.11, -1.56, -1.51, -1.29, -1.22, 
-#' -0.36, 1.78, 2.36, 1.78, 1.8, 1.76, 1.4, 1.02, 1.28, 1.21, 0.04, 
-#' -1.35, -2.1, -1.9, -1.49, -1.55, -1.35, -0.98, -0.34, 1.9, 1.99, 1.84)
-#' R <- c(0.94, 1.22, 0.89, 0.13, 0.4, 0.04, -0.21, -0.65, -0.31, -0.65, 
-#'  -0.72, -1.26, -0.56, -0.44, -0.63, 0.21, 1.07, 0.57, 0.85, 1.04, 
-#'  0.92, 0.47, 0.27, 0.16, -0.41, -0.6, -0.58, -0.54, -0.59, -1.15, 
-#'  -1.23, -0.37, -0.06, 0.16, 0.43, 0.73, 0.7, 1.37, 1.1, 0.85, 0.23)
+#' data(FNdat)
 #'
-#' # Set discretization for a total of 161 time points
-#' yobs <- data.frame(time=tvec, V=V, R=R)  
-#' yinput <- setDiscretization(yobs, level=2)
+#' # Set discretization for a total of 81 equally-spaced time points from 0 to 20
+#' yinput <- setDiscretization(FNdat, by = 0.25)
 #' 
-#' # Call MagiSolver
-#' # short sampler run for demo only, more iterations needed for convergence
-#' MagiSolver(yinput, fnmodel, control = list(nstepsHmc=5, niterHmc = 402))
+#' # Run MagiSolver
+#' # Short sampler run for demo only, more iterations needed for convergence
+#' MagiSolver(yinput, fnmodel, control = list(nstepsHmc = 5, niterHmc = 101))
 #' \donttest{
-#' # full run with 20000 HMC iterations
-#' result <- MagiSolver(yinput, fnmodel, control = list(nstepsHmc=100))}
+#' # Use 3000 HMC iterations with 100 leapfrog steps per iteration
+#' FNres <- MagiSolver(yinput, fnmodel, control = list(nstepsHmc = 100, niterHmc = 3000))
+#' # Summary of parameter estimates
+#' summary(FNres)
+#' # Plot of inferred trajectories
+#' plot(FNres, comp.names = c("V", "R"), xlab = "Time", ylab = "Level")}
 #' 
 #' 
 #' @references 
-#' Shihao Yang, Samuel WK Wong, SC Kou (2021). Inference of dynamic systems from noisy and sparse data via manifold-constrained Gaussian processes.  \emph{Proceedings of the National Academy of Sciences}, 118 (15), e2020397118.
+#' Shihao Yang, Samuel WK Wong, SC Kou (2021). Inference of Dynamic Systems from Noisy and Sparse Data via Manifold-constrained Gaussian Processes.  \emph{Proceedings of the National Academy of Sciences}, 118 (15), e2020397118.
 #' 
 #' @export 
 MagiSolver <- function(y, odeModel, tvec, control = list()) {
@@ -207,7 +161,12 @@ MagiSolver <- function(y, odeModel, tvec, control = list()) {
   else
     useFixedSigma = FALSE
 
-
+  if (!is.null(control$verbose))
+    verbose = control$verbose
+  else
+    verbose = FALSE
+  
+  
   samplesCpp <- solveMagiRcpp(
     yFull = data.matrix(y),
     odeModel = odeModel,
@@ -233,7 +192,7 @@ MagiSolver <- function(y, odeModel, tvec, control = list()) {
     useMean = TRUE,
     useScalerSigma = FALSE,
     useFixedSigma = useFixedSigma,
-    verbose = TRUE)
+    verbose = verbose)
 
   phiUsed <- samplesCpp$phi
   samplesCpp <- samplesCpp$llikxthetasigmaSamples
@@ -248,14 +207,20 @@ MagiSolver <- function(y, odeModel, tvec, control = list()) {
   sigmaId <- (max(thetaId)+1):(max(thetaId)+ncol(y))
 
   burnin <- as.integer(niterHmc*burninRatio)
-  return(
-    list(theta=t(samplesCpp[thetaId, -(1:burnin)]),
-         xsampled=array(t(samplesCpp[xId, -(1:burnin)]),
+  
+  ret <- list(theta=t(samplesCpp[thetaId, -(1:burnin)]),
+          xsampled=array(t(samplesCpp[xId, -(1:burnin)]),
                         dim=c(niterHmc-burnin, nrow(y), ncol(y))),
-         lp=samplesCpp[llikId,-(1:burnin)],
-         sigma = t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]),
-         phi = phiUsed)
-  )
+          lp=samplesCpp[llikId,-(1:burnin)],
+          sigma = t(samplesCpp[sigmaId, -(1:burnin), drop=FALSE]),
+          phi = phiUsed,
+          odeModel = odeModel,
+          tvec = tvec,
+          y = data.matrix(y))
+
+  class(ret) <- "magioutput"
+  
+  ret
 }
 
 
@@ -274,7 +239,7 @@ MagiSolver <- function(y, odeModel, tvec, control = list()) {
 #' 
 #' @examples 
 #' # Suppose phi[1] = 0.5, phi[2] = 3, sigma = 0.1
-#' gpsmoothllik(c(0.5,3,0.1), rnorm(10), abs(outer(0:9, t(0:9),'-')[,1,]))
+#' gpsmoothllik(c(0.5, 3, 0.1), rnorm(10), abs(outer(0:9, t(0:9), '-')[, 1, ]))
 #' 
 #' @export
 gpsmoothllik <- function(phisig, yobs, rInput, kerneltype = "generalMatern") {

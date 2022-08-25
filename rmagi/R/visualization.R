@@ -1,7 +1,97 @@
+#' Plot trajectories from \code{magioutput} object
+#' @description Plots the inferred trajectories from the output of \code{MagiSolver}
+#' @param x a \code{magioutput} object.
+#' @param obs logical; if true, points will be added on the plots for the observations.
+#' @param ci logical; if true, credible bands will be added to the plots.
+#' @param comp.names vector of system component names. If provided, should be the same length as the number of system components in \eqn{X}.
+#' @param lower the lower quantile of the credible band, default is 0.025. Only used if \code{ci = TRUE}.
+#' @param upper the upper quantile of the credible band, default is 0.975. Only used if \code{ci = TRUE}.
+#' @param nplotcol the number of subplots per row.
+#' @param ... additional arguments to \code{plot}.
+#' 
+#' @details 
+#' Plots inferred trajectories (posterior means) and credible bands from the MCMC samples, one subplot for each system component.
+#' By default, \code{lower = 0.025} and \code{upper = 0.975} produces a central 95\% credible band when \code{ci = TRUE}.
+#' Adding the observed data points (\code{obs = TRUE}) can provide a visual assessment of the inferred trajectories.
+#' 
+#' @examples 
+#' # Set up odeModel list for the Fitzhugh-Nagumo equations
+#' fnmodel <- list(
+#'   fOde = fnmodelODE,
+#'   fOdeDx = fnmodelDx,
+#'   fOdeDtheta = fnmodelDtheta,
+#'   thetaLowerBound = c(0, 0, 0),
+#'   thetaUpperBound = c(Inf, Inf, Inf)
+#' )
+#'
+#' # Example FN data
+#' data(FNdat)
+#' y <- setDiscretization(FNdat, by = 0.25)
+#'
+#' # Create magioutput from a short MagiSolver run (demo only, more iterations needed for convergence)
+#' result <- MagiSolver(y, fnmodel, control = list(nstepsHmc = 20, niterHmc = 500)) 
+#' 
+#' plot(result, comp.names = c("V", "R"), xlab = "Time", ylab = "Level")
+#' 
+#' @importFrom graphics polygon
+#' 
+#' @export
+plot.magioutput <- function(x, obs = TRUE, ci = TRUE, comp.names, lower = 0.025, upper = 0.975, nplotcol = 3, ...) {
+
+  if (!is.magioutput(x)) 
+    stop("\"x\" must be a magioutput object")
+  
+  xMean <- apply(x$xsampled, c(2, 3), mean)
+  
+  if (missing(comp.names)) {
+    comp.names = paste0("X[", 1:ncol(xMean), "]")  
+  } else if (length(comp.names) != ncol(xMean)) {
+    stop(paste("vector of comp.names should be length", ncol(xMean), "to match the number of components"))
+  }
+  
+  if (ci) {
+    xLB <- apply(x$xsampled, c(2, 3), function(x) quantile(x, lower))
+    xUB <- apply(x$xsampled, c(2, 3), function(x) quantile(x, upper))
+  }
+  
+  nplotrow = ceiling(ncol(xMean) / nplotcol)
+  if (ncol(xMean) < nplotcol) {
+    nplotcol = ncol(xMean)
+  }
+    
+  par(mfrow = c(nplotrow, nplotcol), mar = c(4, 4, 1.5, 1))
+  for (i in 1:ncol(xMean)) {
+    # Set up empty plot
+    if (obs & ci) {
+      plot(rep(x$tvec, 3), c(xLB[, i], xUB[, i], x$y[,i]), type = "n", ...)
+    } else if (obs) {
+      plot(rep(x$tvec, 2), c(xMean[, i], x$y[,i]), type = "n", ...)
+    } else {
+      plot(x$tvec, xMean[, i], type = "n", ...)      
+    }
+    
+    mtext(comp.names[i])
+    if (ci) {
+      polygon(c(x$tvec, rev(x$tvec)), c(xUB[, i], rev(xLB[, i])),
+              col = "skyblue", border = NA)  
+    }
+    
+    lines(x$tvec, xMean[, i], ...)
+    
+    if (obs) {
+      points(x$tvec, x$y[, i])
+    }
+    
+  }
+
+}
+
+
+
 #' flexible plot posterior sample from ode inference
 #' 
-#' see test run cases for how to use this function, allow for multiple dimensions
-#' of the X
+#' for debugging purpose: see test run cases for how to use this function,
+#' allows for multiple dimensions of X
 #'
 #' @param filename string of pdf filename to save
 #' @param xtrue true ODE curve with time as index colume

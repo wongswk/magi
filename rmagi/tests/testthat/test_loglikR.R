@@ -291,7 +291,7 @@ testthat::test_that("xthetallik_withmuC runs without error and compare to zero-m
   gradExpect <- 167.746373733369
   testthat::expect_equal(sum(out$grad), gradExpect, tolerance = 1e-4, scale = abs(gradExpect))
   
-  dotmu <- magi:::fODE(pram.true$abc, data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]))
+  dotmu <- fnmodelODE(pram.true$abc, data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]))
   
   curCovV_withmu <- curCovV
   curCovR_withmu <- curCovR
@@ -334,7 +334,7 @@ testthat::test_that("xthetallik_withmuC derivatives", {
   x <- (gradNum - out$grad)/abs(out$grad)
   testthat::expect_true(all(abs(x) < 1e-3)) # gradient is self-consistent
   
-  dotmu <- magi:::fODE(pram.true$abc, data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]))
+  dotmu <- fnmodelODE(pram.true$abc, data.matrix(fn.true[seq(1,nrow(fn.true), length=nobs),1:2]))
   
   curCovV_withmu <- curCovV
   curCovR_withmu <- curCovR

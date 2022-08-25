@@ -92,14 +92,14 @@ phisigllik <- function(phisig, y, rInput, signrInput, grad = F, kerneltype="mate
   CovV <- calCov(head(phiVR, length(phiVR)/2), rInput, signrInput, kerneltype=kerneltype)
   Kv <- CovV$C+diag(sigma^2, nrow = n)
   Kv.l <- t(chol(Kv))
-  Kv.l.inv <- solve(Kv.l)
+  Kv.l.inv <- forwardsolve(Kv.l, diag(nrow(Kv.l)))
   veta <- Kv.l.inv %*% y[,1]
   res[1] <- -n/2*log(2*pi) - sum(log(diag(Kv.l))) - 0.5*sum(veta^2)
   # R
   CovR <- calCov(tail(phiVR, length(phiVR)/2), rInput, signrInput, kerneltype=kerneltype)
   Kr <- CovR$C+diag(sigma^2, nrow = n)
   Kr.l <- t(chol(Kr))
-  Kr.l.inv <- solve(Kr.l)
+  Kr.l.inv <- forwardsolve(Kr.l, diag(nrow(Kr.l)))
   reta <- Kr.l.inv %*% y[,2]
   res[2] <- -n/2*log(2*pi) - sum(log(diag(Kr.l))) - 0.5*sum(reta^2)
   ret <- sum(res)
@@ -251,7 +251,7 @@ phillikwithxdotx <- function(phi, x, xdot, rInput, signrInput, kerneltype="mater
   diag(bigCov) <- diag(bigCov) + 1e-7
 
   bigCov.l <- t(chol(bigCov))
-  eta <- solve(bigCov.l, c(x, xdot))
+  eta <- forwardsolve(bigCov.l, c(x, xdot))
 
   ret <- -length(c(x, xdot))/2*log(2*pi) - sum(log(diag(bigCov.l))) - 0.5*sum(eta^2)
 

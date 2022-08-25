@@ -12,7 +12,7 @@ NULL
   foo <- paste(#"## \n##  magi (Version ", version, ", Build Date: ", BuildDate, ")\n",
                "##  See vignette https://arxiv.org/abs/2203.06066 for detailed usage instructions, \n",
                "##  and https://github.com/wongswk/magi for additional documentation.\n",
-               "##  COMPILING_INFORMATION_HERE\n",
+               "##  \n",
                "##  Please cite MAGI method as:\n",
                "##  Yang, S., Wong, S.W. and Kou, S.C., 2021.\n",
                "##  Inference of dynamic systems from noisy and sparse data via manifold-constrained Gaussian processes.\n",
