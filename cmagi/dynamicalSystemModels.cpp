@@ -3,7 +3,7 @@
 using namespace arma;
 using namespace std;
 
-// [[Rcpp::export]]
+
 arma::mat fnmodelODE(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   const vec & V = x.col(0);
   const vec & R = x.col(1);
@@ -14,7 +14,7 @@ arma::mat fnmodelODE(const arma::vec & theta, const arma::mat & x, const arma::v
   return join_horiz(Vdt, Rdt);
 }
 
-// [[Rcpp::export]]
+
 arma::cube fnmodelDx(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDx(x.n_rows, x.n_cols, x.n_cols);
   
@@ -30,7 +30,7 @@ arma::cube fnmodelDx(const arma::vec & theta, const arma::mat & x, const arma::v
   return resultDx;
 }
 
-// [[Rcpp::export]]
+
 arma::cube fnmodelDtheta(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
   
@@ -46,7 +46,7 @@ arma::cube fnmodelDtheta(const arma::vec & theta, const arma::mat & x, const arm
   return resultDtheta;
 }
 
-// [[Rcpp::export]]
+
 arma::mat hes1modelODE(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   const vec & P = x.col(0);
   const vec & M = x.col(1);
@@ -60,7 +60,7 @@ arma::mat hes1modelODE(const arma::vec & theta, const arma::mat & x, const arma:
   return PMHdt;
 }
 
-// [[Rcpp::export]]
+
 arma::cube hes1modelDx(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDx(x.n_rows, x.n_cols, x.n_cols, fill::zeros);
   
@@ -80,7 +80,7 @@ arma::cube hes1modelDx(const arma::vec & theta, const arma::mat & x, const arma:
   return resultDx;
 }
 
-// [[Rcpp::export]]
+
 arma::cube hes1modelDtheta(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
   
@@ -102,7 +102,7 @@ arma::cube hes1modelDtheta(const arma::vec & theta, const arma::mat & x, const a
   return resultDtheta;
 }
 
-// [[Rcpp::export]]
+
 arma::mat hes1logmodelODE(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   const vec & P = arma::exp(x.col(0));
   const vec & M = arma::exp(x.col(1));
@@ -116,7 +116,7 @@ arma::mat hes1logmodelODE(const arma::vec & theta, const arma::mat & x, const ar
   return PMHdt;
 }
 
-// [[Rcpp::export]]
+
 arma::cube hes1logmodelDx(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDx(x.n_rows, x.n_cols, x.n_cols, fill::zeros);
   
@@ -140,7 +140,7 @@ arma::cube hes1logmodelDx(const arma::vec & theta, const arma::mat & x, const ar
   return resultDx;
 }
 
-// [[Rcpp::export]]
+
 arma::cube hes1logmodelDtheta(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
   
@@ -162,7 +162,7 @@ arma::cube hes1logmodelDtheta(const arma::vec & theta, const arma::mat & x, cons
   return resultDtheta;
 }
 
-// [[Rcpp::export]]
+
 arma::mat hes1logmodelODEfixg(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   const vec & P = arma::exp(x.col(0));
   const vec & M = arma::exp(x.col(1));
@@ -176,7 +176,7 @@ arma::mat hes1logmodelODEfixg(const arma::vec & theta, const arma::mat & x, cons
   return PMHdt;
 }
 
-// [[Rcpp::export]]
+
 arma::cube hes1logmodelDxfixg(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDx(x.n_rows, x.n_cols, x.n_cols, fill::zeros);
   
@@ -200,7 +200,7 @@ arma::cube hes1logmodelDxfixg(const arma::vec & theta, const arma::mat & x, cons
   return resultDx;
 }
 
-// [[Rcpp::export]]
+
 arma::cube hes1logmodelDthetafixg(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
   
@@ -223,7 +223,7 @@ arma::cube hes1logmodelDthetafixg(const arma::vec & theta, const arma::mat & x, 
 }
 
 
-// [[Rcpp::export]]
+
 arma::mat hes1logmodelODEfixf(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
     const vec & P = arma::exp(x.col(0));
     const vec & M = arma::exp(x.col(1));
@@ -237,7 +237,7 @@ arma::mat hes1logmodelODEfixf(const arma::vec & theta, const arma::mat & x, cons
     return PMHdt;
 }
 
-// [[Rcpp::export]]
+
 arma::cube hes1logmodelDxfixf(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
     cube resultDx(x.n_rows, x.n_cols, x.n_cols, fill::zeros);
 
@@ -262,7 +262,7 @@ arma::cube hes1logmodelDxfixf(const arma::vec & theta, const arma::mat & x, cons
 }
 
 
-// [[Rcpp::export]]
+
 arma::cube hes1logmodelDthetafixf(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
     cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
 
@@ -284,7 +284,7 @@ arma::cube hes1logmodelDthetafixf(const arma::vec & theta, const arma::mat & x, 
 }
 
 
-// [[Rcpp::export]]
+
 arma::mat HIVmodelODE(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   const vec & T = exp(x.col(0));
   const vec & Tm = exp(x.col(1));
@@ -306,7 +306,7 @@ arma::mat HIVmodelODE(const arma::vec & theta, const arma::mat & x, const arma::
   return HIVdt;
 }
 
-// [[Rcpp::export]]
+
 arma::cube HIVmodelDx(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDx(x.n_rows, x.n_cols, x.n_cols, fill::zeros);
   
@@ -338,7 +338,7 @@ arma::cube HIVmodelDx(const arma::vec & theta, const arma::mat & x, const arma::
   return resultDx;
 }
 
-// [[Rcpp::export]]
+
 arma::cube HIVmodelDtheta(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
   
@@ -371,7 +371,7 @@ arma::cube HIVmodelDtheta(const arma::vec & theta, const arma::mat & x, const ar
   return resultDtheta;
 }
 
-// [[Rcpp::export]]
+
 arma::mat ptransmodelODE(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   const vec & S = x.col(0);
   const vec & dS = x.col(1);
@@ -390,7 +390,7 @@ arma::mat ptransmodelODE(const arma::vec & theta, const arma::mat & x, const arm
   return resultdt;
 }
 
-// [[Rcpp::export]]
+
 arma::cube ptransmodelDx(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDx(x.n_rows, x.n_cols, x.n_cols, fill::zeros);
   
@@ -421,7 +421,7 @@ arma::cube ptransmodelDx(const arma::vec & theta, const arma::mat & x, const arm
   return resultDx;
 }
 
-// [[Rcpp::export]]
+
 arma::cube ptransmodelDtheta(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
   cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
   
