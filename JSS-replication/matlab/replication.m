@@ -68,11 +68,13 @@ plot(hes1result.lp);
 title("log-post");
 
 % Parameter estimates
-hes1est = vertcat(mean(hes1result.theta),quantile(hes1result.theta, [0.025, 0.975]));
-array2table(hes1est,'RowNames',{'Mean','2.5%','97.5%'}, 'VariableNames', theta_names)
+summaryMagiOutput(hes1result, false, theta_names, 0.025, 0.975)
 
-% Inferred trajectories
+% Inferred trajectories (log scale)
 comp_names = ["P (17 observations)", "M (16 observations)", "H (unobserved)"];
+plotMagiOutput(hes1result, true, true, comp_names, 0.025, 0.975)
+
+% Inferred trajectories (original scale)
 xEst = exp(squeeze(mean(hes1result.xsampled, 1)));
 for i=1:size(xEst,2)
     subplot(1,3,i);
@@ -92,6 +94,8 @@ for i=1:size(xEst,2)
     end
     title(comp_names(i));
 end
+
+save("hes1result.mat")
 
 
 %%% Fitzhugh-Nagumo equations
@@ -127,21 +131,10 @@ FNres3 = MagiSolver( y_I3, fnmodel, [], config);
 % Parameter estimates
 theta_names = ["a", "b", "c", "sigmaV", "sigmaR"];
 
-FNest0 = vertcat(mean(horzcat(FNres0.theta, FNres0.sigma)), ...
-    quantile(horzcat(FNres0.theta, FNres0.sigma), [0.025, 0.975]));
-array2table(FNest0,'RowNames',{'Mean','2.5%','97.5%'}, 'VariableNames', theta_names)
-
-FNest1 = vertcat(mean(horzcat(FNres1.theta, FNres1.sigma)), ...
-    quantile(horzcat(FNres1.theta, FNres1.sigma), [0.025, 0.975]));
-array2table(FNest1,'RowNames',{'Mean','2.5%','97.5%'}, 'VariableNames', theta_names)
-
-FNest2 = vertcat(mean(horzcat(FNres2.theta, FNres2.sigma)), ...
-    quantile(horzcat(FNres2.theta, FNres2.sigma), [0.025, 0.975]));
-array2table(FNest2,'RowNames',{'Mean','2.5%','97.5%'}, 'VariableNames', theta_names)
-
-FNest3 = vertcat(mean(horzcat(FNres3.theta, FNres3.sigma)), ...
-    quantile(horzcat(FNres3.theta, FNres3.sigma), [0.025, 0.975]));
-array2table(FNest3,'RowNames',{'Mean','2.5%','97.5%'}, 'VariableNames', theta_names)
+summaryMagiOutput(FNres0, true, theta_names, 0.025, 0.975)
+summaryMagiOutput(FNres1, true, theta_names, 0.025, 0.975)
+summaryMagiOutput(FNres2, true, theta_names, 0.025, 0.975)
+summaryMagiOutput(FNres3, true, theta_names, 0.025, 0.975)
 
 tvec = 0:0.01:20;
 
@@ -190,6 +183,8 @@ FNrmsd = vertcat(sqrt(mean((FNtr_I0(ismember(tvec, FNdat(:,1)),:) - FNdat(:,2:3)
     sqrt(mean((FNtr_I3(ismember(tvec, FNdat(:,1)),:) - FNdat(:,2:3)).^2,1)))';
 array2table(FNrmsd,'VariableNames',{'I0','I1','I2','I3'}, 'RowNames', {'V','R'})
 
+save("FNresult.mat")
+
 
 %%% HIV time-dependent model
 
@@ -226,6 +221,7 @@ for i=1:3
   title(compnames(i));
   hold on;
   plot(tvec, y(:,i+1), '.');
+  hold off;
 end
 
 % use gpsmoothing to determine phi/sigma
@@ -250,8 +246,7 @@ HIVresult = MagiSolver( y_I, hivdtmodel, [], config);
 
 % Parameter estimates
 theta_names = ["lambda", "rho", "delta", "N", "c"];
-HIVest = vertcat(mean(HIVresult.theta),quantile(HIVresult.theta, [0.025, 0.975]));
-array2table(HIVest,'RowNames',{'Mean','2.5%','97.5%'}, 'VariableNames', theta_names)
+summaryMagiOutput(HIVresult, false, theta_names, 0.025, 0.975)
 
 % Inferred trajectories
 xEst = squeeze(mean(HIVresult.xsampled, 1));
@@ -275,3 +270,5 @@ for i=1:size(xEst,2)
     end
     title(compnames(i));
 end
+
+save("HIVtdresult.mat")
