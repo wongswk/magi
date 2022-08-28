@@ -13,16 +13,27 @@ This is a resubmission. In this version we have made the following changes.
 * Reduced runtime of examples
 
 ## Test environments:
-* win-builder (devel, release)
 * Ubuntu 20.04, R 4.2.0
+* Windows 10, R 4.1.0
+* Windows 10, R-devel
 
 ## R CMD check results
 There were no ERRORs or WARNINGs.
 
-There was one NOTE on R 4.2.0 on Ubuntu 20.04:
+There was one NOTE on R 4.2.0 on Ubuntu 20.04 regarding package size:
 ```
 * checking installed package size ... NOTE
   installed size is 38.6Mb
   sub-directories of 1Mb or more:
     libs  37.2Mb
 ```
+
+There was one NOTE on R 4.1.0 on Windows 10 regarding package size:
+```
+> checking installed package size ... NOTE
+    installed size is  5.8Mb
+    sub-directories of 1Mb or more:
+      libs   4.5Mb
+```
+
+There were no NOTEs on R-devel on Windows 10.
