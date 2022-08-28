@@ -90,7 +90,7 @@ Rcpp::List xthetasigmallikRcpp( const arma::mat & xlatent,
 //' # Trajectories from the Fitzhugh-Nagumo equations
 //' tvec <- seq(0, 20, 2)
 //' Vtrue <- c(-1, 1.91, 1.38, -1.32, -1.5, 1.73, 1.66, 0.89, -1.82, -0.93, 1.89)
-//' Rtrue <- c(1, 0.33, -0.62, -0.82, 0.5, 0.94, -0.22, -0.9, -0.08, 0.95,0.3)
+//' Rtrue <- c(1, 0.33, -0.62, -0.82, 0.5, 0.94, -0.22, -0.9, -0.08, 0.95, 0.3)
 //' 
 //' # Noisy observations
 //' Vobs <- Vtrue + rnorm(length(tvec), sd = 0.05)

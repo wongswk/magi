@@ -6,7 +6,7 @@
 #' @param odeModel list of ODE functions and inputs. See details.
 #' @param tvec vector of discretization time points corresponding to rows of \code{y}.  If missing, \code{MagiSolver} will use the column named `time` in \code{y}.
 #' @param control list of control variables, which may include `sigma`, `phi`, `xInit`, `thetaInit`, `mu`, `dotmu`, `priorTemperature`, `niterHmc`
-#' `burninRatio`, `nstepsHmc`, `stepSizeFactor`, `bandSize`, `useFixedSigma`.  See details.
+#' `burninRatio`, `nstepsHmc`, `stepSizeFactor`, `bandSize`, `useFixedSigma`, `verbose`.  See details.
 #' 
 #' @return 
 #' \code{MagiSolver} returns an object of class \code{\link{magioutput}} which contains the following elements:
