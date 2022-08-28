@@ -9,7 +9,7 @@ from scipy.integrate import solve_ivp
 # Add path to MAGI library directory (containing pymagi.so) here if necessary
 # sys.path.append('...')
 
-from arma import ode_system, testDynamicalModel, setDiscretization, gpsmoothing
+from arma import ode_system, testDynamicalModel, setDiscretization, gpsmoothing, plotMagiOutput, summaryMagiOutput
 from magi import MagiSolver
 
 ## Hes1 example
@@ -140,13 +140,13 @@ plt.title('log-post')
 plt.show()
 
 # Parameter estimates
-theta_est = np.vstack((np.mean(hes1result['theta'], axis=-1),
-                   np.quantile(hes1result['theta'], q=[0.025, 0.975], axis=-1)))
-pd.DataFrame(theta_est, columns=theta_names, index=['Mean', '2.5%', '97.5%'])
+summaryMagiOutput(hes1result, theta_names)
 
-
-# Inferred trajectories
+# Inferred trajectories (log scale)
 comp_names = ["P (17 observations)", "M (16 observations)", "H (unobserved)"];
+plotMagiOutput(hes1result, comp_names)
+
+# Inferred trajectories (original scale)
 xMean = np.exp(np.mean(hes1result['xsampled'], axis=-1))
 xLB = np.exp(np.quantile(hes1result['xsampled'], 0.025, axis=-1))
 xUB = np.exp(np.quantile(hes1result['xsampled'], 0.975, axis=-1))
@@ -209,17 +209,12 @@ FNres1 = MagiSolver(y = y_I1, odeModel=fn_system, control=dict(niterHmc = 10000)
 FNres2 = MagiSolver(y = y_I2, odeModel=fn_system, control=dict(niterHmc = 10000))
 FNres3 = MagiSolver(y = y_I3, odeModel=fn_system, control=dict(niterHmc = 10000, nstepsHmc=1000))
 
-def FNpar_table(res):
-    allpar = np.vstack((res['theta'], res['sigma']))
-    par_est = np.vstack((np.mean(allpar, axis=-1),
-                   np.quantile(allpar, q=[0.025, 0.975], axis=-1)))
-    return pd.DataFrame(par_est, columns=["a", "b", "c", "sigmaV", "sigmaR"],
-                        index=['Mean', '2.5%', '97.5%'])
-    
-FNpar_table(FNres0)
-FNpar_table(FNres1)
-FNpar_table(FNres2)
-FNpar_table(FNres3)
+FN_parnames = ["a", "b", "c", "sigmaV", "sigmaR"]
+
+summaryMagiOutput(FNres0, FN_parnames, sigma = True)
+summaryMagiOutput(FNres1, FN_parnames, sigma = True)
+summaryMagiOutput(FNres2, FN_parnames, sigma = True)
+summaryMagiOutput(FNres3, FN_parnames, sigma = True)
 
 # Reconstructed trajectories
 tvecOde = np.linspace(0,20,2001)
@@ -284,7 +279,6 @@ def hivtdmodelDx(theta, x, tvec):
     TI = x[:,1]
     V = x[:,2]
 
-    lambda_val = theta[0]
     rho = theta[1]
     delta = theta[2]
     N = theta[3]
@@ -293,14 +287,10 @@ def hivtdmodelDx(theta, x, tvec):
     eta = 9e-5 * (1 - 0.9 * np.cos(np.pi * tvec / 1000))
 
     resultDx[:,0,0] = -rho - eta * V
-    resultDx[:,1,0] = 0
     resultDx[:,2,0] = -eta * TU
-
     resultDx[:,0,1] = eta * V
     resultDx[:,1,1] = -delta
     resultDx[:,2,1] = eta * TU
-
-    resultDx[:,0,2] = 0
     resultDx[:,1,2] = N * delta
     resultDx[:,2,2] = -c
 
@@ -313,28 +303,12 @@ def hivtdmodelDtheta(theta, x, tvec):
     TI = x[:,1]
     V = x[:,2]
 
-    lambda_val = theta[0]
-    rho = theta[1]
     delta = theta[2]
     N = theta[3]
-    c = theta[4]
-
-    eta = 9e-5 * (1 - 0.9 * np.cos(np.pi * tvec / 1000))
 
     resultDtheta[:,0,0] = 1
     resultDtheta[:,1,0] = -TU
-    resultDtheta[:,2,0] = 0
-    resultDtheta[:,3,0] = 0
-    resultDtheta[:,4,0] = 0
-
-    resultDtheta[:,0,1] = 0
-    resultDtheta[:,1,1] = 0
     resultDtheta[:,2,1] = -TI
-    resultDtheta[:,3,1] = 0
-    resultDtheta[:,4,1] = 0
-
-    resultDtheta[:,0,2] = 0
-    resultDtheta[:,1,2] = 0
     resultDtheta[:,2,2] = N * TI
     resultDtheta[:,3,2] = delta * TI
     resultDtheta[:,4,2] = -V
@@ -399,9 +373,7 @@ HIVresult = MagiSolver(y=y_I, odeModel=hiv_time_dependent_system, control=contro
 
 # Parameter estimates
 theta_names = ["lambda", "rho", "delta", "N", "c"]
-theta_est = np.vstack((np.mean(HIVresult['theta'], axis=-1),
-                   np.quantile(HIVresult['theta'], q=[0.025, 0.975], axis=-1)))
-pd.DataFrame(theta_est, columns=theta_names, index=['Mean', '2.5%', '97.5%'])
+summaryMagiOutput(HIVresult, theta_names)
 
 # Inferred trajectories
 xMean = np.mean(HIVresult['xsampled'], axis=-1)
