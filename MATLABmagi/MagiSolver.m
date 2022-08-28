@@ -10,7 +10,7 @@ function out = MagiSolver(y, odeModel, tvec, control)
 %            If missing, MagiSolver will use the first column of "y".
 %      control: list of control variables, which may include `sigma`, `phi`, `xInit`,
 %               `thetaInit`, `mu`, `dotmu`, `priorTemperature`, `niterHmc`, `burninRatio`,
-%               `nstepsHmc`, `stepSizeFactor`, `bandSize`, `useFixedSigma`.  See details.
+%               `nstepsHmc`, `stepSizeFactor`, `bandSize`, `useFixedSigma`, `verbose`.  See details.
 % 
 % RETURN
 % MagiSolver returns a struct with the following elements:
@@ -19,6 +19,7 @@ function out = MagiSolver(y, odeModel, tvec, control)
 %     sigma: matrix of MCMC samples for the observation noise SDs sigma, after burn-in.
 %     phi: matrix of estimated GP hyper-parameters, one column for each system component.
 %     lp: vector of log-posterior values at each MCMC iteration, after burn-in.
+%     y, tvec, odeModel: the data matrix, time vector, and odeModel specification from the inputs to MagiSolver.
 % 
 % DETAILS
 % The data matrix "y" has a column for each system component, and optionally with first column
@@ -54,6 +55,7 @@ function out = MagiSolver(y, odeModel, tvec, control)
 %       stepSizeFactor:  initial leapfrog step size factor for HMC.  Default is 0.01, and the leapfrog step size is automatically tuned during burn-in to achieve an acceptance rate between 60-90\%.
 %       bandSize:  a band matrix approximation is used to speed up matrix operations, with default band size 20. Can be increased if MagiSolver returns an error indicating numerical instability.
 %       useFixedSigma:  logical, set to true if sigma is known.  If useFixedSigma is true, the known values of sigma must be supplied via the sigma control variable.
+%       verbose: logical, set to true to output diagnostic and progress messages to the console.  
 % 
 % 
 % REFERENCE
@@ -152,10 +154,17 @@ function out = MagiSolver(y, odeModel, tvec, control)
         useFixedSigma = false;
     end      
 
+    if isfield(control,'verbose') && ~isempty(control.verbose)
+        verbose = control.useFixedSigma;
+    else
+        verbose = false;
+    end
+
+
 
     [outCpp, phiUsed] = solveMagi(y, odeModel, tvec, sigmaExogenous, phiExogenous, xInitExogenous, thetaInitExogenous, ...
         muExogenous, dotmuExogenous, priorTemperatureLevel, priorTemperatureDeriv, 1, char('generalMatern'), nstepsHmc, ...
-        burninRatio, niterHmc, stepSizeFactor, 1, bandSize, true, true, true, false, useFixedSigma, true);
+        burninRatio, niterHmc, stepSizeFactor, 1, bandSize, true, true, true, false, useFixedSigma, verbose);
 
     burnin = round(niterHmc*burninRatio);
     nI = size(y,1); % # points in I
@@ -166,5 +175,8 @@ function out = MagiSolver(y, odeModel, tvec, control)
     out.theta = outCpp((2+D*nI):((2+(D)*nI)+length(odeModel.thetaLowerBound)-1),(burnin+1):niterHmc)';
     out.sigma = outCpp((2+D*nI+length(odeModel.thetaLowerBound)):size(outCpp,1),(burnin+1):niterHmc)';    
     out.phi = phiUsed;
+    out.y = y;
+    out.tvec = tvec;
+    out.odeModel = odeModel;
 
 end

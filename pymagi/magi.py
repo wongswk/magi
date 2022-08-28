@@ -75,6 +75,11 @@ def MagiSolver(y, odeModel, tvec=None, control=dict()):
     else:
         useFixedSigma = False
 
+    if 'verbose' in control.keys():
+        verbose = control['verbose']
+    else:
+        verbose = False
+
 
     result = solve_magi(
         y,
@@ -101,7 +106,7 @@ def MagiSolver(y, odeModel, tvec=None, control=dict()):
         useMean = True,
         useScalerSigma = False,
         useFixedSigma = useFixedSigma,
-        verbose = True)
+        verbose = verbose)
 
     phiUsed = result['phiUsed']
     samplesCpp = result['samplesCpp']
@@ -123,4 +128,7 @@ def MagiSolver(y, odeModel, tvec=None, control=dict()):
         lp=samplesCpp[llikId, burnin:],
         sigma=samplesCpp[sigmaId, burnin:],
         phi=phiUsed,
+        y = y,
+        tvec = tvec,
+        odeModel = odeModel
     )

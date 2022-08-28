@@ -1,4 +1,7 @@
 import numpy as np
+import pandas as pd
+from matplotlib import pyplot as plt
+
 from pymagi import ArmaVector, ArmaMatrix, ArmaCube, OdeSystem, solveMagiPy, gpsmooth
 
 
@@ -194,3 +197,35 @@ def solve_magi(
     phiUsed = np.copy(phiUsed.reshape([-1])).reshape([2, -1])
     samplesCpp = matrix(result_solved.llikxthetasigmaSamples.slice(0))
     return dict(phiUsed=phiUsed, samplesCpp=samplesCpp)
+
+def summaryMagiOutput(x, par_names, sigma = False, lower = 0.025, upper = 0.975):
+    
+    if sigma:
+        allpar = np.vstack((x['theta'], x['sigma']))
+    else:
+        allpar = x['theta']
+    
+    theta_est = np.vstack((np.mean(allpar, axis=-1),
+                   np.quantile(allpar, q=[lower, upper], axis=-1)))
+    return(pd.DataFrame(theta_est, columns=par_names, index=['Mean', f'{100*lower}%', f'{100*upper}%']))
+
+def plotMagiOutput(x, comp_names, obs = True, ci = True, lower = 0.025, upper = 0.975, legend = True):
+    xMean = np.mean(x['xsampled'], axis=-1)
+    xLB = np.quantile(x['xsampled'], lower, axis=-1)
+    xUB = np.quantile(x['xsampled'], upper, axis=-1)
+    
+    for j in range(xMean.shape[0]):
+        plt.plot(x['tvec'], xMean[j,:], label='inferred trajectory')
+        
+        if ci:
+            plt.fill_between(x['tvec'], xLB[j,:], xUB[j,:],
+                            alpha=0.2, label=f'{100*(upper-lower)}% credible interval')
+        if obs:
+            plt.scatter(x['tvec'], x['y'][:,j], label='noisy observations', c='black')
+        plt.title(comp_names[j])
+        plt.xlabel('Time')
+        
+        if legend:
+            plt.legend()
+        plt.show()
+
