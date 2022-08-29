@@ -166,9 +166,8 @@ plot(1, type = 'n', xaxt = 'n', yaxt = 'n',
 
 legend("center", c("truth", "inferred trajectory",
                    "95% credible interval", "noisy observations"),
-  lty = c(1, 1, 0, 0), lwd = c(2, 2, 0, 1),
+  lty = c(1, 1, 0, 0), lwd = c(2, 2, 0, 1), bty = "n",
   col = c("red", "forestgreen", NA, "black"), fill = c(0, 0, "skyblue", 0),
-  text.width = c(0.02, 0.25, 0.05, 0.15), bty = "n",
   border = c(0, 0, "skyblue", 0), pch = c(NA, NA, 15, 1), horiz = TRUE)
 dev.off()
 
