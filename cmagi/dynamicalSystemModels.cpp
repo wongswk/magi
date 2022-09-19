@@ -1165,7 +1165,10 @@ arma::mat lacOperonODE(const arma::vec & theta, const arma::mat & x, const arma:
     const vec & r = x.col(8);
     const vec & z = x.col(9);
 
-    const double iconstant = theta(0);
+//    hard code [i] component to 1
+//    const double iconstant = theta(0);
+    const double iconstant = 1.0;
+
     const vec & k = theta;
 
     mat resultdt(x.n_rows, x.n_cols);
@@ -1199,7 +1202,9 @@ arma::cube lacOperonDx(const arma::vec & theta, const arma::mat & x, const arma:
     const vec & r = x.col(8);
     const vec & z = x.col(9);
 
-    const double iconstant = theta(0);
+//    hard code [i] component to 1
+//    const double iconstant = theta(0);
+    const double iconstant = 1.0;
     const vec & k = theta;
 
     resultDx.slice(0).col(0).fill(-k(12));
@@ -1262,10 +1267,14 @@ arma::cube lacOperonDtheta(const arma::vec & theta, const arma::mat & x, const a
     const vec & r = x.col(8);
     const vec & z = x.col(9);
 
-    const double iconstant = theta(0);
+//    hard code [i] component to 1
+//    const double iconstant = theta(0);
+    const double iconstant = 1.0;
     const vec & k = theta;
 
-    resultDtheta.slice(0).col(0).fill(k(1));
+//    hard code [i] component to 1
+//    resultDtheta.slice(0).col(0).fill(k(1));
+    resultDtheta.slice(0).col(0).fill(0);
     resultDtheta.slice(0).col(1).fill(iconstant);
     resultDtheta.slice(0).col(12) = -ri;
 
