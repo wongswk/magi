@@ -113,8 +113,8 @@ phiExogenous <- cbind(
 sigmaInit <- config$noise
 
 
-#' works well except for theta1 which is the [i] component
-#' TODO assume [i] value is known
+#' works well except for theta0 which is the [i] component
+#' even assume component [i] is known constant, k5 and k7 are still biased, other parameter inferences are good
 #'
 OursStartTime <- proc.time()[3] 
 result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, 
