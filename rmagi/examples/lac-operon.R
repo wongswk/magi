@@ -115,6 +115,7 @@ sigmaInit <- config$noise
 
 #' works well except for theta0 which is the [i] component
 #' even assume component [i] is known constant, k5 and k7 are still biased, other parameter inferences are good
+#' trajectory RMSE are improved with known component [i]
 #'
 OursStartTime <- proc.time()[3] 
 result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, 
@@ -139,3 +140,5 @@ magi:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], "xinitlin.pdf"),
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 
+# TODO repeated experiments to get summary table, including coverage, trajectory RMSE, parameter RMSE
+# tune the noise level and make the noise in different components comparable in scale
