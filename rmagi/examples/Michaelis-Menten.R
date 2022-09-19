@@ -26,8 +26,8 @@ if(!exists("config")){
 # initialize global parameters, true x, simulated x ----------------------------
 # parameters and initial conditions that seem to mimic the real data well
 pram.true <- list( 
-  theta=c(0.035, 0.01, 0.3),
-  x0 = c(2, 1, 0, 0),
+  theta=c(0.112, 0.0037, 0.27),
+  x0 = c(0.685, 1, 0, 0),
   phi = cbind(c(1, 50), c(1, 50), c(1, 50), c(0.2, 50)),
   sigma=config$noise
 )
@@ -83,7 +83,10 @@ config$ndis <- config$t.end / config$linfillspace + 1
 sigma_fixed <- pram.true$sigma
 sigma_fixed[1] <- 0.005
 sigma_fixed[3] <-  0.005
+sigma_fixed[2] <- 1e-4
+sigma_fixed[4] <- 1e-4
 
+xsim[1,-1] <- pram.true$x0
 
 # MAGI off-the-shelf ----
 # sampler with a good phi supplied, no missing component
@@ -93,7 +96,7 @@ OursStartTime <- proc.time()[3]
 
 result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control = 
                              list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = config$stepSizeFactor,
-                                  burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, discardBurnin=TRUE))
+                                  burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, discardBurnin=TRUE, useFixedSigma=TRUE))
 
 OursTimeUsed <- proc.time()[3] - OursStartTime
 
@@ -118,19 +121,26 @@ magi:::plotPostSamplesFlex(
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 tail(gpode$theta)
 
+apply(gpode$xsampled[,1,], 2, median)
+apply(gpode$theta, 2, median)
+
+#' TODO on simulated data
+#' repeated experiments
+
 # real-data ----
 xreal <- xsim
+xreal[1,-1] <- NA
 colnames(xreal) <- c("time", "E", "S", "ES", "P")
 xreal$S[is.finite(xreal$S)] <- realdata$S
 xreal$P[is.finite(xreal$P)] <- realdata$P
 
 xreal$ES[1] <- 0
 xreal$P[1] <- 0
-xreal$E[1] <- 2
+xreal$E[1] <- 0.685
 xreal$S[1] <- 1
 
-sigma_fixed[1] <- 1e-8
-sigma_fixed[3] <-  1e-8
+sigma_fixed[1] <- 1e-4  # cannot be too small due to numerical stability coded in c++ 
+sigma_fixed[3] <-  1e-4  # 1e-4 is the smallest value
 
 pram.true$phi = cbind(c(1, 50), c(1, 50), c(1, 50), c(0.2, 50))
 
@@ -157,3 +167,12 @@ magi:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], "-real-data.pdf"),
   xtrue, dotxtrue, xreal, gpode, pram.true, config, odemodel)
 tail(gpode$theta)
+
+tail(gpode$sigma)
+apply(gpode$xsampled[,1,], 2, median)
+apply(gpode$theta, 2, median)
+
+
+#' TODO on real-data
+#' MLE benchmark
+#' still not sure about the "correct" initial condition, try checking with other papers.
