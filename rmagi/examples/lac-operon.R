@@ -14,7 +14,7 @@ if(!exists("config")){
     hmcSteps = 100,
     niterHmc = 20001,
     stepSizeFactor = 0.001,
-    filllevel = 1,
+    filllevel = 0,
     t.end = 1200,
     modelName = "lac-operon"
   )
@@ -30,7 +30,7 @@ pram.true <- list(
 )
 
 
-times <- seq(0,config$t.end,length=1001)
+times <- seq(0,config$t.end,length=100001)
 
 modelODE <- function(t, state, parameters) {
   list(as.vector(magi:::lacOperonODE(parameters, t(state), t)))
@@ -59,6 +59,7 @@ for(j in 1:(ncol(xsim)-1)){
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
 
+xsim.obs <- xsim.obs[-1,] # remove first observation b.c. the rapid changes
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
 
 xsim <- setDiscretization(xsim.obs,config$filllevel)
@@ -84,27 +85,40 @@ sigmaInit <- rep(0, ncol(xsim)-1)
 for (j in 1:(ncol(xsim)-1)){
   hyperparam <- gpsmoothing(xsim.obs[,j+1],
                             xsim.obs$time,
-                            "generalMatern")
+                            "generalMatern",
+                            sigma = config$noise[j])
   phiExogenous[,j] <- hyperparam$phi
   sigmaInit[j] <- hyperparam$sigma
   plot(xsim.obs$time, xsim.obs[,j+1], main=paste0("component ", j))
   lines(xtrue$time, xtrue[,j+1], col=2)
   mtext(paste0("sigma = ", round(sigmaInit[j], 3), 
-               "; phi = ", paste0(round(phiExogenous[,j], 3), collapse = ",")))
+               "; phi = ", paste0(round(phiExogenous[,j], 3), collapse = ", ")))
 }
 
 
 #' manually override estimated hyper-parameters for some components
 #' GP smoothing gives bad result for rapidly decreasing curve
-phiExogenous[1,10] <- 0.01
+phiExogenous <- cbind(
+  c(2.5, 600),
+  c(100, 140),
+  c(1000, 200),
+  c(60, 100),
+  c(0.01, 800),  # remove first obs
+  c(1, 200),
+  c(1, 300),
+  c(0.5, 300),
+  c(1, 400),
+  c(35, 1000)
+)
+sigmaInit <- config$noise
 
 
-#' burn-in takes a long time
-#' use interpolated xinit gives bad mixing and low posterior value
-#' use GP xinit gives poor fit
+#' works well except for theta1 which is the [i] component
+#' TODO assume [i] value is known
+#'
 OursStartTime <- proc.time()[3] 
 result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, 
-                           control = list(niterHmc=config$niterHmc, stepSizeFactor = config$stepSizeFactor, phi=phiExogenous, sigma=sigmaInit))
+                           control = list(xInit=xInitExogenous, niterHmc=config$niterHmc, stepSizeFactor = config$stepSizeFactor, phi=phiExogenous, sigma=sigmaInit, useFixedSigma=TRUE))
 OursTimeUsed <- proc.time()[3] - OursStartTime
 
 gpode <- result
@@ -122,6 +136,6 @@ for(j in 1:(ncol(xsim)-1)){
 
 gpode$lglik <- gpode$lp
 magi:::plotPostSamplesFlex(
-  paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".pdf"),
+  paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], "xinitlin.pdf"),
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 
