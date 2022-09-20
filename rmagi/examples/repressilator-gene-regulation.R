@@ -14,7 +14,7 @@ if(!exists("config")){
     hmcSteps = 100,
     niterHmc = 20001,
     stepSizeFactor = 0.001,
-    filllevel = 1,
+    filllevel = 0,
     t.end = 300,
     modelName = "repressilator-gene-regulation"
   )
@@ -56,9 +56,11 @@ for(j in 1:(ncol(xsim)-1)){
   xsim[,1+j] <- xsim[,1+j]+rnorm(nrow(xsim), sd=config$noise[j])
 }
 
-xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
-matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
+#' log scale might be better
+#' It is generally accepted that mRNA levels are easier to measure than protein abundances.
+#' So we could demonstrate this system with protein levels missing.
 
+xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
 
 xsim <- setDiscretization(xsim.obs,config$filllevel)
@@ -77,7 +79,11 @@ for (j in 1:(ncol(xsim)-1)){
   xInitExogenous[, j] <- approx(xsim.obs$time, xsim.obs[,j+1], xsim$time)$y
 }
 
-testDynamicalModel(dynamicalModelList$fOde, dynamicalModelList$fOdeDx, dynamicalModelList$fOdeDtheta, "dynamicalModelList", xInitExogenous, pram.true$theta, xsim$time)
+# a negative value making power to 2.01 will return NA, resulting in the failure of the following test function
+# testDynamicalModel(dynamicalModelList$fOde, dynamicalModelList$fOdeDx, dynamicalModelList$fOdeDtheta, "dynamicalModelList", xInitExogenous, pram.true$theta, xsim$time)
+
+# xsim.obs[, -(1:4)] <- NA
+matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
 
 phiExogenous <- matrix(0, nrow=2, ncol=ncol(xsim)-1)
 sigmaInit <- rep(0, ncol(xsim)-1)
@@ -90,14 +96,11 @@ for (j in 1:(ncol(xsim)-1)){
   plot(xsim.obs$time, xsim.obs[,j+1], main=paste0("component ", j))
   lines(xtrue$time, xtrue[,j+1], col=2)
   mtext(paste0("sigma = ", round(sigmaInit[j], 3), 
-               "; phi = ", paste0(round(phiExogenous[,j], 3), collapse = ",")))
+               "; phi = ", paste0(round(phiExogenous[,j], 3), collapse = ", ")))
 }
 
 
-#' manually override estimated hyper-parameters for some components
-#' GP smoothing gives bad result for rapidly decreasing curve
-# phiExogenous[1,10] <- 0.01
-
+phiExogenous <- rbind(rep(80, 6), rep(10, 6))
 
 OursStartTime <- proc.time()[3] 
 result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, 
