@@ -1,0 +1,104 @@
+library(magi)
+
+outDir <- "../results/repressilator-gene-regulation-log/"
+dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
+
+# set up configuration if not already exist ------------------------------------
+if(!exists("config")){
+  config <- list(
+    nobs = 101,
+    noise = rep(0.001, 6),
+    kernel = "generalMatern",
+    seed = 123,
+    bandsize = 100,
+    hmcSteps = 100,
+    niterHmc = 20001,
+    stepSizeFactor = 0.001,
+    filllevel = 0,
+    t.end = 300,
+    modelName = "repressilator-gene-regulation-log"
+  )
+}
+
+
+# initialize global parameters, true x, simulated x ----------------------------
+alpha <- 240 # obtain from Fig 1b in Elowitz and Leibler (2000)
+KM <- 40     # scale factor only, to convert protein number to match Fig 1c in paper
+pram.true <- list(
+  theta=c(0.001*alpha, alpha, 2, 1/5),  # alpha0/alpha = 0.001
+  # initial condition cannot be the same, otherwise the system degenerates to two-components 
+  # -- all the m and all the p will be the same
+  x0 = log(c(0.4, 20, 40, 0.01, 0.01, 0.01)),
+  # phi = cbind(c(1, 50), c(1, 50), c(1, 50)),
+  sigma=config$noise
+)
+
+
+times <- seq(0,config$t.end,length=1001)
+
+modelODE <- function(t, state, parameters) {
+  list(as.vector(magi:::repressilatorGeneRegulationLogODE(parameters, t(state), t)))
+}
+
+xtrue <- deSolve::ode(y = pram.true$x0, times = times, func = modelODE, parms = pram.true$theta)
+xtrue <- data.frame(xtrue)
+# Plot proteins only (times KM factor), compare to Fig 1c (left panel) in Elowitz and Leibler (2000)
+matplot(xtrue[, "time"], xtrue[, -(1:4)] * KM, type="l", lty=1)
+matplot(xtrue[, "time"], exp(xtrue[, -(1:4)]) * KM, type="l", lty=1)
+
+xtrueFunc <- lapply(2:ncol(xtrue), function(j)
+  approxfun(xtrue[, "time"], xtrue[, j]))
+
+xsim <- data.frame(time = seq(0,config$t.end,length=config$nobs))
+xsim <- cbind(xsim, sapply(xtrueFunc, function(f) f(xsim$time)))
+
+set.seed(config$seed)
+for(j in 1:(ncol(xsim)-1)){
+  xsim[,1+j] <- xsim[,1+j]+rnorm(nrow(xsim), sd=config$noise[j])
+}
+
+
+xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
+matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
+
+xsim <- setDiscretization(xsim.obs,config$filllevel)
+
+dynamicalModelList <- list(
+  fOde=magi:::repressilatorGeneRegulationLogODE,
+  fOdeDx=magi:::repressilatorGeneRegulationLogDx,
+  fOdeDtheta=magi:::repressilatorGeneRegulationLogDtheta,
+  thetaLowerBound=rep(0, 4),
+  thetaUpperBound=rep(Inf, 4),
+  name="repressilator-gene-regulation-log"
+)
+
+xInitExogenous <- data.matrix(xsim[,-1])
+for (j in 1:(ncol(xsim)-1)){
+  xInitExogenous[, j] <- approx(xsim.obs$time, xsim.obs[,j+1], xsim$time)$y
+}
+
+testDynamicalModel(dynamicalModelList$fOde, dynamicalModelList$fOdeDx, dynamicalModelList$fOdeDtheta, "dynamicalModelList", xInitExogenous[-1,], pram.true$theta, xsim$time[-1])
+
+matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
+
+phiExogenous <- matrix(0, nrow=2, ncol=ncol(xsim)-1)
+sigmaInit <- rep(0, ncol(xsim)-1)
+for (j in 1:(ncol(xsim)-1)){
+  hyperparam <- gpsmoothing(xsim.obs[,j+1],
+                            xsim.obs$time,
+                            "generalMatern")
+  phiExogenous[,j] <- hyperparam$phi
+  sigmaInit[j] <- hyperparam$sigma
+  plot(xsim.obs$time, xsim.obs[,j+1], main=paste0("component ", j))
+  lines(xtrue$time, xtrue[,j+1], col=2)
+  mtext(paste0("sigma = ", round(sigmaInit[j], 3), 
+               "; phi = ", paste0(round(phiExogenous[,j], 3), collapse = ", ")))
+}
+
+
+phiExogenous <- rbind(rep(6, 6), rep(10, 6))
+
+OursStartTime <- proc.time()[3] 
+result <- magi::MagiSolver(xsim[-1,-1], dynamicalModelList, xsim$time[-1], 
+                           control = list(xinit=xInitExogenous, niterHmc=config$niterHmc, stepSizeFactor = config$stepSizeFactor, phi=phiExogenous, sigma=sigmaInit, useFixedSigma=TRUE))
+OursTimeUsed <- proc.time()[3] - OursStartTime
