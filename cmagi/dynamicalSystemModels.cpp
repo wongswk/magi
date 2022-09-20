@@ -1413,3 +1413,101 @@ arma::cube repressilatorGeneRegulationDtheta(const arma::vec & theta, const arma
 
     return resultDtheta;
 }
+
+// [[Rcpp::export]]
+arma::mat repressilatorGeneRegulationLogODE(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
+    const vec & m_laci = arma::exp(x.col(0));
+    const vec & m_tetr = arma::exp(x.col(1));
+    const vec & m_ci = arma::exp(x.col(2));
+    const vec & p_laci = arma::exp(x.col(3));
+    const vec & p_tetr = arma::exp(x.col(4));
+    const vec & p_ci = arma::exp(x.col(5));
+
+    const double alpha0 = theta(0);
+    const double alpha = theta(1);
+    const double n = theta(2);
+    const double beta = theta(3);
+
+    mat resultdt(x.n_rows, x.n_cols);
+
+    resultdt.col(0) = -1 + (alpha / (1 + arma::pow(p_ci, n)) + alpha0) / m_laci;
+    resultdt.col(1) = -1 + (alpha / (1 + arma::pow(p_laci, n)) + alpha0) / m_tetr;
+    resultdt.col(2) = -1 + (alpha / (1 + arma::pow(p_tetr, n)) + alpha0) / m_ci;
+    resultdt.col(3) = (-beta*(1 - m_laci / p_laci));
+    resultdt.col(4) = (-beta*(1 - m_tetr / p_tetr)) ;
+    resultdt.col(5) = (-beta*(1 - m_ci / p_ci));
+
+    return resultdt;
+}
+
+
+// [[Rcpp::export]]
+arma::cube repressilatorGeneRegulationLogDx(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
+    cube resultDx(x.n_rows, x.n_cols, x.n_cols, fill::zeros);
+
+    const vec & tm_laci = x.col(0);
+    const vec & tm_tetr = x.col(1);
+    const vec & tm_ci = x.col(2);
+    const vec & tp_laci = x.col(3);
+    const vec & tp_tetr = x.col(4);
+    const vec & tp_ci = x.col(5);
+
+    const double alpha0 = theta(0);
+    const double alpha = theta(1);
+    const double n = theta(2);
+    const double beta = theta(3);
+
+    resultDx.slice(0).col(0) = -(alpha / (1 + arma::exp(n * tp_ci)) + alpha0) % arma::exp(-tm_laci);
+    resultDx.slice(0).col(5) = alpha * arma::exp(-tm_laci) * (-1) % arma::pow(1 + arma::exp(n * tp_ci), -2) * n % arma::exp(n * tp_ci);
+    resultDx.slice(1).col(1) = -(alpha / (1 + arma::exp(n * tp_laci)) + alpha0) % arma::exp(-tm_tetr);
+    resultDx.slice(1).col(3) = alpha * arma::exp(-tm_tetr) * (-1) % arma::pow(1 + arma::exp(n * tp_laci), -2) * n % arma::exp(n * tp_laci);
+    resultDx.slice(2).col(2) = -(alpha / (1 + arma::exp(n * tp_tetr)) + alpha0) % arma::exp(-tm_ci);
+    resultDx.slice(2).col(4) = alpha * arma::exp(-tm_ci) * (-1) % arma::pow(1 + arma::exp(n * tp_tetr), -2) * n % arma::exp(n * tp_tetr);
+
+    resultDx.slice(3).col(0) = beta * arma::exp(tm_laci - tp_laci);
+    resultDx.slice(3).col(3) = -beta * arma::exp(tm_laci - tp_laci);;
+    resultDx.slice(4).col(1) = beta * arma::exp(tm_tetr - tp_tetr);
+    resultDx.slice(4).col(4) = -beta * arma::exp(tm_tetr - tp_tetr);
+    resultDx.slice(5).col(2) = beta * arma::exp(tm_ci - tp_ci);
+    resultDx.slice(5).col(5) = -beta * arma::exp(tm_ci - tp_ci);
+
+    return resultDx;
+}
+
+
+// [[Rcpp::export]]
+arma::cube repressilatorGeneRegulationLogDtheta(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
+    cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
+
+    const vec & tm_laci = x.col(0);
+    const vec & tm_tetr = x.col(1);
+    const vec & tm_ci = x.col(2);
+    const vec & tp_laci = x.col(3);
+    const vec & tp_tetr = x.col(4);
+    const vec & tp_ci = x.col(5);
+
+    const vec p_ci = arma::exp(tp_ci);
+    const vec p_laci = arma::exp(tp_laci);
+    const vec p_tetr = arma::exp(tp_tetr);
+
+    const double alpha0 = theta(0);
+    const double alpha = theta(1);
+    const double n = theta(2);
+    const double beta = theta(3);
+
+    resultDtheta.slice(0).col(0) = arma::exp(-x.col(0));
+    resultDtheta.slice(0).col(1) = 1 / (1 + arma::exp(n * tp_ci)) % arma::exp(-x.col(0));
+    resultDtheta.slice(0).col(2) = alpha * arma::exp(-x.col(0)) * (-1) % pow(1 + arma::pow(p_ci, n), -2) % arma::pow(p_ci, n) % arma::log(p_ci);
+    resultDtheta.slice(1).col(0) = arma::exp(-x.col(1));
+    resultDtheta.slice(1).col(1) = 1 / (1 + arma::exp(n * tp_laci)) % arma::exp(-x.col(1));
+    resultDtheta.slice(1).col(2) = alpha * arma::exp(-x.col(1)) * (-1) % pow(1 + arma::pow(p_laci, n), -2) % arma::pow(p_laci, n) % arma::log(p_laci);
+    resultDtheta.slice(2).col(0) = arma::exp(-x.col(2));
+    resultDtheta.slice(2).col(1) = 1 / (1 + arma::exp(n * tp_tetr)) % arma::exp(-x.col(2));
+    resultDtheta.slice(2).col(2) = alpha * arma::exp(-x.col(2)) * (-1) % pow(1 + arma::pow(p_tetr, n), -2) % arma::pow(p_tetr, n) % arma::log(p_tetr);
+
+    resultDtheta.slice(3).col(3) = arma::exp(x.col(0) - x.col(3)) - 1;
+    resultDtheta.slice(4).col(3) = arma::exp(x.col(1) - x.col(4)) - 1;
+    resultDtheta.slice(5).col(3) = arma::exp(x.col(2) - x.col(5)) - 1;
+
+    return resultDtheta;
+}
