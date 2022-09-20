@@ -48,4 +48,8 @@ arma::mat repressilatorGeneRegulationODE(const arma::vec &, const arma::mat &, c
 arma::cube repressilatorGeneRegulationDx(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube repressilatorGeneRegulationDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
 
+arma::mat repressilatorGeneRegulationLogODE(const arma::vec &, const arma::mat &, const arma::vec &);
+arma::cube repressilatorGeneRegulationLogDx(const arma::vec &, const arma::mat &, const arma::vec &);
+arma::cube repressilatorGeneRegulationLogDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
+
 #endif
