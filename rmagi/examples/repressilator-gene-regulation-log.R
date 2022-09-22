@@ -101,6 +101,48 @@ phiExogenous <- rbind(rep(6, 6), rep(10, 6))
 # remove first obs
 xsim <- xsim[-1,]
 
+# protein levels missing
+xsim[,5:7] <- NA
+xsim.obs[,5:7] <- NA
+sigmaInit <- config$noise
+
+OursStartTime <- proc.time()[3] 
+
+result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, 
+                           control = list(niterHmc=config$niterHmc, stepSizeFactor = config$stepSizeFactor, phi=phiExogenous, sigma=sigmaInit, useFixedSigma=TRUE))
+OursTimeUsed <- proc.time()[3] - OursStartTime
+
+
+gpode <- result
+gpode$fode <- sapply(1:length(gpode$lp), function(t)
+  with(gpode, dynamicalModelList$fOde(theta[t,], xsampled[t,,], xsim$time)), simplify = "array")
+gpode$fode <- aperm(gpode$fode, c(3,1,2))
+
+dotxtrue = dynamicalModelList$fOde(pram.true$theta, data.matrix(xtrue[,-1]), xtrue$time)
+
+odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
+
+for(j in 1:(ncol(xsim)-1)){
+  config[[paste0("phiD", j)]] <- paste(round(gpode$phi[,j], 2), collapse = "; ")
+}
+
+gpode$lglik <- gpode$lp
+magi:::plotPostSamplesFlex(
+  paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], "-partobs-fill",config$filllevel,".pdf"),
+  xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+
+# with missing components, inference is ok
+# RMSE actually after more discretizations with warm start
+xsim_coerce_grid <- xsim
+xsim <- setDiscretization(xsim_coerce_grid, 1)
+
+xWarmstart <- apply(gpode$xsampled, 2:3, mean)
+
+xInitExogenous <- data.matrix(xsim[,-1])
+for (j in 1:(ncol(xsim)-1)){
+  xInitExogenous[, j] <- approx(xsim_coerce_grid$time, xWarmstart[,j], xsim$time)$y
+}
+
 OursStartTime <- proc.time()[3] 
 result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, 
                            control = list(xinit=xInitExogenous, niterHmc=config$niterHmc, stepSizeFactor = config$stepSizeFactor, phi=phiExogenous, sigma=sigmaInit, useFixedSigma=TRUE))
@@ -122,6 +164,5 @@ for(j in 1:(ncol(xsim)-1)){
 
 gpode$lglik <- gpode$lp
 magi:::plotPostSamplesFlex(
-  paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".pdf"),
+  paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], "-partobs-fill",config$filllevel+1,".pdf"),
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
-
