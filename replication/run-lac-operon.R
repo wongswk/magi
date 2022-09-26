@@ -19,7 +19,6 @@ if(!exists("config")){
     kernel = "generalMatern",
     seed = seed,
     bandsize = 100,
-    hmcSteps = 100,
     niterHmc = 20001,
     stepSizeFactor = 0.001,
     filllevel = 0,
@@ -28,13 +27,13 @@ if(!exists("config")){
   )
 }
 
-csv_path = paste0(outDir, config$modelName,"-",config$seed,"-totalnoise",sum(config$noise),"-inferred_theta.csv")
-if(file.exists(csv_path)){
-  out = scan(csv_path, what="character")
-  if(length(out) > 0){
-    quit(save="no")  
-  }
-}
+# csv_path = paste0(outDir, config$modelName,"-",config$seed,"-totalnoise",sum(config$noise),"-inferred_theta.csv")
+# if(file.exists(csv_path)){
+#   out = scan(csv_path, what="character")
+#   if(length(out) > 0){
+#     quit(save="no")  
+#   }
+# }
 
 # initialize global parameters, true x, simulated x ----------------------------
 pram.true <- list(
@@ -119,7 +118,8 @@ sigmaInit <- config$noise
 #'
 OursStartTime <- proc.time()[3] 
 result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, 
-                           control = list(xInit=xInitExogenous, niterHmc=config$niterHmc, stepSizeFactor = config$stepSizeFactor, phi=phiExogenous, sigma=sigmaInit, useFixedSigma=TRUE))
+                           control = list(xInit=xInitExogenous, niterHmc=config$niterHmc, stepSizeFactor = config$stepSizeFactor, 
+                                          phi=phiExogenous, sigma=sigmaInit, useFixedSigma=TRUE, bandSize = config$bandsize))
 OursTimeUsed <- proc.time()[3] - OursStartTime
 
 gpode <- result

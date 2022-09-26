@@ -18,8 +18,6 @@ if(!exists("config")){
     noise = rep(0.001, 6),
     kernel = "generalMatern",
     seed = seed,
-    bandsize = 100,
-    hmcSteps = 100,
     niterHmc = 10001,
     stepSizeFactor = 0.001,
     filllevel = 0,
