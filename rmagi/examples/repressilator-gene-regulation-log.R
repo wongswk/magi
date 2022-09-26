@@ -12,7 +12,7 @@ if(!exists("config")){
     seed = 123,
     bandsize = 100,
     hmcSteps = 100,
-    niterHmc = 20001,
+    niterHmc = 10001,
     stepSizeFactor = 0.001,
     filllevel = 0,
     t.end = 300,
@@ -81,22 +81,26 @@ testDynamicalModel(dynamicalModelList$fOde, dynamicalModelList$fOdeDx, dynamical
 
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
 
-phiExogenous <- matrix(0, nrow=2, ncol=ncol(xsim)-1)
-sigmaInit <- rep(0, ncol(xsim)-1)
-for (j in 1:(ncol(xsim)-1)){
-  hyperparam <- gpsmoothing(xsim.obs[,j+1],
-                            xsim.obs$time,
-                            "generalMatern")
-  phiExogenous[,j] <- hyperparam$phi
-  sigmaInit[j] <- hyperparam$sigma
-  plot(xsim.obs$time, xsim.obs[,j+1], main=paste0("component ", j))
-  lines(xtrue$time, xtrue[,j+1], col=2)
-  mtext(paste0("sigma = ", round(sigmaInit[j], 3), 
-               "; phi = ", paste0(round(phiExogenous[,j], 3), collapse = ", ")))
+# phiExogenous <- matrix(0, nrow=2, ncol=ncol(xsim)-1)
+# sigmaInit <- rep(0, ncol(xsim)-1)
+# for (j in 1:(ncol(xsim)-1)){
+#   hyperparam <- gpsmoothing(xsim.obs[,j+1],
+#                             xsim.obs$time,
+#                             "generalMatern")
+#   phiExogenous[,j] <- hyperparam$phi
+#   sigmaInit[j] <- hyperparam$sigma
+#   plot(xsim.obs$time, xsim.obs[,j+1], main=paste0("component ", j))
+#   lines(xtrue$time, xtrue[,j+1], col=2)
+#   mtext(paste0("sigma = ", round(sigmaInit[j], 3), 
+#                "; phi = ", paste0(round(phiExogenous[,j], 3), collapse = ", ")))
+# }
+
+if(config$filllevel == 0){
+  phiExogenous <- rbind(rep(6, 6), rep(10, 6))
+}else{
+  phiExogenous <- rbind(rep(6, 6), rep(5, 6))  
 }
 
-
-phiExogenous <- rbind(rep(6, 6), rep(10, 6))
 
 # remove first obs
 xsim <- xsim[-1,]
