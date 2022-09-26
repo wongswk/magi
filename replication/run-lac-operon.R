@@ -28,6 +28,13 @@ if(!exists("config")){
   )
 }
 
+csv_path = paste0(outDir, config$modelName,"-",config$seed,"-totalnoise",sum(config$noise),"-inferred_theta.csv")
+if(file.exists(csv_path)){
+  out = scan(csv_path, what="character")
+  if(length(out) > 0){
+    quit(save="no")  
+  }
+}
 
 # initialize global parameters, true x, simulated x ----------------------------
 pram.true <- list(

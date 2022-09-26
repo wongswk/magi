@@ -28,6 +28,13 @@ if(!exists("config")){
   )
 }
 
+csv_path = paste0(outDir, config$modelName,"-",config$seed,"-partobs-fill",config$filllevel,"-inferred_theta.csv")
+if(file.exists(csv_path)){
+  out = scan(csv_path, what="character")
+  if(length(out) > 0){
+    quit(save="no")  
+  }
+}
 
 # initialize global parameters, true x, simulated x ----------------------------
 alpha <- 240 # obtain from Fig 1b in Elowitz and Leibler (2000)
