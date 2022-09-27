@@ -10,7 +10,7 @@ subdirs <- c(
 # get the csv quick summary first ----
 config <- list()
 config$modelName <- "repressilator-gene-regulation-log"
-config$filllevel <- 0
+config$filllevel <- 2
 
 theta_csv <- paste0("partobs-fill",config$filllevel,"-inferred_theta.csv")
 trajectory_csv <- paste0("partobs-fill",config$filllevel,"-inferred_trajectory.csv")
@@ -31,9 +31,9 @@ for (rdaDir in subdirs){
     read.csv(paste0(rdaDir, config$modelName,"-",seed,"-partobs-fill",config$filllevel,"-inferred_theta.csv"))$x
   })
   
-  inferred_trajectory_all <- sapply(common_seed, function(seed){
-    data.matrix(read.csv(paste0(rdaDir, config$modelName,"-",seed,"-partobs-fill",config$filllevel,"-inferred_trajectory.csv")))
-  }, simplify = "array")
+  # inferred_trajectory_all <- sapply(common_seed, function(seed){
+  #   data.matrix(read.csv(paste0(rdaDir, config$modelName,"-",seed,"-partobs-fill",config$filllevel,"-inferred_trajectory.csv")))
+  # }, simplify = "array")
   
   print(apply(inferred_theta_all, 1, mean))
   print(apply(inferred_theta_all, 1, sd))
@@ -49,6 +49,7 @@ for (rdaDir in subdirs){
   
   pdf_files <- list.files(rdaDir)
   rda_files <- pdf_files[grep(paste0(".*log-([0-9]+)-partobs-fill",config$filllevel,".*\\.rda"), pdf_files)]
+  rda_files <- rda_files[1:100]
   
   
   ## Helper function adapted from Visualization to extract trajectories and RMSE
@@ -61,20 +62,16 @@ for (rdaDir in subdirs){
     mapId <- which.max(gpode$lglik)
     ttheta <- gpode$theta[mapId,]
     tx0 <- gpode$xsampled[mapId,1,]
-    xdesolveMAP <- deSolve::ode(y = tx0, times = times, func = odemodel$modelODE, parms = ttheta)
+    starttime <- xsim$time[which(is.finite(xsim[,2]))[1]]
+    starttime <- 0  # FIXME start time should be 3, depending on fill level, 
+    # this bug is confirmed to have only minor effect on fill level 0, but should be corrected
+    xdesolveMAP <- deSolve::ode(y = tx0, times = times[times >= starttime], func = odemodel$modelODE, parms = ttheta)
     
     ttheta <- colMeans(gpode$theta)
     tx0 <- colMeans(gpode$xsampled[,1,])
-    xdesolvePM <- deSolve::ode(y = tx0, times = times, func = odemodel$modelODE, parms = ttheta)
+    xdesolvePM <- deSolve::ode(y = tx0, times = times[times >= starttime], func = odemodel$modelODE, parms = ttheta)
     
-    rowId <- sapply(xsim$time, function(x) which(abs(x-times) < 1e-6))
-    xdesolveTRUE.obs <- xdesolveTRUE[rowId,-1]
-    xdesolveMAP.obs <- xdesolveMAP[rowId,-1]
-    xdesolvePM.obs <- xdesolvePM[rowId,-1]
-    
-    rmseInferredTrajectory <- sqrt(apply((xpostmean - xdesolveTRUE.obs)^2, 2, mean, na.rm=TRUE))
-    
-    return( list(xdesolveTRUE = xdesolveTRUE, xdesolvePM = xdesolvePM, xpostmean = xpostmean, rmseInferredTrajectory=rmseInferredTrajectory))
+    return( list(xdesolveTRUE = xdesolveTRUE, xdesolvePM = xdesolvePM, xpostmean = xpostmean))
     
   }
   
@@ -119,7 +116,10 @@ for (rdaDir in subdirs){
       
       ttheta <- colMeans(gpode$theta)
       exptx0 <- colMeans(xsampledexp[,1,])
-      xdesolvePM <- deSolve::ode(y = log(exptx0), times = times, func = odemodel$modelODE, parms = ttheta)
+      starttime <- xsim$time[which(is.finite(xsim[,2]))[1]] 
+      starttime <- 0  # FIXME start time should be 3, depending on fill level, 
+      # this bug is confirmed to have only minor effect on fill level 0, but should be corrected
+      xdesolvePM <- deSolve::ode(y = log(exptx0), times = times[times >= starttime], func = odemodel$modelODE, parms = ttheta)
       oursExpXdesolvePM_f <- exp(xdesolvePM)
       list(
         ours_f=ours_f,
@@ -131,7 +131,7 @@ for (rdaDir in subdirs){
     }, error = function(e) {
       return(as.character(e))
     })
-  }, mc.cores = 64)
+  }, mc.cores = 16)
   
   valid_result_id <- sapply(1:length(rda_files), function(f) length(outStorage[[f]]) > 1)
   error_msg <- outStorage[!valid_result_id]
@@ -150,7 +150,7 @@ for (rdaDir in subdirs){
   
   
   print(paste0(rdaDir,"summary-partobs-fill",config$filllevel, ".rda"))
-  save.image(file=paste0(rdaDir,"summary-partobs-fill",config$filllevel, ".rda"))
+  save.image(file=paste0(rdaDir,"small-summary-partobs-fill",config$filllevel, ".rda"))
   
   
   sink(paste0(rdaDir,"result-partobs-fill",config$filllevel, ".txt"))
