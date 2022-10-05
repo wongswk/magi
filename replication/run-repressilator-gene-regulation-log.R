@@ -8,14 +8,14 @@ args <- as.numeric(args)
 if(length(args) > 0){
   seed <- args
 }else{
-  seed <- (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9
+  seed <- 1
 }
 
 # set up configuration if not already exist ------------------------------------
 if(!exists("config")){
   config <- list(
     nobs = 101,
-    noise = rep(0.001, 6),
+    noise = rep(0.15, 6),
     kernel = "generalMatern",
     seed = seed,
     niterHmc = 10001,
@@ -73,7 +73,8 @@ for(j in 1:(ncol(xsim)-1)){
 
 
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
-matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
+matplot(xtrue[, "time"], xtrue[, -(1:4)], type="l", lty=1)
+matplot(xsim.obs$time, xsim.obs[,-(1:4)], type="p", col=1:(ncol(xsim)-1), pch=20, add=TRUE)
 
 xsim <- setDiscretization(xsim.obs,config$filllevel)
 
