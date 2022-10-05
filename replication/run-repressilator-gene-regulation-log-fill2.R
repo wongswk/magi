@@ -15,7 +15,7 @@ if(length(args) > 0){
 if(!exists("config")){
   config <- list(
     nobs = 101,
-    noise = rep(0.001, 6),
+    noise = rep(0.15, 6),
     kernel = "generalMatern",
     seed = seed,
     niterHmc = 10001,
@@ -102,7 +102,9 @@ if(config$filllevel == 0){
 
 
 # remove first obs
-xsim <- xsim[-1,]
+start_id <- which(is.finite(xsim[,2]))[2]
+xsim <- xsim[start_id:nrow(xsim),]
+xsim.obs <- xsim.obs[-1,]
 
 # protein levels missing
 xsim[,5:7] <- NA
