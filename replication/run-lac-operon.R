@@ -15,7 +15,7 @@ if(length(args) > 0){
 if(!exists("config")){
   config <- list(
     nobs = 101,
-    noise = c(0.01, 0.1, 0.1, 0.1, 0.001, 0.01, 0.01, 0.01, 0.01, 0.1) * 10,
+    noise = c(0.01, 0.1, 0.1, 0.1, 0.001, 0.01, 0.01, 0.01, 0.01, 0.1) * 5,
     kernel = "generalMatern",
     seed = seed,
     bandsize = 100,
