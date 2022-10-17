@@ -40,6 +40,18 @@ arma::mat MichaelisMentenLogModelODE(const arma::vec &, const arma::mat &, const
 arma::cube MichaelisMentenLogModelDx(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube MichaelisMentenLogModelDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
 
+arma::mat MichaelisMentenModelVaODE(const arma::vec &, const arma::mat &, const arma::vec &);
+arma::cube MichaelisMentenModelVaDx(const arma::vec &, const arma::mat &, const arma::vec &);
+arma::cube MichaelisMentenModelVaDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
+
+arma::mat MichaelisMentenModelVb4pODE(const arma::vec &, const arma::mat &, const arma::vec &);
+arma::cube MichaelisMentenModelVb4pDx(const arma::vec &, const arma::mat &, const arma::vec &);
+arma::cube MichaelisMentenModelVb4pDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
+
+arma::mat MichaelisMentenModelVb2pODE(const arma::vec &, const arma::mat &, const arma::vec &);
+arma::cube MichaelisMentenModelVb2pDx(const arma::vec &, const arma::mat &, const arma::vec &);
+arma::cube MichaelisMentenModelVb2pDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
+
 arma::mat lacOperonODE(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube lacOperonDx(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube lacOperonDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
