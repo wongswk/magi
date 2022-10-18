@@ -28,7 +28,7 @@ pram.true <- list(
   theta=c(0.001*alpha, alpha, 2, 1/5),  # alpha0/alpha = 0.001
   # initial condition cannot be the same, otherwise the system degenerates to two-components 
   # -- all the m and all the p will be the same
-  x0 = c(0.4, 20, 40, 0, 0, 0),
+  x0 = c(0.4, 20, 40, 0.01, 0.01, 0.01),
   # phi = cbind(c(1, 50), c(1, 50), c(1, 50)),
   sigma=config$noise
 )

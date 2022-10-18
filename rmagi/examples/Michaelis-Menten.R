@@ -26,9 +26,9 @@ if(!exists("config")){
 # initialize global parameters, true x, simulated x ----------------------------
 # parameters and initial conditions that seem to mimic the real data well
 pram.true <- list( 
-  theta=c(0.112, 0.0037, 0.27),
-  x0 = c(0.685, 1, 0, 0),
-  phi = cbind(c(1, 50), c(1, 50), c(1, 50), c(0.2, 50)),
+  theta=c(5, 12.0341687, 2.03506154),
+  x0 = c(0.1, 1, 0, 0),
+  phi = cbind(c(0.2, 50), c(1, 50), c(1, 50), c(1, 50)),
   sigma=config$noise
 )
 
@@ -136,7 +136,7 @@ xreal$P[is.finite(xreal$P)] <- realdata$P
 
 xreal$ES[1] <- 0
 xreal$P[1] <- 0
-xreal$E[1] <- 0.685
+xreal$E[1] <- 0.1
 xreal$S[1] <- 1
 
 sigma_fixed[1] <- 1e-4  # cannot be too small due to numerical stability coded in c++ 

@@ -53,6 +53,7 @@ xtrueFunc <- lapply(2:ncol(xtrue), function(j)
 
 xsim <- data.frame(time = round(realdata$t / config$linfillspace) * config$linfillspace)
 xsim <- cbind(xsim, sapply(xtrueFunc, function(f) f(xsim$time)))
+xtest <- xsim
 
 set.seed(config$seed)
 for(j in 1:(ncol(xsim)-1)){
@@ -85,6 +86,9 @@ dynamicalModelList <- list(
   thetaUpperBound=c(Inf,Inf,Inf,Inf),
   name="Michaelis-Menten-Vb4p"
 )
+
+testDynamicalModel(dynamicalModelList$fOde, dynamicalModelList$fOdeDx, dynamicalModelList$fOdeDtheta, "dynamicalModelList",
+                   data.matrix(xtest[,-1]), pram.true$theta, xtest$time)
 
 config$ndis <- config$t.end / config$linfillspace + 1
 
@@ -157,7 +161,7 @@ OursStartTime <- proc.time()[3]
 
 result <- magi::MagiSolver(xsim_va[,-1], dynamicalModelVa, xsim_va$time, control = 
                              list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = config$stepSizeFactor,
-                                  burninRatio = 0.5, phi = phi_va, sigma=sigma_va, discardBurnin=TRUE, useFixedSigma=TRUE))
+                                  burninRatio = 0.5, phi = phi_va, sigma=sigma_va, discardBurnin=FALSE, useFixedSigma=TRUE))
 
 OursTimeUsed <- proc.time()[3] - OursStartTime
 
