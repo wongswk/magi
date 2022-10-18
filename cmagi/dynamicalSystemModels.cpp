@@ -1020,8 +1020,8 @@ arma::cube MichaelisMentenModelVb2pDtheta(const arma::vec & theta, const arma::m
     cube resultDtheta2p(x.n_rows, 2, x.n_cols, fill::zeros);
 
     for (int it = 0; it < 5; it++){
-        resultDtheta4p.slice(it).col(0) = resultDtheta.slice(it).col(0) + resultDtheta.slice(it).col(2);
-        resultDtheta4p.slice(it).col(1) = resultDtheta.slice(it).col(4);
+        resultDtheta2p.slice(it).col(0) = resultDtheta.slice(it).col(0) + resultDtheta.slice(it).col(2);
+        resultDtheta2p.slice(it).col(1) = resultDtheta.slice(it).col(4);
     }
 
     return resultDtheta2p;
