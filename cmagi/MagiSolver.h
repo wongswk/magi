@@ -24,7 +24,7 @@ public:
     const int nstepsHmc;
     const double burninRatioHmc;
     const unsigned int niterHmc;
-    const double stepSizeFactorHmc;
+    arma::vec stepSizeFactorHmc;
     const int nEpoch;
     const int bandSize;
     bool useFrequencyBasedPrior;
@@ -77,7 +77,7 @@ public:
                const int nstepsHmc = 500,
                const double burninRatioHmc = 0.5,
                const unsigned int niterHmc = 10000,
-               const double stepSizeFactorHmc = 1,
+               const arma::vec stepSizeFactorHmc = arma::vec(),
                const int nEpoch = 1,
                const int bandSize = 20,
                bool useFrequencyBasedPrior = false,

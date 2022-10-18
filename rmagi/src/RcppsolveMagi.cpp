@@ -25,7 +25,7 @@ Rcpp::List solveMagiRcpp(
         const int nstepsHmc,
         const double burninRatioHmc,
         const unsigned int niterHmc,
-        const double stepSizeFactorHmc,
+        const arma::vec stepSizeFactorHmc,
         const int nEpoch,
         const int bandSize,
         const bool useFrequencyBasedPrior,

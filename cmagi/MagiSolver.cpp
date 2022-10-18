@@ -21,7 +21,7 @@ MagiSolver::MagiSolver(const arma::mat & yFull,
                        const int nstepsHmc,
                        const double burninRatioHmc,
                        const unsigned int niterHmc,
-                       const double stepSizeFactorHmc,
+                       const arma::vec stepSizeFactorHmcInput,
                        const int nEpoch,
                        const int bandSize,
                        bool useFrequencyBasedPrior,
@@ -45,7 +45,6 @@ MagiSolver::MagiSolver(const arma::mat & yFull,
         nstepsHmc(nstepsHmc),
         burninRatioHmc(burninRatioHmc),
         niterHmc(niterHmc),
-        stepSizeFactorHmc(stepSizeFactorHmc),
         nEpoch(nEpoch),
         bandSize(bandSize),
         useFrequencyBasedPrior(useFrequencyBasedPrior),
@@ -63,6 +62,12 @@ MagiSolver::MagiSolver(const arma::mat & yFull,
         phiAllDimensions(2, yFull.n_cols),
         llikxthetasigmaSamples(1 + yFull.size() + odeModel.thetaSize + sigmaSize, niterHmc, nEpoch)
 {
+    if (stepSizeFactorHmcInput.n_elem == 0){
+        stepSizeFactorHmc = arma::ones(1);
+    }else{
+        stepSizeFactorHmc = stepSizeFactorHmcInput;
+    }
+
     if(kernel != "generalMatern"){
         throw std::runtime_error("only generalMatern kernel has full support");
     }
@@ -489,7 +494,12 @@ void MagiSolver::sampleInEpochs() {
     std::string epochMethod = "mean";
 
     stepLow = arma::vec(llikxthetasigmaSamples.n_rows - 1);
-    stepLow.fill(1.0 / nstepsHmc * stepSizeFactorHmc);
+    if (stepSizeFactorHmc.n_elem > 1){
+        stepLow = (1.0 / nstepsHmc * stepSizeFactorHmc);
+    }else{
+        stepLow.fill(1.0 / nstepsHmc * stepSizeFactorHmc(0));
+    }
+
     if(useFixedSigma){
         stepLow.subvec(xInit.size() + thetaInit.size(), stepLow.size() - 1).fill(0);
     }
