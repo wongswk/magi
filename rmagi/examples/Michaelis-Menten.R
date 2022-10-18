@@ -26,7 +26,7 @@ if(!exists("config")){
 # initialize global parameters, true x, simulated x ----------------------------
 # parameters and initial conditions that seem to mimic the real data well
 pram.true <- list( 
-  theta=c(5, 12.0341687, 2.03506154),
+  theta=c(0.9, 0.75, 2.54),
   x0 = c(0.1, 1, 0, 0),
   phi = cbind(c(0.2, 50), c(1, 50), c(1, 50), c(1, 50)),
   sigma=config$noise
