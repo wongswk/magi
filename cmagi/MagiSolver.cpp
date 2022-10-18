@@ -29,6 +29,7 @@ MagiSolver::MagiSolver(const arma::mat & yFull,
                        bool useMean,
                        bool useScalerSigma,
                        bool useFixedSigma,
+                       bool skipMissingComponentOptimization,
                        bool verbose) :
         yFull(yFull),
         odeModel(odeModel),
@@ -52,6 +53,7 @@ MagiSolver::MagiSolver(const arma::mat & yFull,
         useMean(useMean),
         useScalerSigma(useScalerSigma),
         useFixedSigma(useFixedSigma),
+        skipMissingComponentOptimization(skipMissingComponentOptimization),
         verbose(verbose),
         ydim(yFull.n_cols),
         sigmaSize(useScalerSigma ? 1 : yFull.n_cols),
@@ -423,31 +425,33 @@ void MagiSolver::initMissingComponent() {
         }
     }
 
-    try {
-        const arma::vec & xthetaphi = optimizeXmissingThetaPhi(yFull,
-                                                               tvecFull,
-                                                               odeModel,
-                                                               sigmaInit,
-                                                               priorTemperature,
-                                                               xInit,
-                                                               thetaInit,
-                                                               phiAllDimensions,
-                                                               missingComponentDim);
-        for (unsigned id = 0; id < missingComponentDim.size(); id++){
-            xInit.col(missingComponentDim(id)) = xthetaphi.subvec(
-                    xInit.n_rows * (id), xInit.n_rows * (id + 1) - 1);
-        }
+    if(!skipMissingComponentOptimization){
+        try {
+            const arma::vec & xthetaphi = optimizeXmissingThetaPhi(yFull,
+                                                                   tvecFull,
+                                                                   odeModel,
+                                                                   sigmaInit,
+                                                                   priorTemperature,
+                                                                   xInit,
+                                                                   thetaInit,
+                                                                   phiAllDimensions,
+                                                                   missingComponentDim);
+            for (unsigned id = 0; id < missingComponentDim.size(); id++){
+                xInit.col(missingComponentDim(id)) = xthetaphi.subvec(
+                        xInit.n_rows * (id), xInit.n_rows * (id + 1) - 1);
+            }
 
-        thetaInit = xthetaphi.subvec(
-                xInit.n_rows * missingComponentDim.size(), xInit.n_rows * missingComponentDim.size() + thetaInit.size() - 1);
+            thetaInit = xthetaphi.subvec(
+                    xInit.n_rows * missingComponentDim.size(), xInit.n_rows * missingComponentDim.size() + thetaInit.size() - 1);
 
-        for (unsigned id = 0; id < missingComponentDim.size(); id++){
-            phiAllDimensions.col(missingComponentDim(id)) = xthetaphi.subvec(
-                    xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * id,
-                    xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * (id + 1) - 1);
+            for (unsigned id = 0; id < missingComponentDim.size(); id++){
+                phiAllDimensions.col(missingComponentDim(id)) = xthetaphi.subvec(
+                        xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * id,
+                        xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * (id + 1) - 1);
+            }
+        } catch (...) {
+            std::cout << "Exception occurred in joint optimization for Xmissing,Theta,Phi";
         }
-    } catch (...) {
-        std::cout << "Exception occurred in joint optimization for Xmissing,Theta,Phi";
     }
 
     const lp & llik = xthetaphisigmallik( xInit,

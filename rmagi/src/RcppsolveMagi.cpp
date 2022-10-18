@@ -33,6 +33,7 @@ Rcpp::List solveMagiRcpp(
         const bool useMean,
         const bool useScalerSigma,
         const bool useFixedSigma,
+        const bool skipMissingComponentOptimization,
         const bool verbose) {
 
     OdeSystem modelC;
@@ -122,6 +123,7 @@ Rcpp::List solveMagiRcpp(
                       useMean,
                       useScalerSigma,
                       useFixedSigma,
+                      skipMissingComponentOptimization,
                       verbose);
 
 

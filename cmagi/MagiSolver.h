@@ -33,6 +33,7 @@ public:
     bool useScalerSigma;
     bool useFixedSigma;
     bool verbose;
+    bool skipMissingComponentOptimization;
 
     // intermediate object storage
     const unsigned int ydim;
@@ -84,6 +85,7 @@ public:
                bool useMean = true,
                bool useScalerSigma = false,
                bool useFixedSigma = false,
+               bool skipMissingComponentOptimization=false,
                bool verbose = false);
 
     void setupPhiSigma();

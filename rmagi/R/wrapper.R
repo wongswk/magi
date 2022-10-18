@@ -212,6 +212,11 @@ MagiSolver <- function(y, odeModel, tvec, control = list()) {
   else
     discardBurnin = TRUE
 
+  if (!is.null(control$skipMissingComponentOptimization))
+    skipMissingComponentOptimization = control$skipMissingComponentOptimization
+  else
+    skipMissingComponentOptimization = FALSE
+
 
   samplesCpp <- solveMagiRcpp(
     yFull = data.matrix(y),
@@ -238,6 +243,7 @@ MagiSolver <- function(y, odeModel, tvec, control = list()) {
     useMean = TRUE,
     useScalerSigma = FALSE,
     useFixedSigma = useFixedSigma,
+    skipMissingComponentOptimization = skipMissingComponentOptimization,
     verbose = TRUE)
 
   phiUsed <- samplesCpp$phi
