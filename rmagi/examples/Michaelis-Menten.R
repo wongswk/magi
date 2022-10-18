@@ -9,7 +9,7 @@ matplot(realdata$t, realdata[,-1], type="b")
 if(!exists("config")){
   config <- list(
     nobs = nrow(realdata),
-    noise = c(NaN, 0.005, NaN, 0.005),
+    noise = c(NaN, 0.01, NaN, 0.01),  # noise = c(0.01, 0.01, 0.01, 0.01), for fully observed case
     kernel = "generalMatern",
     seed = 123,
     bandsize = 100,
@@ -28,7 +28,7 @@ if(!exists("config")){
 pram.true <- list( 
   theta=c(0.9, 0.75, 2.54),
   x0 = c(0.1, 1, 0, 0),
-  phi = cbind(c(0.2, 50), c(1, 50), c(1, 50), c(1, 50)),
+  phi = cbind(c(0.1, 70), c(1, 30), c(0.1, 70), c(1, 30)),
   sigma=config$noise
 )
 
@@ -47,6 +47,7 @@ xtrueFunc <- lapply(2:ncol(xtrue), function(j)
 
 xsim <- data.frame(time = round(realdata$t / config$linfillspace) * config$linfillspace)
 xsim <- cbind(xsim, sapply(xtrueFunc, function(f) f(xsim$time)))
+xtest <- xsim
 
 set.seed(config$seed)
 for(j in 1:(ncol(xsim)-1)){
@@ -54,6 +55,7 @@ for(j in 1:(ncol(xsim)-1)){
 }
 
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
+xsim.obs <- rbind(c(0, pram.true$x0), xsim.obs)
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
 
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
@@ -78,15 +80,13 @@ dynamicalModelList <- list(
   name="Michaelis-Menten"
 )
 
+testDynamicalModel(dynamicalModelList$fOde, dynamicalModelList$fOdeDx, dynamicalModelList$fOdeDtheta, "dynamicalModelList",
+                   data.matrix(xtest[,-1]), pram.true$theta, xtest$time)
+
 config$ndis <- config$t.end / config$linfillspace + 1
 
-sigma_fixed <- pram.true$sigma
-sigma_fixed[1] <- 0.005
-sigma_fixed[3] <-  0.005
-sigma_fixed[2] <- 1e-4
-sigma_fixed[4] <- 1e-4
-
-xsim[1,-1] <- pram.true$x0
+sigma_fixed <- config$noise
+sigma_fixed[is.na(sigma_fixed)] <- 1e-4
 
 # MAGI off-the-shelf ----
 # sampler with a good phi supplied, no missing component
@@ -115,7 +115,8 @@ for(j in 1:(ncol(xsim)-1)){
 }
 
 gpode$lglik <- gpode$lp
-pram.true$sigma[1] <- pram.true$sigma[3] <- 0
+pram.true$sigma <- sigma_fixed
+
 magi:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".pdf"),
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
@@ -123,6 +124,7 @@ tail(gpode$theta)
 
 apply(gpode$xsampled[,1,], 2, median)
 apply(gpode$theta, 2, median)
+
 
 #' TODO on simulated data
 #' repeated experiments
