@@ -40,6 +40,10 @@ arma::mat MichaelisMentenLogModelODE(const arma::vec &, const arma::mat &, const
 arma::cube MichaelisMentenLogModelDx(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube MichaelisMentenLogModelDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
 
+arma::mat MichaelisMentenlog1xModelODE(const arma::vec &, const arma::mat &, const arma::vec &);
+arma::cube MichaelisMentenlog1xModelDx(const arma::vec &, const arma::mat &, const arma::vec &);
+arma::cube MichaelisMentenlog1xModelDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
+
 arma::mat MichaelisMentenModelVaODE(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube MichaelisMentenModelVaDx(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube MichaelisMentenModelVaDtheta(const arma::vec &, const arma::mat &, const arma::vec &);

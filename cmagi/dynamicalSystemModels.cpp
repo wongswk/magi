@@ -527,6 +527,75 @@ arma::cube MichaelisMentenModelDtheta(const arma::vec & theta, const arma::mat &
 }
 
 
+// [[Rcpp::export]]
+arma::mat MichaelisMentenlog1xModelODE(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
+    const vec & e = arma::exp(x.col(0)) - 1;
+    const vec & s = arma::exp(x.col(1)) - 1;
+    const vec & es = arma::exp(x.col(2)) - 1;
+    const vec & p = arma::exp(x.col(3)) - 1;
+
+    mat resultdt(x.n_rows, x.n_cols);
+
+    resultdt.col(0) = (-theta[0] * e % s + (theta[1]+theta[2]) * es) / (e + 1);
+    resultdt.col(1) = (-theta[0] * e % s + (theta[1]) * es) / (s + 1);
+    resultdt.col(2) = (theta[0] * e % s - (theta[1]+theta[2]) * es) / (es + 1);
+    resultdt.col(3) = (theta[2] * es) / (p + 1);
+
+    return resultdt;
+}
+
+// [[Rcpp::export]]
+arma::cube MichaelisMentenlog1xModelDx(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
+    cube resultDx(x.n_rows, x.n_cols, x.n_cols, fill::zeros);
+
+    const vec & e = arma::exp(x.col(0)) - 1;
+    const vec & s = arma::exp(x.col(1)) - 1;
+    const vec & es = arma::exp(x.col(2)) - 1;
+    const vec & p = arma::exp(x.col(3)) - 1;
+
+    resultDx.slice(0).col(0) = (theta[0] * (e - 1) % s - (theta[1] + theta[2]) * es) / (e + 1);
+    resultDx.slice(0).col(1) = -theta[0] * e % (s + 1) / (e + 1);
+    resultDx.slice(0).col(2) = (theta[1] + theta[2]) * (es + 1) / (e + 1);
+
+    resultDx.slice(1).col(0) = -theta[0] * s / (s + 1) % (e + 1);
+    resultDx.slice(1).col(1) = -theta[0] * e - (-theta[0] * e % s + (theta[1]) * es) / (s + 1);
+    resultDx.slice(1).col(2) = theta[1] / (s + 1) % (es + 1);
+
+    resultDx.slice(2).col(0) = theta[0] * s / (es + 1) % (e + 1);
+    resultDx.slice(2).col(1) = theta[0] * e / (es + 1) % (s + 1);
+    resultDx.slice(2).col(2) = (-theta[1] - theta[2]) - (theta[0] * e % s - (theta[1]+theta[2]) * es) / (es + 1);
+
+    resultDx.slice(3).col(2) = theta[2] / (p + 1) % (es + 1);
+    resultDx.slice(3).col(3) = -(theta[2] * es) / (p + 1);
+
+    return resultDx;
+}
+
+// [[Rcpp::export]]
+arma::cube MichaelisMentenlog1xModelDtheta(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
+    cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
+
+    const vec & e = arma::exp(x.col(0)) - 1;
+    const vec & s = arma::exp(x.col(1)) - 1;
+    const vec & es = arma::exp(x.col(2)) - 1;
+    const vec & p = arma::exp(x.col(3)) - 1;
+
+    resultDtheta.slice(0).col(0) = (-e % s) / (e + 1);
+    resultDtheta.slice(0).col(1) = es / (e + 1);
+    resultDtheta.slice(0).col(2) = es / (e + 1);
+
+    resultDtheta.slice(1).col(0) = (-e % s) / (s + 1);
+    resultDtheta.slice(1).col(1) = es / (s + 1);
+
+    resultDtheta.slice(2).col(0) = e % s / (es + 1);
+    resultDtheta.slice(2).col(1) = -es / (es + 1);
+    resultDtheta.slice(2).col(2) = -es / (es + 1);
+
+    resultDtheta.slice(3).col(2) = es / (p + 1);
+
+    return resultDtheta;
+}
+
 
 // [[Rcpp::export]]
 arma::mat MichaelisMentenLogModelODE(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
