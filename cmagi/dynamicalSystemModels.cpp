@@ -553,7 +553,7 @@ arma::cube MichaelisMentenlog1xModelDx(const arma::vec & theta, const arma::mat 
     const vec & es = arma::exp(x.col(2)) - 1;
     const vec & p = arma::exp(x.col(3)) - 1;
 
-    resultDx.slice(0).col(0) = (theta[0] * (e - 1) % s - (theta[1] + theta[2]) * es) / (e + 1);
+    resultDx.slice(0).col(0) = -theta[0] * s - (-theta[0] * e % s + (theta[1]+theta[2]) * es) / (e + 1);
     resultDx.slice(0).col(1) = -theta[0] * e % (s + 1) / (e + 1);
     resultDx.slice(0).col(2) = (theta[1] + theta[2]) * (es + 1) / (e + 1);
 
