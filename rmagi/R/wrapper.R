@@ -222,6 +222,10 @@ MagiSolver <- function(y, odeModel, tvec, control = list()) {
   else
     useMean = TRUE
 
+  if (!is.null(control$useBand))
+    useBand = control$useBand
+  else
+    useBand = TRUE
 
   samplesCpp <- solveMagiRcpp(
     yFull = data.matrix(y),
@@ -244,7 +248,7 @@ MagiSolver <- function(y, odeModel, tvec, control = list()) {
     nEpoch = 1,
     bandSize = bandSize,
     useFrequencyBasedPrior = TRUE,
-    useBand = TRUE,
+    useBand = useBand,
     useMean = useMean,
     useScalerSigma = FALSE,
     useFixedSigma = useFixedSigma,
