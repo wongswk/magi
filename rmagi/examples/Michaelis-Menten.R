@@ -9,12 +9,14 @@ matplot(realdata$t, realdata[,-1], type="b")
 if(!exists("config")){
   config <- list(
     nobs = nrow(realdata),
-    noise = c(NaN, 0.01, NaN, 0.01),  # noise = c(0.01, 0.01, 0.01, 0.01), for fully observed case
+    #noise = c(NaN, 0.01, NaN, 0.01),  
+    #noise = c(0.001, 0.02, 0.001, 0.02), #for fully observed case
+    noise = c(NA, 0.02, NA, 0.02), #for fully observed case
     kernel = "generalMatern",
-    seed = 123,
-    bandsize = 100,
+    seed = 12345,
+    bandsize = 20,
     hmcSteps = 100,
-    n.iter = 20001,
+    n.iter = 10001,
     stepSizeFactor = 0.01,
     linfillspace = 0.5, 
     t.end = 70,
@@ -75,7 +77,7 @@ dynamicalModelList <- list(
   fOde=magi:::MichaelisMentenModelODE,
   fOdeDx=magi:::MichaelisMentenModelDx,
   fOdeDtheta=magi:::MichaelisMentenModelDtheta,
-  thetaLowerBound=c(0,0,0),
+  thetaLowerBound=c(0,-Inf,0),
   thetaUpperBound=c(Inf,Inf,Inf),
   name="Michaelis-Menten"
 )
@@ -96,7 +98,7 @@ OursStartTime <- proc.time()[3]
 
 result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control = 
                              list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = config$stepSizeFactor,
-                                  burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, discardBurnin=TRUE, useFixedSigma=TRUE))
+                                  burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, useFixedSigma=TRUE, verbose=TRUE))
 
 OursTimeUsed <- proc.time()[3] - OursStartTime
 
@@ -124,6 +126,15 @@ tail(gpode$theta)
 
 apply(gpode$xsampled[,1,], 2, median)
 apply(gpode$theta, 2, median)
+
+
+pdf(file=paste0(outDir, "kcat-KM-seed", config$seed, ".pdf"), width=8, height=5)
+par(mfrow=c(1,2))
+hist(gpode$theta[,3], main="kcat", probability = TRUE)
+abline(v=pram.true$theta[3], lwd=2, col="red")
+hist((gpode$theta[,3]+gpode$theta[,2])/gpode$theta[,1], main="KM", probability = TRUE)
+abline(v= (pram.true$theta[3]+pram.true$theta[2])/pram.true$theta[1], lwd=2, col="red")
+dev.off()
 
 
 #' TODO on simulated data
