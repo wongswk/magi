@@ -6,7 +6,6 @@ realdata <- read.csv(paste0(outDir, "hydrolysis.csv"))
 matplot(realdata$t, realdata[,-1], type="b")
 
 args <- commandArgs(trailingOnly = TRUE)
-args <- as.numeric(args)
 if(length(args) > 0){
   seed <- as.numeric(args[1])
   linfillspace = as.numeric(args[2])
