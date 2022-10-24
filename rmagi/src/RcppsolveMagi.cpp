@@ -57,11 +57,11 @@ Rcpp::List solveMagiRcpp(
     }else if(modelName == "Hes1-log-fixf"){
         modelC = OdeSystem(hes1logmodelODEfixf, hes1logmodelDxfixf, hes1logmodelDthetafixf, arma::zeros(6), arma::ones(6)*INFINITY);
     }else if(modelName == "Michaelis-Menten"){
-        modelC = OdeSystem(MichaelisMentenModelODE, MichaelisMentenModelDx, MichaelisMentenModelDtheta, arma::zeros(3), arma::ones(3)*INFINITY);
+        modelC = OdeSystem(MichaelisMentenModelODE, MichaelisMentenModelDx, MichaelisMentenModelDtheta, {0,-100,0}, arma::ones(3)*INFINITY);
     }else if(modelName == "Michaelis-Menten-Va"){
-        modelC = OdeSystem(MichaelisMentenModelVaODE, MichaelisMentenModelVaDx, MichaelisMentenModelVaDtheta, arma::zeros(3), arma::ones(3)*INFINITY);
+        modelC = OdeSystem(MichaelisMentenModelVaODE, MichaelisMentenModelVaDx, MichaelisMentenModelVaDtheta, {0,-100,0}, arma::ones(3)*INFINITY);
     }else if(modelName == "Michaelis-Menten-Vb4p"){
-        modelC = OdeSystem(MichaelisMentenModelVb4pODE, MichaelisMentenModelVb4pDx, MichaelisMentenModelVb4pDtheta, arma::zeros(4), arma::ones(4)*INFINITY);
+        modelC = OdeSystem(MichaelisMentenModelVb4pODE, MichaelisMentenModelVb4pDx, MichaelisMentenModelVb4pDtheta, {0,-100,0,-100}, arma::ones(4)*INFINITY);
     }else if(modelName == "Michaelis-Menten-Vb2p"){
         modelC = OdeSystem(MichaelisMentenModelVb2pODE, MichaelisMentenModelVb2pDx, MichaelisMentenModelVb2pDtheta, arma::zeros(2), arma::ones(2)*INFINITY);
     }else if(modelName == "Michaelis-Menten-Log"){
