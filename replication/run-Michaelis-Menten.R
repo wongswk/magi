@@ -107,12 +107,26 @@ sigma_fixed[is.na(sigma_fixed)] <- 1e-4
 # sampler with a good phi supplied, no missing component
 # hyper-parameters affect the inference of missing components (especially if initial condition is not known
 
+xInitExogenous <- data.matrix(xsim[,-1])
+for (j in c(2,4)){
+  xInitExogenous[, j] <- approx(xsim.obs$time, xsim.obs[,j+1], xsim$time)$y
+}
+xInitExogenous[, 1] <- 0.1
+xInitExogenous[140:141, 2] <- xInitExogenous[139, 2]
+xInitExogenous[-1, 3] <- 0.05
+xInitExogenous[140:141, 4] <- xInitExogenous[139, 4]
+
+stepSizeFactor <- rep(0.01, nrow(xsim)*length(pram.true$x0) + length(dynamicalModelList$thetaLowerBound) + length(pram.true$x0))
+for(j in 1:4){
+  stepSizeFactor[(j-1)*nrow(xsim) + 1] <- 0  
+}
+
 OursStartTime <- proc.time()[3]
 
 result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control = 
-                             list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = config$stepSizeFactor,
+                             list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = stepSizeFactor,
                                   burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, discardBurnin=TRUE, useFixedSigma=TRUE,
-                                  skipMissingComponentOptimization=TRUE))
+                                  skipMissingComponentOptimization=TRUE, xInit = xInitExogenous))
 
 OursTimeUsed <- proc.time()[3] - OursStartTime
 
