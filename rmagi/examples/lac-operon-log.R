@@ -114,9 +114,8 @@ phiExogenous[1,] <- 10
 phiExogenous[2,] <- 200
 sigmaInit <- config$noise
 
-xInitExogenous <- NULL
 
-# xInitExogenous <- sapply(xtrueFunc, function(f) f(xsim$time))
+xInitExogenous <- sapply(xtrueFunc, function(f) f(xsim$time))
 
 #' works well except for theta0 which is the [i] component
 #' even assume component [i] is known constant, k5 and k7 are still biased, other parameter inferences are good
@@ -125,7 +124,7 @@ xInitExogenous <- NULL
 OursStartTime <- proc.time()[3] 
 result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, 
                            control = list(xInit=xInitExogenous, niterHmc=config$niterHmc, stepSizeFactor = config$stepSizeFactor, phi=phiExogenous, sigma=sigmaInit, useFixedSigma=TRUE,
-                                          useBand=FALSE))
+                                          useBand=FALSE, thetaInit = pram.true$theta))
 OursTimeUsed <- proc.time()[3] - OursStartTime
 
 gpode <- result
