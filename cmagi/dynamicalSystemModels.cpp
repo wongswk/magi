@@ -1515,6 +1515,209 @@ arma::cube lacOperonDtheta(const arma::vec & theta, const arma::mat & x, const a
     return resultDtheta;
 }
 
+
+// [[Rcpp::export]]
+arma::mat lacOperonLogODE(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
+    const double delta = 1e-4;
+
+    const arma::mat expx = arma::exp(x);
+
+    const vec & ri = expx.col(0) - delta;
+    const vec & i = expx.col(1) - delta;
+    const vec & lactose = expx.col(2) - delta;
+    const vec & ilactose = expx.col(3) - delta;
+    const vec & op = expx.col(4) - delta;
+    const vec & iop = expx.col(5) - delta;
+    const vec & rnap = expx.col(6) - delta;
+    const vec & rnapo = expx.col(7) - delta;
+    const vec & r = expx.col(8) - delta;
+    const vec & z = expx.col(9) - delta;
+
+//    hard code [i] component to 1
+//    const double iconstant = theta(0);
+    const double iconstant = 1.0;
+
+    const vec & k = theta;
+
+    mat resultdt(x.n_rows, x.n_cols);
+
+    resultdt.col(0) = k(1) * iconstant - k(12) * ri;
+    resultdt.col(1) = k(2) * ri - k(3) * i % lactose + k(4) * ilactose - k(5) * i % op + k(6) * iop - k(13) * i;
+    resultdt.col(2) = k(4) * ilactose - k(3) * i % lactose + k(14) * ilactose - k(11) * lactose % z;
+    resultdt.col(3) = k(3) * i % lactose - k(4) * ilactose - k(14) * ilactose;
+    resultdt.col(4) = k(6) * iop - k(5) * i % op - k(7) * op % rnap + (k(8) + k(9)) * rnapo;
+    resultdt.col(5) = k(5) * i % op - k(6) * iop;
+    resultdt.col(6) = (k(8) + k(9)) * rnapo - k(7) * op % rnap;
+    resultdt.col(7) = k(7) * op % rnap - (k(8)+k(9)) * rnapo;
+    resultdt.col(8) = k(9) * rnapo - k(15) * r;
+    resultdt.col(9) = k(10)*r - k(16) * z;
+
+    for(unsigned it = 0; it < 10; it++){
+        resultdt.col(it) /= expx.col(it);
+    }
+
+    return resultdt;
+}
+
+// [[Rcpp::export]]
+arma::cube lacOperonLogDx(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
+    const double delta = 1e-4;
+
+    const arma::mat expx = arma::exp(x);
+
+    const vec & ri = expx.col(0) - delta;
+    const vec & i = expx.col(1) - delta;
+    const vec & lactose = expx.col(2) - delta;
+    const vec & ilactose = expx.col(3) - delta;
+    const vec & op = expx.col(4) - delta;
+    const vec & iop = expx.col(5) - delta;
+    const vec & rnap = expx.col(6) - delta;
+    const vec & rnapo = expx.col(7) - delta;
+    const vec & r = expx.col(8) - delta;
+    const vec & z = expx.col(9) - delta;
+
+    cube resultDx(x.n_rows, x.n_cols, x.n_cols, fill::zeros);
+
+//    hard code [i] component to 1
+//    const double iconstant = theta(0);
+    const double iconstant = 1.0;
+    const vec & k = theta;
+
+    resultDx.slice(0).col(0).fill(-k(12));
+
+    resultDx.slice(1).col(0).fill(k(2));
+    resultDx.slice(1).col(1) = -k(3) * lactose - k(5) * op - k(13);
+    resultDx.slice(1).col(2) = -k(3) * i;
+    resultDx.slice(1).col(3).fill(k(4));
+    resultDx.slice(1).col(4) = -k(5) * i;
+    resultDx.slice(1).col(5).fill(k(6));
+
+    resultDx.slice(2).col(1) = -k(3)*lactose;
+    resultDx.slice(2).col(2) = -k(3)*i - k(11)*z;
+    resultDx.slice(2).col(3).fill(k(4) + k(14));
+    resultDx.slice(2).col(9) = -k(11)*lactose;
+
+    resultDx.slice(3).col(1) = k(3)*lactose;
+    resultDx.slice(3).col(2) = k(3)*i;
+    resultDx.slice(3).col(3).fill(-k(4) - k(14));
+
+    resultDx.slice(4).col(1) = -k(5) * op;
+    resultDx.slice(4).col(4) = -k(5) * i - k(7)*rnap;
+    resultDx.slice(4).col(5).fill(k(6));
+    resultDx.slice(4).col(6) = -k(7)*op;
+    resultDx.slice(4).col(7).fill(k(8) + k(9));
+
+    resultDx.slice(5).col(1) = k(5) * op;
+    resultDx.slice(5).col(4) = k(5) * i;
+    resultDx.slice(5).col(5).fill(-k(6));
+
+    resultDx.slice(6).col(4) = -k(7)*rnap;
+    resultDx.slice(6).col(6) = -k(7)*op;
+    resultDx.slice(6).col(7).fill(k(8) + k(9));
+
+    resultDx.slice(7).col(4) = k(7) * rnap;
+    resultDx.slice(7).col(6) = k(7) * op;
+    resultDx.slice(7).col(7).fill(-(k(8) + k(9)));
+
+    resultDx.slice(8).col(7).fill(k(9));
+    resultDx.slice(8).col(8).fill(-k(15));
+
+    resultDx.slice(9).col(8).fill(k(10));
+    resultDx.slice(9).col(9).fill(-k(16));
+
+    const arma::mat fode = lacOperonLogODE(theta, x, tvec);
+
+    for (unsigned i1 = 0; i1 < 10; i1 ++){
+        for (unsigned i2 = 0; i2 < 10; i2 ++){
+            if(i1 != i2){
+                resultDx.slice(i1).col(i2) = resultDx.slice(i1).col(i2) % expx.col(i2) / expx.col(i1);
+            }else{
+                resultDx.slice(i1).col(i2) = -fode.col(i1) + resultDx.slice(i1).col(i2);
+            }
+        }
+    }
+
+    return resultDx;
+}
+
+// [[Rcpp::export]]
+arma::cube lacOperonLogDtheta(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
+    const double delta = 1e-4;
+
+    const arma::mat expx = arma::exp(x);
+
+    const vec & ri = expx.col(0) - delta;
+    const vec & i = expx.col(1) - delta;
+    const vec & lactose = expx.col(2) - delta;
+    const vec & ilactose = expx.col(3) - delta;
+    const vec & op = expx.col(4) - delta;
+    const vec & iop = expx.col(5) - delta;
+    const vec & rnap = expx.col(6) - delta;
+    const vec & rnapo = expx.col(7) - delta;
+    const vec & r = expx.col(8) - delta;
+    const vec & z = expx.col(9) - delta;
+
+    cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
+
+//    hard code [i] component to 1
+//    const double iconstant = theta(0);
+    const double iconstant = 1.0;
+    const vec & k = theta;
+
+//    hard code [i] component to 1
+//    resultDtheta.slice(0).col(0).fill(k(1));
+    resultDtheta.slice(0).col(0).fill(0);
+    resultDtheta.slice(0).col(1).fill(iconstant);
+    resultDtheta.slice(0).col(12) = -ri;
+
+    resultDtheta.slice(1).col(2) = ri;
+    resultDtheta.slice(1).col(3) = -i%lactose;
+    resultDtheta.slice(1).col(4) = ilactose;
+    resultDtheta.slice(1).col(5) = - i%op;
+    resultDtheta.slice(1).col(6) = iop;
+    resultDtheta.slice(1).col(13) = -i;
+
+    resultDtheta.slice(2).col(4) = ilactose;
+    resultDtheta.slice(2).col(3) = -i%lactose;
+    resultDtheta.slice(2).col(14) = ilactose;
+    resultDtheta.slice(2).col(11) = -lactose%z;
+
+    resultDtheta.slice(3).col(3) = i%lactose;
+    resultDtheta.slice(3).col(4) = -ilactose;
+    resultDtheta.slice(3).col(14) = -ilactose;
+
+    resultDtheta.slice(4).col(6) = iop;
+    resultDtheta.slice(4).col(5) = -i%op;
+    resultDtheta.slice(4).col(7) = -op%rnap;
+    resultDtheta.slice(4).col(8) = rnapo;
+    resultDtheta.slice(4).col(9) = rnapo;
+
+    resultDtheta.slice(5).col(5) = i%op;
+    resultDtheta.slice(5).col(6) = -iop;
+
+    resultDtheta.slice(6).col(8) = rnapo;
+    resultDtheta.slice(6).col(9) = rnapo;
+    resultDtheta.slice(6).col(7) = -op%rnap;
+
+    resultDtheta.slice(7).col(7) = op%rnap;
+    resultDtheta.slice(7).col(8) = -rnapo;
+    resultDtheta.slice(7).col(9) = -rnapo;
+
+    resultDtheta.slice(8).col(9) = rnapo;
+    resultDtheta.slice(8).col(15) = -r;
+
+    resultDtheta.slice(9).col(10) = r;
+    resultDtheta.slice(9).col(16) = -z;
+
+    for (unsigned i1 = 0; i1 < 10; i1 ++){
+        for (unsigned i2 = 0; i2 < 17; i2 ++){
+            resultDtheta.slice(i1).col(i2) /= expx.col(i1);
+        }
+    }
+
+    return resultDtheta;
+}
+
 // [[Rcpp::export]]
 arma::mat repressilatorGeneRegulationODE(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
     const vec & m_laci = x.col(0);

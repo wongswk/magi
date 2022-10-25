@@ -60,6 +60,10 @@ arma::mat lacOperonODE(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube lacOperonDx(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube lacOperonDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
 
+arma::mat lacOperonLogODE(const arma::vec &, const arma::mat &, const arma::vec &);
+arma::cube lacOperonLogDx(const arma::vec &, const arma::mat &, const arma::vec &);
+arma::cube lacOperonLogDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
+
 arma::mat repressilatorGeneRegulationODE(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube repressilatorGeneRegulationDx(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube repressilatorGeneRegulationDtheta(const arma::vec &, const arma::mat &, const arma::vec &);

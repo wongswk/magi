@@ -70,6 +70,8 @@ Rcpp::List solveMagiRcpp(
         modelC = OdeSystem(MichaelisMentenlog1xModelODE, MichaelisMentenlog1xModelDx, MichaelisMentenlog1xModelDtheta, arma::zeros(3), arma::ones(3)*INFINITY);
     }else if(modelName == "lac-operon"){
         modelC = OdeSystem(lacOperonODE, lacOperonDx, lacOperonDtheta, arma::zeros(17), arma::ones(17)*INFINITY);
+    }else if(modelName == "lac-operon-log"){
+        modelC = OdeSystem(lacOperonLogODE, lacOperonLogDx, lacOperonLogDtheta, arma::zeros(17), arma::ones(17)*INFINITY);
     }else if(modelName == "repressilator-gene-regulation"){
         modelC = OdeSystem(repressilatorGeneRegulationODE, repressilatorGeneRegulationDx, repressilatorGeneRegulationDtheta, arma::zeros(4), arma::ones(4)*INFINITY);
     }else if(modelName == "repressilator-gene-regulation-log"){
