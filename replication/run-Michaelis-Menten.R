@@ -110,11 +110,11 @@ sigma_fixed[is.na(sigma_fixed)] <- 1e-4
 xInitExogenous <- data.matrix(xsim[,-1])
 for (j in c(2,4)){
   xInitExogenous[, j] <- approx(xsim.obs$time, xsim.obs[,j+1], xsim$time)$y
+  idx <- which(is.na(xInitExogenous[, j]))
+  xInitExogenous[idx, j] <- xInitExogenous[idx[1] - 1, j]
 }
-xInitExogenous[, 1] <- 0.1
-xInitExogenous[140:141, 2] <- xInitExogenous[139, 2]
+xInitExogenous[-1, 1] <- 0.1
 xInitExogenous[-1, 3] <- 0.05
-xInitExogenous[140:141, 4] <- xInitExogenous[139, 4]
 
 stepSizeFactor <- rep(0.01, nrow(xsim)*length(pram.true$x0) + length(dynamicalModelList$thetaLowerBound) + length(pram.true$x0))
 for(j in 1:4){
