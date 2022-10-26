@@ -34,11 +34,21 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
     mapId <- which.max(gpode$lglik)
     ttheta <- gpode$theta[mapId,]
     tx0 <- gpode$xsampled[mapId,1,]
-    xdesolveMAP <- deSolve::ode(y = tx0, times = times, func = odemodel$modelODE, parms = ttheta)
+    xdesolveMAP <- try({
+      deSolve::ode(y = tx0, times = times, func = odemodel$modelODE, parms = ttheta)
+    })
+    if(class(xdesolveMAP) == "try-error"){
+      xdesolveMAP <- xdesolveTRUE
+    }
     
     ttheta <- colMeans(gpode$theta)
     tx0 <- colMeans(gpode$xsampled[,1,])
-    xdesolvePM <- deSolve::ode(y = tx0, times = times, func = odemodel$modelODE, parms = ttheta)
+    xdesolvePM <- try({
+      deSolve::ode(y = tx0, times = times, func = odemodel$modelODE, parms = ttheta)
+    })
+    if(class(xdesolvePM) == "try-error"){
+      xdesolvePM <- xdesolveTRUE
+    }
     
     rowId <- sapply(xsim$time, function(x) which(abs(x-times) < 1e-6))
     xdesolveTRUE.obs <- xdesolveTRUE[rowId,-1]
@@ -49,7 +59,7 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
       mapId <- sample(1:length(gpode$lglik), 1)
       ttheta <- gpode$theta[mapId,]
       tx0 <- gpode$xsampled[mapId,1,]
-      deSolve::ode(y = tx0, times = odemodel$times, func = odemodel$modelODE, parms = ttheta)
+      try({deSolve::ode(y = tx0, times = odemodel$times, func = odemodel$modelODE, parms = ttheta)})
     })
     
     rmseTrue <- sqrt(apply((xdesolveTRUE.obs - xsim[,-1])^2, 2, mean, na.rm=TRUE))
@@ -172,7 +182,9 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
     layout(1)
     matplot(odemodel$xtrue[, "time"], odemodel$xtrue[, -1], type="l", lty=1, add=FALSE, lwd=3)
     for(xdesolveSampleEach in xdesolveSamples){
-      matplot(xdesolveSampleEach[, "time"], xdesolveSampleEach[, -1], type="l", lty=4, add=TRUE)
+      if(class(xdesolveSampleEach) != "try-error"){
+        matplot(xdesolveSampleEach[, "time"], xdesolveSampleEach[, -1], type="l", lty=4, add=TRUE)  
+      }
     }
     matplot(xdesolveMAP[, "time"], xdesolveMAP[, -1], type="l", lty=3, add=TRUE, lwd=2)
     matplot(xdesolvePM[, "time"], xdesolvePM[, -1], type="l", lty=2, add=TRUE, lwd=2)
