@@ -7,11 +7,13 @@ dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 if(!exists("config")){
   config <- list(
     nobs = 101,
-    noise = rep(0.001, 10),
+    noise = c(0.0236194228362474, 0.984379168607761, 0.040561105491602, 0.19224800630503, 
+      0.000104872420893985, 0.395628293932429, 99.3980508395468, 0.0263189487352539, 
+      0.00631925202022132, 0.00036869187211123)*0.05,  # min of each component * 0.05
     kernel = "generalMatern",
     seed = 123,
     bandsize = 100,
-    hmcSteps = 100,
+    hmcSteps = 200,
     niterHmc = 20001,
     stepSizeFactor = 0.001,
     filllevel = 0,
@@ -19,7 +21,6 @@ if(!exists("config")){
     modelName = "lac-operon"
   )
 }
-
 
 # initialize global parameters, true x, simulated x ----------------------------
 pram.true <- list(
@@ -91,7 +92,7 @@ for (j in 1:(ncol(xsim)-1)){
   sigmaInit[j] <- hyperparam$sigma
   plot(xsim.obs$time, xsim.obs[,j+1], main=paste0("component ", j))
   lines(xtrue$time, xtrue[,j+1], col=2)
-  mtext(paste0("sigma = ", round(sigmaInit[j], 3), 
+  mtext(paste0("sigma = ", round(sigmaInit[j], 3),
                "; phi = ", paste0(round(phiExogenous[,j], 3), collapse = ", ")))
 }
 
@@ -105,7 +106,7 @@ phiExogenous <- cbind(
   c(60, 100),
   c(0.01, 800),  # remove first obs
   c(1, 200),
-  c(1, 300),
+  c(500, 300),  # increased phi1 to 500 
   c(0.5, 300),
   c(1, 400),
   c(35, 1000)
@@ -113,13 +114,12 @@ phiExogenous <- cbind(
 sigmaInit <- config$noise
 
 
-#' works well except for theta0 which is the [i] component
-#' even assume component [i] is known constant, k5 and k7 are still biased, other parameter inferences are good
+#' assume component [i] is known constant, parameter inferences are good
 #' trajectory RMSE are improved with known component [i]
 #'
 OursStartTime <- proc.time()[3] 
 result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, 
-                           control = list(xInit=xInitExogenous, niterHmc=config$niterHmc, stepSizeFactor = config$stepSizeFactor, phi=phiExogenous, sigma=sigmaInit, useFixedSigma=TRUE))
+                           control = list(niterHmc=config$niterHmc, nstepsHmc = config$hmcSteps, phi=phiExogenous, sigma=sigmaInit, useFixedSigma=TRUE))
 OursTimeUsed <- proc.time()[3] - OursStartTime
 
 gpode <- result
