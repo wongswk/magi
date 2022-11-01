@@ -3,32 +3,41 @@ library(magi)
 outDir <- "../results/Michaelis-Menten/"
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 realdata <- read.csv(paste0(outDir, "hydrolysis.csv"))
-matplot(realdata$t, realdata[,-1], type="b")
+
+if(!exists("externalFlag")){
+  externalFlag <- FALSE
+}
 
 # set up configuration if not already exist ------------------------------------
-# if(!exists("config")){
+if(!externalFlag){
   config <- list(
     nobs = nrow(realdata),
     noise = c(NaN, 0.02, NaN, 0.02),  # noise = c(0.01, 0.01, 0.01, 0.01), for fully observed case
     kernel = "generalMatern",
     seed = 123,
-    bandsize = 20,
+    bandsize = 40,
     hmcSteps = 100,
-    n.iter = 40001,
-    stepSizeFactor = 0.01,
+    n.iter = 5001,
     linfillspace = 0.5, 
     t.end = 70,
+    t.start = 20,
+    t.truncate = 70,
+    useMean = FALSE,
+    phi = cbind(c(0.1, 70), c(1, 30), c(0.1, 70), c(1, 30)),
     modelName = "Michaelis-Menten"
   )
-# }
+}
 
+if(is.null(config$skip_visualization)){
+  matplot(realdata$t, realdata[,-1], type="b")
+}
 
 # initialize global parameters, true x, simulated x ----------------------------
 # parameters and initial conditions that seem to mimic the real data well
-pram.true <- list( 
+pram.true <- list(
   theta=c(0.9, 0.75, 2.54),
   x0 = c(0.1, 1, 0, 0),
-  phi = cbind(c(0.6^2, 70), c(1, 30), c(0.6^2, 70), c(1, 30)),
+  phi = config$phi,
   sigma=config$noise
 )
 
@@ -40,7 +49,10 @@ modelODE <- function(t, state, parameters) {
 
 xtrue <- deSolve::ode(y = pram.true$x0, times = times, func = modelODE, parms = pram.true$theta)
 xtrue <- data.frame(xtrue)
-matplot(xtrue[, "time"], xtrue[, c(3,5)], type="l", lty=1)
+if(is.null(config$skip_visualization)){
+  matplot(xtrue[, "time"], xtrue[, c(3,5)], type="l", lty=1)  
+}
+
 
 xtrueFunc <- lapply(2:ncol(xtrue), function(j)
   approxfun(xtrue[, "time"], xtrue[, j]))
@@ -56,9 +68,11 @@ for(j in 1:(ncol(xsim)-1)){
 
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
 xsim.obs <- rbind(c(0, pram.true$x0), xsim.obs)
-matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
 
-matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
+if(is.null(config$skip_visualization)){
+  matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
+  matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
+}
 
 ## Linearly interpolate using fixed interval widths
 fillC <- seq(0, config$t.end, by = config$linfillspace)
@@ -69,6 +83,12 @@ for (i in 1:length(fillC)) {
   if (!is.na(loc))
     xsim[i,2:ncol(xsim)] = xsim.obs[loc,2:ncol(xsim)];
 }
+
+xsim.obs <- xsim.obs[xsim.obs$time <= config$t.truncate, ]
+xsim <- xsim[xsim$time <= config$t.truncate, ]
+xsim.obs <- xsim.obs[xsim.obs$time >= config$t.start, ]
+xsim <- xsim[xsim$time >= config$t.start, ]
+
 
 # cpp inference ----------------------------
 dynamicalModelList <- list(
@@ -92,26 +112,33 @@ sigma_fixed[is.na(sigma_fixed)] <- 1e-4
 # sampler with a good phi supplied, no missing component
 # hyper-parameters affect the inference of missing components (especially if initial condition is not known
 
-xInitExogenous <- data.matrix(xsim[,-1])
-for (j in c(2,4)){
-  xInitExogenous[, j] <- approx(xsim.obs$time, xsim.obs[,j+1], xsim$time)$y
-}
-xInitExogenous[, 1] <- 0.1
-xInitExogenous[140:141, 2] <- xInitExogenous[139, 2]
-xInitExogenous[-1, 3] <- 0.05
-xInitExogenous[140:141, 4] <- xInitExogenous[139, 4]
+# xInitExogenous <- data.matrix(xsim[,-1])
+# for (j in c(2,4)){
+#   xInitExogenous[, j] <- approx(xsim.obs$time, xsim.obs[,j+1], xsim$time)$y
+#   idx <- which(is.na(xInitExogenous[, j]))
+#   xInitExogenous[idx, j] <- xInitExogenous[idx[1] - 1, j]
+# }
+# xInitExogenous[-1, 1] <- 0.1
+# xInitExogenous[-1, 3] <- 0.05
 
-# xInitExogenous <- sapply(xtrueFunc, function(f) f(xsim$time))
+xInitExogenous <- sapply(xtrueFunc, function(f) f(xsim$time))
 # xInitExogenous <- NULL
 
-
-
+stepSizeFactor <- rep(0.01, nrow(xsim)*length(pram.true$x0) + length(dynamicalModelList$thetaLowerBound) + length(pram.true$x0))
+# if(config$t.start == 0){
+  for(j in 1:4){
+    for(incre in 1:1){
+      stepSizeFactor[(j-1)*nrow(xsim) + incre] <- 0  
+    }
+  }
+# }
 OursStartTime <- proc.time()[3]
 
-result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control = 
-                             list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = config$stepSizeFactor,
+
+result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control =
+                             list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = stepSizeFactor,
                                   xInit = xInitExogenous, burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, discardBurnin=TRUE, useFixedSigma=TRUE,
-                                  skipMissingComponentOptimization=TRUE, useMean=TRUE))
+                                  skipMissingComponentOptimization=TRUE, useMean=config$useMean, useBand=FALSE, priorTemperature=NULL))
 
 OursTimeUsed <- proc.time()[3] - OursStartTime
 
@@ -128,6 +155,7 @@ odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 for(j in 1:(ncol(xsim)-1)){
   config[[paste0("phiD", j)]] <- paste(round(gpode$phi[,j], 2), collapse = "; ")
 }
+config$phi <- NULL
 
 gpode$lglik <- gpode$lp
 pram.true$sigma <- sigma_fixed
@@ -135,9 +163,11 @@ gpode$theta <- cbind(gpode$theta, (gpode$theta[,2]+gpode$theta[,3])/gpode$theta[
 pram.true$theta <- c(pram.true$theta, (pram.true$theta[2]+pram.true$theta[3])/pram.true$theta[1])
 
 magi:::plotPostSamplesFlex(
-  paste0(outDir, config$modelName,"-",config$seed,"-fill", sum(config$linfillspace),"-noise", sum(config$noise), "-phi", sum(pram.true$phi), ".pdf"),
+  paste0(outDir, config$modelName,"-",config$seed,"-fill", sum(config$linfillspace),"-noise", sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi),"-useMean", config$useMean,"-time", config$t.start,"to", config$t.truncate, ".pdf"),
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 tail(gpode$theta)
 
 apply(gpode$xsampled[,1,], 2, median)
 apply(gpode$theta, 2, median)
+
+matplot(apply(gpode$xsampled[,,], 2:3, median), type="l")
