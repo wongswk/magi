@@ -35,6 +35,9 @@ arma::mat MichaelisMentenModelODE(const arma::vec &, const arma::mat &, const ar
 arma::cube MichaelisMentenModelDx(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube MichaelisMentenModelDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
 
+arma::mat MichaelisMentenReducedODE(const arma::vec &, const arma::mat &, const arma::vec &);
+arma::cube MichaelisMentenReducedDx(const arma::vec &, const arma::mat &, const arma::vec &);
+arma::cube MichaelisMentenReducedDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
 
 arma::mat MichaelisMentenLogModelODE(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube MichaelisMentenLogModelDx(const arma::vec &, const arma::mat &, const arma::vec &);

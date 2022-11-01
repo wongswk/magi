@@ -58,6 +58,8 @@ Rcpp::List solveMagiRcpp(
         modelC = OdeSystem(hes1logmodelODEfixf, hes1logmodelDxfixf, hes1logmodelDthetafixf, arma::zeros(6), arma::ones(6)*INFINITY);
     }else if(modelName == "Michaelis-Menten"){
         modelC = OdeSystem(MichaelisMentenModelODE, MichaelisMentenModelDx, MichaelisMentenModelDtheta, {0,-100,0}, arma::ones(3)*INFINITY);
+    }else if(modelName == "Michaelis-Menten-Reduced"){
+        modelC = OdeSystem(MichaelisMentenReducedODE, MichaelisMentenReducedDx, MichaelisMentenReducedDtheta, {0,-100,0}, arma::ones(3)*INFINITY);
     }else if(modelName == "Michaelis-Menten-Va"){
         modelC = OdeSystem(MichaelisMentenModelVaODE, MichaelisMentenModelVaDx, MichaelisMentenModelVaDtheta, {0,-100,0}, arma::ones(3)*INFINITY);
     }else if(modelName == "Michaelis-Menten-Vb4p"){
