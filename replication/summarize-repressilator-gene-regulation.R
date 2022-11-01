@@ -24,7 +24,7 @@ for (rdaDir in subdirs){
     gsub(".*log-([0-9]+)-partobs.*", "\\1", theta_csv_files),
     gsub(".*log-([0-9]+)-partobs.*", "\\1", trajectory_csv_files)
   )
-  setdiff(1:1000, as.numeric(common_seed)) 
+  setdiff(1:100, as.numeric(common_seed)) 
   # 217 575 613 641 642 764
   
   inferred_theta_all <- sapply(common_seed, function(seed){
@@ -49,7 +49,7 @@ for (rdaDir in subdirs){
   
   pdf_files <- list.files(rdaDir)
   rda_files <- pdf_files[grep(paste0(".*log-([0-9]+)-partobs-fill",config$filllevel,".*\\.rda"), pdf_files)]
-  rda_files <- rda_files[1:100]
+  # rda_files <- rda_files[1:100]
   
   
   ## Helper function adapted from Visualization to extract trajectories and RMSE
@@ -63,7 +63,7 @@ for (rdaDir in subdirs){
     ttheta <- gpode$theta[mapId,]
     tx0 <- gpode$xsampled[mapId,1,]
     starttime <- xsim$time[which(is.finite(xsim[,2]))[1]]
-    starttime <- 0  # FIXME start time should be 3, depending on fill level, 
+    # starttime <- 0  # FIXME start time should be 3, depending on fill level, 
     # this bug is confirmed to have only minor effect on fill level 0, but should be corrected
     xdesolveMAP <- deSolve::ode(y = tx0, times = times[times >= starttime], func = odemodel$modelODE, parms = ttheta)
     
@@ -117,7 +117,7 @@ for (rdaDir in subdirs){
       ttheta <- colMeans(gpode$theta)
       exptx0 <- colMeans(xsampledexp[,1,])
       starttime <- xsim$time[which(is.finite(xsim[,2]))[1]] 
-      starttime <- 0  # FIXME start time should be 3, depending on fill level, 
+      # starttime <- 0  # FIXME start time should be 3, depending on fill level, 
       # this bug is confirmed to have only minor effect on fill level 0, but should be corrected
       xdesolvePM <- deSolve::ode(y = log(exptx0), times = times[times >= starttime], func = odemodel$modelODE, parms = ttheta)
       oursExpXdesolvePM_f <- exp(xdesolvePM)
