@@ -27,7 +27,7 @@ config <- list(
 # parameters and initial conditions that seem to mimic the real data well
 pram.true <- list( 
   theta=c(0.686, 0.01, 2.80),
-  x0 = log(1+c(0.1, 1, 0, 0)),
+  x0 = log(1e-4 + c(0.1, 1, 0, 0)),
   phi = cbind(c(1, 30), c(1, 60), c(1, 30), c(1, 10)),
   sigma=config$noise
 )
