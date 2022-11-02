@@ -1,5 +1,9 @@
 library(magi)
 
+# try default phi
+# what if we observe only after the drop (after t = 2)
+# 
+
 outDir <- "../results/Michaelis-Menten/"
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 realdata <- read.csv(paste0(outDir, "hydrolysis.csv"))
@@ -12,7 +16,7 @@ if(!exists("externalFlag")){
 if(!externalFlag){
   config <- list(
     nobs = nrow(realdata),
-    noise = c(NaN, 0.02, NaN, 0.02),  # noise = c(0.01, 0.01, 0.01, 0.01), for fully observed case
+    noise = c(NaN, 0.02, 0.02),  # noise = c(0.01, 0.01, 0.01, 0.01), for fully observed case
     kernel = "generalMatern",
     seed = 123,
     bandsize = 40,
@@ -20,11 +24,11 @@ if(!externalFlag){
     n.iter = 5001,
     linfillspace = 0.5, 
     t.end = 70,
-    t.start = 20,
+    t.start = 0,
     t.truncate = 70,
-    useMean = FALSE,
-    phi = cbind(c(0.1, 70), c(1, 30), c(0.1, 70), c(1, 30)),
-    modelName = "Michaelis-Menten"
+    useMean = TRUE,
+    phi = cbind(c(0.1, 70), c(1, 30), c(1, 30)),
+    modelName = "Michaelis-Menten-Reduced"
   )
 }
 
@@ -36,7 +40,8 @@ if(is.null(config$skip_visualization)){
 # parameters and initial conditions that seem to mimic the real data well
 pram.true <- list(
   theta=c(0.9, 0.75, 2.54),
-  x0 = c(0.1, 1, 0, 0),
+  # x0 = c(0.08277011, 0.7500533, 0.2327168),
+  x0 = c(0.1, 1, 0),
   phi = config$phi,
   sigma=config$noise
 )
@@ -44,13 +49,13 @@ pram.true <- list(
 times <- seq(0,config$t.end,length=1001)
 
 modelODE <- function(t, state, parameters) {
-  list(as.vector(magi:::MichaelisMentenModelODE(parameters, t(state), t)))
+  list(as.vector(magi:::MichaelisMentenReducedODE(parameters, t(state), t)))
 }
 
 xtrue <- deSolve::ode(y = pram.true$x0, times = times, func = modelODE, parms = pram.true$theta)
 xtrue <- data.frame(xtrue)
 if(is.null(config$skip_visualization)){
-  matplot(xtrue[, "time"], xtrue[, c(3,5)], type="l", lty=1)  
+  matplot(xtrue[, "time"], xtrue[, c(3,4)], type="l", lty=1)  
 }
 
 
@@ -92,12 +97,12 @@ xsim <- xsim[xsim$time >= config$t.start, ]
 
 # cpp inference ----------------------------
 dynamicalModelList <- list(
-  fOde=magi:::MichaelisMentenModelODE,
-  fOdeDx=magi:::MichaelisMentenModelDx,
-  fOdeDtheta=magi:::MichaelisMentenModelDtheta,
+  fOde=magi:::MichaelisMentenReducedODE,
+  fOdeDx=magi:::MichaelisMentenReducedDx,
+  fOdeDtheta=magi:::MichaelisMentenReducedDtheta,
   thetaLowerBound=c(0,-100,0),
   thetaUpperBound=c(Inf,Inf,Inf),
-  name="Michaelis-Menten"
+  name="Michaelis-Menten-Reduced"
 )
 
 testDynamicalModel(dynamicalModelList$fOde, dynamicalModelList$fOdeDx, dynamicalModelList$fOdeDtheta, "dynamicalModelList",
@@ -126,7 +131,7 @@ xInitExogenous <- sapply(xtrueFunc, function(f) f(xsim$time))
 
 stepSizeFactor <- rep(0.01, nrow(xsim)*length(pram.true$x0) + length(dynamicalModelList$thetaLowerBound) + length(pram.true$x0))
 # if(config$t.start == 0){
-  for(j in 1:4){
+  for(j in 1:3){
     for(incre in 1:1){
       stepSizeFactor[(j-1)*nrow(xsim) + incre] <- 0  
     }
