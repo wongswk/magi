@@ -22,7 +22,8 @@ if(!externalFlag){
     bandsize = 40,
     hmcSteps = 100,
     n.iter = 5001,
-    linfillspace = 0.5, 
+    linfillspace = c(0.1, 0.2, 0.5), 
+    linfillcut = c(2, 5), 
     t.end = 70,
     t.start = 0,
     t.truncate = 70,
@@ -62,7 +63,20 @@ if(is.null(config$skip_visualization)){
 xtrueFunc <- lapply(2:ncol(xtrue), function(j)
   approxfun(xtrue[, "time"], xtrue[, j]))
 
-xsim <- data.frame(time = round(realdata$t / config$linfillspace) * config$linfillspace)
+if(length(config$linfillcut) == 0){
+  xsim <- data.frame(time = round(realdata$t / config$linfillspace) * config$linfillspace)
+}else{
+  fill_seg <- c()
+  startpoint = 0
+  for(i in 1:length(config$linfillcut)){
+    cutpoint <- config$linfillcut[i]
+    fill_seg <- c(fill_seg, seq(startpoint, cutpoint, by = config$linfillspace[i]))
+    startpoint <- cutpoint
+  }
+  fill_seg <- c(fill_seg, seq(startpoint, config$t.end, by = config$linfillspace[i+1]))
+  xsim <- data.frame(time = fill_seg[sapply(realdata$t, function(t_each) which.min(abs(fill_seg - t_each)))])
+}
+
 xsim <- cbind(xsim, sapply(xtrueFunc, function(f) f(xsim$time)))
 xtest <- xsim
 
@@ -80,7 +94,12 @@ if(is.null(config$skip_visualization)){
 }
 
 ## Linearly interpolate using fixed interval widths
-fillC <- seq(0, config$t.end, by = config$linfillspace)
+if(length(config$linfillcut) == 0){
+  fillC <- seq(0, config$t.end, by = config$linfillspace)
+}else{
+  fillC <- fill_seg
+}
+
 xsim <- data.frame(time = fillC)
 xsim <- cbind(xsim, matrix(NaN, nrow = length(fillC), ncol = ncol(xsim.obs)-1 ))
 for (i in 1:length(fillC)) {

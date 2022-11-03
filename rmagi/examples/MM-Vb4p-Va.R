@@ -25,7 +25,7 @@ if(!exists("config")){
 # initialize global parameters, true x, simulated x ----------------------------
 # parameters and initial conditions that seem to mimic the real data well
 pram.true <- list( 
-  theta=c(0.636, 0.01, 10.8, 0.01),
+  theta=c(0.636, 0.0, 10.8, 0.0),
   x0 = c(0.1, 1, 0, 0, 0),
   phi = cbind(c(0.1, 70), c(1, 30), c(0.1, 70), c(0.1, 70), c(0.5, 30))
 )
@@ -82,7 +82,7 @@ dynamicalModelList <- list(
   fOde=magi:::MichaelisMentenModelVb4pODE,
   fOdeDx=magi:::MichaelisMentenModelVb4pDx,
   fOdeDtheta=magi:::MichaelisMentenModelVb4pDtheta,
-  thetaLowerBound=c(0,0,0,0),
+  thetaLowerBound=c(0,-100,0,-100),
   thetaUpperBound=c(Inf,Inf,Inf,Inf),
   name="Michaelis-Menten-Vb4p"
 )
@@ -103,7 +103,8 @@ OursStartTime <- proc.time()[3]
 
 result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control = 
                              list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = config$stepSizeFactor,
-                                  burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, discardBurnin=TRUE, useFixedSigma=TRUE))
+                                  burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, discardBurnin=TRUE, useFixedSigma=TRUE, 
+                                  skipMissingComponentOptimization=TRUE))
 
 OursTimeUsed <- proc.time()[3] - OursStartTime
 
@@ -161,7 +162,8 @@ OursStartTime <- proc.time()[3]
 
 result <- magi::MagiSolver(xsim_va[,-1], dynamicalModelVa, xsim_va$time, control = 
                              list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = config$stepSizeFactor,
-                                  burninRatio = 0.5, phi = phi_va, sigma=sigma_va, discardBurnin=FALSE, useFixedSigma=TRUE))
+                                  burninRatio = 0.5, phi = phi_va, sigma=sigma_va, discardBurnin=FALSE, useFixedSigma=TRUE,
+                                  skipMissingComponentOptimization=TRUE))
 
 OursTimeUsed <- proc.time()[3] - OursStartTime
 
