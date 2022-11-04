@@ -22,14 +22,16 @@ if(!externalFlag){
     bandsize = 40,
     hmcSteps = 100,
     n.iter = 5001,
-    linfillspace = c(0.2, 0.5), 
-    linfillcut = 3,
+    linfillspace = c(0.5), 
+    linfillcut = NULL,
     t.end = 70,
     t.start = 0,
-    obs_start_time = 3,
+    obs_start_time = 0,
+    phi_change_time = 2,
+    time_acce_factor = 4,
     t.truncate = 70,
     useMean = TRUE,
-    phi = cbind(c(0.1, 70), c(1, 30), c(1, 30)),
+    phi = cbind(c(0.1, 180), c(1, 30), c(1, 30)),
     modelName = "Michaelis-Menten-Reduced"
   )
 }
@@ -158,13 +160,31 @@ stepSizeFactor <- rep(0.01, nrow(xsim)*length(pram.true$x0) + length(dynamicalMo
     }
   }
 # }
+
+
+distSignedCube <- array(NA, dim=c(nrow(xsim), nrow(xsim), ncol(xsim)-1))
+for(j in 1:(ncol(xsim)-1)){
+  for(i in 1:nrow(xsim)){
+    distSignedCube[,i,j] = xsim$time - xsim$time[i]  
+  }
+}
+tvec_accelarated = xsim$time
+tvec_accelarated = tvec_accelarated - config$phi_change_time
+tvec_accelarated[tvec_accelarated < 0] = tvec_accelarated[tvec_accelarated < 0] * config$time_acce_factor
+for(j in c(1)){
+  for(i in 1:nrow(xsim)){
+    distSignedCube[,i,j] = tvec_accelarated - tvec_accelarated[i]  
+  }
+}
+
+
 OursStartTime <- proc.time()[3]
 
 
 result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control =
                              list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = stepSizeFactor,
                                   xInit = xInitExogenous, burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, discardBurnin=TRUE, useFixedSigma=TRUE,
-                                  skipMissingComponentOptimization=TRUE, useMean=config$useMean, useBand=FALSE, priorTemperature=NULL, distSignedCube=array(1.0, c(1,1,0))))
+                                  skipMissingComponentOptimization=TRUE, useMean=config$useMean, useBand=FALSE, priorTemperature=NULL, distSignedCube=distSignedCube))
 
 OursTimeUsed <- proc.time()[3] - OursStartTime
 
@@ -200,6 +220,7 @@ magi:::plotPostSamplesFlex(
          sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi),"-useMean", config$useMean,
          "-time", config$t.start,"to", config$t.truncate,"obsstart",config$obs_start_time, 
          "-linfillcut", config$linfillcut,
+         "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
          ".pdf"),
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 tail(gpode$theta)
