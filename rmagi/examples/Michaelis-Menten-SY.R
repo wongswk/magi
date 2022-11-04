@@ -23,7 +23,7 @@ if(!externalFlag){
     hmcSteps = 100,
     n.iter = 5001,
     linfillspace = c(0.1, 0.2, 0.5), 
-    linfillcut = c(2, 5), 
+    linfillcut = c(1, 5), 
     t.end = 70,
     t.start = 0,
     t.truncate = 70,
@@ -127,7 +127,7 @@ dynamicalModelList <- list(
 testDynamicalModel(dynamicalModelList$fOde, dynamicalModelList$fOdeDx, dynamicalModelList$fOdeDtheta, "dynamicalModelList",
                    data.matrix(xtest[,-1]), pram.true$theta, xtest$time)
 
-config$ndis <- config$t.end / config$linfillspace + 1
+config$ndis <- nrow(xsim)
 
 sigma_fixed <- config$noise
 sigma_fixed[is.na(sigma_fixed)] <- 1e-4
@@ -186,8 +186,17 @@ pram.true$sigma <- sigma_fixed
 gpode$theta <- cbind(gpode$theta, (gpode$theta[,2]+gpode$theta[,3])/gpode$theta[,1])
 pram.true$theta <- c(pram.true$theta, (pram.true$theta[2]+pram.true$theta[3])/pram.true$theta[1])
 
+if(!is.null(config$linfillcut)){
+  config$linfillcut <- paste(round(config$linfillcut, 2), collapse = ";")
+  config$linfillspace <- paste(round(config$linfillspace, 2), collapse = ";")
+}
+
 magi:::plotPostSamplesFlex(
-  paste0(outDir, config$modelName,"-",config$seed,"-fill", sum(config$linfillspace),"-noise", sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi),"-useMean", config$useMean,"-time", config$t.start,"to", config$t.truncate, ".pdf"),
+  paste0(outDir, config$modelName,"-",config$seed,"-fill", config$linfillspace,"-noise", 
+         sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi),"-useMean", config$useMean,
+         "-time", config$t.start,"to", config$t.truncate, 
+         "-linfillcut", config$linfillcut,
+         ".pdf"),
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 tail(gpode$theta)
 
