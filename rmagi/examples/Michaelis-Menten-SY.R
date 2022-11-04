@@ -22,10 +22,11 @@ if(!externalFlag){
     bandsize = 40,
     hmcSteps = 100,
     n.iter = 5001,
-    linfillspace = c(0.1, 0.2, 0.5), 
-    linfillcut = c(1, 5), 
+    linfillspace = c(0.2, 0.5), 
+    linfillcut = 3,
     t.end = 70,
     t.start = 0,
+    obs_start_time = 3,
     t.truncate = 70,
     useMean = TRUE,
     phi = cbind(c(0.1, 70), c(1, 30), c(1, 30)),
@@ -86,6 +87,7 @@ for(j in 1:(ncol(xsim)-1)){
 }
 
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
+xsim.obs <- xsim.obs[xsim.obs$time >= config$obs_start_time,]
 xsim.obs <- rbind(c(0, pram.true$x0), xsim.obs)
 
 if(is.null(config$skip_visualization)){
@@ -162,7 +164,7 @@ OursStartTime <- proc.time()[3]
 result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control =
                              list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = stepSizeFactor,
                                   xInit = xInitExogenous, burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, discardBurnin=TRUE, useFixedSigma=TRUE,
-                                  skipMissingComponentOptimization=TRUE, useMean=config$useMean, useBand=FALSE, priorTemperature=NULL))
+                                  skipMissingComponentOptimization=TRUE, useMean=config$useMean, useBand=FALSE, priorTemperature=NULL, distSignedCube=array(1.0, c(1,1,0))))
 
 OursTimeUsed <- proc.time()[3] - OursStartTime
 
@@ -189,12 +191,14 @@ pram.true$theta <- c(pram.true$theta, (pram.true$theta[2]+pram.true$theta[3])/pr
 if(!is.null(config$linfillcut)){
   config$linfillcut <- paste(round(config$linfillcut, 2), collapse = ";")
   config$linfillspace <- paste(round(config$linfillspace, 2), collapse = ";")
+}else{
+  config$linfillcut <- NULL
 }
 
 magi:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-fill", config$linfillspace,"-noise", 
          sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi),"-useMean", config$useMean,
-         "-time", config$t.start,"to", config$t.truncate, 
+         "-time", config$t.start,"to", config$t.truncate,"obsstart",config$obs_start_time, 
          "-linfillcut", config$linfillcut,
          ".pdf"),
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
