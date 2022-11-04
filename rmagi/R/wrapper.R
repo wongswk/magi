@@ -154,6 +154,11 @@ MagiSolver <- function(y, odeModel, tvec, control = list()) {
   else
     xInitExogenous = matrix(numeric(0))
 
+  if (!is.null(control$xInit))
+    distSignedCube = control$distSignedCube
+  else
+    distSignedCube = array(numeric(0), dim=c(1,1,0))
+
   if (!is.null(control$thetaInit))
     thetaInitExogenous = control$thetaInit
   else
@@ -245,6 +250,7 @@ MagiSolver <- function(y, odeModel, tvec, control = list()) {
     burninRatioHmc = burninRatio,
     niterHmc = niterHmc,
     stepSizeFactorHmc = stepSizeFactor,
+    distSignedFullInput = distSignedCube,
     nEpoch = 1,
     bandSize = bandSize,
     useFrequencyBasedPrior = TRUE,

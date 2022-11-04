@@ -22,6 +22,7 @@ MagiSolver::MagiSolver(const arma::mat & yFull,
                        const double burninRatioHmc,
                        const unsigned int niterHmc,
                        const arma::vec stepSizeFactorHmcInput,
+                       const arma::cube distSignedFullInput,
                        const int nEpoch,
                        const int bandSize,
                        bool useFrequencyBasedPrior,
@@ -56,7 +57,7 @@ MagiSolver::MagiSolver(const arma::mat & yFull,
         verbose(verbose),
         ydim(yFull.n_cols),
         sigmaSize(useScalerSigma ? 1 : yFull.n_cols),
-        distSignedFull(tvecFull.size(), tvecFull.size()),
+        distSignedFull(tvecFull.size(), tvecFull.size(), yFull.n_cols),
         indicatorRowWithObs(yFull.n_rows),
         indicatorMatWithObs(yFull.n_rows, yFull.n_cols, arma::fill::zeros),
         phiAllDimensions(2, yFull.n_cols),
@@ -82,8 +83,14 @@ MagiSolver::MagiSolver(const arma::mat & yFull,
         loglikflag = "usual";
     }
 
-    for(unsigned int i = 0; i < distSignedFull.n_cols; i++){
-        distSignedFull.col(i) = tvecFull - tvecFull(i);
+    if(distSignedFullInput.empty()){
+        for(unsigned int j = 0; j < ydim; j++){
+            for(unsigned int i = 0; i < distSignedFull.n_cols; i++){
+                distSignedFull.slice(j).col(i) = tvecFull - tvecFull(i);
+            }
+        }
+    }else{
+        distSignedFull = distSignedFullInput;
     }
 
 
@@ -95,7 +102,12 @@ MagiSolver::MagiSolver(const arma::mat & yFull,
     indicatorRowWithObs = arma::sum(indicatorMatWithObs, 1);
     idxRowWithObs = arma::find(indicatorRowWithObs > 0);
     yObs = yFull.rows(idxRowWithObs);
-    distSignedObs = distSignedFull.submat(idxRowWithObs, idxRowWithObs);
+    distSignedObs = distSignedFull.slice(0).submat(idxRowWithObs, idxRowWithObs);
+    for(unsigned int j = 1; j < ydim; j++) {
+        distSignedObs += distSignedFull.slice(j).submat(idxRowWithObs, idxRowWithObs);
+    }
+    distSignedObs /= ydim;
+
     idxColElemWithObs.resize(ydim);
     for(unsigned int j = 0; j < ydim; j++) {
         idxColElemWithObs[j] = arma::find(indicatorMatWithObs.col(j) > 0);
@@ -135,7 +147,7 @@ void MagiSolver::setupPhiSigma() {
             for(unsigned j = 0; j < ydim; j++){
                 if(idxColElemWithObs[j].size() >= 3){
                     const arma::vec & yObsCol = yFull.col(j).eval().elem(idxColElemWithObs[j]);
-                    const arma::mat & distSignedObsCol = distSignedFull.submat(idxColElemWithObs[j], idxColElemWithObs[j]);
+                    const arma::mat & distSignedObsCol = distSignedFull.slice(j).submat(idxColElemWithObs[j], idxColElemWithObs[j]);
                     const arma::vec & phisig = gpsmooth(yObsCol,
                                                         arma::abs(distSignedObsCol),
                                                         kernel,
@@ -172,7 +184,7 @@ void MagiSolver::setupPhiSigma() {
             for(unsigned j = 0; j < ydim; j++){
                 if(idxColElemWithObs[j].size() >= 3){
                     const arma::vec & yObsCol = yFull.col(j).eval().elem(idxColElemWithObs[j]);
-                    const arma::mat & distSignedObsCol = distSignedFull.submat(idxColElemWithObs[j], idxColElemWithObs[j]);
+                    const arma::mat & distSignedObsCol = distSignedFull.slice(j).submat(idxColElemWithObs[j], idxColElemWithObs[j]);
                     const arma::vec & phisig = gpsmooth(yObsCol,
                                                         arma::abs(distSignedObsCol),
                                                         kernel,
@@ -203,14 +215,14 @@ void MagiSolver::setupPhiSigma() {
     }
 
     for(unsigned j = 0; j < ydim; j++){
-        covAllDimensions[j] = kernelCov(phiAllDimensions.col(j), distSignedFull, 3);
+        covAllDimensions[j] = kernelCov(phiAllDimensions.col(j), distSignedFull.slice(j), 3);
         covAllDimensions[j].tvecCovInput = tvecFull;
 
         // Workaround for phi1 getting too large and matrix inverse failing
         while (covAllDimensions[j].Cinv.n_rows == 0 || covAllDimensions[j].Kinv.n_rows == 0) {
           std::cout << "Cinv or Kinv failed for component " << j << " with phi1 = " << phiAllDimensions(0,j) << " and phi2 = " << phiAllDimensions(1,j) << endl;
           phiAllDimensions(0,j) *= 0.8;
-          covAllDimensions[j] = kernelCov(phiAllDimensions.col(j), distSignedFull, 3);
+          covAllDimensions[j] = kernelCov(phiAllDimensions.col(j), distSignedFull.slice(j), 3);
         }
         
         covAllDimensions[j].addBandCov(bandSize);
@@ -348,7 +360,7 @@ void MagiSolver::initMissingComponent() {
         unsigned j = missingComponentDim[i];
         auto mu = covAllDimensions[j].mu;
         auto dotmu = covAllDimensions[j].dotmu;
-        covAllDimensions[j] = kernelCov(phiAllDimensions.col(j), distSignedFull, 3);
+        covAllDimensions[j] = kernelCov(phiAllDimensions.col(j), distSignedFull.slice(j), 3);
         covAllDimensions[j].addBandCov(bandSize);
         covAllDimensions[j].mu = mu;
         covAllDimensions[j].dotmu = dotmu;

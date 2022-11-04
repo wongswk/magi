@@ -40,7 +40,7 @@ public:
     const unsigned int sigmaSize;
     std::vector<gpcov> covAllDimensions;
     std::string loglikflag;
-    arma::mat distSignedFull;
+    arma::cube distSignedFull;
     std::function<gpcov(arma::vec, arma::mat, int)> kernelCov;
 
     arma::mat yObs;
@@ -78,6 +78,7 @@ public:
                const double burninRatioHmc = 0.5,
                const unsigned int niterHmc = 10000,
                const arma::vec stepSizeFactorHmc = arma::vec(),
+               const arma::cube distSignedFullInput = arma::cube(),
                const int nEpoch = 1,
                const int bandSize = 20,
                bool useFrequencyBasedPrior = false,
