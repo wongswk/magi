@@ -8,16 +8,51 @@ matplot(realdata$t, realdata[,-1], type="b")
 args <- commandArgs(trailingOnly = TRUE)
 if(length(args) > 0){
   seed <- as.numeric(args[1])
-  linfillspace = as.numeric(args[2])
-  if(args[3] == "fullobs"){
-    noise = c(0.002, 0.02, 0.002, 0.02)
-  }else{
-    noise = c(NA, 0.02, NA, 0.02)
+  scenario = as.numeric(args[2])
+  if(scenario == 0){
+    noise = c(0.002, 0.02, 0.02)
+    linfillspace = c(0.5)
+    linfillcut = NULL
+    phi = cbind(c(0.1, 70), c(1, 30), c(1, 30))
+    phi_change_time = 0
+    time_acce_factor = 1
+  }else if (scenario == 1){
+    noise = c(NA, 0.02, 0.02)
+    linfillspace = c(0.5)
+    linfillcut = NULL
+    phi = cbind(c(0.1, 70), c(1, 30), c(1, 30))
+    phi_change_time = 0
+    time_acce_factor = 1
+  }else if (scenario == 2){
+    noise = c(NA, 0.02, 0.02)
+    linfillspace = c(0.2, 0.5)
+    linfillcut = c(3)
+    phi = cbind(c(0.1, 70), c(1, 30), c(1, 30))
+    phi_change_time = 0
+    time_acce_factor = 1
+  }else if (scenario == 3){
+    noise = c(NA, 0.02, 0.02)
+    linfillspace = c(0.5)
+    linfillcut = NULL
+    phi = cbind(c(0.1, 180), c(1, 30), c(1, 30))
+    phi_change_time = 3
+    time_acce_factor = 4
+  }else if (scenario == 4){
+    noise = c(NA, 0.02, 0.02)
+    linfillspace = c(0.2, 0.5)
+    linfillcut = c(3)
+    phi = cbind(c(0.1, 180), c(1, 30), c(1, 30))
+    phi_change_time = 3
+    time_acce_factor = 4
   }
 }else{
   seed <- 123
-  linfillspace <- 0.5
-  noise = c(NA, 0.02, NA, 0.02)
+  noise = c(NA, 0.02, 0.02)
+  linfillspace = c(0.5)
+  linfillcut = NULL
+  phi = cbind(c(0.1, 70), c(1, 30), c(1, 30))
+  phi_change_time = 0
+  time_acce_factor = 1
 }
 
 # set up configuration if not already exist ------------------------------------
@@ -27,40 +62,65 @@ config <- list(
   noise = noise,  # noise = c(0.01, 0.01, 0.01, 0.01), for fully observed case
   kernel = "generalMatern",
   seed = seed,
-  bandsize = 20,
+  bandsize = 40,
   hmcSteps = 100,
-  n.iter = 20001,
-  stepSizeFactor = 0.01,
+  n.iter = 5001,
   linfillspace = linfillspace, 
+  linfillcut = linfillcut,
   t.end = 70,
-  modelName = "Michaelis-Menten"
+  t.start = 0,
+  obs_start_time = 0,
+  phi_change_time = phi_change_time,
+  time_acce_factor = time_acce_factor,
+  t.truncate = 70,
+  useMean = TRUE,
+  phi = phi,
+  skip_visualization = TRUE,
+  modelName = "Michaelis-Menten-Reduced"
 )
 # }
 
 
 # initialize global parameters, true x, simulated x ----------------------------
 # parameters and initial conditions that seem to mimic the real data well
-pram.true <- list( 
+pram.true <- list(
   theta=c(0.9, 0.75, 2.54),
-  x0 = c(0.1, 1, 0, 0),
-  phi = cbind(c(0.1, 70), c(1, 30), c(0.1, 70), c(1, 30)),
+  # x0 = c(0.08277011, 0.7500533, 0.2327168),
+  x0 = c(0.1, 1, 0),
+  phi = config$phi,
   sigma=config$noise
 )
 
 times <- seq(0,config$t.end,length=1001)
 
 modelODE <- function(t, state, parameters) {
-  list(as.vector(magi:::MichaelisMentenModelODE(parameters, t(state), t)))
+  list(as.vector(magi:::MichaelisMentenReducedODE(parameters, t(state), t)))
 }
 
 xtrue <- deSolve::ode(y = pram.true$x0, times = times, func = modelODE, parms = pram.true$theta)
 xtrue <- data.frame(xtrue)
-matplot(xtrue[, "time"], xtrue[, c(3,5)], type="l", lty=1)
+if(is.null(config$skip_visualization)){
+  matplot(xtrue[, "time"], xtrue[, c(3,4)], type="l", lty=1)  
+}
+
 
 xtrueFunc <- lapply(2:ncol(xtrue), function(j)
   approxfun(xtrue[, "time"], xtrue[, j]))
 
-xsim <- data.frame(time = round(realdata$t / config$linfillspace) * config$linfillspace)
+if(length(config$linfillcut) == 0){
+  xsim <- data.frame(time = round(realdata$t / config$linfillspace) * config$linfillspace)
+}else{
+  fill_seg <- c()
+  startpoint = 0
+  for(i in 1:length(config$linfillcut)){
+    cutpoint <- config$linfillcut[i]
+    fill_seg <- c(fill_seg, seq(startpoint, cutpoint, by = config$linfillspace[i]))
+    startpoint <- cutpoint
+  }
+  fill_seg <- c(fill_seg, seq(startpoint, config$t.end, by = config$linfillspace[i+1]))
+  xsim <- data.frame(time = fill_seg[sapply(realdata$t, function(t_each) which.min(abs(fill_seg - t_each)))])
+}
+
 xsim <- cbind(xsim, sapply(xtrueFunc, function(f) f(xsim$time)))
 xtest <- xsim
 
@@ -70,13 +130,21 @@ for(j in 1:(ncol(xsim)-1)){
 }
 
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
+xsim.obs <- xsim.obs[xsim.obs$time >= config$obs_start_time,]
 xsim.obs <- rbind(c(0, pram.true$x0), xsim.obs)
-matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
 
-matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
+if(is.null(config$skip_visualization)){
+  matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
+  matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
+}
 
 ## Linearly interpolate using fixed interval widths
-fillC <- seq(0, config$t.end, by = config$linfillspace)
+if(length(config$linfillcut) == 0){
+  fillC <- seq(0, config$t.end, by = config$linfillspace)
+}else{
+  fillC <- fill_seg
+}
+
 xsim <- data.frame(time = fillC)
 xsim <- cbind(xsim, matrix(NaN, nrow = length(fillC), ncol = ncol(xsim.obs)-1 ))
 for (i in 1:length(fillC)) {
@@ -85,20 +153,26 @@ for (i in 1:length(fillC)) {
     xsim[i,2:ncol(xsim)] = xsim.obs[loc,2:ncol(xsim)];
 }
 
+xsim.obs <- xsim.obs[xsim.obs$time <= config$t.truncate, ]
+xsim <- xsim[xsim$time <= config$t.truncate, ]
+xsim.obs <- xsim.obs[xsim.obs$time >= config$t.start, ]
+xsim <- xsim[xsim$time >= config$t.start, ]
+
+
 # cpp inference ----------------------------
 dynamicalModelList <- list(
-  fOde=magi:::MichaelisMentenModelODE,
-  fOdeDx=magi:::MichaelisMentenModelDx,
-  fOdeDtheta=magi:::MichaelisMentenModelDtheta,
+  fOde=magi:::MichaelisMentenReducedODE,
+  fOdeDx=magi:::MichaelisMentenReducedDx,
+  fOdeDtheta=magi:::MichaelisMentenReducedDtheta,
   thetaLowerBound=c(0,-100,0),
   thetaUpperBound=c(Inf,Inf,Inf),
-  name="Michaelis-Menten"
+  name="Michaelis-Menten-Reduced"
 )
 
 testDynamicalModel(dynamicalModelList$fOde, dynamicalModelList$fOdeDx, dynamicalModelList$fOdeDtheta, "dynamicalModelList",
                    data.matrix(xtest[,-1]), pram.true$theta, xtest$time)
 
-config$ndis <- config$t.end / config$linfillspace + 1
+config$ndis <- nrow(xsim)
 
 sigma_fixed <- config$noise
 sigma_fixed[is.na(sigma_fixed)] <- 1e-4
@@ -108,25 +182,49 @@ sigma_fixed[is.na(sigma_fixed)] <- 1e-4
 # hyper-parameters affect the inference of missing components (especially if initial condition is not known
 
 xInitExogenous <- data.matrix(xsim[,-1])
-for (j in c(2,4)){
+for (j in c(2,3)){
   xInitExogenous[, j] <- approx(xsim.obs$time, xsim.obs[,j+1], xsim$time)$y
   idx <- which(is.na(xInitExogenous[, j]))
   xInitExogenous[idx, j] <- xInitExogenous[idx[1] - 1, j]
 }
 xInitExogenous[-1, 1] <- 0.1
-xInitExogenous[-1, 3] <- 0.05
+
+# xInitExogenous <- sapply(xtrueFunc, function(f) f(xsim$time))
+# xInitExogenous <- NULL
 
 stepSizeFactor <- rep(0.01, nrow(xsim)*length(pram.true$x0) + length(dynamicalModelList$thetaLowerBound) + length(pram.true$x0))
-for(j in 1:4){
-  stepSizeFactor[(j-1)*nrow(xsim) + 1] <- 0  
+# if(config$t.start == 0){
+for(j in 1:3){
+  for(incre in 1:1){
+    stepSizeFactor[(j-1)*nrow(xsim) + incre] <- 0  
+  }
 }
+# }
+
+
+distSignedCube <- array(NA, dim=c(nrow(xsim), nrow(xsim), ncol(xsim)-1))
+for(j in 1:(ncol(xsim)-1)){
+  for(i in 1:nrow(xsim)){
+    distSignedCube[,i,j] = xsim$time - xsim$time[i]  
+  }
+}
+tvec_accelarated = xsim$time
+tvec_accelarated = tvec_accelarated - config$phi_change_time
+tvec_accelarated[tvec_accelarated < 0] = tvec_accelarated[tvec_accelarated < 0] * config$time_acce_factor
+for(j in c(1)){
+  for(i in 1:nrow(xsim)){
+    distSignedCube[,i,j] = tvec_accelarated - tvec_accelarated[i]  
+  }
+}
+
 
 OursStartTime <- proc.time()[3]
 
-result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control = 
+
+result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control =
                              list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = stepSizeFactor,
-                                  burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, discardBurnin=TRUE, useFixedSigma=TRUE,
-                                  skipMissingComponentOptimization=TRUE, xInit = xInitExogenous))
+                                  xInit = xInitExogenous, burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, discardBurnin=TRUE, useFixedSigma=TRUE,
+                                  skipMissingComponentOptimization=TRUE, useMean=config$useMean, useBand=FALSE, priorTemperature=NULL, distSignedCube=distSignedCube))
 
 OursTimeUsed <- proc.time()[3] - OursStartTime
 
@@ -143,18 +241,36 @@ odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 for(j in 1:(ncol(xsim)-1)){
   config[[paste0("phiD", j)]] <- paste(round(gpode$phi[,j], 2), collapse = "; ")
 }
+config$phi <- NULL
 
 gpode$lglik <- gpode$lp
 pram.true$sigma <- sigma_fixed
 gpode$theta <- cbind(gpode$theta, (gpode$theta[,2]+gpode$theta[,3])/gpode$theta[,1])
 pram.true$theta <- c(pram.true$theta, (pram.true$theta[2]+pram.true$theta[3])/pram.true$theta[1])
 
-save.image(paste0(outDir, config$modelName,"-",config$seed,"-fill", sum(config$linfillspace),"-noise", sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi), ".rda"))
+if(!is.null(config$linfillcut)){
+  config$linfillcut <- paste(round(config$linfillcut, 2), collapse = ";")
+  config$linfillspace <- paste(round(config$linfillspace, 2), collapse = ";")
+}else{
+  config$linfillcut <- NULL
+}
 
 magi:::plotPostSamplesFlex(
-  paste0(outDir, config$modelName,"-",config$seed,"-fill", sum(config$linfillspace),"-noise", sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi), ".pdf"),
+  paste0(outDir, config$modelName,"-",config$seed,"-fill", config$linfillspace,"-noise", 
+         sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi),"-useMean", config$useMean,
+         "-time", config$t.start,"to", config$t.truncate,"obsstart",config$obs_start_time, 
+         "-linfillcut", config$linfillcut,
+         "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
+         ".pdf"),
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 tail(gpode$theta)
 
 apply(gpode$xsampled[,1,], 2, median)
 apply(gpode$theta, 2, median)
+
+save.image(paste0(outDir, config$modelName,"-",config$seed,"-fill", config$linfillspace,"-noise", 
+                  sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi),"-useMean", config$useMean,
+                  "-time", config$t.start,"to", config$t.truncate,"obsstart",config$obs_start_time, 
+                  "-linfillcut", config$linfillcut,
+                  "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
+                  ".rda"))
