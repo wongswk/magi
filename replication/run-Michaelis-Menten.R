@@ -8,42 +8,25 @@ matplot(realdata$t, realdata[,-1], type="b")
 args <- commandArgs(trailingOnly = TRUE)
 if(length(args) > 0){
   seed <- as.numeric(args[1])
-  scenario = as.numeric(args[2])
+  phi2 = as.numeric(args[2])
+  scenario = as.numeric(args[3])
+  
+  phi = cbind(c(0.1, phi2), c(1, 30), c(1, 30))
+  
+  linfillspace = c(0.5)
+  linfillcut = NULL
+  phi_change_time = 0
+  time_acce_factor = 1
+  noise = c(NA, 0.02, 0.02)
+  
   if(scenario == 0){
-    noise = c(0.002, 0.02, 0.02)
-    linfillspace = c(0.5)
-    linfillcut = NULL
-    phi = cbind(c(0.1, 70), c(1, 30), c(1, 30))
-    phi_change_time = 0
-    time_acce_factor = 1
+    obs_keep = 1:26
   }else if (scenario == 1){
-    noise = c(NA, 0.02, 0.02)
-    linfillspace = c(0.5)
-    linfillcut = NULL
-    phi = cbind(c(0.1, 70), c(1, 30), c(1, 30))
-    phi_change_time = 0
-    time_acce_factor = 1
+    obs_keep = setdiff(1:26, c(1,2,4,6,8,11))
   }else if (scenario == 2){
-    noise = c(NA, 0.02, 0.02)
-    linfillspace = c(0.2, 0.5)
-    linfillcut = c(3)
-    phi = cbind(c(0.1, 70), c(1, 30), c(1, 30))
-    phi_change_time = 0
-    time_acce_factor = 1
+    obs_keep = 4:26
   }else if (scenario == 3){
-    noise = c(NA, 0.02, 0.02)
-    linfillspace = c(0.5)
-    linfillcut = NULL
-    phi = cbind(c(0.1, 180), c(1, 30), c(1, 30))
-    phi_change_time = 3
-    time_acce_factor = 4
-  }else if (scenario == 4){
-    noise = c(NA, 0.02, 0.02)
-    linfillspace = c(0.2, 0.5)
-    linfillcut = c(3)
-    phi = cbind(c(0.1, 180), c(1, 30), c(1, 30))
-    phi_change_time = 3
-    time_acce_factor = 4
+    obs_keep = seq(2, 26, 2)
   }
 }else{
   seed <- 123
@@ -53,6 +36,7 @@ if(length(args) > 0){
   phi = cbind(c(0.1, 70), c(1, 30), c(1, 30))
   phi_change_time = 0
   time_acce_factor = 1
+  obs_keep = 1:26
 }
 
 # set up configuration if not already exist ------------------------------------
@@ -73,6 +57,7 @@ config <- list(
   phi_change_time = phi_change_time,
   time_acce_factor = time_acce_factor,
   t.truncate = 70,
+  obs_keep = obs_keep,
   useMean = TRUE,
   phi = phi,
   skip_visualization = TRUE,
@@ -130,7 +115,7 @@ for(j in 1:(ncol(xsim)-1)){
 }
 
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
-xsim.obs <- xsim.obs[xsim.obs$time >= config$obs_start_time,]
+xsim.obs <- xsim.obs[config$obs_keep,]
 xsim.obs <- rbind(c(0, pram.true$x0), xsim.obs)
 
 if(is.null(config$skip_visualization)){
@@ -259,6 +244,7 @@ magi:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-fill", config$linfillspace,"-noise", 
          sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi),"-useMean", config$useMean,
          "-time", config$t.start,"to", config$t.truncate,"obsstart",config$obs_start_time, 
+         "-obs_keep", sum(config$obs_keep),
          "-linfillcut", config$linfillcut,
          "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
          ".pdf"),
@@ -271,6 +257,7 @@ apply(gpode$theta, 2, median)
 save.image(paste0(outDir, config$modelName,"-",config$seed,"-fill", config$linfillspace,"-noise", 
                   sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi),"-useMean", config$useMean,
                   "-time", config$t.start,"to", config$t.truncate,"obsstart",config$obs_start_time, 
+                  "-obs_keep", sum(config$obs_keep),
                   "-linfillcut", config$linfillcut,
                   "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
                   ".rda"))
