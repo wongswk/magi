@@ -228,6 +228,8 @@ for(j in 1:(ncol(xsim)-1)){
 }
 config$phi <- NULL
 
+config$obs_keep <- paste(c(config$obs_keep[1:5], ".."), collapse = ";")
+
 gpode$lglik <- gpode$lp
 pram.true$sigma <- sigma_fixed
 gpode$theta <- cbind(gpode$theta, (gpode$theta[,2]+gpode$theta[,3])/gpode$theta[,1])
@@ -244,7 +246,7 @@ magi:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-fill", config$linfillspace,"-noise", 
          sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi),"-useMean", config$useMean,
          "-time", config$t.start,"to", config$t.truncate,"obsstart",config$obs_start_time, 
-         "-obs_keep", sum(config$obs_keep),
+         "-obs_keep", config$obs_keep,
          "-linfillcut", config$linfillcut,
          "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
          ".pdf"),
@@ -257,7 +259,7 @@ apply(gpode$theta, 2, median)
 save.image(paste0(outDir, config$modelName,"-",config$seed,"-fill", config$linfillspace,"-noise", 
                   sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi),"-useMean", config$useMean,
                   "-time", config$t.start,"to", config$t.truncate,"obsstart",config$obs_start_time, 
-                  "-obs_keep", sum(config$obs_keep),
+                  "-obs_keep", config$obs_keep,
                   "-linfillcut", config$linfillcut,
                   "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
                   ".rda"))
