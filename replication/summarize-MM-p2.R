@@ -1,6 +1,73 @@
+rdaDir <- "../results/Michaelis-Menten/"
 
-load("../results/Michaelis-Menten/summary-fill0.5-noise0.04.rda")
-load("../results/Michaelis-Menten/Michaelis-Menten-1-fill0.5-noise0.04-phi202.2.rda")
+for(phi2 in c(70, 90, 120)){
+for(scenario in 0:3){
+
+phi = cbind(c(0.1, phi2), c(1, 30), c(1, 30))
+
+linfillspace = c(0.5)
+linfillcut = NULL
+phi_change_time = 0
+time_acce_factor = 1
+noise = c(NA, 0.02, 0.02)
+
+if(scenario == 0){
+  obs_keep = 1:26
+}else if (scenario == 1){
+  obs_keep = setdiff(1:26, c(1,2,4,6,8,11))
+}else if (scenario == 2){
+  obs_keep = 4:26
+}else if (scenario == 3){
+  obs_keep = seq(2, 26, 2)
+}
+
+config <- list(
+  nobs = 26,
+  noise = noise,  # noise = c(0.01, 0.01, 0.01, 0.01), for fully observed case
+  kernel = "generalMatern",
+  bandsize = 40,
+  hmcSteps = 100,
+  n.iter = 5001,
+  linfillspace = linfillspace, 
+  linfillcut = linfillcut,
+  t.end = 70,
+  t.start = 0,
+  obs_start_time = 0,
+  phi_change_time = phi_change_time,
+  time_acce_factor = time_acce_factor,
+  t.truncate = 70,
+  obs_keep = obs_keep,
+  useMean = TRUE,
+  phi = phi,
+  skip_visualization = TRUE,
+  modelName = "Michaelis-Menten-Reduced"
+)
+
+if(!is.null(config$linfillcut)){
+  config$linfillcut <- paste(round(config$linfillcut, 2), collapse = ";")
+  config$linfillspace <- paste(round(config$linfillspace, 2), collapse = ";")
+}else{
+  config$linfillcut <- NULL
+}
+
+config$obs_keep <- paste(c(config$obs_keep[1:5], ".."), collapse = ";")
+
+rm(list=setdiff(ls(), c("rdaDir", "subdirs", "config", "scenario", "phi2")))
+
+filename <- paste0(rdaDir,"summary-fill", config$linfillspace,"-noise", 
+                   sum(config$noise, na.rm = TRUE), "-phi", sum(config$phi),"-useMean", config$useMean,
+                   "-obs_keep", config$obs_keep, "-linfillcut", config$linfillcut,
+                   "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor)
+single_rda_filename <- paste0(rdaDir, config$modelName,"-1-fill", config$linfillspace,"-noise", 
+       sum(config$noise, na.rm = TRUE), "-phi", sum(config$phi),"-useMean", config$useMean,
+       "-time", config$t.start,"to", config$t.truncate,"obsstart",config$obs_start_time, 
+       "-obs_keep", config$obs_keep,
+       "-linfillcut", config$linfillcut,
+       "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
+       ".rda")
+
+load(paste0(filename,".rda"))
+load(single_rda_filename)
 
 # load(paste0(rdaDir, rda_files[1]), envir = .GlobalEnv)
 rdaDir <- rdaDirSummary
@@ -35,7 +102,7 @@ oursPostX <- sapply(oursPostX, identity, simplify = "array")
 ylim_lower <- rep(0, 10)
 ylim_upper <- apply(ours[[1]]$xdesolveTRUE, 2, max)[-1]
 
-pdf(width = 20, height = 5, file=paste0(rdaDir, "/PmX.pdf"))
+pdf(width = 20, height = 5, file=paste0(filename, ".pdf"))
 # layout(rbind(c(1,2,3,4), c(5,5,5,5)), heights = c(5,1))
 
 matplot(xtrue[, "time"], (xtrue[, -1]), type="l", lty=1, col=c(1:6), xlab="time", ylab=NA)
@@ -72,16 +139,21 @@ for (i in 1:(ncol(xsim)-1)) {
   ourUB <- apply(oursPostX[,i,], 1, quantile, probs = 0.025)
   ourLB <- apply(oursPostX[,i,], 1, quantile, probs = 0.975)
   
-  ourEst <- (magi:::getMeanCurve(xsim$time, (ourEst), xdesolveTRUE[,1],
-                                 t(phiVisualization[,i]), 0, 
-                                 kerneltype=config$kernel, deriv = FALSE))
-  ourUB <- (magi:::getMeanCurve(xsim$time, (ourUB), xdesolveTRUE[,1],
-                                t(phiVisualization[,i]), 0, 
-                                kerneltype=config$kernel, deriv = FALSE))
-  ourLB <- (magi:::getMeanCurve(xsim$time, (ourLB), xdesolveTRUE[,1],
-                                t(phiVisualization[,i]), 0, 
-                                kerneltype=config$kernel, deriv = FALSE))
-  
+  if(i != 1){
+    ourEst <- (magi:::getMeanCurve(xsim$time, (ourEst), xdesolveTRUE[,1],
+                                   t(phiVisualization[,i]), 0,
+                                   kerneltype=config$kernel, deriv = FALSE))
+    ourUB <- (magi:::getMeanCurve(xsim$time, (ourUB), xdesolveTRUE[,1],
+                                  t(phiVisualization[,i]), 0,
+                                  kerneltype=config$kernel, deriv = FALSE))
+    ourLB <- (magi:::getMeanCurve(xsim$time, (ourLB), xdesolveTRUE[,1],
+                                  t(phiVisualization[,i]), 0,
+                                  kerneltype=config$kernel, deriv = FALSE))
+  }else{
+    ourEst <- approx(xsim$time, (ourEst), xdesolveTRUE[,1])$y
+    ourUB <- approx(xsim$time, (ourUB), xdesolveTRUE[,1])$y
+    ourLB <- approx(xsim$time, (ourLB), xdesolveTRUE[,1])$y
+  }
   
   times <- xdesolveTRUE[,1]
   
@@ -146,6 +218,7 @@ tab <- cbind(c("truth", pram.true$theta), t(tab), t(coverage))
 theta_rmse <- sqrt(rowMeans((oursPostTheta[,1,] - pram.true$theta)^2))
 tab <- cbind(tab, c("theta rmse", printr(theta_rmse)))
 
+sink(paste0(filename, ".txt"))
 print("length(ours)=")
 print(length(ours))
 print("rmse_inferred_orig")
@@ -153,4 +226,7 @@ print(rmse_inferred_orig)
 print("rmse_reconstructed_orig")
 print(rmse_reconstructed_orig)
 print(tab)
-print(xtable(tab))
+# print(xtable(tab))
+sink()
+}
+}

@@ -8,19 +8,72 @@ subdirs <- c(
 )
 
 # get the csv quick summary first ----
-config <- list()
-config$modelName <- "Michaelis-Menten"
-config$linfillspace <- 0.5
-config$noise = c(0.002, 0.02, 0.002, 0.02)
-config$phi = cbind(c(0.1, 70), c(1, 30), c(0.1, 70), c(1, 30))
+for(phi2 in c(70, 90, 120)){
+for(scenario in 0:3){
+  
+phi = cbind(c(0.1, phi2), c(1, 30), c(1, 30))
 
-rm(list=setdiff(ls(), c("rdaDir", "subdirs", "config")))
+linfillspace = c(0.5)
+linfillcut = NULL
+phi_change_time = 0
+time_acce_factor = 1
+noise = c(NA, 0.02, 0.02)
+
+if(scenario == 0){
+  obs_keep = 1:26
+}else if (scenario == 1){
+  obs_keep = setdiff(1:26, c(1,2,4,6,8,11))
+}else if (scenario == 2){
+  obs_keep = 4:26
+}else if (scenario == 3){
+  obs_keep = seq(2, 26, 2)
+}
+
+config <- list(
+  nobs = 26,
+  noise = noise,  # noise = c(0.01, 0.01, 0.01, 0.01), for fully observed case
+  kernel = "generalMatern",
+  bandsize = 40,
+  hmcSteps = 100,
+  n.iter = 5001,
+  linfillspace = linfillspace, 
+  linfillcut = linfillcut,
+  t.end = 70,
+  t.start = 0,
+  obs_start_time = 0,
+  phi_change_time = phi_change_time,
+  time_acce_factor = time_acce_factor,
+  t.truncate = 70,
+  obs_keep = obs_keep,
+  useMean = TRUE,
+  phi = phi,
+  skip_visualization = TRUE,
+  modelName = "Michaelis-Menten-Reduced"
+)
+
+rm(list=setdiff(ls(), c("rdaDir", "subdirs", "config", "scenario", "phi2")))
 rdaDir <- paste0(rdaDir, "/")
 rdaDirSummary <- rdaDir
 print(rdaDir)
 
+if(!is.null(config$linfillcut)){
+  config$linfillcut <- paste(round(config$linfillcut, 2), collapse = ";")
+  config$linfillspace <- paste(round(config$linfillspace, 2), collapse = ";")
+}else{
+  config$linfillcut <- NULL
+}
+
+config$obs_keep <- paste(c(config$obs_keep[1:5], ".."), collapse = ";")
+
+
 pdf_files <- list.files(rdaDir)
-rda_files <- pdf_files[grep(paste0(config$modelName,"-.*-fill", sum(config$linfillspace),"-noise", sum(config$noise, na.rm = TRUE), "-phi", sum(config$phi), "\\.rda"), pdf_files)]
+rda_files <- pdf_files[grep(paste0(config$modelName,"-.*-fill", config$linfillspace,"-noise", 
+                                   sum(config$noise, na.rm = TRUE), "-phi", sum(config$phi),"-useMean", config$useMean,
+                                   "-time.*", "-obs_keep", config$obs_keep, "-linfillcut", config$linfillcut,
+                                   "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
+                                   "\\.rda$"), pdf_files)]
+print(rda_files[1])
+print(length(rda_files))
 
 ## Helper function adapted from Visualization to extract trajectories and RMSE
 rmsePostSamples <- function(xtrue, dotxtrue, xsim, gpode, param, config, odemodel=NULL){
@@ -93,6 +146,14 @@ for (f in 1:length(rda_files)) {
   oursPostTheta[[f]] <- outStorage[[f]]$oursPostTheta_f
 }
 
-print(paste0(rdaDir,"summary-fill",sum(config$linfillspace),"-noise", sum(config$noise, na.rm = TRUE), ".rda"))
+summary_filename = paste0(rdaDir,"summary-fill", config$linfillspace,"-noise", 
+                          sum(config$noise, na.rm = TRUE), "-phi", sum(config$phi),"-useMean", config$useMean,
+                          "-obs_keep", config$obs_keep, "-linfillcut", config$linfillcut,
+                          "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
+                          ".rda")
 
-save.image(file=paste0(rdaDir,"summary-fill",sum(config$linfillspace),"-noise", sum(config$noise, na.rm = TRUE), ".rda"))
+print(summary_filename)
+
+save.image(file=summary_filename)
+}
+}
