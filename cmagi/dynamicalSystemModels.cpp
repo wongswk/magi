@@ -918,11 +918,13 @@ arma::cube MichaelisMentenModelVb6pDtheta(const arma::vec & theta, const arma::m
 
 // [[Rcpp::export]]
 arma::mat MichaelisMentenModelVb4pODE(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
+    const double e0 = 0.1;
+
     const vec & e = x.col(0);
     const vec & s = x.col(1);
     const vec & es = x.col(2);
-    const vec & es2 = x.col(3);
-    const vec & p = x.col(4);
+    const vec & es2 = e0 - e - es;
+    const vec & p = x.col(3);
 
     const double k1 = theta(0);
     const double km1 = theta(1);
@@ -936,8 +938,7 @@ arma::mat MichaelisMentenModelVb4pODE(const arma::vec & theta, const arma::mat &
     resultdt.col(0) = -k1 * e % s + km1 * es + k3 * es2 - km3 * e % p;
     resultdt.col(1) = -k1 * e % s - k2 * es % s + km1 * es;
     resultdt.col(2) = k1 * e % s - km1 * es - k2 * es % s + km2 * es2;
-    resultdt.col(3) = k2 * es % s - (km2 + k3) * es2 + km3 * e %p;
-    resultdt.col(4) = k3 * es2 - km3 * e % p;
+    resultdt.col(3) = k3 * es2 - km3 * e % p;
 
     return resultdt;
 }
@@ -946,11 +947,13 @@ arma::mat MichaelisMentenModelVb4pODE(const arma::vec & theta, const arma::mat &
 arma::cube MichaelisMentenModelVb4pDx(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
     cube resultDx(x.n_rows, x.n_cols, x.n_cols, fill::zeros);
 
+    const double e0 = 0.1;
+
     const vec & e = x.col(0);
     const vec & s = x.col(1);
     const vec & es = x.col(2);
-    const vec & es2 = x.col(3);
-    const vec & p = x.col(4);
+    const vec & es2 = e0 - e - es;
+    const vec & p = x.col(3);
 
     const double k1 = theta(0);
     const double km1 = theta(1);
@@ -959,30 +962,22 @@ arma::cube MichaelisMentenModelVb4pDx(const arma::vec & theta, const arma::mat &
     const double k3 = theta(2);
     const double km3 = theta(3);
 
-    resultDx.slice(0).col(0) = -k1 * s - km3 * p;
+    resultDx.slice(0).col(0) = -k1 * s - km3 * p - k3;
     resultDx.slice(0).col(1) = -k1 * e;
-    resultDx.slice(0).col(2).fill(km1);
-    resultDx.slice(0).col(3).fill(k3);
-    resultDx.slice(0).col(4) = -km3 * e;
+    resultDx.slice(0).col(2).fill(km1 - k3);
+    resultDx.slice(0).col(3) = -km3 * e;
 
     resultDx.slice(1).col(0) = -k1 * s;
     resultDx.slice(1).col(1) = -k1*e - k2*es;
     resultDx.slice(1).col(2) = -k2*s + km1;
 
-    resultDx.slice(2).col(0) = k1*s;
+    resultDx.slice(2).col(0) = k1*s - km2;
     resultDx.slice(2).col(1) = k1*e-k2*es;
-    resultDx.slice(2).col(2) = -km1 - k2*s;
-    resultDx.slice(2).col(3).fill(km2);
+    resultDx.slice(2).col(2) = -km1 - k2*s - km2;
 
-    resultDx.slice(3).col(0) = km3*p;
-    resultDx.slice(3).col(1) = k2*es;
-    resultDx.slice(3).col(2) = k2*s;
-    resultDx.slice(3).col(3).fill(-(km2 + k3));
-    resultDx.slice(3).col(4) = km3 * e;
-
-    resultDx.slice(4).col(0) = -km3*p;
-    resultDx.slice(4).col(3).fill(k3);
-    resultDx.slice(4).col(4) = -km3 * e;
+    resultDx.slice(3).col(0) = -km3*p - k3;
+    resultDx.slice(3).col(2).fill(-k3);
+    resultDx.slice(3).col(3) = -km3 * e;
 
     return resultDx;
 }
@@ -991,11 +986,13 @@ arma::cube MichaelisMentenModelVb4pDx(const arma::vec & theta, const arma::mat &
 arma::cube MichaelisMentenModelVb4pDtheta(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
     cube resultDtheta(x.n_rows, 6, x.n_cols, fill::zeros);
 
+    const double e0 = 0.1;
+
     const vec & e = x.col(0);
     const vec & s = x.col(1);
     const vec & es = x.col(2);
-    const vec & es2 = x.col(3);
-    const vec & p = x.col(4);
+    const vec & es2 = e0 - e - es;
+    const vec & p = x.col(3);
 
     const double k1 = theta(0);
     const double km1 = theta(1);
