@@ -1015,17 +1015,12 @@ arma::cube MichaelisMentenModelVb4pDtheta(const arma::vec & theta, const arma::m
     resultDtheta.slice(2).col(2) = -es % s;
     resultDtheta.slice(2).col(3) = es2;
 
-    resultDtheta.slice(3).col(2) = es % s;
-    resultDtheta.slice(3).col(3) = -es2;
-    resultDtheta.slice(3).col(4) = -es2;
-    resultDtheta.slice(3).col(5) = e % p;
-
-    resultDtheta.slice(4).col(4) = es2;
-    resultDtheta.slice(4).col(5) = -e % p;
+    resultDtheta.slice(3).col(4) = es2;
+    resultDtheta.slice(3).col(5) = -e % p;
 
     cube resultDtheta4p(x.n_rows, 4, x.n_cols, fill::zeros);
 
-    for (int it = 0; it < 5; it++){
+    for (int it = 0; it < x.n_cols; it++){
         resultDtheta4p.slice(it).col(0) = resultDtheta.slice(it).col(0) + resultDtheta.slice(it).col(2);
         resultDtheta4p.slice(it).col(1) = resultDtheta.slice(it).col(1) + resultDtheta.slice(it).col(3);
         resultDtheta4p.slice(it).col(2) = resultDtheta.slice(it).col(4);
