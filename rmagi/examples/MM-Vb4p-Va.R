@@ -4,18 +4,25 @@ outDir <- "../results/Michaelis-Menten-Vb4p/"
 realdata <- read.csv(paste0("../results/Michaelis-Menten/", "hydrolysis.csv"))
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 
+if(!exists("externalFlag")){
+  externalFlag <- FALSE
+}
+
 # set up configuration if not already exist ------------------------------------
-if(!exists("config")){
+if(!externalFlag){
   config <- list(
     nobs = nrow(realdata),
-    noise = c(NaN, 0.01, NaN, NaN, 0.01),
+    noise = c(NaN, 0.01, NaN, 0.01),
     kernel = "generalMatern",
     seed = 123,
     bandsize = 100,
     hmcSteps = 100,
-    n.iter = 20001,
+    n.iter = 5001,
+    t.start = 0,
     stepSizeFactor = 0.01,
     linfillspace = 0.5, 
+    phi_change_time = 0,
+    time_acce_factor = 1,
     t.end = 70,
     modelName = "Michaelis-Menten-Vb4p"
   )
@@ -26,8 +33,8 @@ if(!exists("config")){
 # parameters and initial conditions that seem to mimic the real data well
 pram.true <- list( 
   theta=c(0.636, 0.0, 10.8, 0.0),
-  x0 = c(0.1, 1, 0, 0, 0),
-  phi = cbind(c(0.1, 70), c(1, 30), c(0.1, 70), c(0.1, 70), c(0.5, 30))
+  x0 = c(0.1, 1, 0, 0),
+  phi = cbind(c(0.1, 70), c(1, 30), c(0.1, 70), c(0.5, 30))
 )
 
 times <- seq(0,config$t.end,length=1001)
@@ -40,7 +47,10 @@ xtrue <- deSolve::ode(y = pram.true$x0, times = times, func = modelODE, parms = 
 xtrue <- data.frame(xtrue)
 sum(log(xtrue[-1,]))
 matplot(xtrue[, "time"], xtrue[, -1], type="l", lty=1)
-matplot(xtrue[, "time"], xtrue[, c(3,6)], type="l", lty=1)
+matplot(xtrue[, "time"], xtrue[, c(3,5)], type="l", lty=1)
+matplot(realdata$t, realdata[,-1], type="p", add=TRUE)
+matplot(realdata$t, realdata[,-1]/2, type="p", add=TRUE)
+
 
 # theta <- pram.true$theta
 # k1 = theta[1]
@@ -77,6 +87,9 @@ for (i in 1:length(fillC)) {
     xsim[i,2:ncol(xsim)] = xsim.obs[loc,2:ncol(xsim)];
 }
 
+xsim.obs <- xsim.obs[xsim.obs$time >= config$t.start, ]
+xsim <- xsim[xsim$time >= config$t.start, ]
+
 # cpp inference under model Vb4p ----------------------------
 dynamicalModelList <- list(
   fOde=magi:::MichaelisMentenModelVb4pODE,
@@ -95,16 +108,50 @@ config$ndis <- config$t.end / config$linfillspace + 1
 sigma_fixed <- config$noise
 sigma_fixed[is.na(sigma_fixed)] <- 1e-4
 
+stepSizeFactor <- rep(0.01, nrow(xsim)*length(pram.true$x0) + length(dynamicalModelList$thetaLowerBound) + length(pram.true$x0))
+for(j in 1:4){
+  for(incre in 1:1){
+    stepSizeFactor[(j-1)*nrow(xsim) + incre] <- 0  
+  }
+}
+
+# xInitExogenous <- data.matrix(xsim[,-1])
+# for (j in c(2,3)){
+#   xInitExogenous[, j] <- approx(xsim.obs$time, xsim.obs[,j+1], xsim$time)$y
+#   idx <- which(is.na(xInitExogenous[, j]))
+#   xInitExogenous[idx, j] <- xInitExogenous[idx[1] - 1, j]
+# }
+# xInitExogenous[-1, 1] <- 0.1
+
+xInitExogenous <- sapply(xtrueFunc, function(f) f(xsim$time))
+# xInitExogenous <- NULL
+
+distSignedCube <- array(NA, dim=c(nrow(xsim), nrow(xsim), ncol(xsim)-1))
+for(j in 1:(ncol(xsim)-1)){
+  for(i in 1:nrow(xsim)){
+    distSignedCube[,i,j] = xsim$time - xsim$time[i]  
+  }
+}
+tvec_accelarated = xsim$time
+tvec_accelarated = tvec_accelarated - config$phi_change_time
+tvec_accelarated[tvec_accelarated < 0] = tvec_accelarated[tvec_accelarated < 0] * config$time_acce_factor
+for(j in c(1)){
+  for(i in 1:nrow(xsim)){
+    distSignedCube[,i,j] = tvec_accelarated - tvec_accelarated[i]  
+  }
+}
+
 # MAGI off-the-shelf ----
 # sampler with a good phi supplied, no missing component
 # hyper-parameters affect the inference of missing components (especially if initial condition is not known
 
 OursStartTime <- proc.time()[3]
 
-result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control = 
-                             list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = config$stepSizeFactor,
-                                  burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, discardBurnin=TRUE, useFixedSigma=TRUE, 
-                                  skipMissingComponentOptimization=TRUE))
+result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control =
+                             list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = stepSizeFactor,
+                                  xInit = xInitExogenous, burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, discardBurnin=TRUE, useFixedSigma=TRUE,
+                                  skipMissingComponentOptimization=TRUE, useMean=config$useMean, useBand=FALSE, priorTemperature=NULL, distSignedCube=distSignedCube))
+
 
 OursTimeUsed <- proc.time()[3] - OursStartTime
 
@@ -126,75 +173,79 @@ gpode$lglik <- gpode$lp
 pram.true$sigma <- sigma_fixed
 
 magi:::plotPostSamplesFlex(
-  paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".pdf"),
+  paste0(outDir, config$modelName,"-",config$seed,"-fill", config$linfillspace,"-noise", 
+         sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi),"-useMean", config$useMean,
+         "-time", config$t.start,"to", config$t.truncate,"obsstart",config$obs_start_time, 
+         "-linfillcut", config$linfillcut,
+         "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
+         ".pdf"),
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
-tail(gpode$theta)
 
 apply(gpode$xsampled[,1,], 2, median)
 apply(gpode$theta, 2, median)
 
-#' TODO 
-#' on simulated data repeated experiments
-
-# use model A to fit model B data ----
-
-dynamicalModelVa <- list(
-  fOde=magi:::MichaelisMentenModelVaODE,
-  fOdeDx=magi:::MichaelisMentenModelVaDx,
-  fOdeDtheta=magi:::MichaelisMentenModelVaDtheta,
-  thetaLowerBound=c(0,0,0),
-  thetaUpperBound=c(Inf,Inf,Inf),
-  name="Michaelis-Menten-Va"
-)
-
-xsim_va <- xsim[,c(1,2,3,4,6)]
-
-sigma_va <- sigma_fixed
-sigma_va <- sigma_va[c(1,2,3,5)]
-
-phi_va <- pram.true$phi[,c(1,2,3,5)]
-
-# MAGI off-the-shelf ----
-# sampler with a good phi supplied, no missing component
-# hyper-parameters affect the inference of missing components (especially if initial condition is not known
-
-OursStartTime <- proc.time()[3]
-
-result <- magi::MagiSolver(xsim_va[,-1], dynamicalModelVa, xsim_va$time, control = 
-                             list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = config$stepSizeFactor,
-                                  burninRatio = 0.5, phi = phi_va, sigma=sigma_va, discardBurnin=FALSE, useFixedSigma=TRUE,
-                                  skipMissingComponentOptimization=TRUE))
-
-OursTimeUsed <- proc.time()[3] - OursStartTime
-
-
-gpode <- result
-gpode$fode <- sapply(1:length(gpode$lp), function(t)
-  with(gpode, dynamicalModelVa$fOde(theta[t,], xsampled[t,,], xsim_va$time)), simplify = "array")
-gpode$fode <- aperm(gpode$fode, c(3,1,2))
-
-
-xtrue_va <- xtrue[,c(1,2,3,4,6)]
-
-dotxtrue_va = dotxtrue[,c(1,2,3,4,6)]
-
-modelODEVa <- function(t, state, parameters) {
-  list(as.vector(magi:::MichaelisMentenModelVaODE(parameters, t(state), t)))
-}
-
-odemodel <- list(times=times, modelODE=modelODEVa, xtrue=xtrue)
-
-for(j in 1:(ncol(xsim)-1)){
-  config[[paste0("phiD", j)]] <- paste(round(gpode$phi[,j], 2), collapse = "; ")
-}
-
-gpode$lglik <- gpode$lp
-pram.true$sigma <- sigma_fixed
-
-magi:::plotPostSamplesFlex(
-  paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".pdf"),
-  xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
-tail(gpode$theta)
-
-apply(gpode$xsampled[,1,], 2, median)
-apply(gpode$theta, 2, median)
+#' #' TODO 
+#' #' on simulated data repeated experiments
+#' 
+#' # use model A to fit model B data ----
+#' 
+#' dynamicalModelVa <- list(
+#'   fOde=magi:::MichaelisMentenModelVaODE,
+#'   fOdeDx=magi:::MichaelisMentenModelVaDx,
+#'   fOdeDtheta=magi:::MichaelisMentenModelVaDtheta,
+#'   thetaLowerBound=c(0,0,0),
+#'   thetaUpperBound=c(Inf,Inf,Inf),
+#'   name="Michaelis-Menten-Va"
+#' )
+#' 
+#' xsim_va <- xsim[,c(1,2,3,4,6)]
+#' 
+#' sigma_va <- sigma_fixed
+#' sigma_va <- sigma_va[c(1,2,3,5)]
+#' 
+#' phi_va <- pram.true$phi[,c(1,2,3,5)]
+#' 
+#' # MAGI off-the-shelf ----
+#' # sampler with a good phi supplied, no missing component
+#' # hyper-parameters affect the inference of missing components (especially if initial condition is not known
+#' 
+#' OursStartTime <- proc.time()[3]
+#' 
+#' result <- magi::MagiSolver(xsim_va[,-1], dynamicalModelVa, xsim_va$time, control = 
+#'                              list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = config$stepSizeFactor,
+#'                                   burninRatio = 0.5, phi = phi_va, sigma=sigma_va, discardBurnin=FALSE, useFixedSigma=TRUE,
+#'                                   skipMissingComponentOptimization=TRUE))
+#' 
+#' OursTimeUsed <- proc.time()[3] - OursStartTime
+#' 
+#' 
+#' gpode <- result
+#' gpode$fode <- sapply(1:length(gpode$lp), function(t)
+#'   with(gpode, dynamicalModelVa$fOde(theta[t,], xsampled[t,,], xsim_va$time)), simplify = "array")
+#' gpode$fode <- aperm(gpode$fode, c(3,1,2))
+#' 
+#' 
+#' xtrue_va <- xtrue[,c(1,2,3,4,6)]
+#' 
+#' dotxtrue_va = dotxtrue[,c(1,2,3,4,6)]
+#' 
+#' modelODEVa <- function(t, state, parameters) {
+#'   list(as.vector(magi:::MichaelisMentenModelVaODE(parameters, t(state), t)))
+#' }
+#' 
+#' odemodel <- list(times=times, modelODE=modelODEVa, xtrue=xtrue)
+#' 
+#' for(j in 1:(ncol(xsim)-1)){
+#'   config[[paste0("phiD", j)]] <- paste(round(gpode$phi[,j], 2), collapse = "; ")
+#' }
+#' 
+#' gpode$lglik <- gpode$lp
+#' pram.true$sigma <- sigma_fixed
+#' 
+#' magi:::plotPostSamplesFlex(
+#'   paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".pdf"),
+#'   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+#' tail(gpode$theta)
+#' 
+#' apply(gpode$xsampled[,1,], 2, median)
+#' apply(gpode$theta, 2, median)
