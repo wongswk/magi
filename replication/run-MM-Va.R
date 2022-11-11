@@ -1,42 +1,77 @@
 library(magi)
 
-# try default phi
-# what if we observe only after the drop (after t = 2)
-# 
 
 outDir <- "../results/Michaelis-Menten-Va/"
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
-realdata <- read.csv(paste0(outDir, "hydrolysis.csv"))
+realdata <- read.csv(paste0("../results/Michaelis-Menten/", "hydrolysis.csv"))
 
-if(!exists("externalFlag")){
-  externalFlag <- FALSE
+args <- commandArgs(trailingOnly = TRUE)
+if(length(args) > 0){
+  seed <- as.numeric(args[1])
+  phi2 = as.numeric(args[2])
+  scenario = as.numeric(args[3])
+  
+  phi = cbind(c(0.1, phi2), c(1, 30), c(1, 30))
+  
+  linfillspace = c(0.5)
+  linfillcut = NULL
+  phi_change_time = 0
+  time_acce_factor = 1
+  noise = c(NA, 0.02, 0.02)
+  obs_keep = setdiff(1:26, c(1,2,4,6,8,11))
+  
+  if(scenario == 0){
+    obs_source = "va-csv"
+    t.truncate = 70
+  }else if (scenario == 1){
+    obs_source = "vb-csv"
+    t.truncate = 70
+  }else if(scenario == 2){
+    obs_source = "va-csv"
+    t.truncate = 40
+  }else if (scenario == 3){
+    obs_source = "vb-csv"
+    t.truncate = 40
+  }
+  
+}else{
+  seed <- 123
+  noise = c(NA, 0.02, 0.02)
+  linfillspace = c(0.5)
+  linfillcut = NULL
+  phi = cbind(c(0.1, 70), c(1, 30), c(1, 30))
+  phi_change_time = 0
+  time_acce_factor = 1
+  obs_keep = 1:26
+  obs_source = "Va-csv"
 }
+
 
 # set up configuration if not already exist ------------------------------------
-if(!externalFlag){
-  config <- list(
-    nobs = nrow(realdata),
-    noise = c(NaN, 0.02, 0.02),  # noise = c(0.01, 0.01, 0.01, 0.01), for fully observed case
-    kernel = "generalMatern",
-    seed = 1,
-    bandsize = 40,
-    hmcSteps = 100,
-    n.iter = 5001,
-    linfillspace = c(0.5), 
-    linfillcut = NULL,
-    t.end = 70,
-    t.start = 0,
-    obs_start_time = 0,
-    phi_change_time = 0,
-    time_acce_factor = 1,
-    t.truncate = 70,
-    useMean = TRUE,
-    phi = cbind(c(0.1, 70), c(1, 30), c(1, 30)),
-    obs_keep = setdiff(1:26, c(1,2,4,6,8,11)),
-    obs_source = "vb-csv",
-    modelName = "Michaelis-Menten-Va"
-  )
-}
+
+config <- list(
+  nobs = nrow(realdata),
+  noise = c(NaN, 0.02, 0.02),  # noise = c(0.01, 0.01, 0.01, 0.01), for fully observed case
+  kernel = "generalMatern",
+  seed = seed,
+  bandsize = 40,
+  hmcSteps = 100,
+  n.iter = 8001,
+  linfillspace = linfillspace, 
+  linfillcut = linfillcut,
+  t.end = 70,
+  t.start = 0,
+  obs_start_time = 0,
+  phi_change_time = phi_change_time,
+  time_acce_factor = time_acce_factor,
+  t.truncate = t.truncate,
+  obs_keep = obs_keep,
+  useMean = TRUE,
+  phi = phi,
+  skip_visualization = TRUE,
+  obs_source = obs_source,
+  modelName = "Michaelis-Menten-Va"
+)
 
 if(is.null(config$skip_visualization)){
   matplot(realdata$t, realdata[,-1], type="b")
@@ -114,9 +149,6 @@ if(config$obs_source == "vb-csv"){
   stop("obs_source not correct")
 }
 
-# xsim.obs <- xsim.obs[xsim.obs$time >= config$obs_start_time,]
-# xsim.obs <- xsim.obs[-c(1,2,4,6,8,11),]
-# xsim.obs <- xsim.obs[-seq(1, nrow(xsim.obs), 2),]
 xsim.obs <- xsim.obs[config$obs_keep,]
 xsim.obs <- rbind(c(0, pram.true$x0), xsim.obs)
 
@@ -142,7 +174,6 @@ for (i in 1:length(fillC)) {
 }
 
 xsim.obs <- xsim.obs[xsim.obs$time <= config$t.truncate, ]
-xsim <- xsim[xsim$time <= config$t.truncate, ]
 xsim.obs <- xsim.obs[xsim.obs$time >= config$t.start, ]
 xsim <- xsim[xsim$time >= config$t.start, ]
 
@@ -177,8 +208,8 @@ sigma_fixed[is.na(sigma_fixed)] <- 1e-4
 # }
 # xInitExogenous[-1, 1] <- 0.1
 
-xInitExogenous <- sapply(xtrueFunc, function(f) f(xsim$time))
-# xInitExogenous <- NULL
+# xInitExogenous <- sapply(xtrueFunc, function(f) f(xsim$time))
+xInitExogenous <- NULL
 
 stepSizeFactor <- rep(0.01, nrow(xsim)*length(pram.true$x0) + length(dynamicalModelList$thetaLowerBound) + length(pram.true$x0))
 # if(config$t.start == 0){
@@ -248,7 +279,7 @@ magi:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-fill", config$linfillspace,"-noise",
          sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi),
          "-data", config$obs_source,
-         "-time", config$t.start,"to", config$t.truncate,"obsstart",config$obs_start_time,
+         "-time", config$t.start,"to", config$t.truncate,
          "-obs_keep", config$obs_keep,
          "-linfillcut", config$linfillcut,
          "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
@@ -259,8 +290,11 @@ tail(gpode$theta)
 apply(gpode$xsampled[,1,], 2, median)
 apply(gpode$theta, 2, median)
 
-matplot(apply(gpode$xsampled[,,], 2:3, median), type="l")
-
-if(externalFlag){
-  save.image(paste0(outDir, config$modelName,"-",config$seed,"-fill", sum(config$linfillspace),"-noise", sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi), "-data", config$obs_source, ".rda"))
-}
+save.image(paste0(outDir, config$modelName,"-",config$seed,"-fill", config$linfillspace,"-noise",
+                  sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi),
+                  "-data", config$obs_source,
+                  "-time", config$t.start,"to", config$t.truncate,
+                  "-obs_keep", config$obs_keep,
+                  "-linfillcut", config$linfillcut,
+                  "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
+                  ".rda"))
