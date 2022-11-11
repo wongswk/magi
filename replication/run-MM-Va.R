@@ -43,7 +43,8 @@ if(length(args) > 0){
   phi_change_time = 0
   time_acce_factor = 1
   obs_keep = 1:26
-  obs_source = "Va-csv"
+  obs_source = "va-csv"
+  t.truncate = 70
 }
 
 
@@ -174,6 +175,8 @@ for (i in 1:length(fillC)) {
 }
 
 xsim.obs <- xsim.obs[xsim.obs$time <= config$t.truncate, ]
+xsim[xsim$time > config$t.truncate, -1] <- NaN
+
 xsim.obs <- xsim.obs[xsim.obs$time >= config$t.start, ]
 xsim <- xsim[xsim$time >= config$t.start, ]
 
