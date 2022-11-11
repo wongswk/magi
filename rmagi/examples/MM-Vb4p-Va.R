@@ -19,10 +19,13 @@ if(!externalFlag){
     hmcSteps = 100,
     n.iter = 5001,
     t.start = 0,
+    obs_keep=setdiff(1:26, c(1,2,4,6,8,11)),
+    linfillspace = c(0.2, 0.5), 
+    linfillcut = 3,
     stepSizeFactor = 0.01,
     linfillspace = 0.5, 
-    phi_change_time = 0,
-    time_acce_factor = 1,
+    phi_change_time = 3,
+    time_acce_factor = 4,
     t.end = 70,
     modelName = "Michaelis-Menten-Vb4p"
   )
@@ -34,7 +37,7 @@ if(!externalFlag){
 pram.true <- list( 
   theta=c(0.636, 0.0, 10.8, 0.0),
   x0 = c(0.1, 1, 0, 0),
-  phi = cbind(c(0.1, 70), c(1, 30), c(0.1, 70), c(0.5, 30))
+  phi = cbind(c(0.1, 180), c(1, 30), c(0.1, 70), c(0.5, 30))
 )
 
 times <- seq(0,config$t.end,length=1001)
@@ -61,7 +64,20 @@ matplot(realdata$t, realdata[,-1]/2, type="p", add=TRUE)
 xtrueFunc <- lapply(2:ncol(xtrue), function(j)
   approxfun(xtrue[, "time"], xtrue[, j]))
 
-xsim <- data.frame(time = round(realdata$t / config$linfillspace) * config$linfillspace)
+if(length(config$linfillcut) == 0){
+  xsim <- data.frame(time = round(realdata$t / config$linfillspace) * config$linfillspace)
+}else{
+  fill_seg <- c()
+  startpoint = 0
+  for(i in 1:length(config$linfillcut)){
+    cutpoint <- config$linfillcut[i]
+    fill_seg <- c(fill_seg, seq(startpoint, cutpoint, by = config$linfillspace[i]))
+    startpoint <- cutpoint
+  }
+  fill_seg <- c(fill_seg, seq(startpoint, config$t.end, by = config$linfillspace[i+1]))
+  xsim <- data.frame(time = fill_seg[sapply(realdata$t, function(t_each) which.min(abs(fill_seg - t_each)))])
+}
+
 xsim <- cbind(xsim, sapply(xtrueFunc, function(f) f(xsim$time)))
 xtest <- xsim
 
@@ -71,6 +87,7 @@ for(j in 1:(ncol(xsim)-1)){
 }
 
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
+xsim.obs <- xsim.obs[config$obs_keep,]
 xsim.obs <- rbind(c(0, pram.true$x0), xsim.obs)
 
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
@@ -78,7 +95,12 @@ matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, ad
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
 
 ## Linearly interpolate using fixed interval widths
-fillC <- seq(0, config$t.end, by = config$linfillspace)
+if(length(config$linfillcut) == 0){
+  fillC <- seq(0, config$t.end, by = config$linfillspace)
+}else{
+  fillC <- fill_seg
+}
+
 xsim <- data.frame(time = fillC)
 xsim <- cbind(xsim, matrix(NaN, nrow = length(fillC), ncol = ncol(xsim.obs)-1 ))
 for (i in 1:length(fillC)) {
@@ -168,6 +190,13 @@ odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 for(j in 1:(ncol(xsim)-1)){
   config[[paste0("phiD", j)]] <- paste(round(gpode$phi[,j], 2), collapse = "; ")
 }
+if(!is.null(config$linfillcut)){
+  config$linfillcut <- paste(round(config$linfillcut, 2), collapse = ";")
+  config$linfillspace <- paste(round(config$linfillspace, 2), collapse = ";")
+}else{
+  config$linfillcut <- NULL
+}
+config$obs_keep <- paste(c(config$obs_keep[1:5], ".."), collapse = ";")
 
 gpode$lglik <- gpode$lp
 pram.true$sigma <- sigma_fixed
@@ -176,6 +205,7 @@ magi:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-fill", config$linfillspace,"-noise", 
          sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi),"-useMean", config$useMean,
          "-time", config$t.start,"to", config$t.truncate,"obsstart",config$obs_start_time, 
+         "-obs_keep", config$obs_keep,
          "-linfillcut", config$linfillcut,
          "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
          ".pdf"),
