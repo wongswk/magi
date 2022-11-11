@@ -11,7 +11,7 @@ if(length(args) > 0){
   phi2 = as.numeric(args[2])
   scenario = as.numeric(args[3])
   
-  phi = cbind(c(0.1, phi2), c(1, 30), c(1, 30))
+  phi = cbind(c(0.1, phi2), c(1, 30), c(0.1, phi2), c(0.5, 30))
   
   linfillspace = c(0.5)
   linfillcut = NULL
@@ -39,7 +39,7 @@ if(length(args) > 0){
   noise = c(NaN, 0.01, NaN, 0.01)
   linfillspace = c(0.5)
   linfillcut = NULL
-  phi = cbind(c(0.1, 70), c(1, 30), c(1, 30))
+  phi = cbind(c(0.1, 70), c(1, 30), c(0.1, 70), c(0.5, 30))
   phi_change_time = 0
   time_acce_factor = 1
   obs_keep = setdiff(1:26, c(1,2,4,6,8,11))
