@@ -11,7 +11,7 @@ if(length(args) > 0){
   phi2 = as.numeric(args[2])
   scenario = as.numeric(args[3])
   
-  phi = cbind(c(0.1, phi2), c(1, 30), c(1, 30))
+  phi = cbind(c(0.1, phi2), c(1, 30), c(0.1, phi2), c(0.5, 30))
   
   linfillspace = c(0.5)
   linfillcut = NULL
@@ -39,7 +39,7 @@ if(length(args) > 0){
   noise = c(NaN, 0.01, NaN, 0.01)
   linfillspace = c(0.5)
   linfillcut = NULL
-  phi = cbind(c(0.1, 70), c(1, 30), c(1, 30))
+  phi = cbind(c(0.1, 70), c(1, 30), c(0.1, 70), c(0.5, 30))
   phi_change_time = 0
   time_acce_factor = 1
   obs_keep = setdiff(1:26, c(1,2,4,6,8,11))
@@ -77,7 +77,7 @@ config <- list(
 pram.true <- list( 
   theta=c(0.636, 0.0, 10.8, 0.0),
   x0 = c(0.1, 1, 0, 0),
-  phi = cbind(c(0.1, 180), c(1, 30), c(0.1, 70), c(0.5, 30))
+  phi = config$phi
 )
 
 times <- seq(0,config$t.end,length=1001)
