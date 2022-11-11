@@ -2,22 +2,22 @@
 library(magi)
 
 # remove results that don't have common seed
-rdaDir <- "../results/Michaelis-Menten-Va/"
+rdaDir <- "../results/Michaelis-Menten-Vb4p/"
 subdirs <- c(
-  "../results/Michaelis-Menten-Va/"
+  "../results/Michaelis-Menten-Vb4p/"
 )
 
 # get the csv quick summary first ----
 for(phi2 in c(70, 120)){
 for(scenario in 0:3){
   
-phi = cbind(c(0.1, phi2), c(1, 30), c(1, 30))
+phi = cbind(c(0.1, phi2), c(1, 30), c(0.1, phi2), c(0.5, 30))
 
 linfillspace = c(0.5)
 linfillcut = NULL
 phi_change_time = 0
 time_acce_factor = 1
-noise = c(NA, 0.02, 0.02)
+noise = c(NaN, 0.01, NaN, 0.01)
 obs_keep = setdiff(1:26, c(1,2,4,6,8,11))
 
 if(scenario == 0){
@@ -54,7 +54,7 @@ config <- list(
   phi = phi,
   skip_visualization = TRUE,
   obs_source = obs_source,
-  modelName = "Michaelis-Menten-Va"
+  modelName = "Michaelis-Menten-Vb4p"
 )
 
 rm(list=setdiff(ls(), c("rdaDir", "subdirs", "config", "scenario", "phi2")))
