@@ -1,7 +1,7 @@
 library(magi)
 
 
-outDir <- "../results/Michaelis-Menten-Va/"
+outDir <- "../results/Michaelis-Menten-Vb4p/"
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 realdata <- read.csv(paste0("../results/Michaelis-Menten/", "hydrolysis.csv"))
 

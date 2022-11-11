@@ -52,7 +52,7 @@ if(length(args) > 0){
 
 config <- list(
   nobs = nrow(realdata),
-  noise = c(NaN, 0.02, 0.02),  # noise = c(0.01, 0.01, 0.01, 0.01), for fully observed case
+  noise = noise,
   kernel = "generalMatern",
   seed = seed,
   bandsize = 40,
