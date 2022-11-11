@@ -254,6 +254,8 @@ odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
 for(j in 1:(ncol(xsim)-1)){
   config[[paste0("phiD", j)]] <- paste(round(gpode$phi[,j], 2), collapse = "; ")
 }
+config$phi <- NULL
+
 if(!is.null(config$linfillcut)){
   config$linfillcut <- paste(round(config$linfillcut, 2), collapse = ";")
   config$linfillspace <- paste(round(config$linfillspace, 2), collapse = ";")
