@@ -2,13 +2,13 @@
 library(magi)
 
 # remove results that don't have common seed
-rdaDir <- "../results/Michaelis-Menten/"
+rdaDir <- "../results/Michaelis-Menten-Va/"
 subdirs <- c(
-  "../results/Michaelis-Menten/"
+  "../results/Michaelis-Menten-Va/"
 )
 
 # get the csv quick summary first ----
-for(phi2 in c(70, 90, 120)){
+for(phi2 in c(70, 120)){
 for(scenario in 0:3){
   
 phi = cbind(c(0.1, phi2), c(1, 30), c(1, 30))
@@ -18,24 +18,29 @@ linfillcut = NULL
 phi_change_time = 0
 time_acce_factor = 1
 noise = c(NA, 0.02, 0.02)
+obs_keep = setdiff(1:26, c(1,2,4,6,8,11))
 
 if(scenario == 0){
-  obs_keep = 1:26
+  obs_source = "va-csv"
+  t.truncate = 70
 }else if (scenario == 1){
-  obs_keep = setdiff(1:26, c(1,2,4,6,8,11))
-}else if (scenario == 2){
-  obs_keep = 4:26
+  obs_source = "vb-csv"
+  t.truncate = 70
+}else if(scenario == 2){
+  obs_source = "va-csv"
+  t.truncate = 40
 }else if (scenario == 3){
-  obs_keep = seq(2, 26, 2)
+  obs_source = "vb-csv"
+  t.truncate = 40
 }
 
 config <- list(
   nobs = 26,
-  noise = noise,  # noise = c(0.01, 0.01, 0.01, 0.01), for fully observed case
+  noise = noise,
   kernel = "generalMatern",
   bandsize = 40,
   hmcSteps = 100,
-  n.iter = 5001,
+  n.iter = 8001,
   linfillspace = linfillspace, 
   linfillcut = linfillcut,
   t.end = 70,
@@ -43,12 +48,13 @@ config <- list(
   obs_start_time = 0,
   phi_change_time = phi_change_time,
   time_acce_factor = time_acce_factor,
-  t.truncate = 70,
+  t.truncate = t.truncate,
   obs_keep = obs_keep,
   useMean = TRUE,
   phi = phi,
   skip_visualization = TRUE,
-  modelName = "Michaelis-Menten-Reduced"
+  obs_source = obs_source,
+  modelName = "Michaelis-Menten-Va"
 )
 
 rm(list=setdiff(ls(), c("rdaDir", "subdirs", "config", "scenario", "phi2")))
@@ -68,8 +74,10 @@ config$obs_keep <- paste(c(config$obs_keep[1:5], ".."), collapse = ";")
 
 pdf_files <- list.files(rdaDir)
 rda_files <- pdf_files[grep(paste0(config$modelName,"-.*-fill", config$linfillspace,"-noise", 
-                                   sum(config$noise, na.rm = TRUE), "-phi", sum(config$phi),"-useMean", config$useMean,
-                                   "-time.*", "-obs_keep", config$obs_keep, "-linfillcut", config$linfillcut,
+                                   sum(config$noise, na.rm = TRUE), "-phi", sum(config$phi),
+                                   "-data", config$obs_source,
+                                   "-time", config$t.start,"to", config$t.truncate,
+                                   "-obs_keep", config$obs_keep, "-linfillcut", config$linfillcut,
                                    "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
                                    "\\.rda$"), pdf_files)]
 print(rda_files[1])
@@ -146,8 +154,10 @@ for (f in 1:length(rda_files)) {
   oursPostTheta[[f]] <- outStorage[[f]]$oursPostTheta_f
 }
 
-summary_filename = paste0(rdaDir,"summary-fill", config$linfillspace,"-noise", 
-                          sum(config$noise, na.rm = TRUE), "-phi", sum(config$phi),"-useMean", config$useMean,
+summary_filename = paste0("summary-", config$modelName,"-fill", config$linfillspace,"-noise", 
+                          sum(config$noise, na.rm = TRUE), "-phi", sum(config$phi),
+                          "-data", config$obs_source,
+                          "-time", config$t.start,"to", config$t.truncate,
                           "-obs_keep", config$obs_keep, "-linfillcut", config$linfillcut,
                           "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
                           ".rda")
