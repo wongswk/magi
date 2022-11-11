@@ -87,6 +87,32 @@ for(j in 1:(ncol(xsim)-1)){
 }
 
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
+colnames(xsim.obs)[-1] <- c("E", "S", "ES", "P")
+xsim.obs$E <- NULL
+xsim.obs$ES <- NULL
+# write.csv(xsim.obs, paste0(outDir, "/vb_xsim_obs_seed", config$seed, ".csv"))
+
+
+if(config$obs_source == "vb-csv"){
+  xsim.obs <- read.csv(paste0("../results/Michaelis-Menten-Vb4p/vb_xsim_obs_seed",config$seed,".csv"), row.names=1)
+  xsim.obs$E <- NaN
+  xsim.obs$ES <- NaN
+  xsim.obs <- xsim.obs[,c("time", "E", "S", "ES", "P")]
+  print("obs_source 'vb-csv'")
+}else if(config$obs_source == "va-csv"){
+  xsim.obs <- read.csv(paste0("../results/Michaelis-Menten-Va/va_xsim_obs_seed",config$seed,".csv"), row.names=1)
+  xsim.obs$E <- NaN
+  xsim.obs$ES <- NaN
+  xsim.obs <- xsim.obs[,c("time", "E", "S", "ES", "P")]
+  print("obs_source 'va-csv'")
+}else if(config$obs_source == "vb-sim"){
+  xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
+  colnames(xsim.obs)[-1] <- c("E", "S", "ES", "P")
+  print("obs_source 'vb-sim'")
+}else{
+  stop("obs_source not correct")
+}
+
 xsim.obs <- xsim.obs[config$obs_keep,]
 xsim.obs <- rbind(c(0, pram.true$x0), xsim.obs)
 
@@ -133,7 +159,7 @@ sigma_fixed[is.na(sigma_fixed)] <- 1e-4
 stepSizeFactor <- rep(0.01, nrow(xsim)*length(pram.true$x0) + length(dynamicalModelList$thetaLowerBound) + length(pram.true$x0))
 for(j in 1:4){
   for(incre in 1:1){
-    stepSizeFactor[(j-1)*nrow(xsim) + incre] <- 0  
+    stepSizeFactor[(j-1)*nrow(xsim) + incre] <- 0
   }
 }
 
@@ -151,7 +177,7 @@ xInitExogenous <- sapply(xtrueFunc, function(f) f(xsim$time))
 distSignedCube <- array(NA, dim=c(nrow(xsim), nrow(xsim), ncol(xsim)-1))
 for(j in 1:(ncol(xsim)-1)){
   for(i in 1:nrow(xsim)){
-    distSignedCube[,i,j] = xsim$time - xsim$time[i]  
+    distSignedCube[,i,j] = xsim$time - xsim$time[i]
   }
 }
 tvec_accelarated = xsim$time
@@ -159,7 +185,7 @@ tvec_accelarated = tvec_accelarated - config$phi_change_time
 tvec_accelarated[tvec_accelarated < 0] = tvec_accelarated[tvec_accelarated < 0] * config$time_acce_factor
 for(j in c(1)){
   for(i in 1:nrow(xsim)){
-    distSignedCube[,i,j] = tvec_accelarated - tvec_accelarated[i]  
+    distSignedCube[,i,j] = tvec_accelarated - tvec_accelarated[i]
   }
 }
 
@@ -202,9 +228,9 @@ gpode$lglik <- gpode$lp
 pram.true$sigma <- sigma_fixed
 
 magi:::plotPostSamplesFlex(
-  paste0(outDir, config$modelName,"-",config$seed,"-fill", config$linfillspace,"-noise", 
+  paste0(outDir, config$modelName,"-",config$seed,"-fill", config$linfillspace,"-noise",
          sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi),"-useMean", config$useMean,
-         "-time", config$t.start,"to", config$t.truncate,"obsstart",config$obs_start_time, 
+         "-time", config$t.start,"to", config$t.truncate,"obsstart",config$obs_start_time,
          "-obs_keep", config$obs_keep,
          "-linfillcut", config$linfillcut,
          "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
@@ -214,11 +240,11 @@ magi:::plotPostSamplesFlex(
 apply(gpode$xsampled[,1,], 2, median)
 apply(gpode$theta, 2, median)
 
-#' #' TODO 
+#' #' TODO
 #' #' on simulated data repeated experiments
-#' 
+#'
 #' # use model A to fit model B data ----
-#' 
+#'
 #' dynamicalModelVa <- list(
 #'   fOde=magi:::MichaelisMentenModelVaODE,
 #'   fOdeDx=magi:::MichaelisMentenModelVaDx,
@@ -227,55 +253,55 @@ apply(gpode$theta, 2, median)
 #'   thetaUpperBound=c(Inf,Inf,Inf),
 #'   name="Michaelis-Menten-Va"
 #' )
-#' 
+#'
 #' xsim_va <- xsim[,c(1,2,3,4,6)]
-#' 
+#'
 #' sigma_va <- sigma_fixed
 #' sigma_va <- sigma_va[c(1,2,3,5)]
-#' 
+#'
 #' phi_va <- pram.true$phi[,c(1,2,3,5)]
-#' 
+#'
 #' # MAGI off-the-shelf ----
 #' # sampler with a good phi supplied, no missing component
 #' # hyper-parameters affect the inference of missing components (especially if initial condition is not known
-#' 
+#'
 #' OursStartTime <- proc.time()[3]
-#' 
-#' result <- magi::MagiSolver(xsim_va[,-1], dynamicalModelVa, xsim_va$time, control = 
+#'
+#' result <- magi::MagiSolver(xsim_va[,-1], dynamicalModelVa, xsim_va$time, control =
 #'                              list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = config$stepSizeFactor,
 #'                                   burninRatio = 0.5, phi = phi_va, sigma=sigma_va, discardBurnin=FALSE, useFixedSigma=TRUE,
 #'                                   skipMissingComponentOptimization=TRUE))
-#' 
+#'
 #' OursTimeUsed <- proc.time()[3] - OursStartTime
-#' 
-#' 
+#'
+#'
 #' gpode <- result
 #' gpode$fode <- sapply(1:length(gpode$lp), function(t)
 #'   with(gpode, dynamicalModelVa$fOde(theta[t,], xsampled[t,,], xsim_va$time)), simplify = "array")
 #' gpode$fode <- aperm(gpode$fode, c(3,1,2))
-#' 
-#' 
+#'
+#'
 #' xtrue_va <- xtrue[,c(1,2,3,4,6)]
-#' 
+#'
 #' dotxtrue_va = dotxtrue[,c(1,2,3,4,6)]
-#' 
+#'
 #' modelODEVa <- function(t, state, parameters) {
 #'   list(as.vector(magi:::MichaelisMentenModelVaODE(parameters, t(state), t)))
 #' }
-#' 
+#'
 #' odemodel <- list(times=times, modelODE=modelODEVa, xtrue=xtrue)
-#' 
+#'
 #' for(j in 1:(ncol(xsim)-1)){
 #'   config[[paste0("phiD", j)]] <- paste(round(gpode$phi[,j], 2), collapse = "; ")
 #' }
-#' 
+#'
 #' gpode$lglik <- gpode$lp
 #' pram.true$sigma <- sigma_fixed
-#' 
+#'
 #' magi:::plotPostSamplesFlex(
 #'   paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".pdf"),
 #'   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 #' tail(gpode$theta)
-#' 
+#'
 #' apply(gpode$xsampled[,1,], 2, median)
 #' apply(gpode$theta, 2, median)

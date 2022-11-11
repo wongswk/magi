@@ -4,7 +4,7 @@ library(magi)
 # what if we observe only after the drop (after t = 2)
 # 
 
-outDir <- "../results/Michaelis-Menten/"
+outDir <- "../results/Michaelis-Menten-Va/"
 dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 realdata <- read.csv(paste0(outDir, "hydrolysis.csv"))
 
@@ -18,7 +18,7 @@ if(!externalFlag){
     nobs = nrow(realdata),
     noise = c(NaN, 0.02, 0.02),  # noise = c(0.01, 0.01, 0.01, 0.01), for fully observed case
     kernel = "generalMatern",
-    seed = 123,
+    seed = 1,
     bandsize = 40,
     hmcSteps = 100,
     n.iter = 5001,
@@ -31,7 +31,9 @@ if(!externalFlag){
     time_acce_factor = 1,
     t.truncate = 70,
     useMean = TRUE,
-    phi = cbind(c(0.1, 120), c(1, 30), c(1, 30)),
+    phi = cbind(c(0.1, 70), c(1, 30), c(1, 30)),
+    obs_keep = setdiff(1:26, c(1,2,4,6,8,11)),
+    obs_source = "va-sim",
     modelName = "Michaelis-Menten-Va"
   )
 }
@@ -90,9 +92,32 @@ for(j in 1:(ncol(xsim)-1)){
 }
 
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
-xsim.obs <- xsim.obs[xsim.obs$time >= config$obs_start_time,]
+colnames(xsim.obs)[-1] <- c("E", "S", "P")
+xsim.obs$E <- NULL
+# write.csv(xsim.obs, paste0(outDir, "/va_xsim_obs_seed", config$seed, ".csv"))
+
+if(config$obs_source == "vb-csv"){
+  xsim.obs <- read.csv(paste0("../results/Michaelis-Menten-Vb4p/vb_xsim_obs_seed",config$seed,".csv"), row.names=1)
+  xsim.obs$E <- NaN
+  xsim.obs <- xsim.obs[,c("time", "E", "S", "P")]
+  print("obs_source 'vb-csv'")
+}else if(config$obs_source == "va-csv"){
+  xsim.obs <- read.csv(paste0("../results/Michaelis-Menten-Va/va_xsim_obs_seed",config$seed,".csv"), row.names=1)
+  xsim.obs$E <- NaN
+  xsim.obs <- xsim.obs[,c("time", "E", "S", "P")]
+  print("obs_source 'va-csv'")
+}else if(config$obs_source == "va-sim"){
+  xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
+  colnames(xsim.obs)[-1] <- c("E", "S", "P")
+  print("obs_source 'va-sim'")
+}else{
+  stop("obs_source not correct")
+}
+
+# xsim.obs <- xsim.obs[xsim.obs$time >= config$obs_start_time,]
 # xsim.obs <- xsim.obs[-c(1,2,4,6,8,11),]
 # xsim.obs <- xsim.obs[-seq(1, nrow(xsim.obs), 2),]
+xsim.obs <- xsim.obs[config$obs_keep,]
 xsim.obs <- rbind(c(0, pram.true$x0), xsim.obs)
 
 
@@ -159,7 +184,7 @@ stepSizeFactor <- rep(0.01, nrow(xsim)*length(pram.true$x0) + length(dynamicalMo
 # if(config$t.start == 0){
 for(j in 1:3){
   for(incre in 1:1){
-    stepSizeFactor[(j-1)*nrow(xsim) + incre] <- 0  
+    stepSizeFactor[(j-1)*nrow(xsim) + incre] <- 0
   }
 }
 # }
@@ -168,7 +193,7 @@ for(j in 1:3){
 distSignedCube <- array(NA, dim=c(nrow(xsim), nrow(xsim), ncol(xsim)-1))
 for(j in 1:(ncol(xsim)-1)){
   for(i in 1:nrow(xsim)){
-    distSignedCube[,i,j] = xsim$time - xsim$time[i]  
+    distSignedCube[,i,j] = xsim$time - xsim$time[i]
   }
 }
 tvec_accelarated = xsim$time
@@ -176,7 +201,7 @@ tvec_accelarated = tvec_accelarated - config$phi_change_time
 tvec_accelarated[tvec_accelarated < 0] = tvec_accelarated[tvec_accelarated < 0] * config$time_acce_factor
 for(j in c(1)){
   for(i in 1:nrow(xsim)){
-    distSignedCube[,i,j] = tvec_accelarated - tvec_accelarated[i]  
+    distSignedCube[,i,j] = tvec_accelarated - tvec_accelarated[i]
   }
 }
 
@@ -217,11 +242,13 @@ if(!is.null(config$linfillcut)){
 }else{
   config$linfillcut <- NULL
 }
+config$obs_keep <- paste(c(config$obs_keep[1:5], ".."), collapse = ";")
 
 magi:::plotPostSamplesFlex(
-  paste0(outDir, config$modelName,"-",config$seed,"-fill", config$linfillspace,"-noise", 
+  paste0(outDir, config$modelName,"-",config$seed,"-fill", config$linfillspace,"-noise",
          sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi),"-useMean", config$useMean,
-         "-time", config$t.start,"to", config$t.truncate,"obsstart",config$obs_start_time, 
+         "-time", config$t.start,"to", config$t.truncate,"obsstart",config$obs_start_time,
+         "-obs_keep", config$obs_keep,
          "-linfillcut", config$linfillcut,
          "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
          ".pdf"),
