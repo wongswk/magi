@@ -1,6 +1,6 @@
-rdaDir <- "../results/Michaelis-Menten/"
+rdaDir <- "../results/Michaelis-Menten-Va/"
 
-for(phi2 in c(70, 90, 120)){
+for(phi2 in c(70, 120)){
 for(scenario in 0:3){
 
 phi = cbind(c(0.1, phi2), c(1, 30), c(1, 30))
@@ -10,24 +10,30 @@ linfillcut = NULL
 phi_change_time = 0
 time_acce_factor = 1
 noise = c(NA, 0.02, 0.02)
+obs_keep = setdiff(1:26, c(1,2,4,6,8,11))
 
 if(scenario == 0){
-  obs_keep = 1:26
+  obs_source = "va-csv"
+  t.truncate = 70
 }else if (scenario == 1){
-  obs_keep = setdiff(1:26, c(1,2,4,6,8,11))
-}else if (scenario == 2){
-  obs_keep = 4:26
+  obs_source = "vb-csv"
+  t.truncate = 70
+}else if(scenario == 2){
+  obs_source = "va-csv"
+  t.truncate = 40
 }else if (scenario == 3){
-  obs_keep = seq(2, 26, 2)
+  obs_source = "vb-csv"
+  t.truncate = 40
 }
 
 config <- list(
   nobs = 26,
-  noise = noise,  # noise = c(0.01, 0.01, 0.01, 0.01), for fully observed case
+  noise = noise,
   kernel = "generalMatern",
+  seed = 1,
   bandsize = 40,
   hmcSteps = 100,
-  n.iter = 5001,
+  n.iter = 8001,
   linfillspace = linfillspace, 
   linfillcut = linfillcut,
   t.end = 70,
@@ -35,12 +41,13 @@ config <- list(
   obs_start_time = 0,
   phi_change_time = phi_change_time,
   time_acce_factor = time_acce_factor,
-  t.truncate = 70,
+  t.truncate = t.truncate,
   obs_keep = obs_keep,
   useMean = TRUE,
   phi = phi,
   skip_visualization = TRUE,
-  modelName = "Michaelis-Menten-Reduced"
+  obs_source = obs_source,
+  modelName = "Michaelis-Menten-Va"
 )
 
 if(!is.null(config$linfillcut)){
@@ -54,17 +61,20 @@ config$obs_keep <- paste(c(config$obs_keep[1:5], ".."), collapse = ";")
 
 rm(list=setdiff(ls(), c("rdaDir", "subdirs", "config", "scenario", "phi2")))
 
-filename <- paste0(rdaDir,"summary-fill", config$linfillspace,"-noise", 
-                   sum(config$noise, na.rm = TRUE), "-phi", sum(config$phi),"-useMean", config$useMean,
-                   "-obs_keep", config$obs_keep, "-linfillcut", config$linfillcut,
-                   "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor)
-single_rda_filename <- paste0(rdaDir, config$modelName,"-1-fill", config$linfillspace,"-noise", 
-       sum(config$noise, na.rm = TRUE), "-phi", sum(config$phi),"-useMean", config$useMean,
-       "-time", config$t.start,"to", config$t.truncate,"obsstart",config$obs_start_time, 
-       "-obs_keep", config$obs_keep,
-       "-linfillcut", config$linfillcut,
-       "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
-       ".rda")
+filename = paste0(rdaDir, "summary-", config$modelName,"-fill", config$linfillspace,"-noise", 
+                  sum(config$noise, na.rm = TRUE), "-phi", sum(config$phi),
+                  "-data", config$obs_source,
+                  "-time", config$t.start,"to", config$t.truncate,
+                  "-obs_keep", config$obs_keep, "-linfillcut", config$linfillcut,
+                  "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor)
+single_rda_filename <- paste0(rdaDir, config$modelName,"-1-fill", config$linfillspace,"-noise",
+                              sum(config$noise, na.rm = TRUE), "-phi", sum(config$phi),
+                              "-data", config$obs_source,
+                              "-time", config$t.start,"to", config$t.truncate,
+                              "-obs_keep", config$obs_keep,
+                              "-linfillcut", config$linfillcut,
+                              "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
+                              ".rda")
 
 load(paste0(filename,".rda"))
 load(single_rda_filename)
@@ -114,7 +124,7 @@ title("Michaelis Menten")
 #        lty=c(1,1,1,1,1,1,NA,NA,NA), pch=c(NA,NA,NA,NA,NA,NA,20,20,20), col=c(1:6, 1:3), cex=1.5)
 
 phiVisualization <- phiExogenous <- pram.true$phi
-compnames <- c("E", "S", "ES", "P")
+compnames <- c("E", "S", "P")
 
 # smooth visualization with illustration
 xdesolveTRUE <-ours[[1]]$xdesolveTRUE
