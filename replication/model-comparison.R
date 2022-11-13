@@ -1,0 +1,103 @@
+# data A ----
+load("../results/Michaelis-Menten-Va/summary-Michaelis-Menten-Va-fill0.5-noise0.04-phi132.1-datava-csv-time0to40-obs_keep3;5;7;9;10;..-linfillcut-time_changepoint0factor1.rda", model_a <- new.env())
+model_a <- as.list(model_a)
+load("../results/Michaelis-Menten-Vb4p/summary-Michaelis-Menten-Vb4p-fill0.5-noise0.02-phi201.7-datava-csv-time0to40-obs_keep3;5;7;9;10;..-linfillcut-time_changepoint0factor1.rda", model_b <- new.env())
+model_b <- as.list(model_b)
+
+oos_rmse <- list()
+for(it in 1:100){
+  xsim.obs <- read.csv(paste0("../results/Michaelis-Menten-Va/va_xsim_obs_seed",it,".csv"), row.names = 1)
+  time_oos <- tail(xsim.obs$time, 3)
+  idx_oos <- time_oos * 2 + 1
+  xsim_oos <- tail(xsim.obs, 3)[,-1]
+  xinfer_oos_a <- model_a$ours[[it]]$xpostmean[idx_oos, c(2,3)]
+  err_oos_a <- xinfer_oos_a - xsim_oos
+  
+  xinfer_oos_b <- model_b$ours[[it]]$xpostmean[idx_oos, c(2,4)]
+  err_oos_b <- xinfer_oos_b - xsim_oos
+  
+  err_mat <- rbind(sqrt(colMeans(err_oos_a^2)), sqrt(colMeans(err_oos_b^2)))
+  rownames(err_mat) <- c("A", "B")
+  oos_rmse[[it]] <- err_mat
+}
+
+oos_rmse <- sapply(oos_rmse, identity, simplify = "array")
+
+c1 <- rgb(0,0,1,1/4)
+c2 <- rgb(1,0,0,1/4)
+pdf("../results/histogram data A OOS RMSE model A model B.pdf")
+for (component in c("S", "P")){
+  hgA <- hist(oos_rmse["A",component,], plot=FALSE)
+  hgB <- hist(oos_rmse["B",component,], plot=FALSE)
+
+  plot(hgA, col = c1, xlim = range(oos_rmse[,component,]), ylim = c(0,30), 
+       main=paste0("OOS RMSE, data A, component ", component))
+  plot(hgB, add = TRUE, col = c2)
+  legend("topright", c("A", "B"), col=c(c1, c2), lty=1, lwd=20)
+  hist(oos_rmse["A",component,] - oos_rmse["B",component,], main=paste0("OOS RMSE A - B, data B, component ", component))
+  abline(v=0, col=2, lwd=3)
+}
+dev.off()
+
+
+# data B ----
+load("../results/Michaelis-Menten-Va/summary-Michaelis-Menten-Va-fill0.5-noise0.04-phi132.1-datavb-csv-time0to40-obs_keep3;5;7;9;10;..-linfillcut-time_changepoint0factor1.rda", model_a <- new.env())
+model_a <- as.list(model_a)
+load("../results/Michaelis-Menten-Vb4p/summary-Michaelis-Menten-Vb4p-fill0.5-noise0.02-phi201.7-datavb-csv-time0to40-obs_keep3;5;7;9;10;..-linfillcut-time_changepoint0factor1.rda", model_b <- new.env())
+model_b <- as.list(model_b)
+
+oos_rmse <- list()
+is_rmse <- list()
+xdesolveTRUE <- read.csv("../results/Michaelis-Menten-Vb4p.csv", row.names = 1)
+for(it in 1:100){
+  xsim.obs <- read.csv(paste0("../results/Michaelis-Menten-Vb4p/vb_xsim_obs_seed",it,".csv"), row.names = 1)
+  time_oos <- tail(xsim.obs$time, 3)
+  idx_oos <- time_oos * 2 + 1
+  
+  idx_is <- sapply(xsim.obs[1:(nrow(xsim.obs)-3),"time"], function(x) which(abs(x-xdesolveTRUE[,1]) < 1e-6))
+  xdesolveTRUE.obs <- xdesolveTRUE[c(1,idx_is), c("S", "P")]
+  idx_is <- sapply(xsim.obs[1:(nrow(xsim.obs)-3),"time"], function(x) which(abs(x-seq(0,70,0.5)) < 1e-6))
+  xpostmean_a.obs <- model_a$ours[[it]]$xpostmean[idx_is, c(2,3)]
+  xpostmean_b.obs <- model_b$ours[[it]]$xpostmean[idx_is, c(2,4)]
+  is_err_mat <- rbind(
+    sqrt(colMeans((xdesolveTRUE.obs - xpostmean_a.obs)^2)),
+    sqrt(colMeans((xdesolveTRUE.obs - xpostmean_b.obs)^2))
+  )
+  rownames(is_err_mat) <- c("A", "B")
+  is_rmse[[it]] <- is_err_mat
+  
+  xsim_oos <- tail(xsim.obs, 3)[,-1]
+  xinfer_oos_a <- model_a$ours[[it]]$xpostmean[idx_oos, c(2,3)]
+  err_oos_a <- xinfer_oos_a - xsim_oos
+  
+  xinfer_oos_b <- model_b$ours[[it]]$xpostmean[idx_oos, c(2,4)]
+  err_oos_b <- xinfer_oos_b - xsim_oos
+  
+  err_mat <- rbind(sqrt(colMeans(err_oos_a^2)), sqrt(colMeans(err_oos_b^2)))
+  rownames(err_mat) <- c("A", "B")
+  oos_rmse[[it]] <- err_mat
+}
+
+oos_rmse <- sapply(oos_rmse, identity, simplify = "array")
+is_rmse <- sapply(is_rmse, identity, simplify = "array")
+
+c1 <- rgb(0,0,1,1/4)
+c2 <- rgb(1,0,0,1/4)
+pdf("../results/histogram data B OOS RMSE model A model B.pdf")
+for (component in c("S", "P")){
+  hgA <- hist(oos_rmse["A",component,], plot=FALSE)
+  hgB <- hist(oos_rmse["B",component,], plot=FALSE)
+  
+  plot(hgA, col = c1, xlim = range(oos_rmse[,component,]), ylim = c(0,30), 
+       main=paste0("OOS RMSE, data B, component ", component))
+  plot(hgB, add = TRUE, col = c2)
+  legend("topright", c("A", "B"), col=c(c1, c2), lty=1, lwd=20)
+  hist(oos_rmse["A",component,] - oos_rmse["B",component,], main=paste0("OOS RMSE A - B, data B, component ", component))
+  abline(v=0, col=2, lwd=3)
+}
+
+dev.off()
+
+apply(is_rmse, 1:2, median)
+
+
