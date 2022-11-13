@@ -36,6 +36,15 @@ for (component in c("S", "P")){
   legend("topright", c("A", "B"), col=c(c1, c2), lty=1, lwd=20)
   hist(oos_rmse["A",component,] - oos_rmse["B",component,], main=paste0("OOS RMSE A - B, data B, component ", component))
   abline(v=0, col=2, lwd=3)
+  
+  tab <- rbind(summary(oos_rmse["A",component,]),
+               summary(oos_rmse["B",component,]),
+               summary(oos_rmse["A",component,] - oos_rmse["B",component,]))
+  rownames(tab) <- c(paste0("data A - OOS RMSE of model A on component ", component),
+                     paste0("data A - OOS RMSE of model B on component ", component),
+                     paste0("data A - OOS RMSE difference of model A - B on component ", component))
+  print(tab)
+  
 }
 dev.off()
 
@@ -98,6 +107,14 @@ for (component in c("S", "P")){
   legend("topright", c("A", "B"), col=c(c1, c2), lty=1, lwd=20)
   hist(oos_rmse["A",component,] - oos_rmse["B",component,], main=paste0("OOS RMSE A - B, data B, component ", component))
   abline(v=0, col=2, lwd=3)
+  
+  tab <- rbind(summary(oos_rmse["A",component,]),
+        summary(oos_rmse["B",component,]),
+        summary(oos_rmse["A",component,] - oos_rmse["B",component,]))
+  rownames(tab) <- c(paste0("data B - OOS RMSE of model A on component ", component),
+                     paste0("data B - OOS RMSE of model B on component ", component),
+                     paste0("data B - OOS RMSE difference of model A - B on component ", component))
+  print(tab)
 }
 
 dev.off()
