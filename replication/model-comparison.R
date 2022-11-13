@@ -49,13 +49,16 @@ model_b <- as.list(model_b)
 oos_rmse <- list()
 is_rmse <- list()
 xdesolveTRUE <- read.csv("../results/Michaelis-Menten-Vb4p.csv", row.names = 1)
+obs_keep = setdiff(1:26, c(1,2,4,6,8,11))
 for(it in 1:100){
   xsim.obs <- read.csv(paste0("../results/Michaelis-Menten-Vb4p/vb_xsim_obs_seed",it,".csv"), row.names = 1)
+  xsim.obs <- xsim.obs[obs_keep,]
+  xsim.obs <- rbind(c(0, 1, 0), xsim.obs)
   time_oos <- tail(xsim.obs$time, 3)
   idx_oos <- time_oos * 2 + 1
   
   idx_is <- sapply(xsim.obs[1:(nrow(xsim.obs)-3),"time"], function(x) which(abs(x-xdesolveTRUE[,1]) < 1e-6))
-  xdesolveTRUE.obs <- xdesolveTRUE[c(1,idx_is), c("S", "P")]
+  xdesolveTRUE.obs <- xdesolveTRUE[idx_is, c("S", "P")]
   idx_is <- sapply(xsim.obs[1:(nrow(xsim.obs)-3),"time"], function(x) which(abs(x-seq(0,70,0.5)) < 1e-6))
   xpostmean_a.obs <- model_a$ours[[it]]$xpostmean[idx_is, c(2,3)]
   xpostmean_b.obs <- model_b$ours[[it]]$xpostmean[idx_is, c(2,4)]
@@ -63,6 +66,7 @@ for(it in 1:100){
     sqrt(colMeans((xdesolveTRUE.obs - xpostmean_a.obs)^2)),
     sqrt(colMeans((xdesolveTRUE.obs - xpostmean_b.obs)^2))
   )
+  
   rownames(is_err_mat) <- c("A", "B")
   is_rmse[[it]] <- is_err_mat
   
@@ -98,6 +102,6 @@ for (component in c("S", "P")){
 
 dev.off()
 
-apply(is_rmse, 1:2, median)
+apply(is_rmse, 1:2, mean)
 
 
