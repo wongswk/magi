@@ -174,6 +174,9 @@ for (i in 1:length(fillC)) {
     xsim[i,2:ncol(xsim)] = xsim.obs[loc,2:ncol(xsim)];
 }
 
+xsim.obs <- xsim.obs[xsim.obs$time <= config$t.truncate, ]
+xsim[xsim$time > config$t.truncate, -1] <- NaN
+
 xsim.obs <- xsim.obs[xsim.obs$time >= config$t.start, ]
 xsim <- xsim[xsim$time >= config$t.start, ]
 
