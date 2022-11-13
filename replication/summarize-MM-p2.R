@@ -1,15 +1,15 @@
-rdaDir <- "../results/Michaelis-Menten-Va/"
+rdaDir <- "../results/Michaelis-Menten-Vb4p/"
 
-for(phi2 in c(70, 120)){
+for(phi2 in c(70)){
 for(scenario in 0:3){
 
-phi = cbind(c(0.1, phi2), c(1, 30), c(1, 30))
+phi = cbind(c(0.1, phi2), c(1, 30), c(0.1, phi2), c(0.5, 30))
 
 linfillspace = c(0.5)
 linfillcut = NULL
 phi_change_time = 0
 time_acce_factor = 1
-noise = c(NA, 0.02, 0.02)
+noise = c(NaN, 0.01, NaN, 0.01)
 obs_keep = setdiff(1:26, c(1,2,4,6,8,11))
 
 if(scenario == 0){
@@ -47,7 +47,7 @@ config <- list(
   phi = phi,
   skip_visualization = TRUE,
   obs_source = obs_source,
-  modelName = "Michaelis-Menten-Va"
+  modelName = "Michaelis-Menten-Vb4p"
 )
 
 if(!is.null(config$linfillcut)){
@@ -124,7 +124,7 @@ title("Michaelis Menten")
 #        lty=c(1,1,1,1,1,1,NA,NA,NA), pch=c(NA,NA,NA,NA,NA,NA,20,20,20), col=c(1:6, 1:3), cex=1.5)
 
 phiVisualization <- phiExogenous <- pram.true$phi
-compnames <- c("E", "S", "P")
+compnames <- c("E", "S", "ES", "P")
 
 # smooth visualization with illustration
 xdesolveTRUE <-ours[[1]]$xdesolveTRUE
