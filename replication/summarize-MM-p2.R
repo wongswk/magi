@@ -78,6 +78,13 @@ single_rda_filename <- paste0(rdaDir, config$modelName,"-1-fill", config$linfill
 
 load(paste0(filename,".rda"))
 load(single_rda_filename)
+if(config$obs_source == "va-csv"){
+  xdesolveTRUE <- read.csv("../results/Michaelis-Menten-Va.csv", row.names = 1)
+  xdesolveTRUE$ES <- xdesolveTRUE$E - xdesolveTRUE$S
+  xdesolveTRUE <- xdesolveTRUE[,c("time", "E", "S", "ES", "P")]
+}else{
+  xdesolveTRUE <- read.csv("../results/Michaelis-Menten-Vb4p.csv", row.names = 1)
+}
 
 # load(paste0(rdaDir, rda_files[1]), envir = .GlobalEnv)
 rdaDir <- rdaDirSummary
@@ -91,8 +98,8 @@ xsim.obs <- xsim.obs[xsim.obs$time >= starttime,]
 rowId <- sapply(xsim.obs$time, function(x) which(abs(x-times) < 1e-6))
 
 for (i in 1:length(ours)) {
-  rowId <- sapply(xsim.obs$time, function(x) which(abs(x-ours[[i]]$xdesolveTRUE[,1]) < 1e-6))
-  xdesolveTRUE.obs <- ours[[i]]$xdesolveTRUE[rowId,-1]
+  rowId <- sapply(xsim.obs$time, function(x) which(abs(x-xdesolveTRUE[,1]) < 1e-6))
+  xdesolveTRUE.obs <- xdesolveTRUE[rowId,-1]
   rowId <- sapply(xsim.obs$time, function(x) which(abs(x-ours[[i]]$xdesolvePM[,1]) < 1e-6))
   xdesolvePM.obs <- ours[[i]]$xdesolvePM[rowId,-1]
   rowId <- sapply(xsim.obs$time, function(x) which(abs(x-xsim$time) < 1e-6))
@@ -110,7 +117,7 @@ print(rmse_inferred_orig)
 oursPostX <- sapply(oursPostX, identity, simplify = "array")
 
 ylim_lower <- rep(0, 10)
-ylim_upper <- apply(ours[[1]]$xdesolveTRUE, 2, max)[-1]
+ylim_upper <- apply(xdesolveTRUE, 2, max)[-1]
 
 pdf(width = 20, height = 5, file=paste0(filename, ".pdf"))
 # layout(rbind(c(1,2,3,4), c(5,5,5,5)), heights = c(5,1))
@@ -127,7 +134,7 @@ phiVisualization <- phiExogenous <- pram.true$phi
 compnames <- c("E", "S", "ES", "P")
 
 # smooth visualization with illustration
-xdesolveTRUE <-ours[[1]]$xdesolveTRUE
+
 id <- seq(1, nrow(xdesolveTRUE), by=1)
 xdesolveTRUE <- xdesolveTRUE[id,]
 
