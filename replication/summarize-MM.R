@@ -8,7 +8,7 @@ subdirs <- c(
 )
 
 # get the csv quick summary first ----
-for(phi2 in c(70, 120)){
+for(phi2 in c(70)){
 for(scenario in 0:3){
   
 phi = cbind(c(0.1, phi2), c(1, 30), c(0.1, phi2), c(0.5, 30))
@@ -131,7 +131,12 @@ outStorage <- mclapply(rda_files, function(f){
       apply(gpode$theta, 2, median)
     )
     
+    idx_oos <- c(91, 111, 139)  # only works for fill spacing = 0.5
+    # oos_samples <- gpode$xsampled[,idx_oos,c(2,3)]  # Va
+    oos_samples <- gpode$xsampled[,idx_oos,c(2,4)]  # Vb
+    
     list(
+      oos_samples=oos_samples,
       ours_f=ours_f,
       oursPostX_f=oursPostX_f,
       oursPostTheta_f=oursPostTheta_f
