@@ -7,45 +7,65 @@ realdata <- read.csv(paste0("../results/Michaelis-Menten/", "hydrolysis.csv"))
 
 args <- commandArgs(trailingOnly = TRUE)
 if(length(args) > 0){
-  seed <- as.numeric(args[1])
-  phi2 = as.numeric(args[2])
-  scenario = as.numeric(args[3])
+  args <- as.numeric(args)
+  seed <- args %% 100 + 1
+  args <- args %/% 100
   
+  noise_case = args %% 5
+  args <- args %/% 5
+  if(noise_case == 0){
+    noise_scalar = 0.02 
+  }else if(noise_case == 1){
+    noise_scalar = 0.01
+  }else if(noise_case == 2){
+    noise_scalar = 0.005
+  }else if(noise_case == 3){
+    noise_scalar = 0.002
+  }else if(noise_case == 4){
+    noise_scalar = 0.001
+  }
+  noise = c(NaN, noise_scalar, NaN, noise_scalar)
+  
+  # data_source_case <- args %% 2
+  # args <- args %/% 2
+  # if(data_source_case == 0){
+  #   obs_source = "va-csv"
+  # }else{
+  #   obs_source = "vb-csv"
+  # }
+  obs_source = "vb-csv"
+  
+  hold_out_size <- args %% 15
+  
+  phi2 = 70
   phi = cbind(c(0.1, phi2), c(1, 30), c(0.1, phi2), c(0.5, 30))
   
   linfillspace = c(0.5)
   linfillcut = NULL
   phi_change_time = 0
   time_acce_factor = 1
-  noise = c(NaN, 0.01, NaN, 0.01)
   obs_keep = setdiff(1:26, c(1,2,4,6,8,11))
   
-  if(scenario == 0){
-    obs_source = "va-csv"
-    t.truncate = 70
-  }else if (scenario == 1){
-    obs_source = "vb-csv"
-    t.truncate = 70
-  }else if(scenario == 2){
-    obs_source = "va-csv"
-    t.truncate = 40
-  }else if (scenario == 3){
-    obs_source = "vb-csv"
-    t.truncate = 40
-  }
+  obs_time = c(0.5, 1, 2.5, 3.5, 4.5, 5.5, 7, 8.5, 9.5, 11, 12, 13.5, 15, 
+               16, 18, 20, 21.5, 24, 27, 29.5, 32.5, 35.5, 39.5, 45, 55, 69)
+  
+  obs_time = obs_time[obs_keep]
+  t.truncate = obs_time[length(obs_time) - hold_out_size]
   
 }else{
-  seed <- 123
-  noise = c(NaN, 0.01, NaN, 0.01)
+  noise_scalar <- 0.01
+  seed <- 1
+  noise = c(NaN, noise_scalar, NaN, noise_scalar)
   linfillspace = c(0.5)
   linfillcut = NULL
   phi = cbind(c(0.1, 70), c(1, 30), c(0.1, 70), c(0.5, 30))
   phi_change_time = 0
   time_acce_factor = 1
   obs_keep = setdiff(1:26, c(1,2,4,6,8,11))
-  obs_source = "vb-sim"
+  obs_source = "vb-csv"
   t.truncate = 70
 }
+
 
 config <- list(
   nobs = nrow(realdata),
@@ -133,13 +153,13 @@ xsim.obs$ES <- NULL
 
 
 if(config$obs_source == "vb-csv"){
-  xsim.obs <- read.csv(paste0("../results/Michaelis-Menten-Vb4p/vb_xsim_obs_seed",config$seed,".csv"), row.names=1)
+  xsim.obs <- read.csv(paste0("../results/Michaelis-Menten-Vb4p/noise",noise_scalar,"/vb_xsim_obs_seed",config$seed,".csv"), row.names=1)
   xsim.obs$E <- NaN
   xsim.obs$ES <- NaN
   xsim.obs <- xsim.obs[,c("time", "E", "S", "ES", "P")]
   print("obs_source 'vb-csv'")
 }else if(config$obs_source == "va-csv"){
-  xsim.obs <- read.csv(paste0("../results/Michaelis-Menten-Va/va_xsim_obs_seed",config$seed,".csv"), row.names=1)
+  xsim.obs <- read.csv(paste0("../results/Michaelis-Menten-Va/noise",noise_scalar,"/va_xsim_obs_seed",config$seed,".csv"), row.names=1)
   xsim.obs$E <- NaN
   xsim.obs$ES <- NaN
   xsim.obs <- xsim.obs[,c("time", "E", "S", "ES", "P")]
