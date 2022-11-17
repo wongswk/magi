@@ -8,6 +8,10 @@ realdata <- read.csv(paste0("../results/Michaelis-Menten/", "hydrolysis.csv"))
 args <- commandArgs(trailingOnly = TRUE)
 if(length(args) > 0){
   args <- as.numeric(args)
+  
+  hold_out_size <- args[2]
+  args <- args[1]
+  
   seed <- args %% 100 + 1
   args <- args %/% 100
   
@@ -34,8 +38,6 @@ if(length(args) > 0){
   #   obs_source = "vb-csv"
   # }
   obs_source = "vb-csv"
-  
-  hold_out_size <- args %% 15
   
   phi2 = 70
   phi = cbind(c(0.1, phi2), c(1, 30), c(1, 30))
@@ -256,6 +258,29 @@ for(j in c(1)){
   for(i in 1:nrow(xsim)){
     distSignedCube[,i,j] = tvec_accelarated - tvec_accelarated[i]
   }
+}
+
+if(!is.null(config$linfillcut)){
+  name_linfillcut <- paste(round(config$linfillcut, 2), collapse = ";")
+  name_linfillspace <- paste(round(config$linfillspace, 2), collapse = ";")
+}else{
+  name_linfillcut <- NULL
+  name_linfillspace <- config$linfillspace
+}
+name_obs_keep <- paste(c(config$obs_keep[1:5], ".."), collapse = ";")
+
+out_file_name <- paste0(outDir, config$modelName,"-",config$seed,"-fill", name_linfillspace,"-noise",
+                        sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi),
+                        "-data", config$obs_source,
+                        "-time", config$t.start,"to", config$t.truncate,
+                        "-obs_keep", name_obs_keep,
+                        "-linfillcut", name_linfillcut,
+                        "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
+                        ".rda")
+print(out_file_name)
+
+if(file.exists(out_file_name)){
+  quit(save="no")
 }
 
 OursStartTime <- proc.time()[3]
