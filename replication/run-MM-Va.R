@@ -53,15 +53,16 @@ if(length(args) > 0){
   t.truncate = obs_time[length(obs_time) - hold_out_size]
 
 }else{
-  seed <- 123
-  noise = c(NA, 0.02, 0.02)
+  noise_scalar <- 0.01
+  seed <- 1
+  noise = c(NA, noise_scalar, noise_scalar)
   linfillspace = c(0.5)
   linfillcut = NULL
   phi = cbind(c(0.1, 70), c(1, 30), c(1, 30))
   phi_change_time = 0
   time_acce_factor = 1
   obs_keep = 1:26
-  obs_source = "va-csv"
+  obs_source = "vb-csv"
   t.truncate = 70
 }
 
@@ -151,12 +152,12 @@ xsim.obs$E <- NULL
 # write.csv(xsim.obs, paste0(outDir, "/va_xsim_obs_seed", config$seed, ".csv"))
 
 if(config$obs_source == "vb-csv"){
-  xsim.obs <- read.csv(paste0("../results/Michaelis-Menten-Vb4p/vb_xsim_obs_seed",config$seed,".csv"), row.names=1)
+  xsim.obs <- read.csv(paste0("../results/Michaelis-Menten-Vb4p/noise",noise_scalar,"/vb_xsim_obs_seed",config$seed,".csv"), row.names=1)
   xsim.obs$E <- NaN
   xsim.obs <- xsim.obs[,c("time", "E", "S", "P")]
   print("obs_source 'vb-csv'")
 }else if(config$obs_source == "va-csv"){
-  xsim.obs <- read.csv(paste0("../results/Michaelis-Menten-Va/va_xsim_obs_seed",config$seed,".csv"), row.names=1)
+  xsim.obs <- read.csv(paste0("../results/Michaelis-Menten-Va/noise",noise_scalar,"/va_xsim_obs_seed",config$seed,".csv"), row.names=1)
   xsim.obs$E <- NaN
   xsim.obs <- xsim.obs[,c("time", "E", "S", "P")]
   print("obs_source 'va-csv'")
@@ -256,7 +257,6 @@ for(j in c(1)){
     distSignedCube[,i,j] = tvec_accelarated - tvec_accelarated[i]
   }
 }
-
 
 OursStartTime <- proc.time()[3]
 
