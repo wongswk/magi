@@ -38,4 +38,4 @@ package/boost*
 rmagi/man
 cmagi/magi_main
 rmagi/src/*.o
-
+results/*
