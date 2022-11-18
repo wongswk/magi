@@ -77,6 +77,7 @@ dev.off()
 
 
 # data B ----
+# run with less IS and more OOS
 load("../results/Michaelis-Menten-Va/summary-Michaelis-Menten-Va-fill0.5-noise0.04-phi132.1-datavb-csv-time0to40-obs_keep3;5;7;9;10;..-linfillcut-time_changepoint0factor1.rda", model_a <- new.env())
 model_a <- as.list(model_a)
 load("../results/Michaelis-Menten-Vb4p/summary-Michaelis-Menten-Vb4p-fill0.5-noise0.02-phi201.7-datavb-csv-time0to40-obs_keep3;5;7;9;10;..-linfillcut-time_changepoint0factor1.rda", model_b <- new.env())
@@ -124,6 +125,9 @@ for(it in 1:100){
     oos_samples <- get(model_name)$outStorage[[it]]$oos_samples
     oos_samples <- oos_samples + rnorm(length(oos_samples), mean = 0, sd = noise_data)
     ppp <- rowMeans(apply(oos_samples, 1, function(x) x > xsim_oos))
+    avg_component <- apply(oos_samples, c(1,3), mean)
+    ppp <- matrix(ppp, ncol=2)
+    ppp <- rbind(ppp, rowMeans(apply(avg_component, 1, function(x) x > colMeans(xsim_oos))))
     ppp <- pmin(ppp, 1-ppp)
     ppp <- matrix(ppp*2, ncol=2)
     ppp
@@ -157,30 +161,47 @@ for (component in c("S", "P")){
   print(tab)
 }
 
-layout(matrix(1:6, ncol=2))
+hgA <- hist(colSums(oos_rmse["A",,]), plot=FALSE)
+hgB <- hist(colSums(oos_rmse["B",,]), plot=FALSE)
+plot(hgA, col = c1, xlim = range(c(colSums(oos_rmse["B",,]), colSums(oos_rmse["A",,]))), ylim = c(0,80), 
+     main=paste0("OOS RMSE, data B, component both"))
+plot(hgB, add = TRUE, col = c2)
+legend("topright", c("A", "B"), col=c(c1, c2), lty=1, lwd=20)
+hist( colSums(oos_rmse["A",,] - oos_rmse["B",,]), main=paste0("OOS RMSE A - B, data B, component ", component))
+abline(v=0, col=2, lwd=3)
+mean(colSums(oos_rmse["A",,] - oos_rmse["B",,]) < 0)
+
+
+layout(matrix(1:8, ncol=2))
 dimnames(oos_ppp)[[2]] <- c("S", "P")
 for (component in c("S", "P")){
-  for (it in 1:3){
+  for (it in 1:4){
     hgA <- hist(oos_ppp[it,component,"model_a",], plot=FALSE)
     hgB <- hist(oos_ppp[it,component,"model_b",], plot=FALSE)
     
-    plot(hgA, col = c1, xlim = range(oos_ppp[it,component,,]), ylim = c(0,20), 
+    plot(hgA, col = c1, xlim = range(oos_ppp[it,component,,]), ylim = c(0,60), 
          main=paste0("OOS PPP, data A, component ", component, ", time ", tail(xsim.obs$time, 3)[it]))
     plot(hgB, add = TRUE, col = c2)
   }
 }
+
+# noise level 0.01
+# OOS size 
+
+mean(oos_ppp[4,"S","model_a",] < 0.1)
 avg_ppp <- apply(oos_ppp, 3:4, mean)
 
 hgA <- hist(avg_ppp["model_a",], plot=FALSE)
 hgB <- hist(avg_ppp["model_b",], plot=FALSE)
 layout(1)
 
-plot(hgA, col = c1, xlim = range(oos_ppp[it,component,,]), ylim = c(0,80), 
+plot(hgA, col = c1, xlim = range(oos_ppp[it,component,,]), ylim = c(0,30), 
      main=paste0("OOS PPP, data A, component ", component, ", time ", tail(xsim.obs$time, 3)[it]))
 plot(hgB, add = TRUE, col = c2)
 
 hist(avg_ppp["model_a",] - avg_ppp["model_b",])
 abline(v=0, col=2, lwd=3)
+mean(avg_ppp["model_a",] - avg_ppp["model_b",])
 
 dev.off()
 
