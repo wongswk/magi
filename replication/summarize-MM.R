@@ -8,31 +8,36 @@ subdirs <- c(
 )
 
 # get the csv quick summary first ----
-for(phi2 in c(70)){
-for(scenario in 0:3){
+for(noise_scalar in c(0.02, 0.01, 0.005, 0.002, 0.001)){
+for(hold_out_size in seq(0, 14, 2)){
   
+noise = c(NaN, noise_scalar, NaN, noise_scalar)
+
+# data_source_case <- args %% 2
+# args <- args %/% 2
+# if(data_source_case == 0){
+#   obs_source = "va-csv"
+# }else{
+#   obs_source = "vb-csv"
+# }
+obs_source = "vb-csv"
+
+# hold_out_size <- args %% 15
+
+phi2 = 70
 phi = cbind(c(0.1, phi2), c(1, 30), c(0.1, phi2), c(0.5, 30))
 
 linfillspace = c(0.5)
 linfillcut = NULL
 phi_change_time = 0
 time_acce_factor = 1
-noise = c(NaN, 0.01, NaN, 0.01)
 obs_keep = setdiff(1:26, c(1,2,4,6,8,11))
 
-if(scenario == 0){
-  obs_source = "va-csv"
-  t.truncate = 70
-}else if (scenario == 1){
-  obs_source = "vb-csv"
-  t.truncate = 70
-}else if(scenario == 2){
-  obs_source = "va-csv"
-  t.truncate = 40
-}else if (scenario == 3){
-  obs_source = "vb-csv"
-  t.truncate = 40
-}
+obs_time = c(0.5, 1, 2.5, 3.5, 4.5, 5.5, 7, 8.5, 9.5, 11, 12, 13.5, 15, 
+             16, 18, 20, 21.5, 24, 27, 29.5, 32.5, 35.5, 39.5, 45, 55, 69)
+
+obs_time = obs_time[obs_keep]
+t.truncate = obs_time[length(obs_time) - hold_out_size]
 
 config <- list(
   nobs = 26,
@@ -57,7 +62,7 @@ config <- list(
   modelName = "Michaelis-Menten-Vb4p"
 )
 
-rm(list=setdiff(ls(), c("rdaDir", "subdirs", "config", "scenario", "phi2")))
+rm(list=setdiff(ls(), c("rdaDir", "subdirs", "config", "noise_scalar", "hold_out_size")))
 rdaDir <- paste0(rdaDir, "/")
 rdaDirSummary <- rdaDir
 print(rdaDir)
@@ -82,6 +87,19 @@ rda_files <- pdf_files[grep(paste0(config$modelName,"-.*-fill", config$linfillsp
                                    "\\.rda$"), pdf_files)]
 print(rda_files[1])
 print(length(rda_files))
+
+summary_filename = paste0("summary-", config$modelName,"-fill", config$linfillspace,"-noise", 
+                          sum(config$noise, na.rm = TRUE), "-phi", sum(config$phi),
+                          "-data", config$obs_source,
+                          "-time", config$t.start,"to", config$t.truncate,
+                          "-obs_keep", config$obs_keep, "-linfillcut", config$linfillcut,
+                          "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
+                          ".rda")
+print(summary_filename)
+if(file.exists(summary_filename)){
+  print("exist")
+  next
+}
 
 ## Helper function adapted from Visualization to extract trajectories and RMSE
 rmsePostSamples <- function(xtrue, dotxtrue, xsim, gpode, param, config, odemodel=NULL){
@@ -131,7 +149,9 @@ outStorage <- mclapply(rda_files, function(f){
       apply(gpode$theta, 2, median)
     )
     
-    idx_oos <- c(91, 111, 139)  # only works for fill spacing = 0.5
+    
+    idx_all <- c(1, 6, 10, 15, 20, 23, 28, 31, 33, 37, 41, 44, 49, 55, 60, 66, 72, 80, 91, 111, 139)
+    idx_oos <- tail(idx_all, hold_out_size)  # only works for fill spacing = 0.5
     # oos_samples <- gpode$xsampled[,idx_oos,c(2,3)]  # Va
     oos_samples <- gpode$xsampled[,idx_oos,c(2,4)]  # Vb
     
