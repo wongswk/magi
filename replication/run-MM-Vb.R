@@ -10,24 +10,25 @@ if(length(args) > 0){
   args <- as.numeric(args)
   
   hold_out_size <- args[2]
+  noise_scalar <- args[3]
   args <- args[1]
   
   seed <- args %% 100 + 1
   args <- args %/% 100
   
-  noise_case = args %% 5
-  args <- args %/% 5
-  if(noise_case == 0){
-    noise_scalar = 0.02 
-  }else if(noise_case == 1){
-    noise_scalar = 0.01
-  }else if(noise_case == 2){
-    noise_scalar = 0.005
-  }else if(noise_case == 3){
-    noise_scalar = 0.002
-  }else if(noise_case == 4){
-    noise_scalar = 0.001
-  }
+  # noise_case = args %% 5
+  # args <- args %/% 5
+  # if(noise_case == 0){
+  #   noise_scalar = 0.02 
+  # }else if(noise_case == 1){
+  #   noise_scalar = 0.01
+  # }else if(noise_case == 2){
+  #   noise_scalar = 0.005
+  # }else if(noise_case == 3){
+  #   noise_scalar = 0.002
+  # }else if(noise_case == 4){
+  #   noise_scalar = 0.001
+  # }
   noise = c(NaN, noise_scalar, NaN, noise_scalar)
   
   # data_source_case <- args %% 2
