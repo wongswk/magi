@@ -1,30 +1,47 @@
 rdaDir <- "../results/Michaelis-Menten-Va/"
 
-for(phi2 in c(70, 120)){
-  for(scenario in 0:3){
+for(noise_scalar in c(0.02, 0.01, 0.005, 0.002, 0.001)){
+  for(hold_out_size in seq(0, 14, 2)){
+
+    # noise_case = args %% 5
+    # args <- args %/% 5
+    # if(noise_case == 0){
+    #   noise_scalar = 0.02 
+    # }else if(noise_case == 1){
+    #   noise_scalar = 0.01
+    # }else if(noise_case == 2){
+    #   noise_scalar = 0.005
+    # }else if(noise_case == 3){
+    #   noise_scalar = 0.002
+    # }else if(noise_case == 4){
+    #   noise_scalar = 0.001
+    # }
+    noise = c(NA, noise_scalar, noise_scalar)
     
+    # data_source_case <- args %% 2
+    # args <- args %/% 2
+    # if(data_source_case == 0){
+    #   obs_source = "va-csv"
+    # }else{
+    #   obs_source = "vb-csv"
+    # }
+    obs_source = "vb-csv"
+    
+    phi2 = 70
     phi = cbind(c(0.1, phi2), c(1, 30), c(1, 30))
     
     linfillspace = c(0.5)
     linfillcut = NULL
     phi_change_time = 0
     time_acce_factor = 1
-    noise = c(NA, 0.02, 0.02)
     obs_keep = setdiff(1:26, c(1,2,4,6,8,11))
     
-    if(scenario == 0){
-      obs_source = "va-csv"
-      t.truncate = 70
-    }else if (scenario == 1){
-      obs_source = "vb-csv"
-      t.truncate = 70
-    }else if(scenario == 2){
-      obs_source = "va-csv"
-      t.truncate = 40
-    }else if (scenario == 3){
-      obs_source = "vb-csv"
-      t.truncate = 40
-    }
+    obs_time = c(0.5, 1, 2.5, 3.5, 4.5, 5.5, 7, 8.5, 9.5, 11, 12, 13.5, 15, 
+                 16, 18, 20, 21.5, 24, 27, 29.5, 32.5, 35.5, 39.5, 45, 55, 69)
+    
+    obs_time = obs_time[obs_keep]
+    t.truncate = obs_time[length(obs_time) - hold_out_size]
+    
     
     config <- list(
       nobs = 26,
@@ -121,7 +138,7 @@ for(phi2 in c(70, 120)){
     pdf(width = 20, height = 5, file=paste0(filename, ".pdf"))
     # layout(rbind(c(1,2,3,4), c(5,5,5,5)), heights = c(5,1))
     
-    matplot(xtrue[, "time"], (xtrue[, -1]), type="l", lty=1, col=c(1:6), xlab="time", ylab=NA)
+    matplot(xdesolveTRUE[, "time"], (xdesolveTRUE[, -1]), type="l", lty=1, col=c(1:6), xlab="time", ylab=NA)
     matplot(xsim.obs$time, (xsim.obs[,-1]), type="p", col=c(1:6), pch=20, add = TRUE)
     mtext('sample observations', cex=1.5)
     title("Michaelis Menten")
