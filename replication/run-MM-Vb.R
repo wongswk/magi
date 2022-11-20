@@ -238,8 +238,8 @@ for(j in 1:4){
 # }
 # xInitExogenous[-1, 1] <- 0.1
 
-xInitExogenous <- sapply(xtrueFunc, function(f) f(xsim$time))
-# xInitExogenous <- NULL
+# xInitExogenous <- sapply(xtrueFunc, function(f) f(xsim$time))
+xInitExogenous <- NULL
 
 distSignedCube <- array(NA, dim=c(nrow(xsim), nrow(xsim), ncol(xsim)-1))
 for(j in 1:(ncol(xsim)-1)){
