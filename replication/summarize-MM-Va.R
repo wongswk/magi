@@ -8,8 +8,8 @@ subdirs <- c(
 )
 
 # get the csv quick summary first ----
-for(noise_scalar in c(0.02, 0.01, 0.005, 0.002, 0.001)){
-  for(hold_out_size in seq(0, 14, 2)){
+for(noise_scalar in c(0.02)){
+  for(hold_out_size in c(10)){
     
     # noise_case = args %% 5
     # args <- args %/% 5
@@ -33,7 +33,7 @@ for(noise_scalar in c(0.02, 0.01, 0.005, 0.002, 0.001)){
     # }else{
     #   obs_source = "vb-csv"
     # }
-    obs_source = "vb-csv"
+    obs_source = "va-csv"
     
     phi2 = 70
     phi = cbind(c(0.1, phi2), c(1, 30), c(1, 30))
@@ -99,20 +99,20 @@ for(noise_scalar in c(0.02, 0.01, 0.005, 0.002, 0.001)){
                                        "\\.rda$"), pdf_files)]
     print(rda_files[1])
     print(length(rda_files))
-    x=paste0("Michaelis-Menten-Va-",1:100,"-fill0.5-noise0.04-phi132.1-datavb-csv-time0to29.5-obs_keep3;5;7;9;10;..-linfillcut-time_changepoint0factor1.rda" )
-    
-    summary_filename = paste0("summary-", config$modelName,"-fill", config$linfillspace,"-noise", 
-                              sum(config$noise, na.rm = TRUE), "-phi", sum(config$phi),
-                              "-data", config$obs_source,
-                              "-time", config$t.start,"to", config$t.truncate,
-                              "-obs_keep", config$obs_keep, "-linfillcut", config$linfillcut,
-                              "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
-                              ".rda")
-    print(summary_filename)
-    if(file.exists(summary_filename)){
-      print("exist")
-      next
-    }
+    # x=paste0("Michaelis-Menten-Va-",1:100,"-fill0.5-noise0.04-phi132.1-datavb-csv-time0to29.5-obs_keep3;5;7;9;10;..-linfillcut-time_changepoint0factor1.rda" )
+    # 
+    # summary_filename = paste0("summary-", config$modelName,"-fill", config$linfillspace,"-noise", 
+    #                           sum(config$noise, na.rm = TRUE), "-phi", sum(config$phi),
+    #                           "-data", config$obs_source,
+    #                           "-time", config$t.start,"to", config$t.truncate,
+    #                           "-obs_keep", config$obs_keep, "-linfillcut", config$linfillcut,
+    #                           "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
+    #                           ".rda")
+    # print(summary_filename)
+    # if(file.exists(summary_filename)){
+    #   print("exist")
+    #   next
+    # }
     
     ## Helper function adapted from Visualization to extract trajectories and RMSE
     rmsePostSamples <- function(xtrue, dotxtrue, xsim, gpode, param, config, odemodel=NULL){

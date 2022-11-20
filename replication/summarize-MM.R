@@ -8,8 +8,8 @@ subdirs <- c(
 )
 
 # get the csv quick summary first ----
-for(noise_scalar in c(0.02, 0.01, 0.005, 0.002, 0.001)){
-for(hold_out_size in seq(0, 14, 2)){
+for(noise_scalar in c(0.02)){
+for(hold_out_size in c(10)){
   
 noise = c(NaN, noise_scalar, NaN, noise_scalar)
 
@@ -20,7 +20,7 @@ noise = c(NaN, noise_scalar, NaN, noise_scalar)
 # }else{
 #   obs_source = "vb-csv"
 # }
-obs_source = "vb-csv"
+obs_source = "va-csv"
 
 # hold_out_size <- args %% 15
 
@@ -88,6 +88,12 @@ rda_files <- pdf_files[grep(paste0(config$modelName,"-.*-fill", config$linfillsp
 print(rda_files[1])
 print(length(rda_files))
 
+if(length(rda_files) < 100){
+  print("not complete yet")
+  print(setdiff(paste0("Michaelis-Menten-Vb4p-",1:100,"-fill0.5-noise0.04-phi201.7-datava-csv-time0to20-obs_keep3;5;7;9;10;..-linfillcut-time_changepoint0factor1.rda"), rda_files))
+  next
+}
+
 summary_filename = paste0("summary-", config$modelName,"-fill", config$linfillspace,"-noise", 
                           sum(config$noise, na.rm = TRUE), "-phi", sum(config$phi),
                           "-data", config$obs_source,
@@ -97,8 +103,12 @@ summary_filename = paste0("summary-", config$modelName,"-fill", config$linfillsp
                           ".rda")
 print(summary_filename)
 if(file.exists(summary_filename)){
-  print("exist")
-  next
+  load(summary_filename, model_old <- new.env())
+  model_old <- as.list(model_old)
+  if(length(model_old$ours) == 100){
+    print("exist")
+    next
+  }
 }
 
 ## Helper function adapted from Visualization to extract trajectories and RMSE

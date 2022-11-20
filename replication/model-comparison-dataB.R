@@ -1,7 +1,15 @@
+# 10 hold out for data A
+# initX should be NULL
+
+# visualization: hold-out scatter plot on the same plot
+
 # data B ----
 # run with less IS and more OOS
-for(noise_scalar in c(0.02, 0.01, 0.005, 0.002, 0.001)){
-  for(hold_out_size in seq(2, 14, 2)){
+# for(noise_scalar in c(0.02, 0.01, 0.005, 0.002, 0.001)){
+#   for(hold_out_size in seq(2, 14, 2)){
+
+noise_scalar = 0.02
+hold_out_size = 10
     
     obs_keep = setdiff(1:26, c(1,2,4,6,8,11))
     obs_time = c(0.5, 1, 2.5, 3.5, 4.5, 5.5, 7, 8.5, 9.5, 11, 12, 13.5, 15, 
@@ -10,10 +18,10 @@ for(noise_scalar in c(0.02, 0.01, 0.005, 0.002, 0.001)){
     obs_time = obs_time[obs_keep]
     t.truncate = obs_time[length(obs_time) - hold_out_size]
     
-    load(paste0("../results/Michaelis-Menten-Va/summary-Michaelis-Menten-Va-fill0.5-noise", 2 * noise_scalar,
+    load(paste0("../results/summary-Michaelis-Menten-Va-fill0.5-noise", 2 * noise_scalar,
                 "-phi132.1-datavb-csv-time0to",t.truncate,"-obs_keep3;5;7;9;10;..-linfillcut-time_changepoint0factor1.rda"), model_a <- new.env())
     model_a <- as.list(model_a)
-    load(paste0("../results/Michaelis-Menten-Vb4p/summary-Michaelis-Menten-Vb4p-fill0.5-noise", 2 * noise_scalar,
+    load(paste0("../results/summary-Michaelis-Menten-Vb4p-fill0.5-noise", 2 * noise_scalar,
                 "-phi201.7-datavb-csv-time0to",t.truncate,"-obs_keep3;5;7;9;10;..-linfillcut-time_changepoint0factor1.rda"), model_b <- new.env())
     model_b <- as.list(model_b)
 
@@ -24,6 +32,9 @@ for(noise_scalar in c(0.02, 0.01, 0.005, 0.002, 0.001)){
     xdesolveTRUE <- read.csv("../results/Michaelis-Menten-Vb4p.csv", row.names = 1)
     
     n_seed = min(length(model_a$ours), length(model_b$ours))
+    if(n_seed < 100){
+      warning(paste("noise_scalar",noise_scalar,"hold_out_size",hold_out_size,"n_seed < 100"))
+    }
     for(it in 1:n_seed){
       xsim.obs <- read.csv(paste0("../results/Michaelis-Menten-Vb4p/noise",noise_scalar,"/vb_xsim_obs_seed",it,".csv"), row.names = 1)
       xsim.obs <- xsim.obs[obs_keep,]
@@ -65,8 +76,14 @@ for(noise_scalar in c(0.02, 0.01, 0.005, 0.002, 0.001)){
         avg_component <- apply(oos_samples, c(1,3), mean)
         ppp <- matrix(ppp, ncol=2)
         ppp <- rbind(ppp, rowMeans(apply(avg_component, 1, function(x) x > colMeans(xsim_oos))))
+        ppp <- rbind(ppp, c(
+          mean(avg_component[,1] - avg_component[,2] > mean(xsim_oos[,1]) - mean(xsim_oos[,2])),
+          mean(avg_component[,1] - 2*avg_component[,2] > mean(avg_component[,1] - 2*avg_component[,2]))
+        ))
+        
         ppp <- pmin(ppp, 1-ppp)
         ppp <- matrix(ppp*2, ncol=2)
+        
         ppp
       }, simplify = "array")
     }
@@ -82,7 +99,7 @@ for(noise_scalar in c(0.02, 0.01, 0.005, 0.002, 0.001)){
       hgA <- hist(oos_rmse["A",component,], plot=FALSE)
       hgB <- hist(oos_rmse["B",component,], plot=FALSE)
       
-      plot(hgA, col = c1, xlim = range(oos_rmse[,component,]), ylim = c(0,30), 
+      plot(hgA, col = c1, xlim = range(oos_rmse[,component,]), ylim = c(0,max(c(hgA$counts, hgB$counts))), 
            main=paste0("OOS RMSE, data B, component ", component))
       plot(hgB, add = TRUE, col = c2)
       legend("topright", c("A", "B"), col=c(c1, c2), lty=1, lwd=20)
@@ -111,13 +128,20 @@ for(noise_scalar in c(0.02, 0.01, 0.005, 0.002, 0.001)){
     
     layout(matrix(1:2, ncol=2))
     dimnames(oos_ppp)[[2]] <- c("S", "P")
-    for (component in c("S", "P")){
-      for (it in 1:(hold_out_size+1)){
+    for (it in 1:dim(oos_ppp)[[1]]){
+      for (component in c("S", "P")){
         hgA <- hist(oos_ppp[it,component,"model_a",], plot=FALSE)
         hgB <- hist(oos_ppp[it,component,"model_b",], plot=FALSE)
         
+        if(it <= hold_out_size){
+          title_text = paste0("OOS PPP, data B, ", component, ", time ", tail(xsim.obs$time, hold_out_size)[it])  
+        }else if(it == hold_out_size+1){
+          title_text = paste0("OOS PPP, data B, ", component, ", average")
+        }else if(it == hold_out_size+2){
+          title_text = paste0("OOS PPP, data B, diff in component average")
+        }
         plot(hgA, col = c1, xlim = range(oos_ppp[it,component,,]), ylim = c(0,max(c(hgA$counts, hgB$counts))), 
-             main=paste0("OOS PPP, data A, component ", component, ", time ", tail(xsim.obs$time, hold_out_size)[it]))
+             main=title_text)
         plot(hgB, add = TRUE, col = c2)
         legend("topright", paste0(c("A", "B"), "; ", round(c(mean(oos_ppp[it,component,"model_a",] < 0.05), mean(oos_ppp[it,component,"model_b",] < 0.05))*100, 2), "% < 0.05"),
                col=c(c1, c2), lty=1, lwd=20)
@@ -127,7 +151,7 @@ for(noise_scalar in c(0.02, 0.01, 0.005, 0.002, 0.001)){
     # noise level 0.01
     # OOS size 
     
-    avg_ppp <- apply(oos_ppp[-(hold_out_size+1),,,], 3:4, mean)
+    avg_ppp <- apply(oos_ppp[1:hold_out_size,,,], 3:4, mean)
     
     hgA <- hist(avg_ppp["model_a",], plot=FALSE)
     hgB <- hist(avg_ppp["model_b",], plot=FALSE)
@@ -154,5 +178,5 @@ for(noise_scalar in c(0.02, 0.01, 0.005, 0.002, 0.001)){
     do.call(gridExtra::grid.arrange, c(tbls, nrow = length(tbls)))
 
     dev.off()
-  }
-}
+#   }
+# }
