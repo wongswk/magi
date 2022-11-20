@@ -67,7 +67,7 @@ if(length(args) > 0){
   phi_change_time = 0
   time_acce_factor = 1
   obs_keep = setdiff(1:26, c(1,2,4,6,8,11))
-  obs_source = "vb-csv"
+  obs_source = "va-csv"
   t.truncate = 70
 }
 
