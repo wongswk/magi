@@ -589,6 +589,66 @@ arma::cube MichaelisMentenReducedDtheta(const arma::vec & theta, const arma::mat
     return resultDtheta;
 }
 
+
+
+// [[Rcpp::export]]
+arma::mat MichaelisMentenReduced2ODE(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
+    const double e0 = 0.1;
+    const double s0 = 1.0;
+    const vec & s = x.col(0);
+    const vec & p = x.col(1);
+    const vec & es = s0 - s - p;
+    const vec & e = e0 - es;
+
+    mat resultdt(x.n_rows, x.n_cols);
+
+    resultdt.col(0) = -theta[0] * e % s + (theta[1]) * es;
+    resultdt.col(1) = theta[2] * es;
+
+    return resultdt;
+}
+
+
+// [[Rcpp::export]]
+arma::cube MichaelisMentenReduced2Dx(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
+    cube resultDx(x.n_rows, x.n_cols, x.n_cols, fill::zeros);
+
+    const double e0 = 0.1;
+    const double s0 = 1.0;
+    const vec & s = x.col(0);
+    const vec & p = x.col(1);
+    const vec & es = s0 - s - p;
+    const vec & e = e0 - es;
+
+    resultDx.slice(0).col(0) = -theta[0] * s - theta[0] * e - theta[1];
+    resultDx.slice(0).col(1) = -theta[0] * s - theta[1];
+
+    resultDx.slice(1).col(0).fill(-theta[2]);
+    resultDx.slice(1).col(1).fill(-theta[2]);
+
+    return resultDx;
+}
+
+
+// [[Rcpp::export]]
+arma::cube MichaelisMentenReduced2Dtheta(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
+    cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
+
+    const double e0 = 0.1;
+    const double s0 = 1.0;
+    const vec & s = x.col(0);
+    const vec & p = x.col(1);
+    const vec & es = s0 - s - p;
+    const vec & e = e0 - es;
+
+    resultDtheta.slice(0).col(0) = -e % s;
+    resultDtheta.slice(0).col(1) = es;
+
+    resultDtheta.slice(1).col(2) = es;
+
+    return resultDtheta;
+}
+
 // [[Rcpp::export]]
 arma::mat MichaelisMentenlog1xModelODE(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
     const double delta = 1e-4;
