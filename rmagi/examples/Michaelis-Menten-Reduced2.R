@@ -12,26 +12,38 @@ if(!exists("externalFlag")){
   externalFlag <- FALSE
 }
 
+obs_keep = setdiff(1:26, c(1,2,4,6,8,11))
+obs_keep = 1:26
+phi = cbind(c(1, 30), c(1, 30))
+
+linfillspace = 0.1
+linfillcut = NULL
+phi_change_time = 0
+time_acce_factor = 1
+noise = c(0.02, 0.02)
+
 # set up configuration if not already exist ------------------------------------
 if(!externalFlag){
   config <- list(
     nobs = nrow(realdata),
-    noise = c(0.02, 0.02),  # noise = c(0.01, 0.01, 0.01, 0.01), for fully observed case
+    noise = noise,  # noise = c(0.01, 0.01, 0.01, 0.01), for fully observed case
     kernel = "generalMatern",
     seed = 123,
     bandsize = 40,
     hmcSteps = 100,
     n.iter = 5001,
-    linfillspace = c(0.5), 
-    linfillcut = NULL,
+    linfillspace = linfillspace, 
+    linfillcut = linfillcut,
     t.end = 70,
     t.start = 0,
-    obs_start_time = 3,
-    phi_change_time = 2,
-    time_acce_factor = 3,
+    obs_start_time = 0,
+    phi_change_time = phi_change_time,
+    time_acce_factor = time_acce_factor,
     t.truncate = 70,
+    obs_keep = obs_keep,
     useMean = TRUE,
-    phi = cbind( c(1, 30), c(1, 30)),
+    phi = phi,
+    skip_visualization = TRUE,
     modelName = "Michaelis-Menten-Reduced2"
   )
 }
@@ -89,13 +101,10 @@ for(j in 1:(ncol(xsim)-1)){
 }
 
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
-xsim.obs <- xsim.obs[xsim.obs$time >= config$obs_start_time,]
-# xsim.obs <- xsim.obs[-c(1,2,4,6,8,11),]
-# xsim.obs <- xsim.obs[-seq(1, nrow(xsim.obs), 2),]
+xsim.obs <- xsim.obs[config$obs_keep,]
 xsim.obs <- rbind(c(0, pram.true$x0), xsim.obs)
 
-
-if(!is.null(config$skip_visualization)){
+if(is.null(config$skip_visualization)){
   matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
   matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
 }
@@ -150,7 +159,7 @@ for (j in 1:2){
   xInitExogenous[idx, j] <- xInitExogenous[idx[1] - 1, j]
 }
 
-# xInitExogenous <- sapply(xtrueFunc, function(f) f(xsim$time))
+xInitExogenous <- sapply(xtrueFunc, function(f) f(xsim$time))
 # xInitExogenous <- NULL
 
 stepSizeFactor <- rep(0.01, nrow(xsim)*length(pram.true$x0) + length(dynamicalModelList$thetaLowerBound) + length(pram.true$x0))
@@ -204,6 +213,8 @@ for(j in 1:(ncol(xsim)-1)){
 }
 config$phi <- NULL
 
+config$obs_keep <- paste(c(config$obs_keep[1:5], ".."), collapse = ";")
+
 gpode$lglik <- gpode$lp
 pram.true$sigma <- sigma_fixed
 gpode$theta <- cbind(gpode$theta, (gpode$theta[,2]+gpode$theta[,3])/gpode$theta[,1])
@@ -220,6 +231,7 @@ magi:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-fill", config$linfillspace,"-noise", 
          sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi),"-useMean", config$useMean,
          "-time", config$t.start,"to", config$t.truncate,"obsstart",config$obs_start_time, 
+         "-obs_keep", config$obs_keep,
          "-linfillcut", config$linfillcut,
          "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
          ".pdf"),
@@ -229,8 +241,10 @@ tail(gpode$theta)
 apply(gpode$xsampled[,1,], 2, median)
 apply(gpode$theta, 2, median)
 
-matplot(apply(gpode$xsampled[,,], 2:3, median), type="l")
-
-# if(!externalFlag){
-#   save.image(paste0(outDir, config$modelName,"-",config$seed,"-fill", sum(config$linfillspace),"-noise", sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi), ".rda"))
-# }
+# save.image(paste0(outDir, config$modelName,"-",config$seed,"-fill", config$linfillspace,"-noise", 
+#                   sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi),"-useMean", config$useMean,
+#                   "-time", config$t.start,"to", config$t.truncate,"obsstart",config$obs_start_time, 
+#                   "-obs_keep", config$obs_keep,
+#                   "-linfillcut", config$linfillcut,
+#                   "-time_changepoint", config$phi_change_time, "factor", config$time_acce_factor,
+#                   ".rda"))
