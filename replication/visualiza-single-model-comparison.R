@@ -1,6 +1,8 @@
 
 noise_scalar = 0.02
 hold_out_size = 10
+mtext_cex = 1.5
+oos_bg_col = "lightpink"
 
 obs_keep = setdiff(1:26, c(1,2,4,6,8,11))
 obs_time = c(0.5, 1, 2.5, 3.5, 4.5, 5.5, 7, 8.5, 9.5, 11, 12, 13.5, 15, 
@@ -74,13 +76,13 @@ pdf(width = 15, height = 10, file="../results/MM-model-comparison.pdf")
 layout(cbind(c(1,1,6,6),c(2,2,4,4),c(3,3,5,5)))
 attach(model_1b)
 matplot(xtrue[, "time"], (xtrue[, -1]), type="l", lty=1, col=0, xlab="time", ylab=NA)
-matplot(xsim.obs$time[1:11], (xsim.obs[1:11,-1]), type="p", col=c(2,4), pch=19, add = TRUE)
-matplot(xsim.obs$time[12:21], (xsim.obs[12:21,-1]), type="p", col=c(2,4), pch=5, add = TRUE)
-mtext('observations', cex=1.5)
+matplot(xsim.obs$time[1:11], (xsim.obs[1:11,-1]), type="p", col=c(2,1), pch=19, add = TRUE)
+matplot(xsim.obs$time[12:21], (xsim.obs[12:21,-1]), type="p", col=c(2,1), pch=5, add = TRUE)
+mtext('observations', cex=2.5)
 
-legend("topright", c("observed [S] (in-sample)", "observed [P] (in-sample)",
-                     "observed [S] (hold-out)", "observed [P] (hold-out)"),
-       pch=c(19,19, 5, 5), col=c(2, 4, 2, 4), cex=1.5)
+# legend("topright", c("observed [S] (in-sample)", "observed [P] (in-sample)",
+#                      "observed [S] (hold-out)", "observed [P] (hold-out)"),
+#        pch=c(19,19, 5, 5), col=c(2, 1, 2, 1), cex=1.5)
 
 compnames = c("[E]", "[S]", "[ES]", "[P]")
 ylim_lower <- rep(0, 10)
@@ -105,10 +107,15 @@ for (i in c(4,2)) {
 
   times <- xdesolveTRUE[,1]
   
-  plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
+  plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]), cex.lab=1.45)
   
   polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
           col = "skyblue", border = NA)
+  
+  idx_oos = (times > 20)
+  polygon(c(times[idx_oos], rev(times[idx_oos])), 
+          c(ourUB[idx_oos], rev(ourLB[idx_oos])),
+          col = oos_bg_col, border = NA)
   
   lines(times, ourEst, col="forestgreen", lwd=3)
   
@@ -116,11 +123,11 @@ for (i in c(4,2)) {
     points(xsim.obs$time[1:11], (xsim.obs[1:11, 2]), type="p", col="red", pch=19)  
     points(xsim.obs$time[12:21], (xsim.obs[12:21, 2]), type="p", col="red", pch=5)
   }else{
-    points(xsim.obs$time[1:11], (xsim.obs[1:11, 3]), type="p", col="red", pch=19)  
-    points(xsim.obs$time[12:21], (xsim.obs[12:21, 3]), type="p", col="red", pch=5)
+    points(xsim.obs$time[1:11], (xsim.obs[1:11, 3]), type="p", col=1, pch=19)  
+    points(xsim.obs$time[12:21], (xsim.obs[12:21, 3]), type="p", col=1, pch=5)
   }
   
-  mtext(paste0("Component ",compnames[i], " inferred using model B"))
+  mtext(paste0("Component ",compnames[i], " inferred using model B"), cex=mtext_cex)
   if(i == 2){
     legend_loc = "topright"
   }else{
@@ -138,7 +145,7 @@ for (i in c(4,2)) {
 
 detach(model_1b)
 attach(model_1a)
-for (i in c(2,3)) {
+for (i in c(3,2)) {
   phiVisualization <- pram.true$phi
   ourEst <- apply(gpode$xsampled[,,i], 2, quantile, probs = 0.5)
   ourUB <- apply(gpode$xsampled[,,i], 2, quantile, probs = 0.025)
@@ -157,22 +164,6 @@ for (i in c(2,3)) {
   
   times <- xdesolveTRUE[,1]
   
-  plot(times, ourEst, type="n", xlab="time", ylab=compnames[i], ylim=c(ylim_lower[i], ylim_upper[i]))
-  
-  polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
-          col = "skyblue", border = NA)
-  
-  lines(times, ourEst, col="forestgreen", lwd=3)
-  
-  if(i == 2){
-    points(xsim.obs$time[1:11], (xsim.obs[1:11, 2]), type="p", col="red", pch=19)  
-    points(xsim.obs$time[12:21], (xsim.obs[12:21, 2]), type="p", col="red", pch=5)
-  }else{
-    points(xsim.obs$time[1:11], (xsim.obs[1:11, 3]), type="p", col="red", pch=19)  
-    points(xsim.obs$time[12:21], (xsim.obs[12:21, 3]), type="p", col="red", pch=5)
-  }
-  
-  
   if(i == 2){
     legend_loc = "topright"
     comp = "[S]"
@@ -180,16 +171,39 @@ for (i in c(2,3)) {
     legend_loc = "bottomright"
     comp = "[P]"
   }
-  mtext(paste0("Component ",comp, " inferred using model A"))
+  
+  plot(times, ourEst, type="n", xlab="time", ylab=comp, ylim=c(ylim_lower[i], ylim_upper[i]), cex.lab=1.45)
+  
+  polygon(c(times, rev(times)), c(ourUB, rev(ourLB)),
+          col = "skyblue", border = NA)
+  
+  idx_oos = (times > 20)
+  polygon(c(times[idx_oos], rev(times[idx_oos])), 
+          c(ourUB[idx_oos], rev(ourLB[idx_oos])),
+          col = oos_bg_col, border = NA)
+  
+  lines(times, ourEst, col="forestgreen", lwd=3)
+  
+  if(i == 2){
+    points(xsim.obs$time[1:11], (xsim.obs[1:11, 2]), type="p", col="red", pch=19)  
+    points(xsim.obs$time[12:21], (xsim.obs[12:21, 2]), type="p", col="red", pch=5)
+  }else{
+    points(xsim.obs$time[1:11], (xsim.obs[1:11, 3]), type="p", col=1, pch=19)  
+    points(xsim.obs$time[12:21], (xsim.obs[12:21, 3]), type="p", col=1, pch=5)
+  }
+  
+  mtext(paste0("Component ",comp, " inferred using model A"), cex=mtext_cex)
 
 }
 
 par(mar=rep(0,4))
 plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
 
-legend("center", c(paste("observed",comp,"(in-sample)"), paste("observed",comp,"(hold-out)"), "median of all inferred trajectories", "95% interval from the 2.5 and 97.5 percentile\nof all inferred trajectories"), 
-       lty=c(0,0,1,0), lwd=c(0,4,3,0),
-       col = c("red","red", "forestgreen", NA), fill=c(0,0, 0,"skyblue"),
-       border=c(0,0, 0, "skyblue"), pch=c(19,8, NA, 15), cex=1.2)
+legend("center", c("observed [S] (in-sample)", "observed [P] (in-sample)",
+                   "observed [S] (hold-out)", "observed [P] (hold-out)",
+                   "posterior mean", "95% posterior interval for in-sample", "95% posterior interval for hold-out"), 
+       lty=c(0,0,0,0,1,0,0), lwd=c(0,1,0,1,3,0,0),
+       col = c(1,1,"red","red", "forestgreen", NA, NA), fill=c(0,0,0,0, 0,"skyblue",oos_bg_col),
+       border=c(0,0,0,0, 0, "skyblue",oos_bg_col), pch=c(19,5,19,5, NA, 15, 15), cex=2.1)
 
 dev.off()
