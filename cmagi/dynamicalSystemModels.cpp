@@ -958,7 +958,7 @@ arma::cube MichaelisMentenModelVb6pDtheta(const arma::vec & theta, const arma::m
     resultDtheta.slice(1).col(0) = -e % s;
     resultDtheta.slice(1).col(1) = es;
     resultDtheta.slice(1).col(2) = -es % s;
-    resultDx.slice(1).col(3) = es2;
+    resultDtheta.slice(1).col(3) = es2;
 
     resultDtheta.slice(2).col(0) = e % s;
     resultDtheta.slice(2).col(1) = -es;
@@ -997,7 +997,7 @@ arma::mat MichaelisMentenModelVb4pODE(const arma::vec & theta, const arma::mat &
     mat resultdt(x.n_rows, x.n_cols);
 
     resultdt.col(0) = -k1 * e % s + km1 * es + k3 * es2 - km3 * e % p;
-    resultdt.col(1) = -k1 * e % s - k2 * es % s + km1 * es;
+    resultdt.col(1) = -k1 * e % s - k2 * es % s + km1 * es + km2 * es2;
     resultdt.col(2) = k1 * e % s - km1 * es - k2 * es % s + km2 * es2;
     resultdt.col(3) = k3 * es2 - km3 * e % p;
 
@@ -1028,9 +1028,9 @@ arma::cube MichaelisMentenModelVb4pDx(const arma::vec & theta, const arma::mat &
     resultDx.slice(0).col(2).fill(km1 - k3);
     resultDx.slice(0).col(3) = -km3 * e;
 
-    resultDx.slice(1).col(0) = -k1 * s;
+    resultDx.slice(1).col(0) = -k1 * s - km2;
     resultDx.slice(1).col(1) = -k1*e - k2*es;
-    resultDx.slice(1).col(2) = -k2*s + km1;
+    resultDx.slice(1).col(2) = -k2*s + km1 - km2;
 
     resultDx.slice(2).col(0) = k1*s - km2;
     resultDx.slice(2).col(1) = k1*e-k2*es;
@@ -1068,7 +1068,7 @@ arma::cube MichaelisMentenModelVb4pDtheta(const arma::vec & theta, const arma::m
     resultDtheta.slice(0).col(5) = -e % p;
 
     resultDtheta.slice(1).col(0) = -e % s;
-    resultDtheta.slice(1).col(1) = es;
+    resultDtheta.slice(1).col(1) = es + es2;
     resultDtheta.slice(1).col(2) = -es % s;
 
     resultDtheta.slice(2).col(0) = e % s;
