@@ -804,14 +804,14 @@ arma::mat MichaelisMentenModelVaODE(const arma::vec & theta, const arma::mat & x
 
     const vec & e = x.col(0);
     const vec & s = x.col(1);
-    const vec & es = e0 - e;
+    const vec & es2 = e0 - e;
     const vec & p = x.col(2);
 
     mat resultdt(x.n_rows, x.n_cols);
 
-    resultdt.col(0) = -theta[0] * e % s + (theta[1]+theta[2]) * es;
-    resultdt.col(1) = -2*theta[0] * e % s + (2*theta[1]) * es;
-    resultdt.col(2) = theta[2] * es;
+    resultdt.col(0) = -theta[0] * e % s % s + (theta[1]+theta[2]) * es2;
+    resultdt.col(1) = -2*theta[0] * e % s % s + (2*theta[1]) * es2;
+    resultdt.col(2) = theta[2] * es2;
 
     return resultdt;
 }
@@ -824,14 +824,13 @@ arma::cube MichaelisMentenModelVaDx(const arma::vec & theta, const arma::mat & x
 
     const vec & e = x.col(0);
     const vec & s = x.col(1);
-    const vec & es = e0 - e;
     const vec & p = x.col(2);
 
-    resultDx.slice(0).col(0) = -theta[0] * s - (theta[1] + theta[2]);
-    resultDx.slice(0).col(1) = -theta[0] * e;
+    resultDx.slice(0).col(0) = -theta[0] * s % s - (theta[1] + theta[2]);
+    resultDx.slice(0).col(1) = -2 * theta[0] * e % s;
 
-    resultDx.slice(1).col(0) = -2*theta[0] * s - 2*theta[1];
-    resultDx.slice(1).col(1) = -2*theta[0] * e;
+    resultDx.slice(1).col(0) = -2*theta[0] * s % s - 2*theta[1];
+    resultDx.slice(1).col(1) = -4*theta[0] * e % s;
 
     resultDx.slice(2).col(0).fill(-theta[2]);
 
@@ -846,18 +845,18 @@ arma::cube MichaelisMentenModelVaDtheta(const arma::vec & theta, const arma::mat
 
     const vec & e = x.col(0);
     const vec & s = x.col(1);
-    const vec & es = e0 - e;
+    const vec & es2 = e0 - e;
     const vec & p = x.col(2);
 
 
-    resultDtheta.slice(0).col(0) = -e % s;
-    resultDtheta.slice(0).col(1) = es;
-    resultDtheta.slice(0).col(2) = es;
+    resultDtheta.slice(0).col(0) = -e % s % s;
+    resultDtheta.slice(0).col(1) = es2;
+    resultDtheta.slice(0).col(2) = es2;
 
-    resultDtheta.slice(1).col(0) = -2 * e % s;
-    resultDtheta.slice(1).col(1) = 2 * es;
+    resultDtheta.slice(1).col(0) = -2 * e % s % s;
+    resultDtheta.slice(1).col(1) = 2 * es2;
 
-    resultDtheta.slice(2).col(2) = es;
+    resultDtheta.slice(2).col(2) = es2;
 
     return resultDtheta;
 }
