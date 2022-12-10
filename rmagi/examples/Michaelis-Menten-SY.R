@@ -26,12 +26,12 @@ if(!externalFlag){
     linfillcut = NULL,
     t.end = 70,
     t.start = 0,
-    obs_start_time = 0,
+    obs_start_time = 3,
     phi_change_time = 2,
-    time_acce_factor = 4,
+    time_acce_factor = 3,
     t.truncate = 70,
     useMean = TRUE,
-    phi = cbind(c(0.1, 180), c(1, 30), c(1, 30)),
+    phi = cbind(c(0.1, 120), c(1, 30), c(1, 30)),
     modelName = "Michaelis-Menten-Reduced"
   )
 }
@@ -62,6 +62,10 @@ if(is.null(config$skip_visualization)){
   matplot(xtrue[, "time"], xtrue[, c(3,4)], type="l", lty=1)  
 }
 
+xtrue
+
+xtrue[,3] + xtrue[,4] + (0.1 - xtrue[,2])
+
 
 xtrueFunc <- lapply(2:ncol(xtrue), function(j)
   approxfun(xtrue[, "time"], xtrue[, j]))
@@ -90,7 +94,10 @@ for(j in 1:(ncol(xsim)-1)){
 
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
 xsim.obs <- xsim.obs[xsim.obs$time >= config$obs_start_time,]
+# xsim.obs <- xsim.obs[-c(1,2,4,6,8,11),]
+# xsim.obs <- xsim.obs[-seq(1, nrow(xsim.obs), 2),]
 xsim.obs <- rbind(c(0, pram.true$x0), xsim.obs)
+
 
 if(is.null(config$skip_visualization)){
   matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20, add = TRUE)
@@ -140,16 +147,15 @@ sigma_fixed[is.na(sigma_fixed)] <- 1e-4
 # sampler with a good phi supplied, no missing component
 # hyper-parameters affect the inference of missing components (especially if initial condition is not known
 
-# xInitExogenous <- data.matrix(xsim[,-1])
-# for (j in c(2,4)){
-#   xInitExogenous[, j] <- approx(xsim.obs$time, xsim.obs[,j+1], xsim$time)$y
-#   idx <- which(is.na(xInitExogenous[, j]))
-#   xInitExogenous[idx, j] <- xInitExogenous[idx[1] - 1, j]
-# }
-# xInitExogenous[-1, 1] <- 0.1
-# xInitExogenous[-1, 3] <- 0.05
+xInitExogenous <- data.matrix(xsim[,-1])
+for (j in c(2,3)){
+  xInitExogenous[, j] <- approx(xsim.obs$time, xsim.obs[,j+1], xsim$time)$y
+  idx <- which(is.na(xInitExogenous[, j]))
+  xInitExogenous[idx, j] <- xInitExogenous[idx[1] - 1, j]
+}
+xInitExogenous[-1, 1] <- 0.1
 
-xInitExogenous <- sapply(xtrueFunc, function(f) f(xsim$time))
+# xInitExogenous <- sapply(xtrueFunc, function(f) f(xsim$time))
 # xInitExogenous <- NULL
 
 stepSizeFactor <- rep(0.01, nrow(xsim)*length(pram.true$x0) + length(dynamicalModelList$thetaLowerBound) + length(pram.true$x0))
@@ -229,3 +235,7 @@ apply(gpode$xsampled[,1,], 2, median)
 apply(gpode$theta, 2, median)
 
 matplot(apply(gpode$xsampled[,,], 2:3, median), type="l")
+
+if(!externalFlag){
+  save.image(paste0(outDir, config$modelName,"-",config$seed,"-fill", sum(config$linfillspace),"-noise", sum(config$noise, na.rm = TRUE), "-phi", sum(pram.true$phi), ".rda"))
+}
