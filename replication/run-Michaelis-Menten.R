@@ -36,7 +36,7 @@ if(length(args) > 0){
   phi = cbind(c(0.1, 70), c(1, 30), c(1, 30))
   phi_change_time = 0
   time_acce_factor = 1
-  obs_keep = 1:26
+  obs_keep = setdiff(1:26, c(1,2,4,6,8,11))
 }
 
 # set up configuration if not already exist ------------------------------------
