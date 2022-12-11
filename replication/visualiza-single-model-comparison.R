@@ -71,7 +71,7 @@ rownames(err_mat) <- c("A", "B")
 oos_rmse[[it]] <- err_mat
 
 
-pdf(width = 15, height = 10, file="../results/MM-model-comparison.pdf")
+pdf(width = 15, height = 10, file="../results/MM-model-comparison-dataB.pdf")
 # layout(cbind(c(7,1,1,6),c(2,2,4,4),c(3,3,5,5)))
 layout(cbind(c(1,1,6,6),c(2,2,4,4),c(3,3,5,5)))
 attach(model_1b)

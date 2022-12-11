@@ -1,7 +1,8 @@
 rdaDir <- "../results/Michaelis-Menten-Vb4p/"
 
-for(noise_scalar in c(0.02, 0.01, 0.005, 0.002, 0.001)){
-for(hold_out_size in seq(0, 14, 2)){
+for(noise_scalar in c(0.02)){
+for(hold_out_size in c(10)){
+for(obs_source in c("va-csv", "vb-csv")){
 
 noise = c(NaN, noise_scalar, NaN, noise_scalar)
 
@@ -12,7 +13,7 @@ noise = c(NaN, noise_scalar, NaN, noise_scalar)
 # }else{
 #   obs_source = "vb-csv"
 # }
-obs_source = "vb-csv"
+# obs_source = "vb-csv"
 
 # hold_out_size <- args %% 15
 
@@ -251,5 +252,6 @@ print(rmse_reconstructed_orig)
 print(tab)
 # print(xtable(tab))
 sink()
+}
 }
 }

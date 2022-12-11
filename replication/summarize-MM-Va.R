@@ -10,6 +10,7 @@ subdirs <- c(
 # get the csv quick summary first ----
 for(noise_scalar in c(0.02)){
   for(hold_out_size in c(10)){
+    for(obs_source in c("va-csv", "vb-csv")){
     
     # noise_case = args %% 5
     # args <- args %/% 5
@@ -33,7 +34,7 @@ for(noise_scalar in c(0.02)){
     # }else{
     #   obs_source = "vb-csv"
     # }
-    obs_source = "va-csv"
+    # obs_source = "va-csv"
     
     phi2 = 70
     phi = cbind(c(0.1, phi2), c(1, 30), c(1, 30))
@@ -202,4 +203,5 @@ for(noise_scalar in c(0.02)){
     
     save.image(file=summary_filename)
   }
+}
 }

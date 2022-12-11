@@ -10,6 +10,7 @@ subdirs <- c(
 # get the csv quick summary first ----
 for(noise_scalar in c(0.02)){
 for(hold_out_size in c(10)){
+for(obs_source in c("va-csv", "vb-csv")){
   
 noise = c(NaN, noise_scalar, NaN, noise_scalar)
 
@@ -20,7 +21,7 @@ noise = c(NaN, noise_scalar, NaN, noise_scalar)
 # }else{
 #   obs_source = "vb-csv"
 # }
-obs_source = "va-csv"
+# obs_source = "va-csv"
 
 # hold_out_size <- args %% 15
 
@@ -200,5 +201,6 @@ summary_filename = paste0("summary-", config$modelName,"-fill", config$linfillsp
 print(summary_filename)
 
 save.image(file=summary_filename)
+}
 }
 }

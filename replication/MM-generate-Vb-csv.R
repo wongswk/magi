@@ -106,3 +106,8 @@ for (noise_scalar in c(0.02, 0.01, 0.005, 0.002, 0.001)){
     write.csv(xsim.obs, paste0(outDir, "/vb_xsim_obs_seed", config$seed, ".csv"))
   }
 }
+
+old_csv <- read.csv("../results/MM-model-comparison-wrong-ODE/Michaelis-Menten-Vb4p.csv")
+xdesolveTRUE <- deSolve::ode(y = pram.true$x0, times = old_csv$time, func = modelODE, parms = pram.true$theta)
+colnames(xdesolveTRUE) <- colnames(old_csv)[-1]
+write.csv(xdesolveTRUE, "../results/Michaelis-Menten-Vb4p.csv")
