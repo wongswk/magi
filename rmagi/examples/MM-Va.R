@@ -45,7 +45,7 @@ if(is.null(config$skip_visualization)){
 # initialize global parameters, true x, simulated x ----------------------------
 # parameters and initial conditions that seem to mimic the real data well
 pram.true <- list(
-  theta=c(0.35, 0.2, 2.54),
+  theta=c(1.17, 0, 0.32),
   # x0 = c(0.08277011, 0.7500533, 0.2327168),
   x0 = c(0.1, 1, 0),
   phi = config$phi,
