@@ -286,10 +286,11 @@ if(file.exists(out_file_name)){
 
 OursStartTime <- proc.time()[3]
 
-
+thetaInit <- c(1,1,1)
 result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control =
                              list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = stepSizeFactor,
                                   xInit = xInitExogenous, burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, discardBurnin=TRUE, useFixedSigma=TRUE,
+                                  thetaInit = thetaInit,
                                   skipMissingComponentOptimization=TRUE, useMean=config$useMean, useBand=FALSE, priorTemperature=NULL, distSignedCube=distSignedCube))
 
 OursTimeUsed <- proc.time()[3] - OursStartTime

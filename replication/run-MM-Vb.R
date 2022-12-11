@@ -58,7 +58,7 @@ if(length(args) > 0){
   t.truncate = obs_time[length(obs_time) - hold_out_size]
   
 }else{
-  noise_scalar <- 0.01
+  noise_scalar <- 0.02
   seed <- 1
   noise = c(NaN, noise_scalar, NaN, noise_scalar)
   linfillspace = c(0.5)
@@ -67,7 +67,7 @@ if(length(args) > 0){
   phi_change_time = 0
   time_acce_factor = 1
   obs_keep = setdiff(1:26, c(1,2,4,6,8,11))
-  obs_source = "va-csv"
+  obs_source = "vb-csv"
   t.truncate = 70
 }
 
@@ -230,13 +230,16 @@ for(j in 1:4){
   }
 }
 
+stepSizeFactor[4*nrow(xsim) + 4] <- 0  # known k_{-3} = 0
+
 # xInitExogenous <- data.matrix(xsim[,-1])
-# for (j in c(2,3)){
+# for (j in c(2,4)){
 #   xInitExogenous[, j] <- approx(xsim.obs$time, xsim.obs[,j+1], xsim$time)$y
 #   idx <- which(is.na(xInitExogenous[, j]))
 #   xInitExogenous[idx, j] <- xInitExogenous[idx[1] - 1, j]
 # }
 # xInitExogenous[-1, 1] <- 0.1
+# xInitExogenous[-1, 3] <- 0.1
 
 # xInitExogenous <- sapply(xtrueFunc, function(f) f(xsim$time))
 xInitExogenous <- NULL
@@ -286,9 +289,12 @@ if(file.exists(out_file_name)){
 
 OursStartTime <- proc.time()[3]
 
+thetaInit <- c(1,1,1,0)
+
 result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control =
                              list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = stepSizeFactor,
                                   xInit = xInitExogenous, burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, discardBurnin=TRUE, useFixedSigma=TRUE,
+                                  thetaInit = thetaInit,
                                   skipMissingComponentOptimization=TRUE, useMean=config$useMean, useBand=FALSE, priorTemperature=NULL, distSignedCube=distSignedCube))
 
 OursTimeUsed <- proc.time()[3] - OursStartTime
