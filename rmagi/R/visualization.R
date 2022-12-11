@@ -37,7 +37,7 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
     xdesolveMAP <- try({
       deSolve::ode(y = tx0, times = times, func = odemodel$modelODE, parms = ttheta)
     })
-    if(class(xdesolveMAP) == "try-error"){
+    if((class(xdesolveMAP) == "try-error") || (nrow(xdesolveMAP) < length(times))){
       xdesolveMAP <- xdesolveTRUE
     }
     
@@ -46,7 +46,7 @@ plotPostSamplesFlex <- function(filename, xtrue, dotxtrue, xsim, gpode, param, c
     xdesolvePM <- try({
       deSolve::ode(y = tx0, times = times, func = odemodel$modelODE, parms = ttheta)
     })
-    if(class(xdesolvePM) == "try-error"){
+    if((class(xdesolvePM) == "try-error") || (nrow(xdesolvePM) < length(times))){
       xdesolvePM <- xdesolveTRUE
     }
     
