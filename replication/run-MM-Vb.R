@@ -230,7 +230,7 @@ for(j in 1:4){
   }
 }
 
-# stepSizeFactor[4*nrow(xsim) + 4] <- 0  # known k_{-3} = 0
+stepSizeFactor[4*nrow(xsim) + 4] <- 0  # known k_{-3} = 0
 
 # xInitExogenous <- data.matrix(xsim[,-1])
 # for (j in c(2,4)){
@@ -289,8 +289,8 @@ if(file.exists(out_file_name)){
 
 OursStartTime <- proc.time()[3]
 
-# thetaInit <- c(1,1,1,0)
-thetaInit <- NULL
+thetaInit <- c(1,1,1,0)
+# thetaInit <- NULL
 
 result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control =
                              list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = stepSizeFactor,
