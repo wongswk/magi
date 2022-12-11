@@ -290,6 +290,7 @@ if(file.exists(out_file_name)){
 OursStartTime <- proc.time()[3]
 
 # thetaInit <- c(1,1,1,0)
+thetaInit <- NULL
 
 result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control =
                              list(bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = stepSizeFactor,
