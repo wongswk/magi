@@ -210,7 +210,7 @@ dynamicalModelList <- list(
   fOde=magi:::MichaelisMentenModelVb4pODE,
   fOdeDx=magi:::MichaelisMentenModelVb4pDx,
   fOdeDtheta=magi:::MichaelisMentenModelVb4pDtheta,
-  thetaLowerBound=c(0,-100,0,-100),
+  thetaLowerBound=c(0,0,0,0),
   thetaUpperBound=c(Inf,Inf,Inf,Inf),
   name="Michaelis-Menten-Vb4p"
 )

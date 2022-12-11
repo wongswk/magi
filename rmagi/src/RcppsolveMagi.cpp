@@ -66,7 +66,7 @@ Rcpp::List solveMagiRcpp(
     }else if(modelName == "Michaelis-Menten-Va"){
         modelC = OdeSystem(MichaelisMentenModelVaODE, MichaelisMentenModelVaDx, MichaelisMentenModelVaDtheta, {0,-100,0}, arma::ones(3)*INFINITY);
     }else if(modelName == "Michaelis-Menten-Vb4p"){
-        modelC = OdeSystem(MichaelisMentenModelVb4pODE, MichaelisMentenModelVb4pDx, MichaelisMentenModelVb4pDtheta, {0,-100,0,-100}, arma::ones(4)*INFINITY);
+        modelC = OdeSystem(MichaelisMentenModelVb4pODE, MichaelisMentenModelVb4pDx, MichaelisMentenModelVb4pDtheta, {0,0,0,0}, arma::ones(4)*INFINITY);
     }else if(modelName == "Michaelis-Menten-Vb2p"){
         modelC = OdeSystem(MichaelisMentenModelVb2pODE, MichaelisMentenModelVb2pDx, MichaelisMentenModelVb2pDtheta, arma::zeros(2), arma::ones(2)*INFINITY);
     }else if(modelName == "Michaelis-Menten-Log"){
