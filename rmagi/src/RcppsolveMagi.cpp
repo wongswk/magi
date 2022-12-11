@@ -61,6 +61,8 @@ Rcpp::List solveMagiRcpp(
         modelC = OdeSystem(MichaelisMentenModelODE, MichaelisMentenModelDx, MichaelisMentenModelDtheta, {0,-100,0}, arma::ones(3)*INFINITY);
     }else if(modelName == "Michaelis-Menten-Reduced"){
         modelC = OdeSystem(MichaelisMentenReducedODE, MichaelisMentenReducedDx, MichaelisMentenReducedDtheta, {0,-100,0}, arma::ones(3)*INFINITY);
+    }else if(modelName == "Michaelis-Menten-Inhibitor"){
+      modelC = OdeSystem(MichaelisMentenInhibitorODE, MichaelisMentenInhibitorDx, MichaelisMentenInhibitorDtheta, {0,-100,0,0,-100}, arma::ones(5)*INFINITY);
     }else if(modelName == "Michaelis-Menten-Reduced2"){
         modelC = OdeSystem(MichaelisMentenReduced2ODE, MichaelisMentenReduced2Dx, MichaelisMentenReduced2Dtheta, {0,-100,0}, arma::ones(3)*INFINITY);
     }else if(modelName == "Michaelis-Menten-Va"){

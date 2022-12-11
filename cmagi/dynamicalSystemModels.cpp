@@ -526,6 +526,102 @@ arma::cube MichaelisMentenModelDtheta(const arma::vec & theta, const arma::mat &
     return resultDtheta;
 }
 
+// [[Rcpp::export]]
+arma::mat MichaelisMentenInhibitorODE(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
+  const double e0 = 0.1;
+  const vec & e = x.col(0);
+  const vec & s = x.col(1);
+  const vec & p = x.col(2);
+  const vec & i = x.col(3);
+  const vec & ei = x.col(4);
+  const vec & es = e0 - e - ei;
+    
+  mat resultdt(x.n_rows, x.n_cols);
+  
+  resultdt.col(0) = -theta[0] * e % s + (theta[1]+theta[2]) * es - theta[3] * i % e + theta[4] * ei;
+  resultdt.col(1) = -theta[0] * e % s + (theta[1]) * es;
+  resultdt.col(2) = theta[2] * es;
+  resultdt.col(3) = -theta[3] * i % e + theta[4] * ei;
+  resultdt.col(4) = theta[3] * i % e - theta[4] * ei;
+  
+  return resultdt;
+}
+
+
+// [[Rcpp::export]]
+arma::cube MichaelisMentenInhibitorDx(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
+  cube resultDx(x.n_rows, x.n_cols, x.n_cols, fill::zeros);
+  
+  const double e0 = 0.1;
+  const vec & e = x.col(0);
+  const vec & s = x.col(1);
+  const vec & p = x.col(2);
+  const vec & i = x.col(3);
+  const vec & ei = x.col(4);
+  const vec & es = e0 - e - ei;
+
+  resultDx.slice(0).col(0) = -theta[0] * s - (theta[1] + theta[2]) - theta[3] * i;
+  resultDx.slice(0).col(1) = -theta[0] * e;
+  resultDx.slice(0).col(3) = -theta[3] * e;
+  resultDx.slice(0).col(4).fill(-(theta[1]+theta[2]) + theta[4]);
+  
+  resultDx.slice(1).col(0) = -theta[0] * s - theta[1];
+  resultDx.slice(1).col(1) = -theta[0] * e;
+  resultDx.slice(1).col(4).fill(-theta[1]);
+
+  resultDx.slice(2).col(0).fill(-theta[2]);
+  resultDx.slice(2).col(4).fill(-theta[2]);
+  
+  resultDx.slice(3).col(0) = -theta[3] * i;
+  resultDx.slice(3).col(3) = -theta[3] * e;
+  resultDx.slice(3).col(4).fill(theta[4]);
+  
+  resultDx.slice(4).col(0) = theta[3] * i;
+  resultDx.slice(4).col(3) = theta[3] * e;
+  resultDx.slice(4).col(4).fill(-theta[4]);
+  
+  
+  return resultDx;
+}
+
+
+// [[Rcpp::export]]
+arma::cube MichaelisMentenInhibitorDtheta(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {
+  cube resultDtheta(x.n_rows, theta.size(), x.n_cols, fill::zeros);
+  
+  const double e0 = 0.1;
+  const vec & e = x.col(0);
+  const vec & s = x.col(1);
+  const vec & p = x.col(2);
+  const vec & i = x.col(3);
+  const vec & ei = x.col(4);
+  const vec & es = e0 - e - ei;
+  
+  resultDtheta.slice(0).col(0) = -e % s;
+  resultDtheta.slice(0).col(1) = es;
+  resultDtheta.slice(0).col(2) = es;
+  resultDtheta.slice(0).col(3) = -i % e;
+  resultDtheta.slice(0).col(4) = ei;
+  //resultDtheta.slice(0).col(5).fill(-theta[1]-theta[2]+theta[4]);
+  
+  resultDtheta.slice(1).col(0) = -e % s;
+  resultDtheta.slice(1).col(1) = es;
+  //resultDtheta.slice(1).col(5).fill(-theta[1]);
+  
+  resultDtheta.slice(2).col(2) = es;
+  //resultDtheta.slice(2).col(5).fill(-theta[2]);
+  
+  resultDtheta.slice(3).col(3) = -i % e;
+  resultDtheta.slice(3).col(4) = ei;
+  //resultDtheta.slice(3).col(5).fill(theta[4]);
+
+  resultDtheta.slice(4).col(3) = i % e;
+  resultDtheta.slice(4).col(4) = -ei;
+  
+  return resultDtheta;
+}
+
+
 
 // [[Rcpp::export]]
 arma::mat MichaelisMentenReducedODE(const arma::vec & theta, const arma::mat & x, const arma::vec & tvec) {

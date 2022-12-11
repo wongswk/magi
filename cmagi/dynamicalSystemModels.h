@@ -39,6 +39,10 @@ arma::mat MichaelisMentenReducedODE(const arma::vec &, const arma::mat &, const 
 arma::cube MichaelisMentenReducedDx(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube MichaelisMentenReducedDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
 
+arma::mat MichaelisMentenInhibitorODE(const arma::vec &, const arma::mat &, const arma::vec &);
+arma::cube MichaelisMentenInhibitorDx(const arma::vec &, const arma::mat &, const arma::vec &);
+arma::cube MichaelisMentenInhibitorDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
+
 arma::mat MichaelisMentenReduced2ODE(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube MichaelisMentenReduced2Dx(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube MichaelisMentenReduced2Dtheta(const arma::vec &, const arma::mat &, const arma::vec &);
