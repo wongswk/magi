@@ -31,14 +31,14 @@ if(length(args) > 0){
   # }
   noise = c(NaN, noise_scalar, NaN, noise_scalar)
   
-  # data_source_case <- args %% 2
-  # args <- args %/% 2
-  # if(data_source_case == 0){
-  #   obs_source = "va-csv"
-  # }else{
-  #   obs_source = "vb-csv"
-  # }
-  obs_source = "va-csv"
+  data_source_case <- args %% 2
+  args <- args %/% 2
+  if(data_source_case == 0){
+    obs_source = "va-csv"
+  }else{
+    obs_source = "vb-csv"
+  }
+  # obs_source = "vb-csv"
   
   # hold_out_size <- args %% 15
   
