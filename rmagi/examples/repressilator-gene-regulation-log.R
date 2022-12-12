@@ -6,15 +6,16 @@ dir.create(outDir, showWarnings = FALSE, recursive = TRUE)
 # set up configuration if not already exist ------------------------------------
 if(!exists("config")){
   config <- list(
-    nobs = 101,
-    noise = rep(0.001, 6),
+    nobs = 51,
+    noise = rep(0.3, 6),
     kernel = "generalMatern",
-    seed = 123,
+    #seed = 1234,
+    seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     bandsize = 100,
     hmcSteps = 100,
     niterHmc = 10001,
     stepSizeFactor = 0.001,
-    filllevel = 0,
+    filllevel = 1,
     t.end = 300,
     modelName = "repressilator-gene-regulation-log"
   )
@@ -45,6 +46,8 @@ xtrue <- data.frame(xtrue)
 # Plot proteins only (times KM factor), compare to Fig 1c (left panel) in Elowitz and Leibler (2000)
 matplot(xtrue[, "time"], xtrue[, -(1:4)] * KM, type="l", lty=1)
 matplot(xtrue[, "time"], exp(xtrue[, -(1:4)]) * KM, type="l", lty=1)
+matplot(xtrue[, "time"], exp(xtrue[, -c(1,5,6,7)]), type="l", lty=1)
+
 
 xtrueFunc <- lapply(2:ncol(xtrue), function(j)
   approxfun(xtrue[, "time"], xtrue[, j]))
@@ -60,6 +63,18 @@ for(j in 1:(ncol(xsim)-1)){
 
 xsim.obs <- xsim[seq(1,nrow(xsim), length=config$nobs),]
 matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
+
+# pdf(width = 20, height = 5, file=paste0(outDir, "sample-data.pdf"))
+# compnames <- c("m_laci", "m_tetr", "m_ci", "p_laci (unobserved)", "p_tetr (unobserved)", "p_ci (unobserved)")
+# par(mfrow=c(1,3))
+# for (ii in 1:3) {
+#   plot( c(min(xsim.obs$time),max(xsim.obs$time)), c(min(exp(xsim.obs[,ii+1])), max(exp(xsim.obs[,ii+1]))), type='n',xlab="time", ylab='')
+#   lines(xtrue[ xtrue$time >=1, "time"], exp(xtrue[xtrue$time >=1,ii+1]),col=ii)
+#   mtext(compnames[ii], cex=1.25)
+#   points(xsim.obs$time[-1], exp(xsim.obs[-1,ii+1]), col=ii)
+# }
+# dev.off()
+
 
 xsim <- setDiscretization(xsim.obs,config$filllevel)
 
@@ -95,11 +110,11 @@ matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
 #                "; phi = ", paste0(round(phiExogenous[,j], 3), collapse = ", ")))
 # }
 
-if(config$filllevel == 0){
-  phiExogenous <- rbind(rep(6, 6), rep(10, 6))
-}else{
-  phiExogenous <- rbind(rep(6, 6), rep(5, 6))  
-}
+# if(config$filllevel == 0){
+   phiExogenous <- rbind(rep(6, 6), rep(10, 6))
+# }else{
+#  phiExogenous <- rbind(rep(6, 6), rep(5, 6))  
+#}
 
 
 # remove first obs
@@ -135,38 +150,40 @@ magi:::plotPostSamplesFlex(
   paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], "-partobs-fill",config$filllevel,".pdf"),
   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
 
+save.image(paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], ".rda"))
+
 # with missing components, inference is ok
 # RMSE actually after more discretizations with warm start
-xsim_coerce_grid <- xsim
-xsim <- setDiscretization(xsim_coerce_grid, 1)
-
-xWarmstart <- apply(gpode$xsampled, 2:3, mean)
-
-xInitExogenous <- data.matrix(xsim[,-1])
-for (j in 1:(ncol(xsim)-1)){
-  xInitExogenous[, j] <- approx(xsim_coerce_grid$time, xWarmstart[,j], xsim$time)$y
-}
-
-OursStartTime <- proc.time()[3] 
-result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, 
-                           control = list(xinit=xInitExogenous, niterHmc=config$niterHmc, stepSizeFactor = config$stepSizeFactor, phi=phiExogenous, sigma=sigmaInit, useFixedSigma=TRUE))
-OursTimeUsed <- proc.time()[3] - OursStartTime
-
-
-gpode <- result
-gpode$fode <- sapply(1:length(gpode$lp), function(t)
-  with(gpode, dynamicalModelList$fOde(theta[t,], xsampled[t,,], xsim$time)), simplify = "array")
-gpode$fode <- aperm(gpode$fode, c(3,1,2))
-
-dotxtrue = dynamicalModelList$fOde(pram.true$theta, data.matrix(xtrue[,-1]), xtrue$time)
-
-odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
-
-for(j in 1:(ncol(xsim)-1)){
-  config[[paste0("phiD", j)]] <- paste(round(gpode$phi[,j], 2), collapse = "; ")
-}
-
-gpode$lglik <- gpode$lp
-magi:::plotPostSamplesFlex(
-  paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], "-partobs-fill",config$filllevel+1,".pdf"),
-  xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
+# xsim_coerce_grid <- xsim
+# xsim <- setDiscretization(xsim_coerce_grid, 1)
+# 
+# xWarmstart <- apply(gpode$xsampled, 2:3, mean)
+# 
+# xInitExogenous <- data.matrix(xsim[,-1])
+# for (j in 1:(ncol(xsim)-1)){
+#   xInitExogenous[, j] <- approx(xsim_coerce_grid$time, xWarmstart[,j], xsim$time)$y
+# }
+# 
+# OursStartTime <- proc.time()[3] 
+# result <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, 
+#                            control = list(xinit=xInitExogenous, niterHmc=config$niterHmc, stepSizeFactor = config$stepSizeFactor, phi=phiExogenous, sigma=sigmaInit, useFixedSigma=TRUE))
+# OursTimeUsed <- proc.time()[3] - OursStartTime
+# 
+# 
+# gpode <- result
+# gpode$fode <- sapply(1:length(gpode$lp), function(t)
+#   with(gpode, dynamicalModelList$fOde(theta[t,], xsampled[t,,], xsim$time)), simplify = "array")
+# gpode$fode <- aperm(gpode$fode, c(3,1,2))
+# 
+# dotxtrue = dynamicalModelList$fOde(pram.true$theta, data.matrix(xtrue[,-1]), xtrue$time)
+# 
+# odemodel <- list(times=times, modelODE=modelODE, xtrue=xtrue)
+# 
+# for(j in 1:(ncol(xsim)-1)){
+#   config[[paste0("phiD", j)]] <- paste(round(gpode$phi[,j], 2), collapse = "; ")
+# }
+# 
+# gpode$lglik <- gpode$lp
+# magi:::plotPostSamplesFlex(
+#   paste0(outDir, config$modelName,"-",config$seed,"-noise", config$noise[1], "-partobs-fill",config$filllevel+1,".pdf"),
+#   xtrue, dotxtrue, xsim, gpode, pram.true, config, odemodel)
