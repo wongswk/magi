@@ -25,7 +25,7 @@ Rcpp::List solveMagiRcpp(
         const int nstepsHmc,
         const double burninRatioHmc,
         const unsigned int niterHmc,
-        const double stepSizeFactorHmc,
+        const arma::vec stepSizeFactorHmc,
         const int nEpoch,
         const int bandSize,
         const bool useFrequencyBasedPrior,
@@ -33,6 +33,8 @@ Rcpp::List solveMagiRcpp(
         const bool useMean,
         const bool useScalerSigma,
         const bool useFixedSigma,
+        const bool skipMissingComponentOptimization,
+        const bool positiveSystem,
         const bool verbose) {
 
     OdeSystem modelC;
@@ -55,6 +57,16 @@ Rcpp::List solveMagiRcpp(
         modelC = OdeSystem(hes1logmodelODEfixg, hes1logmodelDxfixg, hes1logmodelDthetafixg, arma::zeros(6), arma::ones(6)*INFINITY);
     }else if(modelName == "Hes1-log-fixf"){
         modelC = OdeSystem(hes1logmodelODEfixf, hes1logmodelDxfixf, hes1logmodelDthetafixf, arma::zeros(6), arma::ones(6)*INFINITY);
+    }else if(modelName == "Michaelis-Menten-Reduced"){
+      modelC = OdeSystem(MichaelisMentenReducedODE, MichaelisMentenReducedDx, MichaelisMentenReducedDtheta, {0,-100,0}, arma::ones(3)*INFINITY);
+    // }else if(modelName == "Michaelis-Menten-Inhibitor"){
+    //   modelC = OdeSystem(MichaelisMentenInhibitorODE, MichaelisMentenInhibitorDx, MichaelisMentenInhibitorDtheta, {0,-100,0,0,0}, arma::ones(5)*INFINITY);
+    }else if(modelName == "Michaelis-Menten-Inhibitor6"){
+      modelC = OdeSystem(MichaelisMentenInhibitor6ODE, MichaelisMentenInhibitor6Dx, MichaelisMentenInhibitor6Dtheta, {0,-100,0,0,-100}, arma::ones(5)*INFINITY);
+    }else if(modelName == "lac-operon"){
+      modelC = OdeSystem(lacOperonODE, lacOperonDx, lacOperonDtheta, arma::zeros(17), arma::ones(17)*INFINITY);
+    }else if(modelName == "repressilator-gene-regulation-log"){
+      modelC = OdeSystem(repressilatorGeneRegulationLogODE, repressilatorGeneRegulationLogDx, repressilatorGeneRegulationLogDtheta, arma::zeros(4), arma::ones(4)*INFINITY);      
     }else{
         const Rcpp::Function & fOdeR = as<const Function>(odeModel["fOde"]);
         const Rcpp::Function & fOdeDxR = as<const Function>(odeModel["fOdeDx"]);
@@ -105,6 +117,8 @@ Rcpp::List solveMagiRcpp(
                       useMean,
                       useScalerSigma,
                       useFixedSigma,
+                      skipMissingComponentOptimization,
+                      positiveSystem,
                       verbose);
 
 

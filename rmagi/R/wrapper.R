@@ -161,6 +161,16 @@ MagiSolver <- function(y, odeModel, tvec, control = list()) {
   else
     useFixedSigma = FALSE
 
+  if (!is.null(control$skipMissingComponentOptimization))
+    skipMissingComponentOptimization = control$skipMissingComponentOptimization
+  else
+    skipMissingComponentOptimization = FALSE
+
+  if (!is.null(control$positiveSystem))
+    positiveSystem  = control$positiveSystem 
+  else
+    positiveSystem  = FALSE  
+    
   if (!is.null(control$verbose))
     verbose = control$verbose
   else
@@ -192,6 +202,8 @@ MagiSolver <- function(y, odeModel, tvec, control = list()) {
     useMean = TRUE,
     useScalerSigma = FALSE,
     useFixedSigma = useFixedSigma,
+    skipMissingComponentOptimization = skipMissingComponentOptimization,
+    positiveSystem = positiveSystem,
     verbose = verbose)
 
   phiUsed <- samplesCpp$phi

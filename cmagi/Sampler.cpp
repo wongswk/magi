@@ -54,7 +54,8 @@ Sampler::Sampler(const arma::mat & yobsInput,
         const unsigned int sigmaSizeInput,
         const OdeSystem & modelInput,
         const unsigned int niterInput,
-        const double burninRatioInput) :
+        const double burninRatioInput,
+        const bool positiveSystem) :
 
         yobs(yobsInput),
         covAllDimensions(covAllDimensionsInput),
@@ -65,6 +66,7 @@ Sampler::Sampler(const arma::mat & yobsInput,
         model(modelInput),
         sigmaSize(sigmaSizeInput),
         burninRatio(burninRatioInput),
+        positiveSystem(positiveSystem),
         niter(niterInput),
         lb(yobsInput.size() + modelInput.thetaSize + sigmaSizeInput),
         ub(yobsInput.size() + modelInput.thetaSize + sigmaSizeInput),
@@ -93,7 +95,14 @@ Sampler::Sampler(const arma::mat & yobsInput,
                                 useBand,
                                 useMean);
     };
-    lb.subvec(0, yobs.size()-1).fill(-arma::datum::inf);
+    
+    if (positiveSystem) {
+      lb.subvec(0, yobs.size()-1).fill(0);
+    }
+    else {
+      lb.subvec(0, yobs.size()-1).fill(-arma::datum::inf);
+    }
+    
     lb.subvec(yobs.size(), yobs.size() + model.thetaSize - 1) = model.thetaLowerBound;
     lb.subvec(yobs.size() + model.thetaSize, yobs.size() + model.thetaSize + sigmaSize - 1).fill(1e-7);
     ub.fill(arma::datum::inf);
