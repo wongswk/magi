@@ -31,25 +31,13 @@ arma::mat ptransmodelODE(const arma::vec &, const arma::mat &, const arma::vec &
 arma::cube ptransmodelDx(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube ptransmodelDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
 
-arma::mat MichaelisMentenModelODE(const arma::vec &, const arma::mat &, const arma::vec &);
-arma::cube MichaelisMentenModelDx(const arma::vec &, const arma::mat &, const arma::vec &);
-arma::cube MichaelisMentenModelDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
-
 arma::mat MichaelisMentenReducedODE(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube MichaelisMentenReducedDx(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube MichaelisMentenReducedDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
 
-// arma::mat MichaelisMentenInhibitorODE(const arma::vec &, const arma::mat &, const arma::vec &);
-// arma::cube MichaelisMentenInhibitorDx(const arma::vec &, const arma::mat &, const arma::vec &);
-// arma::cube MichaelisMentenInhibitorDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
-
 arma::mat MichaelisMentenInhibitor6ODE(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube MichaelisMentenInhibitor6Dx(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube MichaelisMentenInhibitor6Dtheta(const arma::vec &, const arma::mat &, const arma::vec &);
-
-arma::mat MichaelisMentenReduced2ODE(const arma::vec &, const arma::mat &, const arma::vec &);
-arma::cube MichaelisMentenReduced2Dx(const arma::vec &, const arma::mat &, const arma::vec &);
-arma::cube MichaelisMentenReduced2Dtheta(const arma::vec &, const arma::mat &, const arma::vec &);
 
 arma::mat MichaelisMentenLogModelODE(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube MichaelisMentenLogModelDx(const arma::vec &, const arma::mat &, const arma::vec &);
@@ -74,14 +62,6 @@ arma::cube MichaelisMentenModelVb2pDtheta(const arma::vec &, const arma::mat &, 
 arma::mat lacOperonODE(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube lacOperonDx(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube lacOperonDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
-
-arma::mat lacOperonLogODE(const arma::vec &, const arma::mat &, const arma::vec &);
-arma::cube lacOperonLogDx(const arma::vec &, const arma::mat &, const arma::vec &);
-arma::cube lacOperonLogDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
-
-arma::mat repressilatorGeneRegulationODE(const arma::vec &, const arma::mat &, const arma::vec &);
-arma::cube repressilatorGeneRegulationDx(const arma::vec &, const arma::mat &, const arma::vec &);
-arma::cube repressilatorGeneRegulationDtheta(const arma::vec &, const arma::mat &, const arma::vec &);
 
 arma::mat repressilatorGeneRegulationLogODE(const arma::vec &, const arma::mat &, const arma::vec &);
 arma::cube repressilatorGeneRegulationLogDx(const arma::vec &, const arma::mat &, const arma::vec &);

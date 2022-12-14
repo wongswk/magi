@@ -59,8 +59,6 @@ Rcpp::List solveMagiRcpp(
         modelC = OdeSystem(hes1logmodelODEfixf, hes1logmodelDxfixf, hes1logmodelDthetafixf, arma::zeros(6), arma::ones(6)*INFINITY);
     }else if(modelName == "Michaelis-Menten-Reduced"){
       modelC = OdeSystem(MichaelisMentenReducedODE, MichaelisMentenReducedDx, MichaelisMentenReducedDtheta, {0,-100,0}, arma::ones(3)*INFINITY);
-    // }else if(modelName == "Michaelis-Menten-Inhibitor"){
-    //   modelC = OdeSystem(MichaelisMentenInhibitorODE, MichaelisMentenInhibitorDx, MichaelisMentenInhibitorDtheta, {0,-100,0,0,0}, arma::ones(5)*INFINITY);
     }else if(modelName == "Michaelis-Menten-Inhibitor6"){
       modelC = OdeSystem(MichaelisMentenInhibitor6ODE, MichaelisMentenInhibitor6Dx, MichaelisMentenInhibitor6Dtheta, {0,-100,0,0,-100}, arma::ones(5)*INFINITY);
     }else if(modelName == "lac-operon"){
