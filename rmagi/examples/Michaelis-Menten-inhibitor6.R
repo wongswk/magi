@@ -267,3 +267,9 @@ dev.off()
 
 cat(sse_train_inhib, sse_test_inhib, sse_train_vanil, sse_test_vanil, 
     file = paste0(outDir, config$modelName,"-",config$seed,"-nobs",config$nobs,"-noise", config$noise[2], "-sse.txt"))
+
+sqrt(sse_train_inhib / nrow(xsim.obs)) # RMSE should be close to 0.02 if fit well
+sqrt(sse_test_inhib / nrow(xtest)) # RMSE
+
+sqrt(sse_train_vanil / nrow(xsim.obs)) # RMSE
+sqrt(sse_test_vanil / nrow(xtest)) # RMSE
