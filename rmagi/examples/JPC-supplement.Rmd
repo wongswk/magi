@@ -527,6 +527,35 @@ par.table <- function(res) {
 par.table(gpode)
 ```
 
+Visualization:
+```{r}
+par.names <- c( expression('k'['cat']), expression('K'['M']))
+
+par(mfrow=c(1,2))
+for (ii in 3:4) {
+  if (ii == 3) par(oma=c(0,1.5,0,0))
+  par(mar = c(2.5, 2.5, 2, 0.75))
+  den <- density(gpode$theta[,ii])
+  plot(den, main='', xlab = '', ylab = '', type='n')
+
+  value1 <- quantile(gpode$theta[,ii], 0.025)
+  value2 <- quantile(gpode$theta[,ii], 0.975)
+
+  l <- min(which(den$x >= value1))
+  h <- max(which(den$x < value2))
+
+  polygon(c(den$x[c(l, l:h, h)]),
+          c(0, den$y[l:h], 0),
+          col = "grey75", border=NA)
+  abline(v=pram.true$theta[ii], col='red', lwd =2)
+
+  lines(den)
+
+  if (ii == 3) mtext(text='Posterior density',side=2,line=0,outer=TRUE)
+  mtext(par.names[ii-2], cex=1.25)
+}
+
+```
 
 ## Model for *lac* operon
 
