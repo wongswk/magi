@@ -248,17 +248,21 @@ mtext(paste0("Inhibitor: SSE(train) = ", round(sse_train_inhib,3),
              ", SSE(test) = ", round(sse_test_inhib,3),
              "       M-M: SSE(train) = ", round(sse_train_vanil,3),
              ", SSE(test) = ", round(sse_test_vanil,3))
-             ,side=1,line=0,outer=TRUE)
+             ,side=1,line=1,outer=TRUE)
 
 par(mar = rep(0, 4))
 plot(1, type = 'n', xaxt = 'n', yaxt = 'n',
      xlab = NA, ylab = NA, frame.plot = FALSE)
 
-legend("center", c("truth", "inferred trajectory",
-                   "95% interval training", "95% interval prediction", "noisy observations"),
-       lty = c(1, 1, 0, 0, 0), lwd = c(2, 2, 0, 0, 1), bty = "n",
-       col = c("red", "forestgreen", NA, NA, "black"), fill = c(0, 0, "skyblue", "peachpuff", 0),
-       border = c(0, 0, "skyblue", "peachpuff", 0), pch = c(NA, NA, 15, 15, 16), horiz = TRUE) #, cex=1.25)
+legend("top", c("truth", "inferred trajectory",
+                   "95% interval in training"),
+       lty = c(1, 1, 0), lwd = c(2, 2, 0), bty = "n",
+       col = c("red", "forestgreen", NA), fill = c(0, 0, "skyblue"),
+       border = c(0, 0, "skyblue"), pch = c(NA, NA, 15), horiz = TRUE, cex=1.1)
+legend("bottom", c("95% interval in prediction", "noisy observations for training", "noisy observations for prediction"),
+       lty = c(0, 0, 0), lwd = c(0, 1, 1), bty = "n",
+       col = c(NA, "black", "black"), fill = c("peachpuff", 0, 0),
+       border = c("peachpuff", 0, 0), pch = c(15, 16, 5), horiz = TRUE, cex=1.1)
 dev.off()
 
 cat(sse_train_inhib, sse_test_inhib, sse_train_vanil, sse_test_vanil, 
