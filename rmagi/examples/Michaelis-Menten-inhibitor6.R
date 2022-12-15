@@ -13,7 +13,7 @@ if(!exists("config")){
     noise = c(NA, 0.02, 0.02, NA, NA, NA),
     kernel = "generalMatern",
     #seed = 12,
-    seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
+    seed = 669097609, #(as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
     #seed = 488500816,
     bandsize = 20,
     hmcSteps = 100,
@@ -197,7 +197,8 @@ for (ii in 2:3) {
   ourLBp <- magi:::getMeanCurve(xsim$time, ourLB_inhib[,ii], xtrue[,1],
                                 t(pram.true$phi[,ii]), 0,
                                 kerneltype=config$kernel, deriv = FALSE)
-  plot( c(min(xtrue$time),max(xtrue$time)), c(min(ourLBp), min(max(ourUBp),175)), type='n', xlab='', ylab='')
+  plot( c(min(xtrue$time),max(xtrue$time)), c(min(ourLBp), min(max(ourUBp),175)), type='n', xlab='', ylab='mM')
+  title(xlab="time (minutes)", line=2, cex.lab=1)
   abline(v = max(obs.times), col="grey", lty=2, lwd=2)
   
   polygon(c(xtrue[xtrue[,1] <= max(obs.times),1], rev(xtrue[xtrue[,1] <= max(obs.times),1])), c(ourUBp[xtrue[,1] <= max(obs.times)], rev(ourLBp[xtrue[,1] <= max(obs.times)])),
@@ -207,7 +208,7 @@ for (ii in 2:3) {
   
   lines(xtrue[, "time"], xtrue[,ii+1],col='red', lwd=2)
   lines(xtrue[,1], ourEstp, col='forestgreen', lwd=1.5)
-  mtext(paste(compnames[ii], "inferred from inhibitor"))
+  mtext(paste(compnames[ii], "inferred from inhibitor"), line = 0.3)
 
   points(xsim$time, xsim[,ii+1], col='black', pch=16)
   points(xtest$time, xtest[,ii+1], col='black', pch=5)
@@ -227,7 +228,8 @@ for (ii in 2:3) {
   ourLBp <- magi:::getMeanCurve(xsim$time, ourLB_vanil[,ii], xtrue[,1],
                                 t(pram.true$phi[,ii]), 0,
                                 kerneltype=config$kernel, deriv = FALSE)
-  plot( c(min(xtrue$time),max(xtrue$time)), c(min(ourLBp), min(max(ourUBp),175)), type='n', xlab='', ylab='')
+  plot( c(min(xtrue$time),max(xtrue$time)), c(min(ourLBp), min(max(ourUBp),175)), type='n', xlab='', ylab='mM')
+  title(xlab="time (minutes)", line=2, cex.lab=1)
   abline(v = max(obs.times), col="grey", lty=2, lwd=2)  
   
   polygon(c(xtrue[xtrue[,1] <= max(obs.times),1], rev(xtrue[xtrue[,1] <= max(obs.times),1])), c(ourUBp[xtrue[,1] <= max(obs.times)], rev(ourLBp[xtrue[,1] <= max(obs.times)])),
@@ -238,7 +240,7 @@ for (ii in 2:3) {
     
   lines(xtrue[, "time"], xtrue[,ii+1],col='red', lwd=2)
   lines(xtrue[,1], ourEstp, col='forestgreen', lwd=1.5)
-  mtext(paste(compnames[ii], "inferred from M-M"))
+  mtext(paste(compnames[ii], "inferred from M-M"), line = 0.3)
 
   points(xsim$time, xsim[,ii+1], col='black', pch=16)
   points(xtest$time, xtest[,ii+1], col='black', pch=5)
