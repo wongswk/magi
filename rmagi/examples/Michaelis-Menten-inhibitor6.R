@@ -176,13 +176,23 @@ ourLB_vanil <- apply(gpode$xsampled, c(2, 3), function(x) quantile(x, 0.025))
 ourUB_vanil <- apply(gpode$xsampled, c(2, 3), function(x) quantile(x, 0.975))
 
 
-pdf(paste0(outDir, config$modelName,"-",config$seed,"-nobs",config$nobs,"-noise", config$noise[2], "-prediction.pdf"), width=8, height=8)
+pdf(paste0(outDir, config$modelName,"-",config$seed,"-nobs",config$nobs,"-noise", config$noise[2], "-prediction.pdf"), width=12, height=8)
 
 # Visualization
 compnames <- c("", "[S]", "[P]")
-layout(rbind(c(1,2), c(3,4), c(5)), heights = c(8,8,1))
-par(oma=c(2,0,0,0))
-for (ii in 2:3) {
+
+layout(cbind(c(1,1,6,6),c(2,2,4,4),c(3,3,5,5)))
+par(mar = c(4, 4.5, 1.75, 0.1))
+
+matplot(xtrue[, "time"], (xtrue[, -1]), type="n", lty=1, col=0, xlab='', ylab='mM')
+title(xlab="time (minutes)", line=2, cex.lab=1)
+abline(v = max(obs.times), col="grey", lty=2, lwd=2)
+matplot(xsim.obs$time, (xsim.obs[,3:4]), type="p", col=c(1,2), pch=19, add = TRUE)
+matplot(xtest$time, xtest[,3:4], type="p", col=c(1,2), pch=5, add = TRUE)
+
+mtext('observations', line = 0.3)
+
+for (ii in 3:2) {
   
   par(mar = c(4, 4.5, 1.75, 0.1))
   ourEstp <- magi:::getMeanCurve(xsim$time, ourEst_inhib[,ii], xtrue[,1],
@@ -206,15 +216,20 @@ for (ii in 2:3) {
   polygon(c(xtrue[xtrue[,1] > max(obs.times),1], rev(xtrue[xtrue[,1] > max(obs.times),1])), c(ourUBp[xtrue[,1] > max(obs.times)], rev(ourLBp[xtrue[,1] > max(obs.times)])),
           col = "peachpuff", border = NA)      
   
-  lines(xtrue[, "time"], xtrue[,ii+1],col='red', lwd=2)
+  # lines(xtrue[, "time"], xtrue[,ii+1],col='red', lwd=2)
   lines(xtrue[,1], ourEstp, col='forestgreen', lwd=1.5)
-  mtext(paste(compnames[ii], "inferred from inhibitor"), line = 0.3)
+  mtext(paste(compnames[ii], "inferred from inhibitor model"), line = 0.3)
 
-  points(xsim$time, xsim[,ii+1], col='black', pch=16)
-  points(xtest$time, xtest[,ii+1], col='black', pch=5)
+  if(compnames[ii] == "[P]"){
+    point_col = "red"
+  }else{
+    point_col = "black"
+  }
+  points(xsim$time, xsim[,ii+1], col=point_col, pch=16)
+  points(xtest$time, xtest[,ii+1], col=point_col, pch=5)
 }
 
-for (ii in 2:3) {
+for (ii in 3:2) {
   
   par(mar = c(4, 4.5, 1.75, 0.1))
   ourEstp <- magi:::getMeanCurve(xsim$time, ourEst_vanil[,ii], xtrue[,1],
@@ -238,12 +253,18 @@ for (ii in 2:3) {
           col = "peachpuff", border = NA)    
   
     
-  lines(xtrue[, "time"], xtrue[,ii+1],col='red', lwd=2)
+  # lines(xtrue[, "time"], xtrue[,ii+1],col='red', lwd=2)
   lines(xtrue[,1], ourEstp, col='forestgreen', lwd=1.5)
   mtext(paste(compnames[ii], "inferred from M-M"), line = 0.3)
 
-  points(xsim$time, xsim[,ii+1], col='black', pch=16)
-  points(xtest$time, xtest[,ii+1], col='black', pch=5)
+  if(compnames[ii] == "[P]"){
+    point_col = "red"
+  }else{
+    point_col = "black"
+  }
+  points(xsim$time, xsim[,ii+1], col=point_col, pch=16)
+  points(xtest$time, xtest[,ii+1], col=point_col, pch=5)
+  
 }
 
 mtext(paste0("Inhibitor: SSE(train) = ", round(sse_train_inhib,3),
@@ -252,19 +273,31 @@ mtext(paste0("Inhibitor: SSE(train) = ", round(sse_train_inhib,3),
              ", SSE(test) = ", round(sse_test_vanil,3))
              ,side=1,line=1,outer=TRUE)
 
-par(mar = rep(0, 4))
-plot(1, type = 'n', xaxt = 'n', yaxt = 'n',
-     xlab = NA, ylab = NA, frame.plot = FALSE)
+# par(mar = rep(0, 4))
+# plot(1, type = 'n', xaxt = 'n', yaxt = 'n',
+#      xlab = NA, ylab = NA, frame.plot = FALSE)
+# 
+# legend("top", c("truth", "inferred trajectory",
+#                    "95% interval in training"),
+#        lty = c(1, 1, 0), lwd = c(2, 2, 0), bty = "n",
+#        col = c("red", "forestgreen", NA), fill = c(0, 0, "skyblue"),
+#        border = c(0, 0, "skyblue"), pch = c(NA, NA, 15), horiz = TRUE, cex=1.1)
+# legend("bottom", c("95% interval in prediction", "noisy observations for training", "noisy observations for prediction"),
+#        lty = c(0, 0, 0), lwd = c(0, 1, 1), bty = "n",
+#        col = c(NA, "black", "black"), fill = c("peachpuff", 0, 0),
+#        border = c("peachpuff", 0, 0), pch = c(15, 16, 5), horiz = TRUE, cex=1.1)
+par(mar=rep(0,4))
+plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
 
-legend("top", c("truth", "inferred trajectory",
-                   "95% interval in training"),
-       lty = c(1, 1, 0), lwd = c(2, 2, 0), bty = "n",
-       col = c("red", "forestgreen", NA), fill = c(0, 0, "skyblue"),
-       border = c(0, 0, "skyblue"), pch = c(NA, NA, 15), horiz = TRUE, cex=1.1)
-legend("bottom", c("95% interval in prediction", "noisy observations for training", "noisy observations for prediction"),
-       lty = c(0, 0, 0), lwd = c(0, 1, 1), bty = "n",
-       col = c(NA, "black", "black"), fill = c("peachpuff", 0, 0),
-       border = c("peachpuff", 0, 0), pch = c(15, 16, 5), horiz = TRUE, cex=1.1)
+oos_bg_col = "peachpuff"
+
+legend("center", c("observed noisy [S] for training", "observed noisy [S] for prediction",
+                   "observed noisy [P] for training", "observed noisy [P] for prediction",
+                   "inferred trajectory", "95% interval in training", "95% interval in prediction"), 
+       lty=c(0,0,0,0,1,0,0), lwd=c(0,1,0,1,3,0,0),
+       col = c(1,1,"red","red", "forestgreen", NA, NA), fill=c(0,0,0,0, 0,"skyblue",oos_bg_col),
+       border=c(0,0,0,0, 0, "skyblue",oos_bg_col), pch=c(19,5,19,5, NA, 15, 15), cex=1.7)
+
 dev.off()
 
 cat(sse_train_inhib, sse_test_inhib, sse_train_vanil, sse_test_vanil, 
