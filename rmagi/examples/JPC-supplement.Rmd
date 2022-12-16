@@ -1,5 +1,6 @@
 ---
-title: "Supplement for ``title\""
+title: "Supplement for ``Estimating and Assessing Differential Equation Models with Time-Course Data\""
+author: "Samuel W.K. Wong, Shihao Yang, S.C. Kou"
 output: pdf_document
 date: "`r Sys.Date()`"
 ---
@@ -169,7 +170,7 @@ xtrue <- data.frame(xtrue)
 ```
 
 Add multiplicative noise at the observation schedule to create simulated noisy data:
-```{r}
+```{r, warning=FALSE}
 xtrueFunc <- lapply(2:ncol(xtrue), function(j)
   approxfun(xtrue[, "time"], xtrue[, j]))
 
@@ -228,9 +229,9 @@ gpode <- MagiSolver(xsim, dynamicalModelList,
 ```
 
 ```{r, echo=FALSE, eval=TRUE}
-saveRDS(gpode, "examples/represillator.rds")
+saveRDS(gpode, "represillator.rds")
 ```
-```{r, echo=FALSE, eval=FALSE}
+```{r, echo=FALSE, eval=TRUE}
 gpode <- readRDS("represillator.rds")
 ```
 
@@ -280,7 +281,7 @@ for (ii in 1:6) {
     title(ylab='Protein concentration', cex.lab = 1.5)
   
   if (ii == 5)
-    title(xlab='Time (min)', cex.lab = 1.5)
+    title(xlab='Time (mRNA lifetimes)', cex.lab = 1.5)
   
   lines(xtrue[, "time"], exp(xtrue[,ii+1]),col='red', lwd=2)
   lines(xtrue[,1], ourEst, col='forestgreen', lwd=1.5)
@@ -406,7 +407,7 @@ config <- list(
   nobs = length(obs.times),
   noise = c(NA, 0.02, 0.02), 
   kernel = "generalMatern",
-  seed = 123,
+  seed = 669097609,
   n.iter = 5001,
   linfillspace = 0.5, 
   t.start = 0,
@@ -437,7 +438,7 @@ xtrue <- data.frame(xtrue)
 ```
 
 Additive measurement noise at the observation schedule to create simulated noisy data:
-```{r}
+```{r, warning=FALSE}
 xtrueFunc <- lapply(2:ncol(xtrue), function(j)
   approxfun(xtrue[, "time"], xtrue[, j]))
 
@@ -503,10 +504,10 @@ gpode <- MagiSolver(xsim, dynamicalModelList,
                           skipMissingComponentOptimization=TRUE))
 ```
 ```{r, echo=FALSE, eval=TRUE}
-saveRDS(gpode, "examples/M-M.rds")
+saveRDS(gpode, "M-M.rds")
 ```
-```{r, echo=FALSE, eval=FALSE}
-gpode <- readRDS("examples/M-M.rds")
+```{r, echo=FALSE, eval=TRUE}
+gpode <- readRDS("M-M.rds")
 ```
 
 Inference for $k_{cat}$ and $K_M$ (posterior mean, 2.5 and 97.5 percentiles):
@@ -527,8 +528,8 @@ par.table <- function(res) {
 par.table(gpode)
 ```
 
-Visualization:
-```{r}
+Plot the posterior densities of the parameters $k_{cat}$ and $K_M$ :
+```{r, fig.dim=c(6,3.1)}
 par.names <- c( expression('k'['cat']), expression('K'['M']))
 
 par(mfrow=c(1,2))
@@ -766,7 +767,7 @@ xtrue <- data.frame(xtrue)
 ```
 
 Additive measurement noise at the observation schedule to create simulated noisy data:
-```{r}
+```{r, warning=FALSE}
 xtrueFunc <- lapply(2:ncol(xtrue), function(j)
   approxfun(xtrue[, "time"], xtrue[, j]))
 
@@ -823,10 +824,10 @@ gpode <- MagiSolver(xsim, dynamicalModelList,
                             phi=phiExogenous, sigma=config$noise, useFixedSigma=TRUE))
 ```
 ```{r, echo=FALSE, eval=TRUE}
-saveRDS(gpode, "examples/lac-operon.rds")
+saveRDS(gpode, "lac-operon.rds")
 ```
-```{r, echo=FALSE, eval=FALSE}
-gpode <- readRDS("examples/lac-operon.rds")
+```{r, echo=FALSE, eval=TRUE}
+gpode <- readRDS("lac-operon.rds")
 ```
 
 Inference for parameters $k_1,\ldots, k_{16}$:
@@ -999,17 +1000,16 @@ RMichaelisMentenInhibitor6Dtheta <- function(theta, x, tvec) {
 
 Define parameters and settings for the experiment:
 ```{r}
+# Train time points (used for fitting)
 obs.times <- c(2.5, 4.5, 7, 9.5, 11, 13.5, 15, 16, 18, 20)
+# Test time points (not used for fiting)
 test.times <- c(21.5, 24, 27, 29.5, 32.5, 35.5, 39.5, 45, 55, 69)
+
 config <- list(
-  nobs = length(obs.times), #nrow(realdata),
+  nobs = length(obs.times),
   noise = c(NA, 0.02, 0.02, NA, NA, NA),
   kernel = "generalMatern",
-  #seed = 12,
-  seed = (as.integer(Sys.time())*104729+sample(1e9,1))%%1e9,
-  #seed = 488500816,
-  bandsize = 20,
-  hmcSteps = 100,
+  seed = 669097609,
   n.iter = 20001,
   linfillspace = 0.5, 
   t.end = 70,
@@ -1032,136 +1032,142 @@ modelODE <- function(t, state, parameters) {
   list(as.vector(magi:::MichaelisMentenInhibitor6ODE(parameters, t(state), t)))
 }
 
-xtrue <- deSolve::ode(y = pram.true$x0, times = times, func = modelODE, parms = pram.true$theta)
+xtrue <- deSolve::ode(y = pram.true$x0, times = times,
+                      func = modelODE, parms = pram.true$theta)
 xtrue <- data.frame(xtrue)
-matplot(xtrue[, "time"], xtrue[, c(3,4,5,6,7)], type="l", lty=1)
 
 xtrueFunc <- lapply(2:ncol(xtrue), function(j)
   approxfun(xtrue[, "time"], xtrue[, j]))
 
-xsim <- data.frame(time = round(c(obs.times,test.times) / config$linfillspace) * config$linfillspace)
+xsim <- data.frame(time = round(c(obs.times,test.times) / config$linfillspace) *
+                     config$linfillspace)
 xsim <- cbind(xsim, sapply(xtrueFunc, function(f) f(xsim$time)))
-
 xtestDS <- xsim
+```
 
+Create simulated noisy data, and then divide into train/test parts:
+```{r, warning=FALSE}
 set.seed(config$seed)
 for(j in 1:(ncol(xsim)-1)){
   xsim[,1+j] <- xsim[,1+j]+rnorm(nrow(xsim), sd=config$noise[j])
 }
 
-```
-
-Divide into train/test to create simulated noisy data:
-```{r}
 # Divide into train/test
 xtest <- xsim[xsim$time %in% test.times,]
 xsim <- xsim[xsim$time %in% obs.times,]
 
-xsim.obs <- rbind(c(0, pram.true$x0), xsim)
-
-matplot(xsim.obs$time, xsim.obs[,-1], type="p", col=1:(ncol(xsim)-1), pch=20)
-
-## Linearly interpolate using fixed interval widths
-xsim <- setDiscretization(rbind(xsim.obs, c(config$t.end, rep(NaN,ncol(xsim)-1))), by=config$linfillspace)
-xsim[1,5] <- NaN  # do not observe initial I value
+xsim.obs <- rbind(c(0, pram.true$x0), xsim) # tack on initial conditions
 ```
 
-Run the MAGI method under the correct inhibitor model:
-```{r, results='hide', eval=TRUE}
+Create the `odeModel` list, then confirm ODEs and derivatives are correct:
+```{r}
 dynamicalModelList <- list(
-  fOde=magi:::MichaelisMentenInhibitor6ODE,
-  fOdeDx=magi:::MichaelisMentenInhibitor6Dx,
-  fOdeDtheta=magi:::MichaelisMentenInhibitor6Dtheta,
+  fOde=RMichaelisMentenInhibitor6ODE,
+  fOdeDx=RMichaelisMentenInhibitor6Dx,
+  fOdeDtheta=RMichaelisMentenInhibitor6Dtheta,
   thetaLowerBound=c(0,-100,0,0,-100),
-  thetaUpperBound=c(Inf,Inf,Inf,Inf,Inf),  
-  name="Michaelis-Menten-Inhibitor6"
+  thetaUpperBound=c(Inf,Inf,Inf,Inf,Inf)
 )
 
-testDynamicalModel(dynamicalModelList$fOde, dynamicalModelList$fOdeDx, dynamicalModelList$fOdeDtheta, "dynamicalModelList",
+testDynamicalModel(dynamicalModelList$fOde, dynamicalModelList$fOdeDx,
+                   dynamicalModelList$fOdeDtheta, "dynamicalModelList",
                    data.matrix(xtestDS[,-1]), pram.true$theta, xtestDS$time)
+```
 
-config$ndis <- config$t.end / config$linfillspace + 1
+Create inputs to MAGI for inhibitor model:
+```{r}
+# Discretization set
+xsim <- setDiscretization(rbind(xsim.obs, c(config$t.end, rep(NaN,ncol(xsim)-1))),
+                          by=config$linfillspace)
+xsim[1,5] <- NaN  # do not observe initial I value, other initial conditions known
 
-sigma_fixed <- config$noise
-sigma_fixed[is.na(sigma_fixed)] <- 1e-4
-
-# Fix initial values except for I
-stepSizeFactor <- rep(0.01, nrow(xsim)*length(pram.true$x0) + length(dynamicalModelList$thetaLowerBound) + length(pram.true$x0))
+# Use setSizeFactor=0 to fix initial conditions
+# [E]=0.1, [S]=1, [P]=0, [ES]=0, except for unknown I
+stepSizeFactor <- rep(0.01, nrow(xsim)*length(pram.true$x0) +
+                        length(dynamicalModelList$thetaLowerBound) + length(pram.true$x0))
 for(j in c(1,2,3,5,6)){
   for(incre in 1:1){
     stepSizeFactor[(j-1)*nrow(xsim) + incre] <- 0
   }
 }
 
-
-xInitExogenous <- sapply(xtrueFunc, function(f) f(xsim$time))
+# Initialize X matrix for HMC sampling with some naive values
+xInitExogenous <- matrix(NA, nrow=nrow(xsim[,-1]), ncol=ncol(xsim[,-1]))
 xInitExogenous[,1] <- 0.1
 xInitExogenous[,2] <- 1
 xInitExogenous[,3] <- 0
 xInitExogenous[,4] <- 0.1
 xInitExogenous[,5] <- 0
 xInitExogenous[,6] <- 0
+```
 
-OursStartTime <- proc.time()[3]
+Run the MAGI method under the correct inhibitor model:
+```{r, results='hide', eval=TRUE}
+# Use the option positiveSystem = TRUE since all components are non-negative
+gpode <- MagiSolver(xsim, dynamicalModelList, 
+            control = list(xInit = xInitExogenous, niterHmc=config$n.iter,
+                           stepSizeFactor = stepSizeFactor, positiveSystem = TRUE,
+                           skipMissingComponentOptimization = TRUE, 
+                           phi = pram.true$phi, sigma=config$noise, useFixedSigma=TRUE))
+```
+```{r, echo=FALSE, eval=TRUE}
+saveRDS(gpode, "inhibitor.rds")
+```
+```{r, echo=FALSE, eval=TRUE}
+gpode <- readRDS("inhibitor.rds")
+```
 
-result2 <- magi::MagiSolver(xsim[,-1], dynamicalModelList, xsim$time, control = 
-                             list(xInit = xInitExogenous,bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = stepSizeFactor,
-                                  positiveSystem = TRUE, skipMissingComponentOptimization = TRUE, burninRatio = 0.5, phi = pram.true$phi, sigma=sigma_fixed, useFixedSigma=TRUE, verbose=TRUE))
-
-OursTimeUsed <- proc.time()[3] - OursStartTime
-
-gpode <- result2
-gpode$fode <- sapply(1:length(gpode$lp), function(t)
-  with(gpode, dynamicalModelList$fOde(theta[t,], xsampled[t,,], xsim$time)), simplify = "array")
-gpode$fode <- aperm(gpode$fode, c(3,1,2))
-
-
+Calculate sum of square errors for fitting and prediction for inhibitor model:
+```{r}
 xMean <- apply(gpode$xsampled, c(2, 3), mean)
 fit_inhib <- xMean[gpode$tvec %in% xsim.obs[,"time"],2:3]
 pred_inhib <- xMean[gpode$tvec %in% xtest[,"time"],2:3]
 sse_train_inhib <- sum((fit_inhib - xsim.obs[,3:4])^2)
 sse_test_inhib <-  sum((pred_inhib - xtest[,3:4])^2)
 
-apply(gpode$xsampled[,1,], 2, median)
-print(apply(gpode$theta, 2, median))
-
 ourEst_inhib <- apply(gpode$xsampled, c(2, 3), mean)
 ourLB_inhib <- apply(gpode$xsampled, c(2, 3), function(x) quantile(x, 0.025))
 ourUB_inhib <- apply(gpode$xsampled, c(2, 3), function(x) quantile(x, 0.975))
-
 ```
 
-Run the MAGI method under the incorrect vanilla M-M model:
-```{r, results='hide', eval=TRUE}
+Create inputs to MAGI for fitting with Michaelis-Menten model:
+```{r}
 dynamicalModelListReduced <- list(
-  fOde=magi:::MichaelisMentenReducedODE,
-  fOdeDx=magi:::MichaelisMentenReducedDx,
-  fOdeDtheta=magi:::MichaelisMentenReducedDtheta,
+  fOde=RMichaelisMentenReducedODE,
+  fOdeDx=RMichaelisMentenReducedDx,
+  fOdeDtheta=RMichaelisMentenReducedDtheta,
   thetaLowerBound=c(0,-100,0),
-  thetaUpperBound=c(Inf,Inf,Inf),  
-  name="Michaelis-Menten-Reduced"
+  thetaUpperBound=c(Inf,Inf,Inf)
 )
 
-
-stepSizeFactor <- rep(0.01, (nrow(xsim))*(length(pram.true$x0)-3) + length(dynamicalModelListReduced$thetaLowerBound) + length(pram.true$x0) - 3)
+# Use setSizeFactor=0 to fix initial conditions [E]=0.1, [S]=1, [P]=0
+stepSizeFactor <- rep(0.01, (nrow(xsim))*(length(pram.true$x0)-3) + 
+    length(dynamicalModelListReduced$thetaLowerBound) + length(pram.true$x0) - 3)
 for(j in 1:3){
   for(incre in 1:1){
     stepSizeFactor[(j-1)*nrow(xsim) + incre] <- 0
   }
 }
+```
 
-reduced_result <- magi::MagiSolver(xsim[,c(2,3,4)], dynamicalModelListReduced, xsim$time, control = 
-                             list(xInit = xInitExogenous[,1:3], bandsize=config$bandsize, niterHmc=config$n.iter, nstepsHmc=config$hmcSteps, stepSizeFactor = stepSizeFactor,
-                                  positiveSystem = TRUE, skipMissingComponentOptimization = TRUE, burninRatio = 0.5, phi = pram.true$phi[,1:3], sigma=sigma_fixed[1:3], useFixedSigma=TRUE, verbose=TRUE))
+Run the MAGI method under the Michaelis-Menten model:
+```{r, results='hide', eval=TRUE}
+gpode <- MagiSolver(xsim[,c(2,3,4)], dynamicalModelListReduced, xsim$time,
+            control = list(xInit = xInitExogenous[,1:3], niterHmc=config$n.iter,
+                           stepSizeFactor = stepSizeFactor, positiveSystem = TRUE,
+                           skipMissingComponentOptimization = TRUE,
+                           phi = pram.true$phi[,1:3], sigma=config$noise[1:3],
+                           useFixedSigma=TRUE))
+```
+```{r, echo=FALSE, eval=TRUE}
+saveRDS(gpode, "MM-comparison.rds")
+```
+```{r, echo=FALSE, eval=TRUE}
+gpode <- readRDS("MM-comparison.rds")
+```
 
-plot(reduced_result)
-
-gpode <- reduced_result
-gpode$fode <- sapply(1:length(gpode$lp), function(t)
-  with(gpode, dynamicalModelListReduced$fOde(theta[t,], xsampled[t,,], xsim$time)), simplify = "array")
-gpode$fode <- aperm(gpode$fode, c(3,1,2))
-
-
+Calculate sum of square errors for fitting and prediction for Michaelis-Menten model:
+```{r}
 xMean <- apply(gpode$xsampled, c(2, 3), mean)
 fit_vanil <- xMean[gpode$tvec %in% xsim.obs[,"time"],2:3]
 pred_vanil <- xMean[gpode$tvec %in% xtest[,"time"],2:3]
@@ -1173,12 +1179,30 @@ ourLB_vanil <- apply(gpode$xsampled, c(2, 3), function(x) quantile(x, 0.025))
 ourUB_vanil <- apply(gpode$xsampled, c(2, 3), function(x) quantile(x, 0.975))
 ```
 
-Visualizations:
+Summary of fitting and prediction errors for each model:
 ```{r}
+print(paste0("Inhibitor: SSE(train) = ", round(sse_train_inhib,3),
+             ", SSE(test) = ", round(sse_test_inhib,3)))
+print(paste0("M-M: SSE(train) = ", round(sse_train_vanil,3),
+             ", SSE(test) = ", round(sse_test_vanil,3)))
+```
+
+Visualizations of the observations, model fits and predictions:
+```{r, fig.dim=c(12,6)}
 compnames <- c("", "[S]", "[P]")
-layout(rbind(c(1,2), c(3,4), c(5)), heights = c(8,8,1))
-par(oma=c(2,0,0,0))
-for (ii in 2:3) {
+
+layout(cbind(c(1,1,6,6),c(2,2,4,4),c(3,3,5,5)))
+par(mar = c(4, 4.5, 1.75, 0.1))
+
+matplot(xtrue[, "time"], (xtrue[, -1]), type="n", lty=1, col=0, xlab='', ylab='mM')
+title(xlab="Time (min)", line=2, cex.lab=1)
+abline(v = max(obs.times), col="grey", lty=2, lwd=2)
+matplot(xsim.obs$time, (xsim.obs[,3:4]), type="p", col=c(1,2), pch=19, add = TRUE)
+matplot(xtest$time, xtest[,3:4], type="p", col=c(1,2), pch=5, add = TRUE)
+
+mtext('observations', line = 0.3)
+
+for (ii in 3:2) {
   
   par(mar = c(4, 4.5, 1.75, 0.1))
   ourEstp <- magi:::getMeanCurve(xsim$time, ourEst_inhib[,ii], xtrue[,1],
@@ -1193,23 +1217,33 @@ for (ii in 2:3) {
   ourLBp <- magi:::getMeanCurve(xsim$time, ourLB_inhib[,ii], xtrue[,1],
                                 t(pram.true$phi[,ii]), 0,
                                 kerneltype=config$kernel, deriv = FALSE)
-  plot( c(min(xtrue$time),max(xtrue$time)), c(min(ourLBp), min(max(ourUBp),175)), type='n', xlab='', ylab='')
+  plot( c(min(xtrue$time),max(xtrue$time)), c(min(ourLBp), min(max(ourUBp),175)),
+        type='n', xlab='', ylab='mM')
+  title(xlab="Time (min)", line=2, cex.lab=1)
   abline(v = max(obs.times), col="grey", lty=2, lwd=2)
   
-  polygon(c(xtrue[xtrue[,1] <= max(obs.times),1], rev(xtrue[xtrue[,1] <= max(obs.times),1])), c(ourUBp[xtrue[,1] <= max(obs.times)], rev(ourLBp[xtrue[,1] <= max(obs.times)])),
-          col = "skyblue", border = NA)    
-  polygon(c(xtrue[xtrue[,1] > max(obs.times),1], rev(xtrue[xtrue[,1] > max(obs.times),1])), c(ourUBp[xtrue[,1] > max(obs.times)], rev(ourLBp[xtrue[,1] > max(obs.times)])),
-          col = "peachpuff", border = NA)      
+  polygon(c(xtrue[xtrue[,1] <= max(obs.times),1],
+            rev(xtrue[xtrue[,1] <= max(obs.times),1])),
+          c(ourUBp[xtrue[,1] <= max(obs.times)],
+            rev(ourLBp[xtrue[,1] <= max(obs.times)])), col = "skyblue", border = NA)    
+  polygon(c(xtrue[xtrue[,1] > max(obs.times),1],
+            rev(xtrue[xtrue[,1] > max(obs.times),1])),
+          c(ourUBp[xtrue[,1] > max(obs.times)],
+            rev(ourLBp[xtrue[,1] > max(obs.times)])), col = "peachpuff", border = NA)      
   
-  lines(xtrue[, "time"], xtrue[,ii+1],col='red', lwd=2)
   lines(xtrue[,1], ourEstp, col='forestgreen', lwd=1.5)
-  mtext(paste(compnames[ii], "inferred from inhibitor"))
+  mtext(paste(compnames[ii], "inferred from inhibitor model"), line = 0.3)
 
-  points(xsim$time, xsim[,ii+1], col='black', pch=16)
-  points(xtest$time, xtest[,ii+1], col='black', pch=5)
+  if(compnames[ii] == "[P]"){
+    point_col = "red"
+  }else{
+    point_col = "black"
+  }
+  points(xsim$time, xsim[,ii+1], col=point_col, pch=16)
+  points(xtest$time, xtest[,ii+1], col=point_col, pch=5)
 }
 
-for (ii in 2:3) {
+for (ii in 3:2) {
   
   par(mar = c(4, 4.5, 1.75, 0.1))
   ourEstp <- magi:::getMeanCurve(xsim$time, ourEst_vanil[,ii], xtrue[,1],
@@ -1223,40 +1257,44 @@ for (ii in 2:3) {
   ourLBp <- magi:::getMeanCurve(xsim$time, ourLB_vanil[,ii], xtrue[,1],
                                 t(pram.true$phi[,ii]), 0,
                                 kerneltype=config$kernel, deriv = FALSE)
-  plot( c(min(xtrue$time),max(xtrue$time)), c(min(ourLBp), min(max(ourUBp),175)), type='n', xlab='', ylab='')
+  plot( c(min(xtrue$time),max(xtrue$time)), c(min(ourLBp), min(max(ourUBp),175)),
+        type='n', xlab='', ylab='mM')
+  title(xlab="Time (min)", line=2, cex.lab=1)
   abline(v = max(obs.times), col="grey", lty=2, lwd=2)  
   
-  polygon(c(xtrue[xtrue[,1] <= max(obs.times),1], rev(xtrue[xtrue[,1] <= max(obs.times),1])), c(ourUBp[xtrue[,1] <= max(obs.times)], rev(ourLBp[xtrue[,1] <= max(obs.times)])),
-          col = "skyblue", border = NA)    
-  polygon(c(xtrue[xtrue[,1] > max(obs.times),1], rev(xtrue[xtrue[,1] > max(obs.times),1])), c(ourUBp[xtrue[,1] > max(obs.times)], rev(ourLBp[xtrue[,1] > max(obs.times)])),
-          col = "peachpuff", border = NA)    
-  
-    
-  lines(xtrue[, "time"], xtrue[,ii+1],col='red', lwd=2)
-  lines(xtrue[,1], ourEstp, col='forestgreen', lwd=1.5)
-  mtext(paste(compnames[ii], "inferred from M-M"))
+  polygon(c(xtrue[xtrue[,1] <= max(obs.times),1],
+            rev(xtrue[xtrue[,1] <= max(obs.times),1])),
+          c(ourUBp[xtrue[,1] <= max(obs.times)],
+            rev(ourLBp[xtrue[,1] <= max(obs.times)])), col = "skyblue", border = NA)    
+  polygon(c(xtrue[xtrue[,1] > max(obs.times),1],
+            rev(xtrue[xtrue[,1] > max(obs.times),1])),
+          c(ourUBp[xtrue[,1] > max(obs.times)],
+            rev(ourLBp[xtrue[,1] > max(obs.times)])), col = "peachpuff", border = NA)    
 
-  points(xsim$time, xsim[,ii+1], col='black', pch=16)
-  points(xtest$time, xtest[,ii+1], col='black', pch=5)
+  lines(xtrue[,1], ourEstp, col='forestgreen', lwd=1.5)
+  mtext(paste(compnames[ii], "inferred from M-M model"), line = 0.3)
+
+  if(compnames[ii] == "[P]"){
+    point_col = "red"
+  }else{
+    point_col = "black"
+  }
+  points(xsim$time, xsim[,ii+1], col=point_col, pch=16)
+  points(xtest$time, xtest[,ii+1], col=point_col, pch=5)
+  
 }
 
-mtext(paste0("Inhibitor: SSE(train) = ", round(sse_train_inhib,3),
-             ", SSE(test) = ", round(sse_test_inhib,3),
-             "       M-M: SSE(train) = ", round(sse_train_vanil,3),
-             ", SSE(test) = ", round(sse_test_vanil,3))
-             ,side=1,line=1,outer=TRUE)
+par(mar=rep(0,4))
+plot(1,type='n', xaxt='n', yaxt='n', xlab=NA, ylab=NA, frame.plot = FALSE)
 
-par(mar = rep(0, 4))
-plot(1, type = 'n', xaxt = 'n', yaxt = 'n',
-     xlab = NA, ylab = NA, frame.plot = FALSE)
+oos_bg_col = "peachpuff"
 
-legend("top", c("truth", "inferred trajectory",
-                   "95% interval in training"),
-       lty = c(1, 1, 0), lwd = c(2, 2, 0), bty = "n",
-       col = c("red", "forestgreen", NA), fill = c(0, 0, "skyblue"),
-       border = c(0, 0, "skyblue"), pch = c(NA, NA, 15), horiz = TRUE, cex=1.1)
-legend("bottom", c("95% interval in prediction", "noisy observations for training", "noisy observations for prediction"),
-       lty = c(0, 0, 0), lwd = c(0, 1, 1), bty = "n",
-       col = c(NA, "black", "black"), fill = c("peachpuff", 0, 0),
-       border = c("peachpuff", 0, 0), pch = c(15, 16, 5), horiz = TRUE, cex=1.1)
+legend("center", c("observed noisy [S] for training", "observed noisy [S] for prediction",
+                   "observed noisy [P] for training", "observed noisy [P] for prediction",
+                   "inferred trajectory", "95% interval in training",
+                   "95% interval in prediction"), 
+       lty=c(0,0,0,0,1,0,0), lwd=c(0,1,0,1,3,0,0),
+       col = c(1,1,"red","red", "forestgreen", NA, NA),
+       fill=c(0,0,0,0, 0,"skyblue",oos_bg_col),
+       border=c(0,0,0,0, 0, "skyblue",oos_bg_col), pch=c(19,5,19,5, NA, 15, 15), cex=1.7)
 ```

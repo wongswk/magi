@@ -185,7 +185,7 @@ layout(cbind(c(1,1,6,6),c(2,2,4,4),c(3,3,5,5)))
 par(mar = c(4, 4.5, 1.75, 0.1))
 
 matplot(xtrue[, "time"], (xtrue[, -1]), type="n", lty=1, col=0, xlab='', ylab='mM')
-title(xlab="time (minutes)", line=2, cex.lab=1)
+title(xlab="Time (min)", line=2, cex.lab=1)
 abline(v = max(obs.times), col="grey", lty=2, lwd=2)
 matplot(xsim.obs$time, (xsim.obs[,3:4]), type="p", col=c(1,2), pch=19, add = TRUE)
 matplot(xtest$time, xtest[,3:4], type="p", col=c(1,2), pch=5, add = TRUE)
@@ -208,7 +208,7 @@ for (ii in 3:2) {
                                 t(pram.true$phi[,ii]), 0,
                                 kerneltype=config$kernel, deriv = FALSE)
   plot( c(min(xtrue$time),max(xtrue$time)), c(min(ourLBp), min(max(ourUBp),175)), type='n', xlab='', ylab='mM')
-  title(xlab="time (minutes)", line=2, cex.lab=1)
+  title(xlab="Time (min)", line=2, cex.lab=1)
   abline(v = max(obs.times), col="grey", lty=2, lwd=2)
   
   polygon(c(xtrue[xtrue[,1] <= max(obs.times),1], rev(xtrue[xtrue[,1] <= max(obs.times),1])), c(ourUBp[xtrue[,1] <= max(obs.times)], rev(ourLBp[xtrue[,1] <= max(obs.times)])),
@@ -244,7 +244,7 @@ for (ii in 3:2) {
                                 t(pram.true$phi[,ii]), 0,
                                 kerneltype=config$kernel, deriv = FALSE)
   plot( c(min(xtrue$time),max(xtrue$time)), c(min(ourLBp), min(max(ourUBp),175)), type='n', xlab='', ylab='mM')
-  title(xlab="time (minutes)", line=2, cex.lab=1)
+  title(xlab="Time (min)", line=2, cex.lab=1)
   abline(v = max(obs.times), col="grey", lty=2, lwd=2)  
   
   polygon(c(xtrue[xtrue[,1] <= max(obs.times),1], rev(xtrue[xtrue[,1] <= max(obs.times),1])), c(ourUBp[xtrue[,1] <= max(obs.times)], rev(ourLBp[xtrue[,1] <= max(obs.times)])),
@@ -255,7 +255,7 @@ for (ii in 3:2) {
     
   # lines(xtrue[, "time"], xtrue[,ii+1],col='red', lwd=2)
   lines(xtrue[,1], ourEstp, col='forestgreen', lwd=1.5)
-  mtext(paste(compnames[ii], "inferred from M-M"), line = 0.3)
+  mtext(paste(compnames[ii], "inferred from M-M model"), line = 0.3)
 
   if(compnames[ii] == "[P]"){
     point_col = "red"
@@ -267,11 +267,11 @@ for (ii in 3:2) {
   
 }
 
-mtext(paste0("Inhibitor: SSE(train) = ", round(sse_train_inhib,3),
-             ", SSE(test) = ", round(sse_test_inhib,3),
-             "       M-M: SSE(train) = ", round(sse_train_vanil,3),
-             ", SSE(test) = ", round(sse_test_vanil,3))
-             ,side=1,line=1,outer=TRUE)
+# mtext(paste0("Inhibitor: SSE(train) = ", round(sse_train_inhib,3),
+#              ", SSE(test) = ", round(sse_test_inhib,3),
+#              "       M-M: SSE(train) = ", round(sse_train_vanil,3),
+#              ", SSE(test) = ", round(sse_test_vanil,3))
+#              ,side=1,line=1,outer=TRUE)
 
 # par(mar = rep(0, 4))
 # plot(1, type = 'n', xaxt = 'n', yaxt = 'n',
