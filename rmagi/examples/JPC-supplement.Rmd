@@ -407,7 +407,7 @@ config <- list(
   nobs = length(obs.times),
   noise = c(NA, 0.02, 0.02), 
   kernel = "generalMatern",
-  seed = 669097609,
+  seed = 1,
   n.iter = 5001,
   linfillspace = 0.5, 
   t.start = 0,
