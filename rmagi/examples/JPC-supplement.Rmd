@@ -156,7 +156,7 @@ pram.true <- list(
 )
 ```
 
-Use a numerical solver to generate the true trajectories:
+Use a numerical solver to generate the true trajectories to simulate data and to compare with inference from MAGI:
 ```{r}
 times <- seq(0,config$t.end,length=1001)
 
@@ -424,7 +424,7 @@ pram.true <- list(
 )
 ```
  
-Use a numerical solver to generate the true trajectories:
+Use a numerical solver to generate the true trajectories to simulate data and to compare with inference from MAGI:
 ```{r}
 times <- seq(0,config$t.end,length=1001)
 
@@ -734,9 +734,9 @@ config <- list(
             0.00631925202022132, 0.00036869187211123)*noisefac,
   # noise level is minimum of each component * noisefac
   kernel = "generalMatern",
-  seed = 118,
+  seed = 937780644,
   hmcSteps = 500,
-  niterHmc = 50001,
+  niterHmc = 20001,
   fillinterval = 15,
   t.start = 1,
   t.end = 1201,
@@ -753,12 +753,12 @@ pram.true <- list(
 )
 ```
 
-Use a numerical solver to generate the true trajectories:
+Use a numerical solver to generate the true trajectories to simulate data and to compare with inference from MAGI:
 ```{r}
 times <- seq(0,config$t.end,by = 0.01)
 
 modelODE <- function(t, state, parameters) {
-  list(as.vector(magi:::lacOperonODE(parameters, t(state), t)))
+  list(as.vector(RlacOperonODE(parameters, t(state), t)))
 }
 
 xtrue <- deSolve::ode(y = pram.true$x0, times = times,
@@ -1029,7 +1029,7 @@ Use a numerical solver to generate the true trajectories under the inhibitor mod
 times <- seq(0,config$t.end,length=1001)
 
 modelODE <- function(t, state, parameters) {
-  list(as.vector(magi:::MichaelisMentenInhibitor6ODE(parameters, t(state), t)))
+  list(as.vector(RMichaelisMentenInhibitor6ODE(parameters, t(state), t)))
 }
 
 xtrue <- deSolve::ode(y = pram.true$x0, times = times,
@@ -1101,7 +1101,7 @@ xInitExogenous[,5] <- 0
 xInitExogenous[,6] <- 0
 ```
 
-Run the MAGI method under the correct inhibitor model:
+Run the MAGI method under the inhibitor model:
 ```{r, results='hide', eval=TRUE}
 # Use the option positiveSystem = TRUE since all components are non-negative
 gpode <- MagiSolver(xsim, dynamicalModelList, 
