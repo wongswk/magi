@@ -1,3 +1,19 @@
+# MAGI v1.2.1
+
+## Resubmission
+This is a resubmission. In this version we have made the following changes.
+
+## Changelog:
+* Options added to MagiSolver: vector input for HMC step sizes, non-negative systems, skip missing component initialization
+
+## Test environments:
+* Ubuntu 20.04, R 4.2.2
+* Windows 10, R 4.2.2
+* Windows 10, R-devel
+
+## R CMD check results
+There were no ERRORs or WARNINGs or NOTEs.
+
 # MAGI v1.2.0
 
 ## Resubmission

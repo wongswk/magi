@@ -116,6 +116,8 @@ samplesCpp <- magi:::solveMagiRcpp(
   useMean = config$useMean,
   useScalerSigma = config$useScalerSigma,
   useFixedSigma = config$useFixedSigma,
+  skipMissingComponentOptimization = FALSE,
+  positiveSystem = FALSE,
   verbose = TRUE)
 
 out <- samplesCpp$llikxthetasigmaSamples[-1,1,1]
@@ -153,6 +155,8 @@ samplesCpp <- magi:::solveMagiRcpp(
   useMean = config$useMean,
   useScalerSigma = config$useScalerSigma,
   useFixedSigma = config$useFixedSigma,
+  skipMissingComponentOptimization = FALSE,
+  positiveSystem = FALSE,  
   verbose = TRUE)
 
 samplesCpp <- magi:::solveMagiRcpp(
@@ -180,6 +184,8 @@ samplesCpp <- magi:::solveMagiRcpp(
   useMean = config$useMean,
   useScalerSigma = config$useScalerSigma,
   useFixedSigma = config$useFixedSigma,
+  skipMissingComponentOptimization = FALSE,
+  positiveSystem = FALSE,  
   verbose = TRUE)
 
 nBurn = config$burninRatio * config$n.iter
@@ -211,6 +217,8 @@ samplesCpp <- magi:::solveMagiRcpp(
   useMean = config$useMean,
   useScalerSigma = config$useScalerSigma,
   useFixedSigma = config$useFixedSigma,
+  skipMissingComponentOptimization = FALSE,
+  positiveSystem = FALSE,  
   verbose = TRUE)
 
 # R inference ----------------------------

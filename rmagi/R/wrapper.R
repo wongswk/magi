@@ -43,10 +43,12 @@
 #'   \item{\code{niterHmc}}{MCMC sampling from the posterior is carried out via Hamiltonian Monte Carlo (HMC). \code{niterHmc} specifies the number of HMC iterations to run.  Default is 20000 HMC iterations.}
 #'   \item{\code{nstepsHmc}}{the number of leapfrog steps per HMC iteration. Default is 200.}
 #'   \item{\code{burninRatio}}{the proportion of HMC iterations to be discarded as burn-in. Default is 0.5, which discards the first half of the MCMC samples.}
-#'   \item{\code{stepSizeFactor}}{initial leapfrog step size factor for HMC.  Default is 0.01, and the leapfrog step size is automatically tuned during burn-in to achieve an acceptance rate between 60-90\%.}
+#'   \item{\code{stepSizeFactor}}{initial leapfrog step size factor for HMC. Can be a specified as a scalar (applied to all posterior dimensions) or a vector (with length corresponding to the dimension of the posterior). Default is 0.01, and the leapfrog step size is automatically tuned during burn-in to achieve an acceptance rate between 60-90\%.}
 #'   \item{\code{bandSize}}{a band matrix approximation is used to speed up matrix operations, with default band size 20. Can be increased if \code{MagiSolver} returns an error indicating numerical instability.}
-#'   \item{\code{useFixedSigma}}{logical, set to \code{TRUE} if \code{sigma} is known.  If \code{useFixedSigma=TRUE}, the known values of \eqn{\sigma} must be supplied via the \code{sigma} control variable.}
-#'   \item{\code{verbose}}{logical, set to \code{TRUE} to output diagnostic and progress messages to the console.}
+#'   \item{\code{useFixedSigma}}{logical, set to \code{TRUE} if \code{sigma} is known.  If \code{useFixedSigma=TRUE}, the known values of \eqn{\sigma} must be supplied via the \code{sigma} control variable. Default is \code{FALSE}.}
+#'   \item{\code{skipMissingComponentOptimization}}{logical, set to \code{TRUE} to skip automatic optimization for missing components. If \code{skipMissingComponentOptimization=TRUE}, values for \code{xInit} and \code{phi} must be supplied for all system components. Default is \code{FALSE}.}
+#'   \item{\code{positiveSystem}}{logical, set to \code{TRUE} if the system cannot be negative. Default is \code{FALSE}.}
+#'   \item{\code{verbose}}{logical, set to \code{TRUE} to output diagnostic and progress messages to the console. Default is \code{FALSE}.}
 #'   
 #' }
 #' 
@@ -161,6 +163,16 @@ MagiSolver <- function(y, odeModel, tvec, control = list()) {
   else
     useFixedSigma = FALSE
 
+  if (!is.null(control$skipMissingComponentOptimization))
+    skipMissingComponentOptimization = control$skipMissingComponentOptimization
+  else
+    skipMissingComponentOptimization = FALSE
+
+  if (!is.null(control$positiveSystem))
+    positiveSystem  = control$positiveSystem 
+  else
+    positiveSystem  = FALSE  
+    
   if (!is.null(control$verbose))
     verbose = control$verbose
   else
@@ -192,6 +204,8 @@ MagiSolver <- function(y, odeModel, tvec, control = list()) {
     useMean = TRUE,
     useScalerSigma = FALSE,
     useFixedSigma = useFixedSigma,
+    skipMissingComponentOptimization = skipMissingComponentOptimization,
+    positiveSystem = positiveSystem,
     verbose = verbose)
 
   phiUsed <- samplesCpp$phi

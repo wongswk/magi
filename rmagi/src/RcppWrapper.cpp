@@ -355,6 +355,7 @@ Rcpp::List chainSamplerRcpp(const arma::mat & yobs,
                             const double burninRatioInput,
                             const arma::vec &xthetasigmaInit,
                             const arma::vec &stepLowInit,
+                            bool positiveSystem,
                             bool verbose){
   vector<gpcov> covAllDimensions(yobs.n_cols);
   for(unsigned j = 0; j < yobs.n_cols; j++){
@@ -368,7 +369,8 @@ Rcpp::List chainSamplerRcpp(const arma::mat & yobs,
                   sigmaSizeInput,
                   modelInput,
                   niterInput,
-                  burninRatioInput);
+                  burninRatioInput,
+                  positiveSystem);
   sampler.sampleChian(xthetasigmaInit, stepLowInit, verbose);
   return List::create(
             Named("lliklist")=sampler.lliklist,

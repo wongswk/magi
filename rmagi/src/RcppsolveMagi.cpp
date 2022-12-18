@@ -25,7 +25,7 @@ Rcpp::List solveMagiRcpp(
         const int nstepsHmc,
         const double burninRatioHmc,
         const unsigned int niterHmc,
-        const double stepSizeFactorHmc,
+        const arma::vec stepSizeFactorHmc,
         const int nEpoch,
         const int bandSize,
         const bool useFrequencyBasedPrior,
@@ -33,6 +33,8 @@ Rcpp::List solveMagiRcpp(
         const bool useMean,
         const bool useScalerSigma,
         const bool useFixedSigma,
+        const bool skipMissingComponentOptimization,
+        const bool positiveSystem,
         const bool verbose) {
 
     OdeSystem modelC;
@@ -105,6 +107,8 @@ Rcpp::List solveMagiRcpp(
                       useMean,
                       useScalerSigma,
                       useFixedSigma,
+                      skipMissingComponentOptimization,
+                      positiveSystem,
                       verbose);
 
 

@@ -21,7 +21,7 @@ MagiSolver::MagiSolver(const arma::mat & yFull,
                        const int nstepsHmc,
                        const double burninRatioHmc,
                        const unsigned int niterHmc,
-                       const double stepSizeFactorHmc,
+                       const arma::vec stepSizeFactorHmcInput,
                        const int nEpoch,
                        const int bandSize,
                        bool useFrequencyBasedPrior,
@@ -29,6 +29,8 @@ MagiSolver::MagiSolver(const arma::mat & yFull,
                        bool useMean,
                        bool useScalerSigma,
                        bool useFixedSigma,
+                       bool skipMissingComponentOptimization,
+                       bool positiveSystem,
                        bool verbose) :
         yFull(yFull),
         odeModel(odeModel),
@@ -44,7 +46,6 @@ MagiSolver::MagiSolver(const arma::mat & yFull,
         nstepsHmc(nstepsHmc),
         burninRatioHmc(burninRatioHmc),
         niterHmc(niterHmc),
-        stepSizeFactorHmc(stepSizeFactorHmc),
         nEpoch(nEpoch),
         bandSize(bandSize),
         useFrequencyBasedPrior(useFrequencyBasedPrior),
@@ -52,6 +53,8 @@ MagiSolver::MagiSolver(const arma::mat & yFull,
         useMean(useMean),
         useScalerSigma(useScalerSigma),
         useFixedSigma(useFixedSigma),
+        skipMissingComponentOptimization(skipMissingComponentOptimization),
+        positiveSystem(positiveSystem),
         verbose(verbose),
         ydim(yFull.n_cols),
         sigmaSize(useScalerSigma ? 1 : yFull.n_cols),
@@ -64,6 +67,13 @@ MagiSolver::MagiSolver(const arma::mat & yFull,
     if(kernel != "generalMatern"){
         throw std::runtime_error("only generalMatern kernel has full support");
     }
+    
+    if (stepSizeFactorHmcInput.n_elem == 0){
+      stepSizeFactorHmc = arma::ones(1);
+    }else{
+      stepSizeFactorHmc = stepSizeFactorHmcInput;
+    }
+    
     // generate intermediate data
     if(useBand && useMean){
         loglikflag = "withmeanBand";
@@ -423,31 +433,33 @@ void MagiSolver::initMissingComponent() {
         }
     }
 
-    try {
-        const arma::vec & xthetaphi = optimizeXmissingThetaPhi(yFull,
-                                                               tvecFull,
-                                                               odeModel,
-                                                               sigmaInit,
-                                                               priorTemperature,
-                                                               xInit,
-                                                               thetaInit,
-                                                               phiAllDimensions,
-                                                               missingComponentDim);
-        for (unsigned id = 0; id < missingComponentDim.size(); id++){
-            xInit.col(missingComponentDim(id)) = xthetaphi.subvec(
-                    xInit.n_rows * (id), xInit.n_rows * (id + 1) - 1);
-        }
-
-        thetaInit = xthetaphi.subvec(
-                xInit.n_rows * missingComponentDim.size(), xInit.n_rows * missingComponentDim.size() + thetaInit.size() - 1);
-
-        for (unsigned id = 0; id < missingComponentDim.size(); id++){
-            phiAllDimensions.col(missingComponentDim(id)) = xthetaphi.subvec(
-                    xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * id,
-                    xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * (id + 1) - 1);
-        }
-    } catch (...) {
-        std::cout << "Exception occurred in joint optimization for Xmissing,Theta,Phi";
+    if(!skipMissingComponentOptimization){
+      try {
+          const arma::vec & xthetaphi = optimizeXmissingThetaPhi(yFull,
+                                                                 tvecFull,
+                                                                 odeModel,
+                                                                 sigmaInit,
+                                                                 priorTemperature,
+                                                                 xInit,
+                                                                 thetaInit,
+                                                                 phiAllDimensions,
+                                                                 missingComponentDim);
+          for (unsigned id = 0; id < missingComponentDim.size(); id++){
+              xInit.col(missingComponentDim(id)) = xthetaphi.subvec(
+                      xInit.n_rows * (id), xInit.n_rows * (id + 1) - 1);
+          }
+  
+          thetaInit = xthetaphi.subvec(
+                  xInit.n_rows * missingComponentDim.size(), xInit.n_rows * missingComponentDim.size() + thetaInit.size() - 1);
+  
+          for (unsigned id = 0; id < missingComponentDim.size(); id++){
+              phiAllDimensions.col(missingComponentDim(id)) = xthetaphi.subvec(
+                      xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * id,
+                      xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * (id + 1) - 1);
+          }
+      } catch (...) {
+          std::cout << "Exception occurred in joint optimization for Xmissing,Theta,Phi";
+      }
     }
 
     const lp & llik = xthetaphisigmallik( xInit,
@@ -473,7 +485,8 @@ void MagiSolver::doHMC(int iEpoch) {
                        sigmaSize,
                        odeModel,
                        niterHmc,
-                       burninRatioHmc);
+                       burninRatioHmc,
+                       positiveSystem);
     arma::vec xthetasigmaInit = arma::join_vert(arma::join_vert(arma::vectorise(xInit), thetaInit), sigmaInit);
     hmcSampler.sampleChian(xthetasigmaInit, stepLow, verbose);
     llikxthetasigmaSamples(arma::span(0, 0), arma::span::all, arma::span(iEpoch, iEpoch)) = hmcSampler.lliklist;
@@ -485,7 +498,11 @@ void MagiSolver::sampleInEpochs() {
     std::string epochMethod = "mean";
 
     stepLow = arma::vec(llikxthetasigmaSamples.n_rows - 1);
-    stepLow.fill(1.0 / nstepsHmc * stepSizeFactorHmc);
+    if (stepSizeFactorHmc.n_elem > 1){
+      stepLow = (1.0 / nstepsHmc * stepSizeFactorHmc);
+    }else{
+      stepLow.fill(1.0 / nstepsHmc * stepSizeFactorHmc(0));
+    }
     if(useFixedSigma){
         stepLow.subvec(xInit.size() + thetaInit.size(), stepLow.size() - 1).fill(0);
     }

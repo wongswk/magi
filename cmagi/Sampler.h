@@ -16,6 +16,7 @@ class Sampler {
     const unsigned int niter;
     bool useBand;
     bool useMean;
+    bool positiveSystem;
     std::function<lp(arma::vec)> tgt;
     arma::vec lb, ub;
 public:
@@ -33,7 +34,8 @@ public:
             const unsigned int sigmaSizeInput,
             const OdeSystem & modelInput,
             const unsigned int niterInput,
-            const double burninRatioInput);
+            const double burninRatioInput,
+            const bool positiveSystem);
 };
 
 #endif //SAMPLER_H

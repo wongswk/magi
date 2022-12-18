@@ -194,6 +194,7 @@ testthat::test_that("chainSamplerRcpp can run without error",{
     burninRatioInput = config$burninRatio,
     xthetasigmaInit = xthetasigmaInit,
     stepLowInit = stepLowXthetasigmaInit,
+    positiveSystem = FALSE,
     verbose = TRUE
   )
   testthat::expect_equal(length(out$lliklist), config$n.iter)
@@ -212,6 +213,7 @@ testthat::test_that("chainSamplerRcpp can run without error",{
     burninRatioInput = config$burninRatio,
     xthetasigmaInit = xthetasigmaInit,
     stepLowInit = stepLowXthetasigmaInit,
+    positiveSystem = FALSE,
     verbose = TRUE
   )
   testthat::expect_equal(length(out$lliklist), config$n.iter)
