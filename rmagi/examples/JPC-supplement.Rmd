@@ -734,7 +734,7 @@ config <- list(
             0.00631925202022132, 0.00036869187211123)*noisefac,
   # noise level is minimum of each component * noisefac
   kernel = "generalMatern",
-  seed = 937780644,
+  seed = 115767108,
   hmcSteps = 500,
   niterHmc = 20001,
   fillinterval = 15,
@@ -870,8 +870,8 @@ layout(rbind(c(1:5), c(6:10), c(11,11,11,11,11)), heights = c(8,8,1))
 for (i in 1:10) {
   par(mar = c(4, 2.5, 1.75, 0.1))
   plot(c(min(tvecsolve), max(tvecsolve)),
-       c(min(c(recon[,i+1], xtrue[xtrue$time >=1,i+1], xsim.obs[,i+1])),
-         max(c(recon[,i+1], xtrue[xtrue$time>=1,i+1], xsim.obs[,i+1]))),
+       c(min(c(recon[,i+1], xtrue[xtrue$time >=1,i+1] - config$noise[i]*5)),
+         max(c(recon[,i+1], xtrue[xtrue$time>=1,i+1] + config$noise[i]*5))),
        type = 'n', ylab='', xlab='')
   mtext(compnames[i])
   
