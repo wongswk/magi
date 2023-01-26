@@ -24,9 +24,9 @@
 #' 
 #' The list \code{odeModel} is used for specification of the ODE system and its parameters. It must include five elements:
 #' \describe{
-#' \item{\code{fOde}}{function that computes the ODEs, specified with the form \code{f(theta, x, t)}. See examples.}
-#' \item{\code{fOdeDx}}{function that computes the gradients of the ODEs with respect to the system components. See examples.}
-#' \item{\code{fOdeDtheta}}{function that computes the gradients of the ODEs with respect to the parameters \eqn{\theta}. See examples.}
+#' \item{\code{fOde}}{function that computes the ODEs, specified with the form \code{f(theta, x, tvec)}. \code{fOde} should return a matrix where columns correspond to the system components of \code{x}, see examples.}
+#' \item{\code{fOdeDx}}{function that computes the gradients of the ODEs with respect to the system components. \code{fOdeDx} should return a 3-D array, where the entry \code{[, i, j]} is the partial derivative of the ODE for the j-th system component with respect to the i-th system component, see examples.}
+#' \item{\code{fOdeDtheta}}{function that computes the gradients of the ODEs with respect to the parameters \eqn{\theta}. \code{fOdeDtheta} should return a 3-D array, where the entry \code{[, i, j]} is the partial derivative of the ODE for the j-th system component with respect to the i-th parameter of \eqn{\theta}, see examples.}
 #' \item{\code{thetaLowerBound}}{a vector indicating the lower bounds of each parameter in \eqn{\theta}.}
 #' \item{\code{thetaUpperBound}}{a vector indicating the upper bounds of each parameter in \eqn{\theta}.}
 #' }
@@ -34,7 +34,7 @@
 #' Additional control variables can be supplied to \code{MagiSolver} via the optional list \code{control}, which may include the following:
 #' \describe{
 #'   \item{\code{sigma}}{a vector of noise levels (observation noise standard deviations) \eqn{\sigma} for each component, at which to initialize MCMC sampling.  By default, \code{MagiSolver} computes starting values for \code{sigma} via Gaussian process (GP) smoothing. If the noise levels are known, specify \code{sigma} together with \code{useFixedSigma = TRUE}.}
-#'   \item{\code{phi}}{a matrix of GP hyper-parameters for each component, with two rows for \code{phi[1]} and \code{phi[2]} and a column for each system component. By default, \code{MagiSolver} estimates \code{phi} via an optimization routine.}
+#'   \item{\code{phi}}{a matrix of GP hyper-parameters for each component, with rows for the kernel hyper-parameters and columns for the system components. By default, \code{MagiSolver} estimates \code{phi} via an optimization routine.}
 #'   \item{\code{theta}}{a vector of starting values for the parameters \eqn{\theta}, at which to initialize MCMC sampling. By default, \code{MagiSolver} uses an optimization routine to obtain starting values.}
 #'   \item{\code{xInit}}{a matrix of values for the system trajectories of the same dimension as \code{y}, at which to initialize MCMC sampling. Default is linear interpolation between the observed (non-missing) values of \code{y} and an optimization routine for entirely unobserved components of \code{y}.}
 #'   \item{\code{mu}}{a matrix of values for the mean function of the GP prior, of the same dimension as \code{y}. Default is a zero mean function.}
@@ -45,7 +45,8 @@
 #'   \item{\code{burninRatio}}{the proportion of HMC iterations to be discarded as burn-in. Default is 0.5, which discards the first half of the MCMC samples.}
 #'   \item{\code{stepSizeFactor}}{initial leapfrog step size factor for HMC. Can be a specified as a scalar (applied to all posterior dimensions) or a vector (with length corresponding to the dimension of the posterior). Default is 0.01, and the leapfrog step size is automatically tuned during burn-in to achieve an acceptance rate between 60-90\%.}
 #'   \item{\code{bandSize}}{a band matrix approximation is used to speed up matrix operations, with default band size 20. Can be increased if \code{MagiSolver} returns an error indicating numerical instability.}
-#'   \item{\code{useFixedSigma}}{logical, set to \code{TRUE} if \code{sigma} is known.  If \code{useFixedSigma=TRUE}, the known values of \eqn{\sigma} must be supplied via the \code{sigma} control variable. Default is \code{FALSE}.}
+#'   \item{\code{useFixedSigma}}{logical, set to \code{TRUE} if \code{sigma} is known.  If \code{useFixedSigma = TRUE}, the known values of \eqn{\sigma} must be supplied via the \code{sigma} control variable. Default is \code{FALSE}.}
+#'   \item{\code{kerneltype}}{the GP covariance kernel, \code{generalMatern} is the default and recommended choice. Other available choices are \code{matern}, \code{rbf}, \code{compact1}, \code{periodicMatern}. See \code{\link{calCov}} for their definitions.}
 #'   \item{\code{skipMissingComponentOptimization}}{logical, set to \code{TRUE} to skip automatic optimization for missing components. If \code{skipMissingComponentOptimization=TRUE}, values for \code{xInit} and \code{phi} must be supplied for all system components. Default is \code{FALSE}.}
 #'   \item{\code{positiveSystem}}{logical, set to \code{TRUE} if the system cannot be negative. Default is \code{FALSE}.}
 #'   \item{\code{verbose}}{logical, set to \code{TRUE} to output diagnostic and progress messages to the console. Default is \code{FALSE}.}
@@ -177,8 +178,12 @@ MagiSolver <- function(y, odeModel, tvec, control = list()) {
     verbose = control$verbose
   else
     verbose = FALSE
-  
-  
+
+  if (!is.null(control$kerneltype))
+    kernel = control$kerneltype
+  else
+    kernel = "generalMatern"
+
   samplesCpp <- solveMagiRcpp(
     yFull = data.matrix(y),
     odeModel = odeModel,
@@ -192,7 +197,7 @@ MagiSolver <- function(y, odeModel, tvec, control = list()) {
     priorTemperatureLevel = priorTemperatureLevel,
     priorTemperatureDeriv = priorTemperatureDeriv,
     priorTemperatureObs = 1,
-    kernel = "generalMatern",
+    kernel = kernel,
     nstepsHmc = nstepsHmc,
     burninRatioHmc = burninRatio,
     niterHmc = niterHmc,
@@ -267,7 +272,7 @@ gpsmoothllik <- function(phisig, yobs, rInput, kerneltype = "generalMatern") {
 #' 
 #' @param yobs vector of observations
 #' @param tvec vector of time points corresponding to observations
-#' @param kerneltype the covariance kernel, types \code{matern}, \code{compact1}, \code{periodicMatern}, \code{generalMatern} are supported.  See \code{\link{calCov}} for their definitions.
+#' @param kerneltype the covariance kernel, types \code{matern}, \code{rbf}, \code{compact1}, \code{periodicMatern}, \code{generalMatern} are supported.  See \code{\link{calCov}} for their definitions.
 #' @param sigma the noise level (if known). By default, both \code{phi} and \code{sigma} are estimated. If a value for \code{sigma} is supplied, then \code{sigma} is held fixed at the supplied value and only \code{phi} is estimated.
 #' 
 #' @return A list containing the elements \code{phi} and \code{sigma} with their estimated values.

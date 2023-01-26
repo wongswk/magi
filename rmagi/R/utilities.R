@@ -37,13 +37,95 @@ getMeanCurve <- function(x, y, x.new, phi.mat, sigma.mat, kerneltype="matern", d
   }
 }
 
+#' Conditional mean of Gaussian process given observations
+#' 
+#' Compute the conditional mean of a Gaussian process (and optionally, its derivative), given a vector of observations, hyper-parameters \code{phi}, and noise standard deviation \code{sigma}.
+#' 
+#' @param yobs vector of observations
+#' @param tvec vector of time points corresponding to observations
+#' @param tnew vector of time points at which the conditional mean should be computed
+#' @param phi vector of hyper-parameters for the covariance kernel (\code{kerneltype})
+#' @param sigma noise standard deviation of the observations
+#' @param kerneltype the covariance kernel, types \code{matern}, \code{rbf}, \code{compact1}, \code{periodicMatern}, \code{generalMatern} are supported.  See \code{\link{calCov}} for their definitions.
+#' @param sigma the noise level (if known). By default, both \code{phi} and \code{sigma} are estimated. If a value for \code{sigma} is supplied, then \code{sigma} is held fixed at the supplied value and only \code{phi} is estimated.
+#' @param deriv logical; if true, the conditional mean of the GP's derivative is also computed
+#' 
+#' @return A vector with the values of the conditional mean function evaluated at the time points in \code{tnew}. If \code{deriv = TRUE}, returned with an additional attribute \code{deriv} that contains the values of the conditional mean of the GP derivative evaluated at the time points in \code{tnew}.
+#'
+#' @examples 
+#' # Load Fitzhugh-Nagumo dataset
+#' data(FNdat)
+#' 
+#' tnew <- seq(0, 20, by = 0.5)
+#' 
+#' # GP mean of V component at time points in tnew given observations
+#' gpmean(FNdat$V, FNdat$time, tnew, c(2.3, 1.2), 0.2)
+#' 
+#' @export
+gpmean <- function(yobs, tvec, tnew, phi, sigma, kerneltype="generalMatern", deriv=FALSE) {
+  res <- getMeanCurve(tvec, yobs, tnew, as.matrix(t(phi)), sigma, kerneltype, deriv)
+  
+  if (deriv) {
+    ret <- res[[1]]
+    attr(ret, "deriv") <- res[[2]]
+  } else {
+    ret <- res
+  }
+  
+  ret
+}
+
+#' Conditional covariance of Gaussian process given observations
+#' 
+#' Compute the conditional covariance of a Gaussian process, given a vector of observations, hyper-parameters \code{phi}, and noise standard deviation \code{sigma}.
+#' 
+#' @param yobs vector of observations
+#' @param tvec vector of time points corresponding to observations
+#' @param tnew vector of time points at which the conditional mean should be computed
+#' @param phi vector of hyper-parameters for the covariance kernel (\code{kerneltype})
+#' @param sigma noise standard deviation of the observations
+#' @param kerneltype the covariance kernel, types \code{matern}, \code{rbf}, \code{compact1}, \code{periodicMatern}, \code{generalMatern} are supported.  See \code{\link{calCov}} for their definitions.
+#' @param sigma the noise level (if known). By default, both \code{phi} and \code{sigma} are estimated. If a value for \code{sigma} is supplied, then \code{sigma} is held fixed at the supplied value and only \code{phi} is estimated.
+#' 
+#' @return The conditional covariance matrix for the GP evaluated at the time points in \code{tnew}.
+#'
+#' @examples 
+#' # Load Fitzhugh-Nagumo dataset
+#' data(FNdat)
+#' 
+#' tnew <- seq(15, 20, by = 0.5)
+#' 
+#' # GP covariance of V component at time points in tnew given observations
+#' gpcov(FNdat$V, FNdat$time, tnew, c(2.3, 1.2), 0.2)
+#' 
+#' @export
+gpcov <- function(yobs, tvec, tnew, phi, sigma, kerneltype="generalMatern") {
+
+  tvec <- c(tnew, tvec)
+  
+  foo <- outer(tvec, t(tvec),'-')[,1,]
+  r <- abs(foo)
+  r2 <- r^2
+  signr <- -sign(foo)
+
+  covObj <- calCov(phi, r, signr, complexity = 0, kerneltype=kerneltype)
+  C <- covObj$C
+    
+  diag(C)[-(1:length(tnew))] <- diag(C)[-(1:length(tnew))]+sigma^2
+  ret <- C[1:length(tnew),1:length(tnew)] - C[1:length(tnew),-(1:length(tnew))] %*% solve(C[-(1:length(tnew)),-(1:length(tnew))]) %*% C[-(1:length(tnew)),1:length(tnew)]
+
+  ret
+}
+
+
+
 #' Set discretization level
 #'
 #' @description Set the discretization level of a data matrix for input to \code{\link{MagiSolver}}, by inserting time points where the GP is constrained to the derivatives of the ODE system.
 #' 
 #' @param dat data matrix. Must include a column with name `time`.
-#' @param level discretization level (a positive integer). \code{2^level - 1} equally-spaced points will be inserted between existing data points in \code{dat}.
-#' @param by discretization interval. As an alternative to \code{level}, equally-spaced spaced time points will be inserted with interval \code{by} between successive points.
+#' @param level discretization level (a positive integer). \code{2^level - 1} equally-spaced points will be inserted between each row of \code{dat}.
+#' @param by discretization interval. As an alternative to \code{level}, time points will be inserted (as needed) to form an equally-spaced discretization set with interval \code{by} between successive points.
 #'
 #' @details 
 #' Specify the desired discretization using \code{level} or \code{by}.

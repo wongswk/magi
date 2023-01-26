@@ -14,8 +14,10 @@ using namespace arma;
 //' @param phi         the parameter of (sigma_c_sq, alpha)
 //' @param dist        distance matrix
 //' @param complexity  how much derivative information should be calculated
-gpcov maternCov( const vec & phi, const mat & dist, int complexity = 0){
+gpcov maternCov( const vec & phi, const mat & distSigned, int complexity = 0){
   gpcov out;
+  double noiseInjection = 1e-7;
+  mat dist = abs(distSigned);
   mat dist2 = square(dist);
   out.C = phi(0) * (1.0 + ((sqrt(5.0)*dist)/phi(1)) + 
     ((5.0*dist2)/(3.0*pow(phi(1),2)))) % exp((-sqrt(5.0)*dist)/phi(1));
@@ -30,6 +32,15 @@ gpcov maternCov( const vec & phi, const mat & dist, int complexity = 0){
     out.C % ((sqrt(5.0)*dist)/pow(phi(1),2));
   if (complexity == 1) return out;
   // work from here continue for gp derivative
+
+  out.Cprime = -sign(distSigned) % (phi(0) * exp((-sqrt(5)* dist) /phi(1))) % ((5*dist)/(3*pow(phi(1),2)) + ((5*sqrt(5)*dist2)/(3*pow(phi(1),3))));
+  out.Cdoubleprime = (-phi(0) * (sqrt(5)/phi(1)) * exp((-sqrt(5)*dist)/phi(1))) % (((5*dist)/(3*pow(phi(1),2))) + ((5*sqrt(5)*dist2)/(3*pow(phi(1),3)))) + (phi(0)*exp((-sqrt(5)*dist)/phi(1))) % ((5/(3*pow(phi(1),2))) + ((10*sqrt(5)*dist)/(3*pow(phi(1),3))));
+  inv_sympd(out.Cinv, out.C);
+  out.mphi = out.Cprime * out.Cinv;
+  out.Kphi = out.Cdoubleprime - out.mphi * out.Cprime.t();
+  out.Kphi.diag() += noiseInjection;
+  inv_sympd(out.Kinv, out.Kphi);
+
   return out;
 }
 
@@ -183,16 +194,41 @@ gpcov generalMaternCov( const vec & phi,
 //' @param phi         the parameter of (sigma_c_sq, alpha)
 //' @param dist        distance matrix
 //' @param complexity  how much derivative information should be calculated
-gpcov periodicMaternCov( const vec & phi, const mat & dist, int complexity = 0){
-  mat newdist = abs(sin(dist * datum::pi / phi(2))) * 2.0;
+gpcov periodicMaternCov( const vec & phi, const mat & distSigned, int complexity = 0){
+  double noiseInjection = 1e-7;
+  mat dist = abs(distSigned);
+  mat signInput = sign(distSigned);
+  mat newdist = signInput % abs(sin(dist * datum::pi / phi(2))) * 2.0;
   gpcov out = maternCov( phi.subvec(0,1), newdist, complexity);
+
+  if (complexity == 0) {
+    return out;
+  }
+
   out.dCdphiCube.resize(out.dCdphiCube.n_rows, out.dCdphiCube.n_cols, 3);
   out.dCdphiCube.slice(2) = out.C % sign(sin(dist*datum::pi/phi(2))) 
     % (cos(dist*datum::pi/phi(2))*2) % (dist*datum::pi * -1/pow(phi(2),2));
+
+  if (complexity == 1) {
   return out;
 }
-gpcov rbfCov( const vec & phi, const mat & dist, int complexity = 0){
+
+  out.Cdoubleprime =  out.Cdoubleprime % pow(cos(dist * datum::pi/phi(2))*2 * datum::pi/phi(2),2) -
+    out.Cprime % abs(sin(dist*datum::pi/phi(2))*2) * pow(datum::pi/phi(2),2) % (-sign(distSigned));
+  out.Cprime = out.Cprime % sign(sin(dist*datum::pi/phi(2))*2) % cos(dist*datum::pi/phi(2))*2 * datum::pi/phi(2);
+
+  inv_sympd(out.Cinv, out.C);
+  out.mphi = out.Cprime * out.Cinv;
+  out.Kphi = out.Cdoubleprime - out.mphi * out.Cprime.t();
+  out.Kphi.diag() += noiseInjection;
+  inv_sympd(out.Kinv, out.Kphi);
+
+  return out;
+}
+gpcov rbfCov( const vec & phi, const mat & distSigned, int complexity = 0){
+  double noiseInjection = 1e-7;
   gpcov out;
+  mat dist = abs(distSigned);
   mat dist2 = square(dist);
   out.C = phi(0) * exp(-dist2/(2.0*pow(phi(1), 2)));
   out.C.diag() += 1e-7;
@@ -204,11 +240,24 @@ gpcov rbfCov( const vec & phi, const mat & dist, int complexity = 0){
   out.dCdphiCube.slice(1) = out.C % dist2 / pow(phi(1), 3);
   if (complexity == 1) return out;
   // work from here continue for gp derivative
+  //Cprime  <- signr * C * r / (phi[2]^2)
+  //Cdoubleprime <- C * (1/phi[2]^2 - r2 / phi[2]^4)
+
+  out.Cprime = -sign(distSigned) % out.C % dist / pow(phi(1), 2);
+  out.Cdoubleprime = out.C % ( 1 / pow(phi(1), 2) - dist2 / pow(phi(1), 4));
+  inv_sympd(out.Cinv, out.C);
+  out.mphi = out.Cprime * out.Cinv;
+  out.Kphi = out.Cdoubleprime - out.mphi * out.Cprime.t();
+  out.Kphi.diag() += noiseInjection;
+  inv_sympd(out.Kinv, out.Kphi);
+
   return out;
 }
 
-gpcov compact1Cov( const vec & phi, const mat & dist, int complexity = 0){
+gpcov compact1Cov( const vec & phi, const mat & distSigned, int complexity = 0){
+  double noiseInjection = 1e-7;
   int dimension = 3;
+  mat dist = abs(distSigned);
   mat zeromat = zeros<mat>(dist.n_rows, dist.n_cols);
   int p = floor((double)dimension / 2.0) + 2;
   gpcov out;
@@ -224,6 +273,15 @@ gpcov compact1Cov( const vec & phi, const mat & dist, int complexity = 0){
     % pow(dist,2)/pow(phi(1),3) * (p+1) * (p+2);
   if (complexity == 1) return out;
   // work from here continue for gp derivative
+
+  out.Cprime =  -sign(distSigned) * phi(0) * (p+1)/phi(1) % pow(arma::max(1-dist/phi(1), zeromat),p) % dist/phi(1) * (p+2);
+  out.Cdoubleprime = phi(0) * pow(arma::max(1-dist/phi(1),zeromat),p-1) * (p+1) * (p+2) / pow(phi(1),2) % (1-dist/phi(1)-dist*p/phi(1));
+  inv_sympd(out.Cinv, out.C);
+  out.mphi = out.Cprime * out.Cinv;
+  out.Kphi = out.Cdoubleprime - out.mphi * out.Cprime.t();
+  out.Kphi.diag() += noiseInjection;
+  inv_sympd(out.Kinv, out.Kphi);
+
   return out;
 }
 

@@ -85,13 +85,14 @@ print.magioutput <- function(x, ...) {
 #' @param object a \code{magioutput} object.
 #' @param sigma logical; if true, the noise levels \eqn{\sigma} will be included in the summary.
 #' @param par.names vector of parameter names for the summary table. If provided, should be the same length as the number of parameters in \eqn{\theta}, or the combined length of \eqn{\theta} and \eqn{\sigma} when \code{sigma = TRUE}.
+#' @param est string specifying the posterior quantity to treat as the estimate. Default is "mean", which treats the posterior mean as the estimate. Can be one of "mean", "median", or "mode". 
 #' @param lower the lower quantile of the credible interval, default is 0.025.
 #' @param upper the upper quantile of the credible interval, default is 0.975.
 #' @param digits integer; the number of significant digits to print.
 #' @param ... additional arguments affecting the summary produced.
 #' @return Returns a matrix where rows display the posterior mean, lower credible limit, and upper credible limit of each parameter.
 #' @details
-#' Computes parameter estimates (posterior means) and credible intervals from the MCMC samples. By default, \code{lower = 0.025} and \code{upper = 0.975} produces a central 95\% credible interval.
+#' Computes parameter estimates and credible intervals from the MCMC samples. By default, the posterior mean is treated as the parameter estimate, and \code{lower = 0.025} and \code{upper = 0.975} produces a central 95\% credible interval.
 #' 
 #' @examples
 #' # Set up odeModel list for the Fitzhugh-Nagumo equations
@@ -111,17 +112,32 @@ print.magioutput <- function(x, ...) {
 #' 
 #' summary(result, sigma = TRUE, par.names = c("a", "b", "c", "sigmaV", "sigmaR"))
 #' @export
-summary.magioutput <- function(object, sigma = FALSE, par.names, lower = 0.025, upper = 0.975, digits = 3, ...) {
+summary.magioutput <- function(object, sigma = FALSE, par.names, est = "mean", lower = 0.025, upper = 0.975, digits = 3, ...) {
 
   if (!is.magioutput(object)) 
     stop("\"object\" must be a magioutput object")
   
+  if (est == "mean") {
+    f <- mean
+    est.lab <- "Mean"
+  }
+  if (est == "median") {
+    f <- median
+    est.lab <- "50%"
+  }
+  if (est == "mode") {
+    lpmaxInd = which.max(object$lp)
+    f <- function(x) x[lpmaxInd]
+    est.lab <- "Mode"
+  }
+    
+  
   theta.est <- apply(object$theta, 2,
-                     function(x) c(mean(x), quantile(x, lower), quantile(x, upper)))
+                     function(x) c(f(x), quantile(x, lower), quantile(x, upper)))
   
   if (sigma) {
     sigma.est <- apply(object$sigma, 2,
-                       function(x) c(mean(x), quantile(x, lower), quantile(x, upper)))
+                       function(x) c(f(x), quantile(x, lower), quantile(x, upper)))
     theta.est <- cbind(theta.est, sigma.est)
   }
   
@@ -134,7 +150,7 @@ summary.magioutput <- function(object, sigma = FALSE, par.names, lower = 0.025, 
   }
   
   colnames(theta.est) <- par.names
-  rownames(theta.est) <- c("Mean", paste0(lower*100, "%"), paste0(upper*100, "%"))
+  rownames(theta.est) <- c(est.lab, paste0(lower*100, "%"), paste0(upper*100, "%"))
   signif(theta.est, digits)
   
 }

@@ -117,6 +117,8 @@ public:
             phiDim = 2;
         }else if(kernel == "matern") {
             phiDim = 2;
+        }else if(kernel == "rbf") {
+          phiDim = 2;
         }else if(kernel == "compact1") {
             phiDim = 2;
         }else if(kernel == "periodicMatern"){
@@ -165,6 +167,8 @@ arma::vec gpsmooth(const arma::mat & yobsInput,
         phiDim = 2;
     }else if(kernelInput == "matern") {
         phiDim = 2;
+    }else if(kernelInput == "rbf") {
+      phiDim = 2;
     }else if(kernelInput == "compact1") {
         phiDim = 2;
     }else if(kernelInput == "periodicMatern"){
@@ -244,7 +248,7 @@ arma::cube calcMeanCurve(const arma::vec & xInput,
                          const arma::vec & sigmaCandidates,
                          const std::string kerneltype = "generalMatern",
                          const bool useDeriv = false) {
-    if(kerneltype != "generalMatern") Rcpp::Rcerr << "kerneltype other than generalMatern is not supported\n";
+    //if(kerneltype != "generalMatern") Rcpp::Rcerr << "kerneltype other than generalMatern is not supported\n";
 
     const arma::vec & tvec = arma::join_vert(xOutput, xInput);
     arma::mat distSigned(tvec.size(), tvec.size());
@@ -264,7 +268,20 @@ arma::cube calcMeanCurve(const arma::vec & xInput,
         const double & sigma = sigmaCandidates(it);
         const arma::vec & phi = phiCandidates.col(it);
 
-        gpcov covObj = generalMaternCov(phi, distSigned, complexity);
+        gpcov covObj;
+        if (kerneltype == "generalMatern") {
+          covObj = generalMaternCov(phi, distSigned, complexity);
+        }else if(kerneltype == "matern") {
+          covObj = maternCov(phi, distSigned, complexity);
+        }else if(kerneltype == "rbf") {
+          covObj = rbfCov(phi, distSigned, complexity);
+        }else if(kerneltype == "compact1") {
+          covObj = compact1Cov(phi, distSigned, complexity);
+        }else if(kerneltype == "periodicMatern"){
+          covObj = periodicMaternCov(phi, distSigned, complexity);
+        }else{
+          throw std::invalid_argument("kerneltype invalid");
+        }
         arma::mat C = std::move(covObj.C);
 
         arma::vec Cdiag = C.diag();

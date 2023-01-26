@@ -1,20 +1,32 @@
-#' Plot trajectories from \code{magioutput} object
-#' @description Plots the inferred trajectories from the output of \code{MagiSolver}
+#' Generate plots from \code{magioutput} object
+#' @description Plots inferred system trajectories or diagnostic traceplots from the output of \code{MagiSolver}
 #' @param x a \code{magioutput} object.
-#' @param obs logical; if true, points will be added on the plots for the observations.
-#' @param ci logical; if true, credible bands will be added to the plots.
-#' @param comp.names vector of system component names. If provided, should be the same length as the number of system components in \eqn{X}.
-#' @param lower the lower quantile of the credible band, default is 0.025. Only used if \code{ci = TRUE}.
-#' @param upper the upper quantile of the credible band, default is 0.975. Only used if \code{ci = TRUE}.
+#' @param type string; the default \code{type = "traj"} plots inferred trajectories, while setting \code{type = "trace"} generates diagnostic traceplots for the MCMC samples of the parameters and log-posterior values.
+#' @param obs logical; if true, points will be added on the plots for the observations when \code{type = "traj"}.
+#' @param ci logical; if true, credible bands/intervals will be added to the plots.
+#' @param comp.names vector of system component names, when \code{type = "traj"}. If provided, should be the same length as the number of system components in \eqn{X}.
+#' @param par.names vector of parameter names, when \code{type = "trace"}. If provided, should be the same length as the number of parameters in \eqn{\theta}, or the combined length of \eqn{\theta} and \eqn{\sigma} when \code{sigma = TRUE}.
+#' @param est string specifying the posterior quantity to plot as the estimate. Can be "mean", "mode", or "none". Default is "mean", which plots the posterior mean of the MCMC samples.
+#' @param lower the lower quantile of the credible band/interval, default is 0.025. Only used if \code{ci = TRUE}.
+#' @param upper the upper quantile of the credible band/interval, default is 0.975. Only used if \code{ci = TRUE}.
+#' @param sigma logical; if true, the noise levels \eqn{\sigma} will be included in the traceplots when \code{type = "trace"}.
+#' @param lp logical; if true, the values of the log-posterior will be included in the traceplots when \code{type = "trace"}.
 #' @param nplotcol the number of subplots per row.
 #' @param ... additional arguments to \code{plot}.
-#' 
-#' @details 
-#' Plots inferred trajectories (posterior means) and credible bands from the MCMC samples, one subplot for each system component.
+#'
+#' @details
+#' Plots the inferred system trajectories (when \code{type = "traj"}) or diagnostic traceplots of the parameters and log-posterior (when \code{type = "trace"}) from the MCMC samples.
+#' By default, the posterior mean is treated as the estimate of the trajectories and parameters (\code{est = "mean"}).
+#' An alternative is the posterior mode (\code{est = "mode"}), which is approximated by the MCMC sample with the highest log-posterior value.
+#'
+#' The default \code{type = "traj"} produces plots of the inferred trajectories and credible bands from the MCMC samples, one subplot for each system component.
 #' By default, \code{lower = 0.025} and \code{upper = 0.975} produces a central 95\% credible band when \code{ci = TRUE}.
 #' Adding the observed data points (\code{obs = TRUE}) can provide a visual assessment of the inferred trajectories.
-#' 
-#' @examples 
+#'
+#' Setting \code{type = "trace"} generates diagnostic traceplots for the MCMC samples of the system parameters and the values of the log-posterior, which is a useful tool for informally assessing convergence.
+#' In this case, the \code{est} and \code{ci} options add horizontal lines to the plots that indicate the estimate (in red) and credible interval (in blue) for each parameter.
+#'
+#' @examples
 #' # Set up odeModel list for the Fitzhugh-Nagumo equations
 #' fnmodel <- list(
 #'   fOde = fnmodelODE,
@@ -31,59 +43,114 @@
 #' # Create magioutput from a short MagiSolver run (demo only, more iterations needed for convergence)
 #' result <- MagiSolver(y, fnmodel, control = list(nstepsHmc = 20, niterHmc = 500)) 
 #' 
+#' # Inferred trajectories
 #' plot(result, comp.names = c("V", "R"), xlab = "Time", ylab = "Level")
+#' 
+#' # Parameter trace plots
+#' plot(result, type = "trace", par.names = c("a", "b", "c", "sigmaV", "sigmaR"), sigma = TRUE)
 #' 
 #' @importFrom graphics polygon
 #' 
 #' @export
-plot.magioutput <- function(x, obs = TRUE, ci = TRUE, comp.names, lower = 0.025, upper = 0.975, nplotcol = 3, ...) {
+plot.magioutput <- function(x, type = "traj", obs = TRUE, ci = TRUE, comp.names, par.names, est = "mean", lower = 0.025, upper = 0.975, sigma = FALSE, lp = TRUE, nplotcol = 3, ...) {
 
   if (!is.magioutput(x)) 
     stop("\"x\" must be a magioutput object")
-  
-  xMean <- apply(x$xsampled, c(2, 3), mean)
-  
-  if (missing(comp.names)) {
-    comp.names = paste0("X[", 1:ncol(xMean), "]")  
-  } else if (length(comp.names) != ncol(xMean)) {
-    stop(paste("vector of comp.names should be length", ncol(xMean), "to match the number of components"))
-  }
-  
-  if (ci) {
-    xLB <- apply(x$xsampled, c(2, 3), function(x) quantile(x, lower))
-    xUB <- apply(x$xsampled, c(2, 3), function(x) quantile(x, upper))
-  }
-  
-  nplotrow = ceiling(ncol(xMean) / nplotcol)
-  if (ncol(xMean) < nplotcol) {
-    nplotcol = ncol(xMean)
-  }
-    
-  par(mfrow = c(nplotrow, nplotcol), mar = c(4, 4, 1.5, 1))
-  for (i in 1:ncol(xMean)) {
-    # Set up empty plot
-    if (obs & ci) {
-      plot(rep(x$tvec, 3), c(xLB[, i], xUB[, i], x$y[,i]), type = "n", ...)
-    } else if (obs) {
-      plot(rep(x$tvec, 2), c(xMean[, i], x$y[,i]), type = "n", ...)
-    } else {
-      plot(x$tvec, xMean[, i], type = "n", ...)      
+
+  if (est == "mode")
+    lpmaxInd = which.max(x$lp)
+
+  if (type == "traj") {
+    xMean <- apply(x$xsampled, c(2, 3), mean)
+
+    if (missing(comp.names)) {
+      comp.names = paste0("X[", 1:ncol(xMean), "]")
+    } else if (length(comp.names) != ncol(xMean)) {
+      stop(paste("vector of comp.names should be length", ncol(xMean), "to match the number of components"))
     }
-    
-    mtext(comp.names[i])
+
     if (ci) {
-      polygon(c(x$tvec, rev(x$tvec)), c(xUB[, i], rev(xLB[, i])),
-              col = "skyblue", border = NA)  
+      xLB <- apply(x$xsampled, c(2, 3), function(x) quantile(x, lower))
+      xUB <- apply(x$xsampled, c(2, 3), function(x) quantile(x, upper))
     }
-    
-    lines(x$tvec, xMean[, i], ...)
-    
-    if (obs) {
-      points(x$tvec, x$y[, i])
+
+    nplotrow = ceiling(ncol(xMean) / nplotcol)
+    if (ncol(xMean) < nplotcol) {
+      nplotcol = ncol(xMean)
     }
-    
+
+    par(mfrow = c(nplotrow, nplotcol), mar = c(4, 4, 1.5, 1))
+    for (i in 1:ncol(xMean)) {
+      # Set up empty plot
+      if (obs & ci) {
+        plot(rep(x$tvec, 3), c(xLB[, i], xUB[, i], x$y[,i]), type = "n", ...)
+      } else if (obs) {
+        plot(rep(x$tvec, 2), c(xMean[, i], x$y[,i]), type = "n", ...)
+      } else {
+        plot(x$tvec, xMean[, i], type = "n", ...)
+      }
+
+      mtext(comp.names[i])
+      if (ci) {
+        polygon(c(x$tvec, rev(x$tvec)), c(xUB[, i], rev(xLB[, i])),
+                col = "skyblue", border = NA)
+      }
+
+      if (est == "mean")
+        lines(x$tvec, xMean[, i], ...)
+
+      if (est == "mode")
+        lines(x$tvec, x$xsampled[lpmaxInd, ,i])
+
+      if (obs) {
+        points(x$tvec, x$y[, i])
+      }
+
+    }
   }
 
+  if (type == "trace") {
+
+    if (missing(par.names)) {
+      par.names = paste0("theta[", 1:ncol(x$theta), "]")
+      if (sigma)
+        par.names = c(par.names, paste0("sigma[", 1:ncol(x$sigma), "]"))
+    } else if (length(par.names) != ncol(x$theta) + sigma * ncol(x$sigma)) {
+      stop(paste("vector of par.names should be length", ncol(x$theta) + sigma * ncol(x$sigma), "to match the number of parameters"))
+    }
+
+    if (lp)
+      par.names = c(par.names, "log-post")
+
+    all_samples <- x$theta
+    if (sigma)
+      all_samples <- cbind(all_samples, x$sigma)
+    if (lp)
+      all_samples <- cbind(all_samples, x$lp)
+
+    nplotrow = ceiling(length(par.names) / nplotcol)
+    if (length(par.names) < nplotcol) {
+      nplotcol = length(par.names)
+    }
+
+    par(mfrow = c(nplotrow, nplotcol), mar = c(5, 2, 1, 1))
+
+    for (i in 1:ncol(all_samples)) {
+      plot(all_samples[, i], main = par.names[i], type = "l", ylab = "", ...)
+
+      if (est == "mean")
+        abline(h = mean(all_samples[,i]), col = "red", lwd = 2)
+      if (est == "mode")
+        abline(h = all_samples[lpmaxInd,i], col = "red", lwd = 2)
+
+      if (ci) {
+        abline(h = quantile(all_samples[,i], lower), col= "blue")
+        abline(h = quantile(all_samples[,i], upper), col= "blue")
+      }
+    }
+
+
+  }
 }
 
 
