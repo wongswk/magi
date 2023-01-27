@@ -6,7 +6,7 @@
 #' @param ci logical; if true, credible bands/intervals will be added to the plots.
 #' @param comp.names vector of system component names, when \code{type = "traj"}. If provided, should be the same length as the number of system components in \eqn{X}.
 #' @param par.names vector of parameter names, when \code{type = "trace"}. If provided, should be the same length as the number of parameters in \eqn{\theta}, or the combined length of \eqn{\theta} and \eqn{\sigma} when \code{sigma = TRUE}.
-#' @param est string specifying the posterior quantity to plot as the estimate. Can be "mean", "mode", or "none". Default is "mean", which plots the posterior mean of the MCMC samples.
+#' @param est string specifying the posterior quantity to plot as the estimate. Can be "mean", "median", "mode", or "none". Default is "mean", which plots the posterior mean of the MCMC samples.
 #' @param lower the lower quantile of the credible band/interval, default is 0.025. Only used if \code{ci = TRUE}.
 #' @param upper the upper quantile of the credible band/interval, default is 0.975. Only used if \code{ci = TRUE}.
 #' @param sigma logical; if true, the noise levels \eqn{\sigma} will be included in the traceplots when \code{type = "trace"}.
@@ -17,7 +17,7 @@
 #' @details
 #' Plots the inferred system trajectories (when \code{type = "traj"}) or diagnostic traceplots of the parameters and log-posterior (when \code{type = "trace"}) from the MCMC samples.
 #' By default, the posterior mean is treated as the estimate of the trajectories and parameters (\code{est = "mean"}).
-#' An alternative is the posterior mode (\code{est = "mode"}), which is approximated by the MCMC sample with the highest log-posterior value.
+#' Alternatives are the posterior median (\code{est = "median"}, taken component-wise) and the posterior mode (\code{est = "mode"}, approximated by the MCMC sample with the highest log-posterior value).
 #'
 #' The default \code{type = "traj"} produces plots of the inferred trajectories and credible bands from the MCMC samples, one subplot for each system component.
 #' By default, \code{lower = 0.025} and \code{upper = 0.975} produces a central 95\% credible band when \code{ci = TRUE}.
@@ -63,6 +63,9 @@ plot.magioutput <- function(x, type = "traj", obs = TRUE, ci = TRUE, comp.names,
   if (type == "traj") {
     xMean <- apply(x$xsampled, c(2, 3), mean)
 
+    if (est == "median")
+      xMed <- apply(x$xsampled, c(2, 3), median)
+
     if (missing(comp.names)) {
       comp.names = paste0("X[", 1:ncol(xMean), "]")
     } else if (length(comp.names) != ncol(xMean)) {
@@ -99,8 +102,11 @@ plot.magioutput <- function(x, type = "traj", obs = TRUE, ci = TRUE, comp.names,
       if (est == "mean")
         lines(x$tvec, xMean[, i], ...)
 
+      if (est == "median")
+        lines(x$tvec, xMed[, i], ...)
+
       if (est == "mode")
-        lines(x$tvec, x$xsampled[lpmaxInd, ,i])
+        lines(x$tvec, x$xsampled[lpmaxInd, ,i], ...)
 
       if (obs) {
         points(x$tvec, x$y[, i])
@@ -140,6 +146,8 @@ plot.magioutput <- function(x, type = "traj", obs = TRUE, ci = TRUE, comp.names,
 
       if (est == "mean")
         abline(h = mean(all_samples[,i]), col = "red", lwd = 2)
+      if (est == "median")
+        abline(h = median(all_samples[,i]), col = "red", lwd = 2)
       if (est == "mode")
         abline(h = all_samples[lpmaxInd,i], col = "red", lwd = 2)
 
