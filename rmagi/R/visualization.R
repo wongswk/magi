@@ -4,6 +4,7 @@
 #' @param type string; the default \code{type = "traj"} plots inferred trajectories, while setting \code{type = "trace"} generates diagnostic traceplots for the MCMC samples of the parameters and log-posterior values.
 #' @param obs logical; if true, points will be added on the plots for the observations when \code{type = "traj"}.
 #' @param ci logical; if true, credible bands/intervals will be added to the plots.
+#' @param ci.col string; color to use for credible bands.
 #' @param comp.names vector of system component names, when \code{type = "traj"}. If provided, should be the same length as the number of system components in \eqn{X}.
 #' @param par.names vector of parameter names, when \code{type = "trace"}. If provided, should be the same length as the number of parameters in \eqn{\theta}, or the combined length of \eqn{\theta} and \eqn{\sigma} when \code{sigma = TRUE}.
 #' @param est string specifying the posterior quantity to plot as the estimate. Can be "mean", "median", "mode", or "none". Default is "mean", which plots the posterior mean of the MCMC samples.
@@ -24,7 +25,7 @@
 #' Adding the observed data points (\code{obs = TRUE}) can provide a visual assessment of the inferred trajectories.
 #'
 #' Setting \code{type = "trace"} generates diagnostic traceplots for the MCMC samples of the system parameters and the values of the log-posterior, which is a useful tool for informally assessing convergence.
-#' In this case, the \code{est} and \code{ci} options add horizontal lines to the plots that indicate the estimate (in red) and credible interval (in blue) for each parameter.
+#' In this case, the \code{est} and \code{ci} options add horizontal lines to the plots that indicate the estimate (in red) and credible interval (in green) for each parameter.
 #'
 #' @examples
 #' # Set up odeModel list for the Fitzhugh-Nagumo equations
@@ -52,7 +53,7 @@
 #' @importFrom graphics polygon
 #' 
 #' @export
-plot.magioutput <- function(x, type = "traj", obs = TRUE, ci = TRUE, comp.names, par.names, est = "mean", lower = 0.025, upper = 0.975, sigma = FALSE, lp = TRUE, nplotcol = 3, ...) {
+plot.magioutput <- function(x, type = "traj", obs = TRUE, ci = TRUE, ci.col = "skyblue", comp.names, par.names, est = "mean", lower = 0.025, upper = 0.975, sigma = FALSE, lp = TRUE, nplotcol = 3, ...) {
 
   if (!is.magioutput(x)) 
     stop("\"x\" must be a magioutput object")
@@ -96,7 +97,7 @@ plot.magioutput <- function(x, type = "traj", obs = TRUE, ci = TRUE, comp.names,
       mtext(comp.names[i])
       if (ci) {
         polygon(c(x$tvec, rev(x$tvec)), c(xUB[, i], rev(xLB[, i])),
-                col = "skyblue", border = NA)
+                col = ci.col, border = NA)
       }
 
       if (est == "mean")
@@ -152,8 +153,8 @@ plot.magioutput <- function(x, type = "traj", obs = TRUE, ci = TRUE, comp.names,
         abline(h = all_samples[lpmaxInd,i], col = "red", lwd = 2)
 
       if (ci) {
-        abline(h = quantile(all_samples[,i], lower), col= "blue")
-        abline(h = quantile(all_samples[,i], upper), col= "blue")
+        abline(h = quantile(all_samples[,i], lower), col= "green")
+        abline(h = quantile(all_samples[,i], upper), col= "green")
       }
     }
 

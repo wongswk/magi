@@ -112,9 +112,8 @@ gpcov <- function(yobs, tvec, tnew, phi, sigma, kerneltype="generalMatern") {
   C <- covObj$C
     
   diag(C)[-(1:length(tnew))] <- diag(C)[-(1:length(tnew))]+sigma^2
-  ret <- C[1:length(tnew),1:length(tnew)] - C[1:length(tnew),-(1:length(tnew))] %*% solve(C[-(1:length(tnew)),-(1:length(tnew))]) %*% C[-(1:length(tnew)),1:length(tnew)]
-
-  ret
+  ret <- C[1:length(tnew),1:length(tnew)] - C[1:length(tnew),-(1:length(tnew))] %*% solve(C[-(1:length(tnew)),-(1:length(tnew))]) %*% t(C[1:length(tnew),-(1:length(tnew))])
+  0.5 * (ret + t(ret)) # ensure symmetric
 }
 
 

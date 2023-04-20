@@ -226,12 +226,12 @@ gpcov periodicMaternCov( const vec & phi, const mat & distSigned, int complexity
   return out;
 }
 gpcov rbfCov( const vec & phi, const mat & distSigned, int complexity = 0){
-  double noiseInjection = 1e-7;
+  double noiseInjection = 1e-6;
   gpcov out;
   mat dist = abs(distSigned);
   mat dist2 = square(dist);
-  out.C = phi(0) * exp(-dist2/(2.0*pow(phi(1), 2)));
-  out.C.diag() += 1e-7;
+  out.C = exp(-dist2/(2.0*pow(phi(1), 2)) + log(phi(0)));
+  out.C.diag() += noiseInjection;
   // std::cout << out.C << endl;
   if (complexity == 0) return out;
   
@@ -240,16 +240,21 @@ gpcov rbfCov( const vec & phi, const mat & distSigned, int complexity = 0){
   out.dCdphiCube.slice(1) = out.C % dist2 / pow(phi(1), 3);
   if (complexity == 1) return out;
   // work from here continue for gp derivative
-  //Cprime  <- signr * C * r / (phi[2]^2)
-  //Cdoubleprime <- C * (1/phi[2]^2 - r2 / phi[2]^4)
 
   out.Cprime = -sign(distSigned) % out.C % dist / pow(phi(1), 2);
   out.Cdoubleprime = out.C % ( 1 / pow(phi(1), 2) - dist2 / pow(phi(1), 4));
-  inv_sympd(out.Cinv, out.C);
+
+  vec eigval;
+  mat eigvec;
+  eig_sym(eigval, eigvec, out.C);
+  out.Cinv = eigvec * diagmat( 1 / eigval) * eigvec.t();
+
   out.mphi = out.Cprime * out.Cinv;
   out.Kphi = out.Cdoubleprime - out.mphi * out.Cprime.t();
   out.Kphi.diag() += noiseInjection;
-  inv_sympd(out.Kinv, out.Kphi);
+
+  eig_sym(eigval, eigvec, symmatu(out.Kphi));
+  out.Kinv = eigvec * diagmat( 1 / eigval) * eigvec.t();
 
   return out;
 }
