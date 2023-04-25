@@ -2,7 +2,7 @@ Package: magi
 Type: Package
 Title: MAnifold-Constrained Gaussian Process Inference
 Version: 1.2.2
-Date: 2023-04-21
+Date: 2023-04-25
 Authors@R:
   c(person(given = "Shihao",
            family = "Yang",
@@ -42,4 +42,4 @@ Suggests:
     MASS,
     rmarkdown,
     markdown
-Depends: R (>= 3.5.0)
+Depends: R (>= 3.6.0)

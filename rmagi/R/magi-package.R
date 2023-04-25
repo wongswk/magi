@@ -29,10 +29,11 @@ NULL
 #' \item{\code{sigma}}{matrix of MCMC samples for the observation noise SDs \eqn{\sigma}, after burn-in.}
 #' \item{\code{phi}}{matrix of estimated GP hyper-parameters, one column for each system component.}
 #' \item{\code{lp}}{vector of log-posterior values at each MCMC iteration, after burn-in.}
+#' \item{\code{y, tvec, odeModel}}{from the inputs to \code{MagiSolver}.}
 #' } 
 #' Printing a \code{magioutput} object displays a brief summary of the settings used for the \code{MagiSolver} run.
 #' The summary method for a \code{magioutput} object prints a table of parameter estimates, see \code{\link{summary.magioutput}} for more details. 
-#' Plotting a \code{magioutput} object shows the inferred trajectories for each component, see \code{\link{plot.magioutput}} for more details.
+#' Plotting a \code{magioutput} object by default shows the inferred trajectories for each component, see \code{\link{plot.magioutput}} for more details.
 #' 
 #' 
 #' @examples
@@ -90,7 +91,7 @@ print.magioutput <- function(x, ...) {
 #' @param upper the upper quantile of the credible interval, default is 0.975.
 #' @param digits integer; the number of significant digits to print.
 #' @param ... additional arguments affecting the summary produced.
-#' @return Returns a matrix where rows display the posterior mean, lower credible limit, and upper credible limit of each parameter.
+#' @return Returns a matrix where rows display the estimate, lower credible limit, and upper credible limit of each parameter.
 #' @details
 #' Computes parameter estimates and credible intervals from the MCMC samples. By default, the posterior mean is treated as the parameter estimate, and \code{lower = 0.025} and \code{upper = 0.975} produces a central 95\% credible interval.
 #' 

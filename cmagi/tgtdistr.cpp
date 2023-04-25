@@ -226,7 +226,7 @@ gpcov periodicMaternCov( const vec & phi, const mat & distSigned, int complexity
   return out;
 }
 gpcov rbfCov( const vec & phi, const mat & distSigned, int complexity = 0){
-  double noiseInjection = 1e-6;
+  double noiseInjection = 1e-7;
   gpcov out;
   mat dist = abs(distSigned);
   mat dist2 = square(dist);

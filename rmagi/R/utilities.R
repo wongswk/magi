@@ -81,7 +81,7 @@ gpmean <- function(yobs, tvec, tnew, phi, sigma, kerneltype="generalMatern", der
 #' 
 #' @param yobs vector of observations
 #' @param tvec vector of time points corresponding to observations
-#' @param tnew vector of time points at which the conditional mean should be computed
+#' @param tnew vector of time points at which the conditional covariance should be computed
 #' @param phi vector of hyper-parameters for the covariance kernel (\code{kerneltype})
 #' @param sigma noise standard deviation of the observations
 #' @param kerneltype the covariance kernel, types \code{matern}, \code{rbf}, \code{compact1}, \code{periodicMatern}, \code{generalMatern} are supported.  See \code{\link{calCov}} for their definitions.
