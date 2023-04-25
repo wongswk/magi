@@ -123,8 +123,8 @@ gpcov <- function(yobs, tvec, tnew, phi, sigma, kerneltype="generalMatern") {
 #' @description Set the discretization level of a data matrix for input to \code{\link{MagiSolver}}, by inserting time points where the GP is constrained to the derivatives of the ODE system.
 #' 
 #' @param dat data matrix. Must include a column with name `time`.
-#' @param level discretization level (a positive integer). \code{2^level - 1} equally-spaced points will be inserted between each row of \code{dat}.
-#' @param by discretization interval. As an alternative to \code{level}, time points will be inserted (as needed) to form an equally-spaced discretization set with interval \code{by} between successive points.
+#' @param level discretization level (a positive integer). \code{2^level - 1} equally-spaced time points will be inserted between each row of \code{dat}.
+#' @param by discretization interval. As an alternative to \code{level}, time points will be inserted (as needed) to form an equally-spaced discretization set from the first to last observations of \code{dat}, with interval \code{by} between successive discretization points. This can be useful when the time points in \code{dat} are unevenly spaced.
 #'
 #' @details 
 #' Specify the desired discretization using \code{level} or \code{by}.

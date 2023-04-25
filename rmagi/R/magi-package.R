@@ -85,7 +85,7 @@ print.magioutput <- function(x, ...) {
 #' @param object a \code{magioutput} object.
 #' @param sigma logical; if true, the noise levels \eqn{\sigma} will be included in the summary.
 #' @param par.names vector of parameter names for the summary table. If provided, should be the same length as the number of parameters in \eqn{\theta}, or the combined length of \eqn{\theta} and \eqn{\sigma} when \code{sigma = TRUE}.
-#' @param est string specifying the posterior quantity to treat as the estimate. Default is "mean", which treats the posterior mean as the estimate. Can be one of "mean", "median", or "mode". 
+#' @param est string specifying the posterior quantity to treat as the estimate. Default is \code{est = "mean"}, which treats the posterior mean as the estimate. Alternatives are the posterior median (\code{est = "median"}, taken component-wise) and the posterior mode (\code{est = "mode"}, approximated by the MCMC sample with the highest log-posterior value).
 #' @param lower the lower quantile of the credible interval, default is 0.025.
 #' @param upper the upper quantile of the credible interval, default is 0.975.
 #' @param digits integer; the number of significant digits to print.

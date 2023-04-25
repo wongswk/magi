@@ -25,8 +25,8 @@
 #' The list \code{odeModel} is used for specification of the ODE system and its parameters. It must include five elements:
 #' \describe{
 #' \item{\code{fOde}}{function that computes the ODEs, specified with the form \code{f(theta, x, tvec)}. \code{fOde} should return a matrix where columns correspond to the system components of \code{x}, see examples.}
-#' \item{\code{fOdeDx}}{function that computes the gradients of the ODEs with respect to the system components. \code{fOdeDx} should return a 3-D array, where the entry \code{[, i, j]} is the partial derivative of the ODE for the j-th system component with respect to the i-th system component, see examples.}
-#' \item{\code{fOdeDtheta}}{function that computes the gradients of the ODEs with respect to the parameters \eqn{\theta}. \code{fOdeDtheta} should return a 3-D array, where the entry \code{[, i, j]} is the partial derivative of the ODE for the j-th system component with respect to the i-th parameter of \eqn{\theta}, see examples.}
+#' \item{\code{fOdeDx}}{function that computes the gradients of the ODEs with respect to the system components. \code{fOdeDx} should return a 3-D array, where the slice \code{[, i, j]} is the partial derivative of the ODE for the j-th system component with respect to the i-th system component, see examples.}
+#' \item{\code{fOdeDtheta}}{function that computes the gradients of the ODEs with respect to the parameters \eqn{\theta}. \code{fOdeDtheta} should return a 3-D array, where the slice \code{[, i, j]} is the partial derivative of the ODE for the j-th system component with respect to the i-th parameter in \eqn{\theta}, see examples.}
 #' \item{\code{thetaLowerBound}}{a vector indicating the lower bounds of each parameter in \eqn{\theta}.}
 #' \item{\code{thetaUpperBound}}{a vector indicating the upper bounds of each parameter in \eqn{\theta}.}
 #' }
