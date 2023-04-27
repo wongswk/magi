@@ -21,7 +21,7 @@ MagiSolver::MagiSolver(const arma::mat & yFull,
                        const int nstepsHmc,
                        const double burninRatioHmc,
                        const unsigned int niterHmc,
-                       const double stepSizeFactorHmc,
+                       const arma::vec stepSizeFactorHmcInput,
                        const int nEpoch,
                        const int bandSize,
                        bool useFrequencyBasedPrior,
@@ -29,6 +29,8 @@ MagiSolver::MagiSolver(const arma::mat & yFull,
                        bool useMean,
                        bool useScalerSigma,
                        bool useFixedSigma,
+                       bool skipMissingComponentOptimization,
+                       bool positiveSystem,
                        bool verbose) :
         yFull(yFull),
         odeModel(odeModel),
@@ -44,7 +46,6 @@ MagiSolver::MagiSolver(const arma::mat & yFull,
         nstepsHmc(nstepsHmc),
         burninRatioHmc(burninRatioHmc),
         niterHmc(niterHmc),
-        stepSizeFactorHmc(stepSizeFactorHmc),
         nEpoch(nEpoch),
         bandSize(bandSize),
         useFrequencyBasedPrior(useFrequencyBasedPrior),
@@ -52,18 +53,27 @@ MagiSolver::MagiSolver(const arma::mat & yFull,
         useMean(useMean),
         useScalerSigma(useScalerSigma),
         useFixedSigma(useFixedSigma),
+        skipMissingComponentOptimization(skipMissingComponentOptimization),
+        positiveSystem(positiveSystem),
         verbose(verbose),
         ydim(yFull.n_cols),
         sigmaSize(useScalerSigma ? 1 : yFull.n_cols),
         distSignedFull(tvecFull.size(), tvecFull.size()),
         indicatorRowWithObs(yFull.n_rows),
         indicatorMatWithObs(yFull.n_rows, yFull.n_cols, arma::fill::zeros),
-        phiAllDimensions(2, yFull.n_cols),
+        // phiAllDimensions(2, yFull.n_cols),
         llikxthetasigmaSamples(1 + yFull.size() + odeModel.thetaSize + sigmaSize, niterHmc, nEpoch)
 {
-    if(kernel != "generalMatern"){
-        throw std::runtime_error("only generalMatern kernel has full support");
+    // if(kernel != "generalMatern"){
+    //     throw std::runtime_error("only generalMatern kernel has full support");
+    // }
+
+    if (stepSizeFactorHmcInput.n_elem == 0){
+      stepSizeFactorHmc = arma::ones(1);
+    }else{
+      stepSizeFactorHmc = stepSizeFactorHmcInput;
     }
+
     // generate intermediate data
     if(useBand && useMean){
         loglikflag = "withmeanBand";
@@ -98,14 +108,19 @@ MagiSolver::MagiSolver(const arma::mat & yFull,
 
     if(kernel == "matern"){
         kernelCov = maternCov;
+        phiAllDimensions.set_size(2, yFull.n_cols);
     }else if(kernel == "rbf"){
         kernelCov = rbfCov;
+        phiAllDimensions.set_size(2, yFull.n_cols);
     }else if(kernel == "compact1"){
         kernelCov = compact1Cov;
+        phiAllDimensions.set_size(2, yFull.n_cols);
     }else if(kernel == "periodicMatern"){
         kernelCov = periodicMaternCov;
+        phiAllDimensions.set_size(3, yFull.n_cols);
     }else if(kernel == "generalMatern"){
         kernelCov = generalMaternCov;
+        phiAllDimensions.set_size(2, yFull.n_cols);
     }else{
         throw std::runtime_error("kernel is not specified correctly");
     }
@@ -120,11 +135,13 @@ void MagiSolver::setupPhiSigma() {
                                                 kernel,
                                                 -1,
                                                 useFrequencyBasedPrior);
-            phiAllDimensions = arma::reshape(phisig.subvec(0, 2*ydim - 1).eval(), 2, ydim);
-            sigmaInit = phisig.subvec(2*ydim, 2*ydim);
+            int phiDim = phisig.n_elem - 1;
+            phiAllDimensions = arma::reshape(phisig.subvec(0, phiDim*ydim - 1).eval(), phiDim, ydim);
+            sigmaInit = phisig.subvec(phiDim*ydim, phiDim*ydim);
         }else{
             sigmaInit.resize(ydim);
             arma::uvec sucess(ydim);
+            int phiDim;
             for(unsigned j = 0; j < ydim; j++){
                 if(idxColElemWithObs[j].size() >= 3){
                     const arma::vec & yObsCol = yFull.col(j).eval().elem(idxColElemWithObs[j]);
@@ -134,8 +151,9 @@ void MagiSolver::setupPhiSigma() {
                                                         kernel,
                                                         -1,
                                                         useFrequencyBasedPrior);
-                    phiAllDimensions.col(j) = phisig.subvec(0, 1);
-                    sigmaInit(j) = phisig(2);
+                    phiDim = phisig.n_elem - 1;
+                    phiAllDimensions.col(j) = phisig.subvec(0, phiDim - 1);
+                    sigmaInit(j) = phisig(phiDim);
                     sucess(j) = 1;
                 }else{
                     sucess(j) = 0;
@@ -147,8 +165,9 @@ void MagiSolver::setupPhiSigma() {
 
             const arma::uvec & failedDim = arma::find(sucess == 0);
             sigmaInit(failedDim).fill(sigmaMean);
-            phiAllDimensions.submat(arma::uvec({0}), failedDim).fill(phiMean(0));
-            phiAllDimensions.submat(arma::uvec({1}), failedDim).fill(phiMean(1));
+            for(unsigned j = 0; j < phiDim; j++){
+                phiAllDimensions.submat(arma::uvec({j}), failedDim).fill(phiMean(j));
+            }
         }
     }else if(!sigmaExogenous.empty() && phiExogenous.empty()){
         if(useScalerSigma){
@@ -157,11 +176,13 @@ void MagiSolver::setupPhiSigma() {
                                                 kernel,
                                                 sigmaExogenous(0),
                                                 useFrequencyBasedPrior);
-            phiAllDimensions = arma::reshape(phisig.subvec(0, 2*ydim - 1).eval(), 2, ydim);
+            int phiDim = phisig.n_elem;
+            phiAllDimensions = arma::reshape(phisig.subvec(0, phiDim*ydim - 1).eval(), phiDim, ydim);
             sigmaInit = sigmaExogenous.subvec(0, 0);
         }else{
             sigmaInit = sigmaExogenous;
             arma::uvec sucess(ydim);
+            int phiDim;
             for(unsigned j = 0; j < ydim; j++){
                 if(idxColElemWithObs[j].size() >= 3){
                     const arma::vec & yObsCol = yFull.col(j).eval().elem(idxColElemWithObs[j]);
@@ -171,7 +192,8 @@ void MagiSolver::setupPhiSigma() {
                                                         kernel,
                                                         sigmaExogenous(j),
                                                         useFrequencyBasedPrior);
-                    phiAllDimensions.col(j) = phisig.subvec(0, 1);
+                    phiDim = phisig.n_elem;
+                    phiAllDimensions.col(j) = phisig.subvec(0, phiDim - 1);
                     sucess(j) = 1;
                 }else{
                     sucess(j) = 0;
@@ -181,8 +203,9 @@ void MagiSolver::setupPhiSigma() {
             const arma::vec & phiMean = arma::mean(phiAllDimensions.cols(sucessDim), 1);
 
             const arma::uvec & failedDim = arma::find(sucess == 0);
-            phiAllDimensions.submat(arma::uvec({0}), failedDim).fill(phiMean(0));
-            phiAllDimensions.submat(arma::uvec({1}), failedDim).fill(phiMean(1));
+            for(unsigned j = 0; j < phiDim; j++){
+                phiAllDimensions.submat(arma::uvec({j}), failedDim).fill(phiMean(j));
+            }
         }
     }else if(!sigmaExogenous.empty() && !phiExogenous.empty()) {
         if(useScalerSigma){
@@ -305,6 +328,10 @@ void MagiSolver::initMissingComponent() {
         return;
     }
 
+    if (kernel == "periodicMatern" && phiExogenous.empty() && xInitExogenous.empty()) {
+        throw std::runtime_error("xInit and phi must be manually specified for unobserved components if using periodicMatern kernel,\n and set skipMissingComponentOptimization = TRUE");
+    }
+
     const arma::uvec & observedComponentDim = arma::find(nobsEachDim >= 0);
     if(xInitExogenous.empty()) {
         for (auto iPtr = missingComponentDim.begin(); iPtr < missingComponentDim.end(); iPtr++) {
@@ -423,31 +450,33 @@ void MagiSolver::initMissingComponent() {
         }
     }
 
-    try {
-        const arma::vec & xthetaphi = optimizeXmissingThetaPhi(yFull,
-                                                               tvecFull,
-                                                               odeModel,
-                                                               sigmaInit,
-                                                               priorTemperature,
-                                                               xInit,
-                                                               thetaInit,
-                                                               phiAllDimensions,
-                                                               missingComponentDim);
-        for (unsigned id = 0; id < missingComponentDim.size(); id++){
-            xInit.col(missingComponentDim(id)) = xthetaphi.subvec(
-                    xInit.n_rows * (id), xInit.n_rows * (id + 1) - 1);
-        }
-
-        thetaInit = xthetaphi.subvec(
-                xInit.n_rows * missingComponentDim.size(), xInit.n_rows * missingComponentDim.size() + thetaInit.size() - 1);
-
-        for (unsigned id = 0; id < missingComponentDim.size(); id++){
-            phiAllDimensions.col(missingComponentDim(id)) = xthetaphi.subvec(
-                    xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * id,
-                    xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * (id + 1) - 1);
-        }
-    } catch (...) {
-        std::cout << "Exception occurred in joint optimization for Xmissing,Theta,Phi";
+    if(!skipMissingComponentOptimization){
+      try {
+          const arma::vec & xthetaphi = optimizeXmissingThetaPhi(yFull,
+                                                                 tvecFull,
+                                                                 odeModel,
+                                                                 sigmaInit,
+                                                                 priorTemperature,
+                                                                 xInit,
+                                                                 thetaInit,
+                                                                 phiAllDimensions,
+                                                                 missingComponentDim);
+          for (unsigned id = 0; id < missingComponentDim.size(); id++){
+              xInit.col(missingComponentDim(id)) = xthetaphi.subvec(
+                      xInit.n_rows * (id), xInit.n_rows * (id + 1) - 1);
+          }
+  
+          thetaInit = xthetaphi.subvec(
+                  xInit.n_rows * missingComponentDim.size(), xInit.n_rows * missingComponentDim.size() + thetaInit.size() - 1);
+  
+          for (unsigned id = 0; id < missingComponentDim.size(); id++){
+              phiAllDimensions.col(missingComponentDim(id)) = xthetaphi.subvec(
+                      xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * id,
+                      xInit.n_rows * missingComponentDim.size() + thetaInit.size() + phiAllDimensions.n_rows * (id + 1) - 1);
+          }
+      } catch (...) {
+          std::cout << "Exception occurred in joint optimization for Xmissing,Theta,Phi";
+      }
     }
 
     const lp & llik = xthetaphisigmallik( xInit,
@@ -473,7 +502,8 @@ void MagiSolver::doHMC(int iEpoch) {
                        sigmaSize,
                        odeModel,
                        niterHmc,
-                       burninRatioHmc);
+                       burninRatioHmc,
+                       positiveSystem);
     arma::vec xthetasigmaInit = arma::join_vert(arma::join_vert(arma::vectorise(xInit), thetaInit), sigmaInit);
     hmcSampler.sampleChian(xthetasigmaInit, stepLow, verbose);
     llikxthetasigmaSamples(arma::span(0, 0), arma::span::all, arma::span(iEpoch, iEpoch)) = hmcSampler.lliklist;
@@ -485,7 +515,11 @@ void MagiSolver::sampleInEpochs() {
     std::string epochMethod = "mean";
 
     stepLow = arma::vec(llikxthetasigmaSamples.n_rows - 1);
-    stepLow.fill(1.0 / nstepsHmc * stepSizeFactorHmc);
+    if (stepSizeFactorHmc.n_elem > 1){
+      stepLow = (1.0 / nstepsHmc * stepSizeFactorHmc);
+    }else{
+      stepLow.fill(1.0 / nstepsHmc * stepSizeFactorHmc(0));
+    }
     if(useFixedSigma){
         stepLow.subvec(xInit.size() + thetaInit.size(), stepLow.size() - 1).fill(0);
     }

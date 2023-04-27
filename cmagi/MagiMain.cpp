@@ -19,7 +19,7 @@ arma::cube solveMagi(const arma::mat & yFull,
                     const int nstepsHmc = 500,
                     const double burninRatioHmc = 0.5,
                     const unsigned int niterHmc = 10000,
-                    const double stepSizeFactorHmc = 1,
+                    const arma::vec stepSizeFactorHmc = arma::vec(),
                     const int nEpoch = 10,
                     const int bandSize = 20,
                     bool useFrequencyBasedPrior = false,
@@ -27,6 +27,8 @@ arma::cube solveMagi(const arma::mat & yFull,
                     bool useMean = true,
                     bool useScalerSigma = false,
                     bool useFixedSigma = false,
+                    bool skipMissingComponentOptimization = false,
+                    bool positiveSystem = false,
                     bool verbose = false) {
 
     MagiSolver solver(yFull,
@@ -53,6 +55,8 @@ arma::cube solveMagi(const arma::mat & yFull,
                       useMean,
                       useScalerSigma,
                       useFixedSigma,
+                      skipMissingComponentOptimization,
+                      positiveSystem,
                       verbose);
     solver.setupPhiSigma();
     if(verbose){

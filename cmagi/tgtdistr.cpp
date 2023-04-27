@@ -14,8 +14,10 @@ using namespace arma;
 //' @param phi         the parameter of (sigma_c_sq, alpha)
 //' @param dist        distance matrix
 //' @param complexity  how much derivative information should be calculated
-gpcov maternCov( const vec & phi, const mat & dist, int complexity = 0){
+gpcov maternCov( const vec & phi, const mat & distSigned, int complexity = 0){
   gpcov out;
+  double noiseInjection = 1e-7;
+  mat dist = abs(distSigned);
   mat dist2 = square(dist);
   out.C = phi(0) * (1.0 + ((sqrt(5.0)*dist)/phi(1)) + 
     ((5.0*dist2)/(3.0*pow(phi(1),2)))) % exp((-sqrt(5.0)*dist)/phi(1));
@@ -30,6 +32,15 @@ gpcov maternCov( const vec & phi, const mat & dist, int complexity = 0){
     out.C % ((sqrt(5.0)*dist)/pow(phi(1),2));
   if (complexity == 1) return out;
   // work from here continue for gp derivative
+
+  out.Cprime = -sign(distSigned) % (phi(0) * exp((-sqrt(5)* dist) /phi(1))) % ((5*dist)/(3*pow(phi(1),2)) + ((5*sqrt(5)*dist2)/(3*pow(phi(1),3))));
+  out.Cdoubleprime = (-phi(0) * (sqrt(5)/phi(1)) * exp((-sqrt(5)*dist)/phi(1))) % (((5*dist)/(3*pow(phi(1),2))) + ((5*sqrt(5)*dist2)/(3*pow(phi(1),3)))) + (phi(0)*exp((-sqrt(5)*dist)/phi(1))) % ((5/(3*pow(phi(1),2))) + ((10*sqrt(5)*dist)/(3*pow(phi(1),3))));
+  inv_sympd(out.Cinv, out.C);
+  out.mphi = out.Cprime * out.Cinv;
+  out.Kphi = out.Cdoubleprime - out.mphi * out.Cprime.t();
+  out.Kphi.diag() += noiseInjection;
+  inv_sympd(out.Kinv, out.Kphi);
+
   return out;
 }
 
@@ -183,19 +194,44 @@ gpcov generalMaternCov( const vec & phi,
 //' @param phi         the parameter of (sigma_c_sq, alpha)
 //' @param dist        distance matrix
 //' @param complexity  how much derivative information should be calculated
-gpcov periodicMaternCov( const vec & phi, const mat & dist, int complexity = 0){
-  mat newdist = abs(sin(dist * datum::pi / phi(2))) * 2.0;
+gpcov periodicMaternCov( const vec & phi, const mat & distSigned, int complexity = 0){
+  double noiseInjection = 1e-7;
+  mat dist = abs(distSigned);
+  mat signInput = sign(distSigned);
+  mat newdist = signInput % abs(sin(dist * datum::pi / phi(2))) * 2.0;
   gpcov out = maternCov( phi.subvec(0,1), newdist, complexity);
+
+  if (complexity == 0) {
+    return out;
+  }
+
   out.dCdphiCube.resize(out.dCdphiCube.n_rows, out.dCdphiCube.n_cols, 3);
   out.dCdphiCube.slice(2) = out.C % sign(sin(dist*datum::pi/phi(2))) 
     % (cos(dist*datum::pi/phi(2))*2) % (dist*datum::pi * -1/pow(phi(2),2));
+
+  if (complexity == 1) {
   return out;
 }
-gpcov rbfCov( const vec & phi, const mat & dist, int complexity = 0){
+
+  out.Cdoubleprime =  out.Cdoubleprime % pow(cos(dist * datum::pi/phi(2))*2 * datum::pi/phi(2),2) -
+    out.Cprime % abs(sin(dist*datum::pi/phi(2))*2) * pow(datum::pi/phi(2),2) % (-sign(distSigned));
+  out.Cprime = out.Cprime % sign(sin(dist*datum::pi/phi(2))*2) % cos(dist*datum::pi/phi(2))*2 * datum::pi/phi(2);
+
+  inv_sympd(out.Cinv, out.C);
+  out.mphi = out.Cprime * out.Cinv;
+  out.Kphi = out.Cdoubleprime - out.mphi * out.Cprime.t();
+  out.Kphi.diag() += noiseInjection;
+  inv_sympd(out.Kinv, out.Kphi);
+
+  return out;
+}
+gpcov rbfCov( const vec & phi, const mat & distSigned, int complexity = 0){
+  double noiseInjection = 1e-7;
   gpcov out;
+  mat dist = abs(distSigned);
   mat dist2 = square(dist);
-  out.C = phi(0) * exp(-dist2/(2.0*pow(phi(1), 2)));
-  out.C.diag() += 1e-7;
+  out.C = exp(-dist2/(2.0*pow(phi(1), 2)) + log(phi(0)));
+  out.C.diag() += noiseInjection;
   // std::cout << out.C << endl;
   if (complexity == 0) return out;
   
@@ -204,11 +240,29 @@ gpcov rbfCov( const vec & phi, const mat & dist, int complexity = 0){
   out.dCdphiCube.slice(1) = out.C % dist2 / pow(phi(1), 3);
   if (complexity == 1) return out;
   // work from here continue for gp derivative
+
+  out.Cprime = -sign(distSigned) % out.C % dist / pow(phi(1), 2);
+  out.Cdoubleprime = out.C % ( 1 / pow(phi(1), 2) - dist2 / pow(phi(1), 4));
+
+  vec eigval;
+  mat eigvec;
+  eig_sym(eigval, eigvec, out.C);
+  out.Cinv = eigvec * diagmat( 1 / eigval) * eigvec.t();
+
+  out.mphi = out.Cprime * out.Cinv;
+  out.Kphi = out.Cdoubleprime - out.mphi * out.Cprime.t();
+  out.Kphi.diag() += noiseInjection;
+
+  eig_sym(eigval, eigvec, symmatu(out.Kphi));
+  out.Kinv = eigvec * diagmat( 1 / eigval) * eigvec.t();
+
   return out;
 }
 
-gpcov compact1Cov( const vec & phi, const mat & dist, int complexity = 0){
+gpcov compact1Cov( const vec & phi, const mat & distSigned, int complexity = 0){
+  double noiseInjection = 1e-7;
   int dimension = 3;
+  mat dist = abs(distSigned);
   mat zeromat = zeros<mat>(dist.n_rows, dist.n_cols);
   int p = floor((double)dimension / 2.0) + 2;
   gpcov out;
@@ -224,6 +278,15 @@ gpcov compact1Cov( const vec & phi, const mat & dist, int complexity = 0){
     % pow(dist,2)/pow(phi(1),3) * (p+1) * (p+2);
   if (complexity == 1) return out;
   // work from here continue for gp derivative
+
+  out.Cprime =  -sign(distSigned) * phi(0) * (p+1)/phi(1) % pow(arma::max(1-dist/phi(1), zeromat),p) % dist/phi(1) * (p+2);
+  out.Cdoubleprime = phi(0) * pow(arma::max(1-dist/phi(1),zeromat),p-1) * (p+1) * (p+2) / pow(phi(1),2) % (1-dist/phi(1)-dist*p/phi(1));
+  inv_sympd(out.Cinv, out.C);
+  out.mphi = out.Cprime * out.Cinv;
+  out.Kphi = out.Cdoubleprime - out.mphi * out.Cprime.t();
+  out.Kphi.diag() += noiseInjection;
+  inv_sympd(out.Kinv, out.Kphi);
+
   return out;
 }
 
@@ -292,134 +355,6 @@ lp phisigllik( const vec & phisig,
   // 
   // vec alpha = CmatCholLowInv.t() * eta;
   // mat facVtemp = alpha * alpha.t() - CmatCholLowInv.t() * CmatCholLowInv;
-  return ret;
-}
-
-//' leave one out cross validation for Gaussian Process fitting with various kernel
-//' 
-//' loss function is predictive log likelihood
-//' 
-//' @param phisig      the parameter phi and sigma
-//' @param yobs        observed data
-lp phisigloocvllik( const vec & phisig, 
-                    const mat & yobs, 
-                    const mat & dist, 
-                    string kernel){
-  int n = yobs.n_rows;
-  unsigned int obsDimension = yobs.n_cols;
-  int phiDimension = (phisig.size() - 1) / obsDimension;
-  const double sigma = phisig(phisig.size() - 1);
-  const mat & phiAllDim = mat(const_cast<double*>( phisig.begin()), 
-                              phiDimension, obsDimension, true, false);
-  
-  std::function<gpcov(vec, mat, int)> kernelCov;
-  if(kernel == "matern"){
-    kernelCov = maternCov;
-  }else if(kernel == "rbf"){
-    kernelCov = rbfCov;
-  }else if(kernel == "compact1"){
-    kernelCov = compact1Cov;
-  }else if(kernel == "periodicMatern"){
-    kernelCov = periodicMaternCov;
-  }else if(kernel == "generalMatern"){
-    kernelCov = generalMaternCov;
-  }else{
-    throw std::runtime_error("kernel is not specified correctly");
-  }
-  
-  lp ret;  
-  ret.gradient = zeros( phisig.size());
-  ret.value = 0;
-  
-  for(unsigned int pDimEach = 0; pDimEach < obsDimension; pDimEach++){
-    gpcov covThisDim = kernelCov(phiAllDim.col(pDimEach), dist, 1);
-    covThisDim.C.diag() += pow(sigma, 2);
-    
-    mat Cinv = arma::inv_sympd(covThisDim.C);
-    
-    vec alpha = Cinv * yobs.col(pDimEach);
-    
-    vec muLooCv = yobs.col(pDimEach) - alpha / Cinv.diag();
-    vec sigmasqLooCv = 1 / Cinv.diag();
-    
-    ret.value += -n/2.0*log(2.0*datum::pi) - 0.5*sum(log(sigmasqLooCv)) - 
-      0.5*sum(square(yobs.col(pDimEach) - muLooCv) / sigmasqLooCv);
-    
-    cube Ztemp = Cinv * covThisDim.dCdphiCube.each_slice();
-    Ztemp = join_slices(Ztemp, 2*sigma*Cinv);
-    for(unsigned int j=0; j < Ztemp.n_slices; j++){
-      vec ZjCinvDiag = sum(Ztemp.slice(j).t() % Cinv).t();
-      double dLdphisig = sum((alpha % (Ztemp.slice(j) * alpha) - 0.5*(1+square(alpha)/Cinv.diag())%ZjCinvDiag)/Cinv.diag());
-      if(j < covThisDim.dCdphiCube.n_slices){
-        ret.gradient(pDimEach*phiDimension + j) = dLdphisig;
-      }else{
-        ret.gradient(ret.gradient.size()-1) += dLdphisig;
-      }
-    }
-  }
-  return ret;
-}
-
-//' leave one out cross validation for Gaussian Process fitting with various kernel
-//' 
-//' loss function is predictive log likelihood
-//' 
-//' @param phisig      the parameter phi and sigma
-//' @param yobs        observed data
-lp phisigloocvmse( const vec & phisig, 
-                    const mat & yobs, 
-                    const mat & dist, 
-                    string kernel){
-  unsigned int obsDimension = yobs.n_cols;
-  int phiDimension = (phisig.size() - 1) / obsDimension;
-  const double sigma = phisig(phisig.size() - 1);
-  const mat & phiAllDim = mat(const_cast<double*>( phisig.begin()), 
-                              phiDimension, obsDimension, true, false);
-  
-  std::function<gpcov(vec, mat, int)> kernelCov;
-  if(kernel == "matern"){
-    kernelCov = maternCov;
-  }else if(kernel == "rbf"){
-    kernelCov = rbfCov;
-  }else if(kernel == "compact1"){
-    kernelCov = compact1Cov;
-  }else if(kernel == "periodicMatern"){
-    kernelCov = periodicMaternCov;
-  }else if(kernel == "generalMatern"){
-    kernelCov = generalMaternCov;
-  }else{
-    throw std::runtime_error("kernel is not specified correctly");
-  }
-  
-  lp ret;  
-  ret.gradient = zeros( phisig.size());
-  ret.value = 0;
-  
-  for(unsigned int pDimEach = 0; pDimEach < obsDimension; pDimEach++){
-    gpcov covThisDim = kernelCov(phiAllDim.col(pDimEach), dist, 1);
-    covThisDim.C.diag() += pow(sigma, 2);
-    
-    mat Cinv = arma::inv_sympd(covThisDim.C);
-    
-    vec alpha = Cinv * yobs.col(pDimEach);
-    
-    vec muLooCv = yobs.col(pDimEach) - alpha / Cinv.diag();
-    vec sigmasqLooCv = 1 / Cinv.diag();
-    
-    ret.value += -0.5*sum(square(yobs.col(pDimEach) - muLooCv));
-    
-    cube Ztemp = Cinv * covThisDim.dCdphiCube.each_slice();
-    Ztemp = join_slices(Ztemp, 2*sigma*Cinv);
-    for(unsigned int j=0; j < Ztemp.n_slices; j++){
-      vec ZjCinvDiag = sum(Ztemp.slice(j).t() % Cinv).t();
-      vec dmudphisig = (Ztemp.slice(j) * alpha) / Cinv.diag() - alpha % ZjCinvDiag / square(Cinv.diag());
-      if(j < covThisDim.dCdphiCube.n_slices){
-        ret.gradient(pDimEach*phiDimension + j) = sum(dmudphisig % (yobs.col(pDimEach) - muLooCv));
-      }else{
-        ret.gradient(ret.gradient.size()-1) += sum(dmudphisig % (yobs.col(pDimEach) - muLooCv));
-      }
-    }
-  }
   return ret;
 }
 
