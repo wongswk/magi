@@ -328,7 +328,7 @@ void MagiSolver::initMissingComponent() {
         return;
     }
 
-    if (kernel == "periodicMatern" & phiExogenous.empty() & xInitExogenous.empty()) {
+    if (kernel == "periodicMatern" && phiExogenous.empty() && xInitExogenous.empty()) {
         throw std::runtime_error("xInit and phi must be manually specified for unobserved components if using periodicMatern kernel,\n and set skipMissingComponentOptimization = TRUE");
     }
 

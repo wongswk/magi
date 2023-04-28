@@ -1,15 +1,21 @@
 ---
-title: "Supplement for ``Estimating and Assessing Differential Equation Models with Time-Course Data\""
+title: "Supporting Information for ``Estimating and Assessing Differential Equation Models with Time-Course Data\""
 author: "Samuel W.K. Wong, Shihao Yang, S.C. Kou"
-output: pdf_document
-date: "`r Sys.Date()`"
+output:
+  bookdown::pdf_document2:
+    toc: false
+    fig_caption: yes
+    number_sections: false
+    includes:
+      in_header: JPC_preamble.tex
+    keep_tex: yes
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-This supplement provides complete step-by-step code in R for running MAGI on each of the examples in the main text. For further information on the software package, we refer the reader to the usage guide for MAGI at \url{https://arxiv.org/abs/2203.06066}.
+This supporting information file provides complete step-by-step code in R for running MAGI on each of the examples in the main text. For further information on the software package, we refer the reader to the usage guide for MAGI at \url{https://arxiv.org/abs/2203.06066}.
 
 ## Setup
 Ensure that the `magi` R package is installed and loaded:
@@ -235,8 +241,8 @@ saveRDS(gpode, "represillator.rds")
 gpode <- readRDS("represillator.rds")
 ```
 
-Plot the noisy observations and inferred trajectories:
-```{r, fig.dim=c(12,6)}
+Plot the noisy observations and inferred trajectories, to produce Fig \@ref(fig:rep-infer):
+```{r rep-infer, fig.dim=c(12,6), fig.cap="Inferred trajectories for a sample dataset from the repressilator gene regulation model"}
 xtrue <- xtrue[xtrue$time >= 1,] # remove initial conditions
 
 xsampledexp <- exp(gpode$xsampled) # exponentiate to original scale
@@ -300,8 +306,8 @@ legend("center", c("truth", "inferred trajectory",
        border = c(0, 0, "skyblue", 0), pch = c(NA, NA, 15, 16), horiz = TRUE, cex=1.25)
 ```
 
-Plot the posterior densities of the parameters:
-```{r, fig.dim=c(12,3.1)}
+Plot the posterior densities of the parameters, to produce Fig \@ref(fig:rep-param):
+```{r rep-param, fig.dim=c(12,3.1), fig.cap="Bayesian posterior probability densities of system parameters for a sample dataset from the repressilator gene regulation model obtained by MAGI. The red vertical lines show the true parameter values used in the simulation. The shaded area represents the 95% interval estimate of each parameter."}
 par.names <- c( expression(alpha[0]), expression(alpha), "n", expression(beta))
 par(mfrow=c(1,4))
 for (ii in 1:4) {
@@ -528,8 +534,8 @@ par.table <- function(res) {
 par.table(gpode)
 ```
 
-Plot the posterior densities of the parameters $k_{cat}$ and $K_M$ :
-```{r, fig.dim=c(6,3.1)}
+Plot the posterior densities of the parameters $k_{cat}$ and $K_M$, to produce Fig \@ref(fig:mm-param):
+```{r mm-param, fig.dim=c(6,3.1), fig.cap="Bayesian posterior probability densities of $k_{cat}$ and $K_M$ for a sample dataset from the Michaelis-Menten model obtained by MAGI. The red vertical lines show the true parameter values used in the simulation. The shaded area represents the 95% interval estimate of each parameter."}
 par.names <- c( expression('k'['cat']), expression('K'['M']))
 
 par(mfrow=c(1,2))
@@ -860,8 +866,8 @@ recon.obs <- subset(recon, time %in% xsim$time)
 xtrue.obs <- subset(xtrue, time %in% xsim$time)[,-1]
 ```
 
-Visualize the reconstructed trajectories together with the observations:
-```{r, fig.dim=c(12,6)}
+Visualize the reconstructed trajectories together with the observations, as shown in Fig \@ref(fig:lac-recon):
+```{r lac-recon, fig.dim=c(12,6), fig.cap="Reconstructed trajectories for a sample dataset simulated from the $lac$ operon model."}
 compnames <- c("r_I", "I", "Lactose", "ILactose", "Op",
                "IOp", "RNAP", "RNAPo", "r", "Z")
 par(oma=c(0,1.5,0,0))
@@ -1187,8 +1193,8 @@ print(paste0("M-M: SSE(train) = ", round(sse_train_vanil,3),
              ", SSE(test) = ", round(sse_test_vanil,3)))
 ```
 
-Visualizations of the observations, model fits and predictions:
-```{r, fig.dim=c(12,6)}
+Visualizations of the observations, model fits and predictions, as shown in Fig \@ref(fig:mm-compare):
+```{r mm-compare, fig.dim=c(12,6), fig.cap="Michaelis-Menten model comparison for a sample dataset simulated with inhibitor."}
 compnames <- c("", "[S]", "[P]")
 
 layout(cbind(c(1,1,6,6),c(2,2,4,4),c(3,3,5,5)))

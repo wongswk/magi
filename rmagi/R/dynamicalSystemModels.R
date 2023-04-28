@@ -372,7 +372,7 @@ ptransmodelDtheta <- function(theta, x, tvec) {
 #'
 #' Given functions for the ODE and its gradients (with respect to the system components and parameters), verify the correctness of the gradients using numerical differentiation.
 #'
-#' @param modelODE function that computes the ODEs, specified with the form \eqn{f(theta, x, t)}. See examples.
+#' @param modelODE function that computes the ODEs, specified with the form \code{f(theta, x, tvec)}. See examples.
 #' @param modelDx function that computes the gradients of the ODEs with respect to the system components. See examples.
 #' @param modelDtheta function that computes the gradients of the ODEs with respect to the parameters \eqn{\theta}. See examples.
 #' @param modelName string giving a name for the model

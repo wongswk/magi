@@ -1,3 +1,33 @@
+# MAGI v.1.2.2
+
+## Resubmission
+This is a resubmission. In this version we have made the following changes.
+
+## Changelog:
+* MagiSolver supports more covariance kernels (rbf, compact1, matern, periodicMatern) that can be selected via the kerneltype option
+* Added functionality to plot.magioutput to generate MCMC traceplots
+* Allow selection of posterior mean/median/mode as point estimates in plot/summary functions
+* Added helper functions to compute GP mean and covariance given observations for easier visualization of initial GP fit
+* Removed specification of C++11 in Makevars
+* Minor documentation updates/clarifications
+
+## Test environments:
+* Ubuntu 20.04, R 4.2.2
+* Windows 10, R 4.3.0
+* Windows 10, R-devel
+
+## R CMD check results
+There were no ERRORs or WARNINGs.
+
+There was one NOTE on R 4.2.2 on Ubuntu 20.04 regarding package size:
+```
+* checking installed package size ... NOTE
+  installed size is 40.3Mb
+  sub-directories of 1Mb or more:
+    libs  38.9Mb
+```
+
+
 # MAGI v1.2.1
 
 ## Resubmission

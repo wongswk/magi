@@ -81,7 +81,7 @@ gpmean <- function(yobs, tvec, tnew, phi, sigma, kerneltype="generalMatern", der
 #' 
 #' @param yobs vector of observations
 #' @param tvec vector of time points corresponding to observations
-#' @param tnew vector of time points at which the conditional mean should be computed
+#' @param tnew vector of time points at which the conditional covariance should be computed
 #' @param phi vector of hyper-parameters for the covariance kernel (\code{kerneltype})
 #' @param sigma noise standard deviation of the observations
 #' @param kerneltype the covariance kernel, types \code{matern}, \code{rbf}, \code{compact1}, \code{periodicMatern}, \code{generalMatern} are supported.  See \code{\link{calCov}} for their definitions.
@@ -112,9 +112,8 @@ gpcov <- function(yobs, tvec, tnew, phi, sigma, kerneltype="generalMatern") {
   C <- covObj$C
     
   diag(C)[-(1:length(tnew))] <- diag(C)[-(1:length(tnew))]+sigma^2
-  ret <- C[1:length(tnew),1:length(tnew)] - C[1:length(tnew),-(1:length(tnew))] %*% solve(C[-(1:length(tnew)),-(1:length(tnew))]) %*% C[-(1:length(tnew)),1:length(tnew)]
-
-  ret
+  ret <- C[1:length(tnew),1:length(tnew)] - C[1:length(tnew),-(1:length(tnew))] %*% solve(C[-(1:length(tnew)),-(1:length(tnew))]) %*% t(C[1:length(tnew),-(1:length(tnew))])
+  0.5 * (ret + t(ret)) # ensure symmetric
 }
 
 
@@ -124,8 +123,8 @@ gpcov <- function(yobs, tvec, tnew, phi, sigma, kerneltype="generalMatern") {
 #' @description Set the discretization level of a data matrix for input to \code{\link{MagiSolver}}, by inserting time points where the GP is constrained to the derivatives of the ODE system.
 #' 
 #' @param dat data matrix. Must include a column with name `time`.
-#' @param level discretization level (a positive integer). \code{2^level - 1} equally-spaced points will be inserted between each row of \code{dat}.
-#' @param by discretization interval. As an alternative to \code{level}, time points will be inserted (as needed) to form an equally-spaced discretization set with interval \code{by} between successive points.
+#' @param level discretization level (a positive integer). \code{2^level - 1} equally-spaced time points will be inserted between each row of \code{dat}.
+#' @param by discretization interval. As an alternative to \code{level}, time points will be inserted (as needed) to form an equally-spaced discretization set from the first to last observations of \code{dat}, with interval \code{by} between successive discretization points. This can be useful when the time points in \code{dat} are unevenly spaced.
 #'
 #' @details 
 #' Specify the desired discretization using \code{level} or \code{by}.

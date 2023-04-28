@@ -18,10 +18,9 @@ fi
 cd "$PROJECT"/rmagi || exit 1
 
 # only select the mininum sufficient third party library for compile
-
+# as of R 4.3, CXX_STD=CXX11 is no longer allowed by CRAN, default is CXX17
 echo "
 PKG_CXX=clang++
-CXX_STD = CXX11
 PKG_CXXFLAGS = -DNDEBUG -I'../inst/include'
 PKG_LIBS = \$(LAPACK_LIBS) \$(BLAS_LIBS) \$(FLIBS)
 " > src/Makevars
