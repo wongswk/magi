@@ -12,5 +12,5 @@ fi
 cd "$PROJECT"/MATLABmagi || exit 1
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PROJECT/cmagi
-matlab -nodisplay -nosplash -nodesktop -r "mex -v '-I../include' '-I../cmagi' '-L../cmagi' '-lcmagi' GCC='g++' src/solveMagi.cpp;mex -v '-I../include' '-I../cmagi' '-L../cmagi' '-lcmagi' GCC='g++' src/gpsmooth.cpp;exit;"
+matlab -nodisplay -nosplash -nodesktop -r "mex -v '-I../include' '-I../cmagi' '-L../cmagi' '-lcmagi' GCC='g++' src/solveMagi.cpp;mex -v '-I../include' '-I../cmagi' '-L../cmagi' '-lcmagi' GCC='g++' src/gpsmooth.cpp;mex -v '-I../include' '-I../cmagi' '-L../cmagi' '-lcmagi' GCC='g++' src/calcMeanCurve.cpp;mex -v '-I../include' '-I../cmagi' '-L../cmagi' '-lcmagi' GCC='g++' src/calcCovCurve.cpp;exit;"
 

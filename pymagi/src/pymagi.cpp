@@ -328,6 +328,8 @@ PYBIND11_MODULE(pymagi, macro)
         py::arg("useMean"),
         py::arg("useScalerSigma"),
         py::arg("useFixedSigma"),
+        py::arg("skipMissingComponentOptimization"),
+        py::arg("positiveSystem"),
         py::arg("verbose"));
 
     macro.def(
@@ -339,6 +341,28 @@ PYBIND11_MODULE(pymagi, macro)
         py::arg("kernelInput"),
         py::arg("sigmaExogenScalar"),
         py::arg("useFrequencyBasedPrior"));
-
+        
+    macro.def(
+        "calcMeanCurve",
+        &calcMeanCurve,
+        "",
+        py::arg("xInput"),
+        py::arg("yInput"),
+        py::arg("xOutput"),
+        py::arg("phiCandidates"),
+        py::arg("sigmaCandidates"),
+        py::arg("kerneltype"),
+        py::arg("useDeriv"));
+        
+    macro.def(
+        "calcCovCurve",
+        &calcCovCurve,
+        "",
+        py::arg("xInput"),
+        py::arg("yInput"),
+        py::arg("xOutput"),
+        py::arg("phiCandidates"),
+        py::arg("sigmaCandidates"),
+        py::arg("kerneltype"));          
 }
 

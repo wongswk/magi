@@ -2,8 +2,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
-from pymagi import ArmaVector, ArmaMatrix, ArmaCube, OdeSystem, solveMagiPy, gpsmooth
-
+from pymagi import ArmaVector, ArmaMatrix, ArmaCube, OdeSystem, solveMagiPy, gpsmooth, calcMeanCurve, calcCovCurve
 
 def vector(arma_vector):
     return np.ndarray(buffer=arma_vector, shape=(arma_vector.size(),))
@@ -149,7 +148,7 @@ def solve_magi(
         nstepsHmc = 100,
         burninRatioHmc = 0.5,
         niterHmc = 1000,
-        stepSizeFactorHmc = 0.1,
+        stepSizeFactorHmc = np.array([]),
         nEpoch = 1,
         bandSize = 20,
         useFrequencyBasedPrior = True,
@@ -157,6 +156,8 @@ def solve_magi(
         useMean = False,
         useScalerSigma = False,
         useFixedSigma = False,
+        skipMissingComponentOptimization = False,
+        positiveSystem = False,
         verbose = True):
 
     sigmaExogenous = ArmaVector(np.ndarray(0)) if sigmaExogenous.size == 0 else ArmaVector(sigmaExogenous)
@@ -165,6 +166,7 @@ def solve_magi(
     thetaInitExogenous = ArmaVector(np.ndarray(0)) if thetaInitExogenous.size == 0 else ArmaVector(thetaInitExogenous)
     muExogenous = ArmaMatrix(np.ndarray([0, 0])) if muExogenous.size == 0 else ArmaMatrix(muExogenous).t()
     dotmuExogenous=ArmaMatrix(np.ndarray([0, 0])) if dotmuExogenous.size == 0 else ArmaMatrix(dotmuExogenous).t()
+    stepSizeFactorHmc = ArmaVector(np.ndarray(0)) if stepSizeFactorHmc.size == 0 else ArmaVector(stepSizeFactorHmc)
 
     result_solved = solveMagiPy(
         yFull=ArmaMatrix(yFull).t(),
@@ -191,6 +193,8 @@ def solve_magi(
         useMean=useMean,
         useScalerSigma=useScalerSigma,
         useFixedSigma=useFixedSigma,
+        skipMissingComponentOptimization=skipMissingComponentOptimization,
+        positiveSystem=positiveSystem,
         verbose=verbose)
 
     phiUsed = matrix(result_solved.phiAllDimensions)
@@ -198,34 +202,115 @@ def solve_magi(
     samplesCpp = matrix(result_solved.llikxthetasigmaSamples.slice(0))
     return dict(phiUsed=phiUsed, samplesCpp=samplesCpp)
 
-def summaryMagiOutput(x, par_names, sigma = False, lower = 0.025, upper = 0.975):
+def summaryMagiOutput(x, par_names, est = 'mean', sigma = False, lower = 0.025, upper = 0.975):
     
     if sigma:
         allpar = np.vstack((x['theta'], x['sigma']))
     else:
         allpar = x['theta']
+        
+    if est == 'mean':
+        f = lambda x: np.mean(x, axis=-1)
+        est_lab = 'Mean'
+    if est == 'median':
+        f = lambda x: np.quantile(x, q=0.5, axis=-1)
+        est_lab = 'Median'
+    if est == 'mode':
+        lpmaxInd = np.argmax(x['lp'])
+        f = lambda x: x[:,lpmaxInd]
+        est_lab = 'Mode'    
     
-    theta_est = np.vstack((np.mean(allpar, axis=-1),
+    theta_est = np.vstack((f(allpar),
                    np.quantile(allpar, q=[lower, upper], axis=-1)))
-    return(pd.DataFrame(theta_est, columns=par_names, index=['Mean', f'{100*lower}%', f'{100*upper}%']))
+    return(pd.DataFrame(theta_est, columns=par_names, index=[est_lab, f'{100*lower}%', f'{100*upper}%']))
 
-def plotMagiOutput(x, comp_names, obs = True, ci = True, lower = 0.025, upper = 0.975, legend = True):
-    xMean = np.mean(x['xsampled'], axis=-1)
-    xLB = np.quantile(x['xsampled'], lower, axis=-1)
-    xUB = np.quantile(x['xsampled'], upper, axis=-1)
+def plotMagiOutput(x, comp_names, type = 'traj', obs = True, ci = True, est = 'mean', lower = 0.025, upper = 0.975, sigma = False, lp = True, legend = True):
     
-    for j in range(xMean.shape[0]):
-        plt.plot(x['tvec'], xMean[j,:], label='inferred trajectory')
+    if est == 'mode':
+        lpmaxInd = np.argmax(x['lp'])
+
+    if type == 'traj':    
+        xMean = np.mean(x['xsampled'], axis=-1)
+        xLB = np.quantile(x['xsampled'], lower, axis=-1)
+        xUB = np.quantile(x['xsampled'], upper, axis=-1)
         
-        if ci:
-            plt.fill_between(x['tvec'], xLB[j,:], xUB[j,:],
-                            alpha=0.2, label=f'{100*(upper-lower)}% credible interval')
-        if obs:
-            plt.scatter(x['tvec'], x['y'][:,j], label='noisy observations', c='black')
-        plt.title(comp_names[j])
-        plt.xlabel('Time')
+        for j in range(xMean.shape[0]):
+            if est == 'mean':
+                plt.plot(x['tvec'], xMean[j,:], label='inferred trajectory')
+            if est == 'median':
+                xMedian = np.median(x['xsampled'], axis=-1)
+                plt.plot(x['tvec'], xMedian[j,:], label='inferred trajectory')
+            if est == 'mode':
+                plt.plot(x['tvec'], x['xsampled'][j,:,lpmaxInd], label='inferred trajectory')
+            
+            if ci:
+                plt.fill_between(x['tvec'], xLB[j,:], xUB[j,:],
+                                alpha=0.2, label=f'{100*(upper-lower)}% credible interval')
+            if obs:
+                plt.scatter(x['tvec'], x['y'][:,j], label='noisy observations', c='black')
+            plt.title(comp_names[j])
+            plt.xlabel('Time')
+            
+            if legend:
+                plt.legend()
+            plt.show()
+    
+    if type == 'trace':
         
-        if legend:
-            plt.legend()
-        plt.show()
+        par_names = comp_names.copy()
+        if lp:
+            par_names.append('log-post')
+            
+        allpar = x['theta']
+        if sigma:
+            allpar = np.vstack((allpar, x['sigma']))
+        if lp:
+            allpar = np.vstack((allpar, x['lp']))            
+        
+        for j in range(allpar.shape[0]):
+            plt.plot(allpar[j,:], color = 'black')
+            plt.title(par_names[j])
+            
+            if est == 'mean':
+                plt.axhline(np.mean(allpar[j,:]), color = 'r')
+            if est == 'median':
+                plt.axhline(np.median(allpar[j,:]), color = 'r')
+            if est == 'mode':
+                plt.axhline(allpar[j,lpmaxInd], color = 'r')
+            if ci:
+                plt.axhline(np.quantile(allpar[j,:], q=lower), color = 'g')
+                plt.axhline(np.quantile(allpar[j,:], q=upper), color = 'g')
+                
+            plt.show()
+
+
+def gpmean(yobs, tvec, tnew, phi, sigma, kerneltype = 'generalMatern', deriv = False):
+    
+    sigmaTmp = np.ndarray(1)
+    sigmaTmp[0] = sigma.copy()
+    
+    yIn = yobs.copy()
+    phiIn = phi.copy()
+    phiTmp = phiIn.reshape([len(phi),1])
+    
+    res = calcMeanCurve(ArmaVector(tvec), ArmaVector(yIn), ArmaVector(tnew), ArmaMatrix(phiTmp).t(), ArmaVector(sigmaTmp), kerneltype, deriv)
+       
+    if deriv:
+        return dict(mean= matrix(res.slice(0)).reshape(-1), deriv = matrix(res.slice(1)).reshape(-1))
+    else:
+        return matrix(res.slice(0)).reshape(-1)
+
+
+def gpcov(yobs, tvec, tnew, phi, sigma, kerneltype = 'generalMatern'):
+
+    sigmaTmp = np.ndarray(1)
+    sigmaTmp[0] = sigma.copy()
+    
+    yIn = yobs.copy()
+    phiIn = phi.copy()
+    phiTmp = phiIn.reshape([len(phi),1])
+    
+    res = calcCovCurve(ArmaVector(tvec), ArmaVector(yIn), ArmaVector(tnew), ArmaMatrix(phiTmp).t(), ArmaVector(sigmaTmp), kerneltype)
+    
+    return np.matrix(matrix(res.slice(0)))
 

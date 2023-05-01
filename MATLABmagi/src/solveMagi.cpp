@@ -28,7 +28,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   const int nstepsHmc = mxGetScalar(prhs[13]);
   const double burninRatioHmc = mxGetScalar(prhs[14]);
   const unsigned int niterHmc = mxGetScalar(prhs[15]);
-  const double stepSizeFactorHmc = mxGetScalar(prhs[16]);
+  const vec stepSizeFactorHmc = armaGetPrVec(prhs[16]);
   const int nEpoch = mxGetScalar(prhs[17]);
   const int bandSize = mxGetScalar(prhs[18]);
   bool useFrequencyBasedPrior = mxGetLogicals(prhs[19])[0];
@@ -36,7 +36,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   bool useMean = mxGetLogicals(prhs[21])[0];
   bool useScalerSigma = mxGetLogicals(prhs[22])[0];
   bool useFixedSigma = mxGetLogicals(prhs[23])[0];
-  bool verbose = mxGetLogicals(prhs[24])[0];    
+  bool skipMissingComponentOptimization = mxGetLogicals(prhs[24])[0];
+  bool positiveSystem = mxGetLogicals(prhs[25])[0];
+  bool verbose = mxGetLogicals(prhs[26])[0];    
 
   mxArray *fOde_matlab = const_cast<mxArray *>(mxGetField(prhs[1], 0, "fOde"));
   mxArray *fOdeDx_matlab = const_cast<mxArray *>(mxGetField(prhs[1], 0, "fOdeDx"));
@@ -165,6 +167,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           useMean,
           useScalerSigma,
           useFixedSigma,
+          skipMissingComponentOptimization,
+          positiveSystem,
           verbose);
   
 

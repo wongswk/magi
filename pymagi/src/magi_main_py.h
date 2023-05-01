@@ -23,7 +23,7 @@ MagiSolver solveMagiPy(const arma::mat & yFull,
                        const int nstepsHmc = 500,
                        const double burninRatioHmc = 0.5,
                        const unsigned int niterHmc = 10000,
-                       const double stepSizeFactorHmc = 1,
+                       const arma::vec & stepSizeFactorHmc = arma::vec(),
                        const int nEpoch = 10,
                        const int bandSize = 20,
                        bool useFrequencyBasedPrior = false,
@@ -31,6 +31,8 @@ MagiSolver solveMagiPy(const arma::mat & yFull,
                        bool useMean = true,
                        bool useScalerSigma = false,
                        bool useFixedSigma = false,
+                       bool skipMissingComponentOptimization = false,
+                       bool positiveSystem = false,
                        bool verbose = false);
 
 #endif //MAGI_MULTI_LANG_MAGI_MAIN_PY_H

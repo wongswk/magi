@@ -9,8 +9,9 @@ function out = MagiSolver(y, odeModel, tvec, control)
 %      tvec: vector of discretization time points corresponding to rows of "y".
 %            If missing, MagiSolver will use the first column of "y".
 %      control: list of control variables, which may include `sigma`, `phi`, `xInit`,
-%               `thetaInit`, `mu`, `dotmu`, `priorTemperature`, `niterHmc`, `burninRatio`,
-%               `nstepsHmc`, `stepSizeFactor`, `bandSize`, `useFixedSigma`, `verbose`.  See details.
+%               `theta`, `mu`, `dotmu`, `priorTemperature`, `niterHmc`, `burninRatio`,
+%               `nstepsHmc`, `stepSizeFactor`, `bandSize`, `useFixedSigma`,
+%               `kerneltype`, `skipMissingComponentOptimization`, `positiveSystem`, `verbose`. See details.
 % 
 % RETURN
 % MagiSolver returns a struct with the following elements:
@@ -30,7 +31,7 @@ function out = MagiSolver(y, odeModel, tvec, control)
 % Missing observations are indicated with NaN.
 % 
 % The struct `odeModel` is used for specification of the ODE system and its parameters. It must include five elements:
-%     fOde:  function that computes the ODEs, specified with the form f(theta, x, t).
+%     fOde:  function that computes the ODEs, specified with the form f(theta, x, tvec).
 %     fOdeDx:  function that computes the gradients of the ODEs with respect to the system components
 %     fOdeDtheta:  function that computes the gradients of the ODEs with respect to the parameters theta
 %     thetaLowerBound:  a vector indicating the lower bounds of each parameter in theta.
@@ -38,8 +39,8 @@ function out = MagiSolver(y, odeModel, tvec, control)
 % 
 % Additional control variables can be supplied to MagiSolver via the optional struct `control`, which may include the following:
 %       sigma:  a vector of noise levels (observation noise standard deviations) sigma for each component, at which to initialize MCMC sampling.  
-%               By default, MagiSolver computes starting values for sigma via Gaussian process (GP) smoothing. If the noise levels are known, specify sigma together with useFixedSigma = TRUE.
-%       phi:  a matrix of GP hyper-parameters for each component, with two rows for phi[1] and phi[2] and a column for each system component. 
+%               By default, MagiSolver computes starting values for sigma via Gaussian process (GP) smoothing. If the noise levels are known, specify sigma together with useFixedSigma = true.
+%       phi:  a matrix of GP hyper-parameters for each component, with rows for the kernel hyper-parameters and columns for the system components.
 %             By default, MagiSolver estimates phi via an optimization routine.
 %       theta:  a vector of starting values for the parameters theta, at which to initialize MCMC sampling. 
 %               By default, MagiSolver uses an optimization routine to obtain starting values.
@@ -52,9 +53,12 @@ function out = MagiSolver(y, odeModel, tvec, control)
 %       niterHmc:  MCMC sampling from the posterior is carried out via Hamiltonian Monte Carlo (HMC). niterHmc specifies the number of HMC iterations to run.  Default is 20000 HMC iterations.
 %       nstepsHmc:  the number of leapfrog steps per HMC iteration. Default is 200.
 %       burninRatio:  the proportion of HMC iterations to be discarded as burn-in. Default is 0.5, which discards the first half of the MCMC samples.
-%       stepSizeFactor:  initial leapfrog step size factor for HMC.  Default is 0.01, and the leapfrog step size is automatically tuned during burn-in to achieve an acceptance rate between 60-90\%.
+%       stepSizeFactor:  initial leapfrog step size factor for HMC. Can be a specified as a scalar (applied to all posterior dimensions) or a vector (with length corresponding to the dimension of the posterior). Default is 0.01, and the leapfrog step size is automatically tuned during burn-in to achieve an acceptance rate between 60-90\%.
 %       bandSize:  a band matrix approximation is used to speed up matrix operations, with default band size 20. Can be increased if MagiSolver returns an error indicating numerical instability.
 %       useFixedSigma:  logical, set to true if sigma is known.  If useFixedSigma is true, the known values of sigma must be supplied via the sigma control variable.
+%       kerneltype: the GP covariance kernel, `generalMatern` is the default and recommended choice. Other available choices are `matern`, `rbf`, `compact1`, `periodicMatern`.
+%       skipMissingComponentOptimization: logical, set to true to skip automatic optimization for missing components. If skipMissingComponentOptimization = true, values for xInit and phi must be supplied for all system components. Default is false.
+%       positiveSystem: logical, set to true if the system cannot be negative. Default is false.       
 %       verbose: logical, set to true to output diagnostic and progress messages to the console.  
 % 
 % 
@@ -139,7 +143,7 @@ function out = MagiSolver(y, odeModel, tvec, control)
     if isfield(control,'stepSizeFactor') && ~isempty(control.stepSizeFactor)
         stepSizeFactor = control.stepSizeFactor;
     else
-        stepSizeFactor = 0.01;
+        stepSizeFactor = [];
     end    
 
     if isfield(control,'bandSize') && ~isempty(control.bandSize)
@@ -154,8 +158,26 @@ function out = MagiSolver(y, odeModel, tvec, control)
         useFixedSigma = false;
     end      
 
+    if isfield(control,'kerneltype') && ~isempty(control.kerneltype)
+        kerneltype = char(control.kerneltype);
+    else
+        kerneltype = char('generalMatern');
+    end        
+    
+    if isfield(control,'skipMissingComponentOptimization') && ~isempty(control.skipMissingComponentOptimization)
+        skipMissingComponentOptimization = control.skipMissingComponentOptimization;
+    else
+        skipMissingComponentOptimization = false;
+    end    
+
+    if isfield(control,'positiveSystem') && ~isempty(control.positiveSystem)
+        positiveSystem = control.positiveSystem;
+    else
+        positiveSystem = false;
+    end    
+    
     if isfield(control,'verbose') && ~isempty(control.verbose)
-        verbose = control.useFixedSigma;
+        verbose = control.verbose;
     else
         verbose = false;
     end
@@ -163,8 +185,8 @@ function out = MagiSolver(y, odeModel, tvec, control)
 
 
     [outCpp, phiUsed] = solveMagi(y, odeModel, tvec, sigmaExogenous, phiExogenous, xInitExogenous, thetaInitExogenous, ...
-        muExogenous, dotmuExogenous, priorTemperatureLevel, priorTemperatureDeriv, 1, char('generalMatern'), nstepsHmc, ...
-        burninRatio, niterHmc, stepSizeFactor, 1, bandSize, true, true, true, false, useFixedSigma, verbose);
+        muExogenous, dotmuExogenous, priorTemperatureLevel, priorTemperatureDeriv, 1, kerneltype, nstepsHmc, ...
+        burninRatio, niterHmc, stepSizeFactor, 1, bandSize, true, true, true, false, useFixedSigma, skipMissingComponentOptimization, positiveSystem, verbose);
 
     burnin = round(niterHmc*burninRatio);
     nI = size(y,1); % # points in I

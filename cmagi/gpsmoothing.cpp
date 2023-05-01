@@ -296,6 +296,62 @@ arma::cube calcMeanCurve(const arma::vec & xInput,
     return ydyOutput;
 }
 
+arma::cube calcCovCurve(const arma::vec & xInput,
+                         const arma::vec & yInput,
+                         const arma::vec & xOutput,
+                         const arma::mat & phiCandidates,
+                         const arma::vec & sigmaCandidates,
+                         const std::string kerneltype = "generalMatern") {
+
+    const arma::vec & tvec = arma::join_vert(xOutput, xInput);
+    arma::mat distSigned(tvec.size(), tvec.size());
+    for(unsigned int i = 0; i < distSigned.n_cols; i++){
+        distSigned.col(i) = tvec - tvec(i);
+    }
+    arma::cube CovOutput(xOutput.size(), xOutput.size(), phiCandidates.n_cols, arma::fill::zeros);
+    int complexity = 0;
+
+    for(unsigned it = 0; it < phiCandidates.n_cols; it++){
+        const double & sigma = sigmaCandidates(it);
+        const arma::vec & phi = phiCandidates.col(it);
+
+        gpcov covObj;
+        if (kerneltype == "generalMatern") {
+            covObj = generalMaternCov(phi, distSigned, complexity);
+        }else if(kerneltype == "matern") {
+            covObj = maternCov(phi, distSigned, complexity);
+        }else if(kerneltype == "rbf") {
+            covObj = rbfCov(phi, distSigned, complexity);
+        }else if(kerneltype == "compact1") {
+            covObj = compact1Cov(phi, distSigned, complexity);
+        }else if(kerneltype == "periodicMatern"){
+            covObj = periodicMaternCov(phi, distSigned, complexity);
+        }else{
+            throw std::invalid_argument("kerneltype invalid");
+        }
+
+        arma::mat C = std::move(covObj.C);
+
+        arma::vec Cdiag = C.diag();
+        Cdiag(arma::span(xOutput.size(), Cdiag.size() - 1)) += std::pow(sigma, 2);
+        C.diag() = Cdiag;
+
+        arma::mat CsubInv;
+        arma::inv_sympd(CsubInv, C(arma::span(xOutput.size(), Cdiag.size() - 1),
+                                        arma::span(xOutput.size(), Cdiag.size() - 1)));
+
+        CovOutput.slice(it) = C(arma::span(0, xOutput.size() - 1),
+                            arma::span(0, xOutput.size() - 1)) -
+                            C(arma::span(0, xOutput.size() - 1),
+                            arma::span(xOutput.size(), Cdiag.size() - 1)) *
+                            CsubInv * C(arma::span(0, xOutput.size() - 1),
+                            arma::span(xOutput.size(), Cdiag.size() - 1)).t();
+        CovOutput.slice(it) = 0.5 * (CovOutput.slice(it) + CovOutput.slice(it).t());
+    }
+
+    return CovOutput;
+
+}
 
 class ThetaOptim : public cppoptlib::BoundedProblem<double> {
 public:

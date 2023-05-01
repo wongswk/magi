@@ -54,6 +54,11 @@ def MagiSolver(y, odeModel, tvec=None, control=dict()):
         burninRatio = control['burninRatio']
     else:
         burninRatio = 0.5
+        
+    if 'kerneltype' in control.keys():
+        kernel = control['kerneltype']
+    else:
+        kernel = 'generalMatern'
 
     if 'nstepsHmc' in control.keys():
         nstepsHmc = control['nstepsHmc']
@@ -63,7 +68,7 @@ def MagiSolver(y, odeModel, tvec=None, control=dict()):
     if 'stepSizeFactor' in control.keys():
         stepSizeFactor = control['stepSizeFactor']
     else:
-        stepSizeFactor = 0.01
+        stepSizeFactor = np.array([])
 
     if 'bandSize' in control.keys():
         bandSize = control['bandSize']
@@ -74,6 +79,16 @@ def MagiSolver(y, odeModel, tvec=None, control=dict()):
         useFixedSigma = control['useFixedSigma']
     else:
         useFixedSigma = False
+    
+    if 'skipMissingComponentOptimization' in control.keys():
+        skipMissingComponentOptimization = control['skipMissingComponentOptimization']
+    else:
+        skipMissingComponentOptimization = False
+
+    if 'positiveSystem' in control.keys():
+        positiveSystem = control['positiveSystem']
+    else:
+        positiveSystem = False
 
     if 'verbose' in control.keys():
         verbose = control['verbose']
@@ -94,7 +109,7 @@ def MagiSolver(y, odeModel, tvec=None, control=dict()):
         priorTemperatureLevel = priorTemperatureLevel,
         priorTemperatureDeriv = priorTemperatureDeriv,
         priorTemperatureObs = 1.0,
-        kernel = "generalMatern",
+        kernel = kernel,
         nstepsHmc = nstepsHmc,
         burninRatioHmc = burninRatio,
         niterHmc = niterHmc,
@@ -106,6 +121,8 @@ def MagiSolver(y, odeModel, tvec=None, control=dict()):
         useMean = True,
         useScalerSigma = False,
         useFixedSigma = useFixedSigma,
+        skipMissingComponentOptimization = skipMissingComponentOptimization,
+        positiveSystem = positiveSystem,
         verbose = verbose)
 
     phiUsed = result['phiUsed']

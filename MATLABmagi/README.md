@@ -19,9 +19,9 @@ We provide pre-built binaries for Windows and an automatic build script for Linu
 
 ### Linux
 
-Compiling the `libcmagi.so` library on Linux can be done automatically using `./build.sh` in the base directory of Magi repository.
+Compiling the `libcmagi.so` library on Linux can be done automatically using `./build.sh` in the base directory of Magi repository. For maximum MATLAB compatibility, GCC 6 may be required, to specify this `set(CMAKE_CXX_COMPILER g++6)` in `cmagi/CMakeLists.txt`.
 
-Compiling the Mex files `solveMagi.mexa64` and `gpsmooth.mexa64` can be done automatically using `./matab_build.sh` in this directory.
+Compiling the Mex files (e.g., `solveMagi.mexa64` and `gpsmooth.mexa64`) can be done automatically using `./matab_build.sh` in this directory.
 
 Before running the examples, ensure that the directory containing `libcmagi.so`, `solveMagi.mexa64` and `gpsmooth.mexa64` is within Matlab's path.
 

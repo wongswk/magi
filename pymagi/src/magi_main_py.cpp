@@ -20,7 +20,7 @@ MagiSolver solveMagiPy(const arma::mat & yFull,
                       const int nstepsHmc ,
                       const double burninRatioHmc ,
                       const unsigned int niterHmc ,
-                      const double stepSizeFactorHmc ,
+                      const arma::vec & stepSizeFactorHmc ,
                       const int nEpoch ,
                       const int bandSize ,
                       bool useFrequencyBasedPrior ,
@@ -28,6 +28,8 @@ MagiSolver solveMagiPy(const arma::mat & yFull,
                       bool useMean ,
                       bool useScalerSigma ,
                       bool useFixedSigma ,
+                      bool skipMissingComponentOptimization ,
+                      bool positiveSystem ,
                       bool verbose) {
 
     MagiSolver solver(yFull,
@@ -54,6 +56,8 @@ MagiSolver solveMagiPy(const arma::mat & yFull,
                       useMean,
                       useScalerSigma,
                       useFixedSigma,
+                      skipMissingComponentOptimization,
+                      positiveSystem,
                       verbose);
     solver.setupPhiSigma();
     if(verbose){

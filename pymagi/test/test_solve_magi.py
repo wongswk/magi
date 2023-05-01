@@ -92,7 +92,7 @@ class SolveMagiTest(unittest.TestCase):
             nstepsHmc = 100,
             burninRatioHmc = 0.5,
             niterHmc = 1000,
-            stepSizeFactorHmc = 0.1,
+            stepSizeFactorHmc = ArmaVector(np.ndarray(0)),
             nEpoch = 1,
             bandSize = 20,
             useFrequencyBasedPrior = True,
@@ -100,6 +100,8 @@ class SolveMagiTest(unittest.TestCase):
             useMean = False,
             useScalerSigma = False,
             useFixedSigma = False,
+            skipMissingComponentOptimization = False,
+            positiveSystem = False,
             verbose = True)
         phiUsed = matrix(result_solver.phiAllDimensions)
         samplesCpp = matrix(result_solver.llikxthetasigmaSamples.slice(0))
@@ -204,7 +206,7 @@ class SolveMagiTest(unittest.TestCase):
             nstepsHmc = 100,
             burninRatioHmc = 0.5,
             niterHmc = 1000,
-            stepSizeFactorHmc = 0.1,
+            stepSizeFactorHmc = ArmaVector(np.ndarray(0)),
             nEpoch = 1,
             bandSize = 20,
             useFrequencyBasedPrior = True,
@@ -212,6 +214,8 @@ class SolveMagiTest(unittest.TestCase):
             useMean = False,
             useScalerSigma = False,
             useFixedSigma = True,
+            skipMissingComponentOptimization = False,
+            positiveSystem = False,
             verbose = True)
         phiUsed = matrix(result_solver.phiAllDimensions)
         samplesCpp = matrix(result_solver.llikxthetasigmaSamples.slice(0))

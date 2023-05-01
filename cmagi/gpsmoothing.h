@@ -30,6 +30,13 @@ arma::cube calcMeanCurve(const arma::vec & xInput,
                          const std::string kerneltype = "generalMatern",
                          const bool useDeriv = false);
 
+arma::cube calcCovCurve(const arma::vec & xInput,
+                         const arma::vec & yInput,
+                         const arma::vec & xOutput,
+                         const arma::mat & phiCandidates,
+                         const arma::vec & sigmaCandidates,
+                         const std::string kerneltype = "generalMatern");
+
 arma::mat optimizePhi(const arma::mat & yobsInput,
                       const arma::vec & tvecInput,
                       const OdeSystem & fOdeModelInput,
