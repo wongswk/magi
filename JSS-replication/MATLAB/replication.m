@@ -2,7 +2,7 @@
 
 % To run this script, ensure that path contains 
 % - libcmagi.so (or libcmagi.dll on Windows) 
-% - 'mex' compiled solveMagi.cpp and gpsmooth.cpp
+% - 'mex' compiled .cpp files from src/
 % addpath('...'); % add path here if necessary
 
 addpath('models/');
@@ -38,9 +38,10 @@ ylabel('Level');
 hold off;
 
 % Use log transform
-y(:,2:4) = log(y(:,2:4));
+y_tilde = y;
+y_tilde(:,2:4) = log(y(:,2:4));
 
-yTest = rand( size(y,1), size(y,2)-1);
+yTest = rand( size(y_tilde,1), size(y_tilde,2)-1);
 thetaTest = rand(size(pram_true.theta));
 testDynamicalModel(@hes1logmodelODE, @hes1logmodelDx, @hes1logmodelDtheta, ... 
                    "Hes1 log", yTest, thetaTest, y(:,1))
@@ -54,25 +55,18 @@ hes1model.thetaUpperBound = [Inf Inf Inf Inf Inf Inf Inf];
 config.sigma = pram_true.sigma;
 config.useFixedSigma =  true;
 
-hes1result = MagiSolver( y, hes1model, [], config);
+hes1result = MagiSolver( y_tilde, hes1model, [], config);
 
 % Trace plots of parameters and log-post
 theta_names = ["a", "b", "c", "d", "e", "f", "g"];
-for i=1:size(hes1result.theta,2)
-    subplot(2, 4, i);
-    plot(hes1result.theta(:,i));
-    title(theta_names(i));
-end
-subplot(2, 4, 8);
-plot(hes1result.lp);
-title("log-post");
+plotMagiOutput(hes1result, "trace", theta_names, true, true, "mean", 0.025, 0.975, false, true, 4)
 
 % Parameter estimates
-summaryMagiOutput(hes1result, false, theta_names, 0.025, 0.975)
+summaryMagiOutput(hes1result, "mean", false, theta_names, 0.025, 0.975)
 
 % Inferred trajectories (log scale)
 comp_names = ["P (17 observations)", "M (16 observations)", "H (unobserved)"];
-plotMagiOutput(hes1result, true, true, comp_names, 0.025, 0.975)
+plotMagiOutput(hes1result, "traj", comp_names, true, true, "mean", 0.025, 0.975, [], [], 3)
 
 % Inferred trajectories (original scale)
 xEst = exp(squeeze(mean(hes1result.xsampled, 1)));
@@ -83,7 +77,7 @@ for i=1:size(xEst,2)
         qlim(:,j) = exp(quantile(hes1result.xsampled(:,j,i),[0.025 0.975]));
     end
     fill([y(:,1)' fliplr(y(:,1)')],[(qlim(1,:)) (fliplr(qlim(2,:)))],[.9 .9 .9],'LineStyle','none')
-    hold on;plot(y(:,1)', exp(y(:,i+1)),'o', 'Color', 'black', 'linewidth', 2);
+    hold on;plot(y(:,1)', y(:,i+1),'o', 'Color', 'black', 'linewidth', 2);
     plot(y(:,1)', xEst(:,i), 'LineWidth', 2, 'Color', 'green');
     plot(times, xtrue(:,i), 'LineWidth', 2, 'Color', 'red');
     xlabel('time');
@@ -128,13 +122,26 @@ FNres2 = MagiSolver( y_I2, fnmodel, [], config);
 config.nstepsHmc = 1000;
 FNres3 = MagiSolver( y_I3, fnmodel, [], config);
 
-% Parameter estimates
+% Visualize parameter estimates over different discretization sets
+resList = {FNres0, FNres1, FNres2, FNres3};
 theta_names = ["a", "b", "c", "sigmaV", "sigmaR"];
+FNsummary = {};
+for i=1:length(resList)
+    FNsummary{i} = summaryMagiOutput(resList{i}, "mean", true, theta_names, 0.025, 0.975);
+end
 
-summaryMagiOutput(FNres0, true, theta_names, 0.025, 0.975)
-summaryMagiOutput(FNres1, true, theta_names, 0.025, 0.975)
-summaryMagiOutput(FNres2, true, theta_names, 0.025, 0.975)
-summaryMagiOutput(FNres3, true, theta_names, 0.025, 0.975)
+for i=1:length(theta_names)
+    subplot(1,5,i);
+    getMean = @(x) table2array(x(1,theta_names(i)));
+    getErrlower = @(x) table2array(x(1,theta_names(i)))-table2array(x(2,theta_names(i)));
+    getErrupper = @(x) table2array(x(3,theta_names(i)))-table2array(x(1,theta_names(i)));
+    
+    errorbar(1:4, cellfun(getMean, FNsummary), cellfun(getErrlower, FNsummary), cellfun(getErrupper, FNsummary),'o');
+    xlim([0,5]);
+    xticks(1:4);
+    xticklabels({'I0', 'I1', 'I2', 'I3'});
+    title(theta_names(i));
+end
 
 tvec = 0:0.01:20;
 
@@ -213,17 +220,6 @@ end
 compnames = ["TU", "TI", "V"];
 complabels = ["Concentration", "Concentration", "Load"];
 
-for i=1:3
-  subplot(1,3,i);
-  plot(tvec, xtrue(:,i+1));
-  xlabel('Time');
-  ylabel(complabels(i));
-  title(compnames(i));
-  hold on;
-  plot(tvec, y(:,i+1), '.');
-  hold off;
-end
-
 % use gpsmoothing to determine phi/sigma
 phiEst = zeros(2, size(y,2)-1);
 sigmaInit = zeros(1, size(y,2)-1);
@@ -234,9 +230,46 @@ for j=1:(size(y,2)-1)
     sigmaInit(j) = hyperparam.sigma;
 end
     
+tOut = 0:0.05:20;
+for i=1:3
+  subplot(1,3,i);
+  
+  fitMean = gpmean(y(:,i+1), tvec, tOut, phiEst(:,i), sigmaInit(i), [], []);
+  fitCov = gpcov(y(:,i+1), tvec, tOut, phiEst(:,i), sigmaInit(i), []);
+
+  gp_UB = fitMean + 1.96 * sqrt(diag(fitCov));
+  gp_LB = fitMean - 1.96 * sqrt(diag(fitCov));
+  
+  fill([tOut fliplr(tOut)],[gp_LB' fliplr(gp_UB')],[.9 .9 .9],'LineStyle','none')
+  hold on;
+  plot(tvec, y(:,i+1), '.', 'Color', 'black');
+
+  xlabel('Time');
+  ylabel(complabels(i));
+  title(compnames(i));
+
+  plot(tOut, fitMean, 'Color', "#0072BD");
+  
+  if (i<3)
+      hold off;
+  end
+end
+
 % override phi/sigma for V (3rd) component
 phiEst(:,3) = [1e7, 0.5];
 sigmaInit(3) = 100;
+
+i = 3;
+fitMean = gpmean(y(:,i+1), tvec, tOut, phiEst(:,i), sigmaInit(i), [], []);
+fitCov = gpcov(y(:,i+1), tvec, tOut, phiEst(:,i), sigmaInit(i), []);
+
+gp_UB = fitMean + 1.96 * sqrt(diag(fitCov));
+gp_LB = fitMean - 1.96 * sqrt(diag(fitCov));
+
+fill([tOut fliplr(tOut)],[gp_LB' fliplr(gp_UB')],[.9 .9 .9],'LineStyle','none');
+plot(tvec, y(:,i+1), '.', 'Color', 'black');
+plot(tOut, fitMean, 'Color', "#EDB120");
+hold off;
 
 config.sigma = sigmaInit;
 config.phi = phiEst;
@@ -246,7 +279,7 @@ HIVresult = MagiSolver( y_I, hivdtmodel, [], config);
 
 % Parameter estimates
 theta_names = ["lambda", "rho", "delta", "N", "c"];
-summaryMagiOutput(HIVresult, false, theta_names, 0.025, 0.975)
+summaryMagiOutput(HIVresult, "mean", false, theta_names, 0.025, 0.975)
 
 % Inferred trajectories
 xEst = squeeze(mean(HIVresult.xsampled, 1));
@@ -272,3 +305,21 @@ for i=1:size(xEst,2)
 end
 
 save("HIVtdresult.mat")
+
+
+%%% Hamiltonian Monte Carlo - example of sticky samples with high autocorrelation
+
+load("FNresult.mat")
+
+rng(12321);
+
+y_I0 = setDiscretizationInterval(FNdat, 0.5);
+y_I3 = setDiscretization(y_I0, 3);
+
+config.niterHmc = 10000;
+config.nstepsHmc = 200;
+FNres3b = MagiSolver( y_I3, fnmodel, [], config);
+
+theta_names = ["a", "b", "c", "sigmaV", "sigmaR"];
+plotMagiOutput(FNres3b, "trace", theta_names, true, true, "mean", 0.025, 0.975, true, true, 3)
+

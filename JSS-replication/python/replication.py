@@ -9,7 +9,7 @@ from scipy.integrate import solve_ivp
 # Add path to MAGI library directory (containing pymagi.so) here if necessary
 # sys.path.append('...')
 
-from arma import ode_system, testDynamicalModel, setDiscretization, gpsmoothing, plotMagiOutput, summaryMagiOutput
+from arma import ode_system, testDynamicalModel, setDiscretization, gpsmoothing, plotMagiOutput, summaryMagiOutput, gpmean, gpcov
 from magi import MagiSolver
 
 ## Hes1 example
@@ -57,7 +57,7 @@ plt.scatter(tvecObs , y[:, 0])
 plt.scatter(tvecObs , y[:, 1])
 plt.show()
 
-y = np.log(y)
+y_tilde = np.log(y)
 
 def hes1logmodelOde(theta, x, tvec):
     P = np.exp(x[:, 0])
@@ -113,7 +113,7 @@ def hes1logmodelDtheta(theta, x, tvec):
     return resultDtheta
 
 
-yTest = np.random.rand( np.shape(y)[0], np.shape(y)[1])
+yTest = np.random.rand( np.shape(y_tilde)[0], np.shape(y_tilde)[1])
 thetaTest = np.random.rand( np.shape(true_theta)[0])
 testDynamicalModel(hes1logmodelOde, hes1logmodelDx, hes1logmodelDtheta, 
                    "Hes1 log", yTest, thetaTest, tvecObs)
@@ -126,18 +126,12 @@ control=dict(
     useFixedSigma = True
 )
 
-yIn = np.append(tvecObs.reshape(-1,1), y, axis = 1)
+yIn = np.append(tvecObs.reshape(-1,1), y_tilde, axis = 1)
 hes1result = MagiSolver(y=yIn, odeModel=hes1_system, control=control)
 
 # Traceplots of parameters and log-posterior
 theta_names = ["a", "b", "c", "d", "e", "f", "g"]
-for j in range(hes1result['theta'].shape[0]):
-    plt.plot(hes1result['theta'][j,:])
-    plt.title(theta_names[j])
-    plt.show()
-plt.plot(hes1result['lp'])
-plt.title('log-post')
-plt.show()
+plotMagiOutput(hes1result, theta_names, type = 'trace')
 
 # Parameter estimates
 summaryMagiOutput(hes1result, theta_names)
@@ -154,7 +148,7 @@ for j in range(xMean.shape[0]):
     plt.plot(tvecObs, xMean[j,:], label='inferred trajectory')
     plt.fill_between(tvecObs, xLB[j,:], xUB[j,:],
                     alpha=0.2, label='95% credible interval')
-    plt.scatter(tvecObs, np.exp(y[:,j]), label='noisy observations', c='black')
+    plt.scatter(tvecObs, np.exp(y_tilde[:,j]), label='noisy observations', c='black')
     plt.plot(tvecOde, sol.y[j, :], label='truth')
     plt.title(comp_names[j])
     plt.xlabel('Time')
@@ -209,12 +203,24 @@ FNres1 = MagiSolver(y = y_I1, odeModel=fn_system, control=dict(niterHmc = 10000)
 FNres2 = MagiSolver(y = y_I2, odeModel=fn_system, control=dict(niterHmc = 10000))
 FNres3 = MagiSolver(y = y_I3, odeModel=fn_system, control=dict(niterHmc = 10000, nstepsHmc=1000))
 
+resList = [FNres0, FNres1, FNres2, FNres3]
 FN_parnames = ["a", "b", "c", "sigmaV", "sigmaR"]
+FNtr_labels = ['I0', 'I1', 'I2', 'I3']
 
-summaryMagiOutput(FNres0, FN_parnames, sigma = True)
-summaryMagiOutput(FNres1, FN_parnames, sigma = True)
-summaryMagiOutput(FNres2, FN_parnames, sigma = True)
-summaryMagiOutput(FNres3, FN_parnames, sigma = True)
+# Visualize parameter estimates over different discretization sets
+def FNsummary(res):
+    return summaryMagiOutput(res, FN_parnames, sigma = True)
+
+FNests = list(map(FNsummary, resList))
+for i in range(len(FN_parnames)):
+    getMean = lambda x: x[FN_parnames[i]][0]
+    getErrlower = lambda x: x[FN_parnames[i]][0] - x[FN_parnames[i]][1]
+    getErrupper = lambda x: x[FN_parnames[i]][2] - x[FN_parnames[i]][0]
+    
+    plt.errorbar(FNtr_labels, list(map(getMean, FNests)),
+                 np.array(list(zip(list(map(getErrlower, FNests)), list(map(getErrupper, FNests))))).T, fmt = 'o')
+    plt.title(FN_parnames[i])
+    plt.show()
 
 # Reconstructed trajectories
 tvecOde = np.linspace(0,20,2001)
@@ -225,9 +231,8 @@ def FNcalcTraj(res):
                 t_span=[0, 20], y0=x0_est, t_eval=tvecOde, vectorized=True)
     return sol['y']
 
-resList = [FNres0, FNres1, FNres2, FNres3]
+
 FNtr = list(map(FNcalcTraj, resList))
-FNtr_labels = ['I0', 'I1', 'I2', 'I3']
 
 plt.scatter(FNdat['time'], FNdat['V'], c='black')
 for j in range(len(FNtr)):
@@ -333,17 +338,6 @@ y = sol.y.transpose().copy()
 for j in range(np.shape(y)[1]):
     y[:, j] +=  np.random.normal(0, true_sigma[0], np.shape(y)[0])
 
-compnames = ["TU", "TI", "V"]
-complabels = ["Concentration", "Concentration", "Load"]
-
-for j in range(np.shape(y)[1]):
-    plt.plot(tvecObs, sol.y[j,:])
-    plt.scatter(tvecObs, y[:,j], facecolors='none', edgecolors='black')
-    plt.title(compnames[j])
-    plt.ylabel(complabels[j])
-    plt.xlabel('Time')
-    plt.show()
-
 
 # use gpsmoothing to determine phi/sigma
 phiEst = np.zeros(shape=[2, np.shape(y)[1]])
@@ -357,9 +351,47 @@ for j in range(np.shape(y)[1]):
 phiEst
 sigmaInit
 
+compnames = ["TU", "TI", "V"]
+complabels = ["Concentration", "Concentration", "Load"]
+
+tOut = np.linspace(0, 20, 401)
+
+for j in range(np.shape(y)[1]):
+    #plt.plot(tvecObs, sol.y[j,:])
+    plt.scatter(tvecObs, y[:,j], facecolors='none', edgecolors='black')
+
+    fitMean = gpmean(y[:,j], tvecObs, tOut, phiEst[:, j], sigmaInit[j])
+    fitCov = gpcov(y[:,j], tvecObs, tOut, phiEst[:, j], sigmaInit[j])
+    
+    gp_UB = fitMean + 1.96 * np.sqrt(np.diag(fitCov))
+    gp_LB = fitMean - 1.96 * np.sqrt(np.diag(fitCov))
+    
+    plt.plot(tOut, fitMean)    
+    plt.fill_between(tOut, gp_LB, gp_UB,
+                    alpha=0.2, label='95% credible interval', color = 'black')
+    
+    plt.title(compnames[j])
+    plt.ylabel(complabels[j])
+    plt.xlabel('Time')
+    if j < 2:
+        plt.show()
+
 # override phi/sigma for V (3rd) component
 phiEst[:,2] = [1e7, 0.5]
 sigmaInit[2] = 100.0
+
+j = 2
+fitMean = gpmean(y[:,j], tvecObs, tOut, phiEst[:, j], sigmaInit[j])
+fitCov = gpcov(y[:,j], tvecObs, tOut, phiEst[:, j], sigmaInit[j])
+
+gp_UB = fitMean + 1.96 * np.sqrt(np.diag(fitCov))
+gp_LB = fitMean - 1.96 * np.sqrt(np.diag(fitCov))
+
+plt.plot(tOut, fitMean, color='orange')    
+plt.fill_between(tOut, gp_LB, gp_UB,
+                alpha=0.2, label='95% credible interval', color = 'black')
+plt.show()
+
 
 yFull = np.append(tvecObs.reshape(-1,1), y, axis = 1)
 y_I = setDiscretization(yFull, level=1)
@@ -389,3 +421,14 @@ for j in range(xMean.shape[0]):
     plt.xlabel('Time')
     plt.legend()
     plt.show()
+
+
+## Hamiltonian Monte Carlo - example of sticky samples with high autocorrelation
+
+np.random.seed(12321)
+
+y_I0 = setDiscretization(FNdat.to_numpy(), by = 0.5)
+y_I3 = setDiscretization(y_I0, level=3)
+    
+FNres3b = MagiSolver(y = y_I3, odeModel=fn_system, control=dict(niterHmc = 10000))
+plotMagiOutput(FNres3b, FN_parnames, type = "trace", sigma = True)
