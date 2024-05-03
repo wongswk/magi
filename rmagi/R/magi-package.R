@@ -1,14 +1,15 @@
 #' `magi`: MAnifold-Constrained Gaussian Process Inference
 #'
 #' `magi` is a package that provides fast and accurate inference for the parameter estimation problem in Ordinary Differential Equations, including the case when there are unobserved system components.
-#' In the references below, please see Yang, Wong, and Kou (2021) for details of the MAGI method (MAnifold-constrained Gaussian process Inference), and Wong, Yang, and Kou (2022) for a detailed user guide.
+#' In the references below, please see our software paper Wong, Yang, and Kou (2024) for a detailed user guide and Yang, Wong, and Kou (2021) for details of the MAGI method (MAnifold-constrained Gaussian process Inference).
 #'
 #' @references
+#'
+#' Wong, S. W. K., Yang, S., & Kou, S. C. (2024). `magi`: A Package for Inference of Dynamic Systems from Noisy and Sparse Data via Manifold-Constrained Gaussian Processes. *Journal of Statistical Software*, 109 (4), 1-47. \doi{10.18637/jss.v109.i04}
 #'
 #' Yang, S., Wong, S. W. K., & Kou, S. C. (2021). Inference of Dynamic Systems from Noisy and 
 #' Sparse Data via Manifold-constrained Gaussian Processes. *Proceedings of the National Academy of Sciences*, 118 (15), e2020397118. \doi{10.1073/pnas.2020397118}
 #'
-#' Wong, S. W. K., Yang, S., & Kou, S. C. (2022). `MAGI`: A Package for Inference of Dynamic Systems from Noisy and Sparse Data via Manifold-constrained Gaussian Processes. \url{https://arxiv.org/abs/2203.06066}
 #'
 #' @name magi
 #' @md

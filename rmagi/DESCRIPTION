@@ -1,8 +1,8 @@
 Package: magi
 Type: Package
 Title: MAnifold-Constrained Gaussian Process Inference
-Version: 1.2.2
-Date: 2023-04-25
+Version: 1.2.3
+Date: 2024-05-03
 Authors@R:
   c(person(given = "Shihao",
            family = "Yang",
@@ -22,7 +22,8 @@ Encoding: UTF-8
 Description: Provides fast and accurate inference for the parameter estimation problem in Ordinary Differential
     Equations, including the case when there are unobserved system components. Implements the MAGI method
     (MAnifold-constrained Gaussian process Inference) of Yang, Wong, and Kou (2021) <doi:10.1073/pnas.2020397118>.
-URL: https://arxiv.org/abs/2203.06066
+    A user guide is provided by the accompanying software paper Wong, Yang, and Kou (2024) <doi:10.18637/jss.v109.i04>.
+URL: https://doi.org/10.18637/jss.v109.i04
 License: MIT + file LICENSE
 VignetteBuilder: knitr
 Imports: 
