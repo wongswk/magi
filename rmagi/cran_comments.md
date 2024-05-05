@@ -1,3 +1,47 @@
+# MAGI v.1.2.3
+
+## Resubmission
+This is a resubmission to update citations and references. The DOI in the CITATION is for a new JSS publication that will be registered after publication on CRAN.
+
+## Changelog:
+* Add CITATION file and update references for a new JSS publication
+* Minor bugfix for theta argument in MagiSolver
+
+## Test environments:
+* Ubuntu 20.04, R 4.4.0
+* Windows 10, R 4.4.0
+* Windows 10, R-devel
+
+## R CMD check results
+There were no ERRORs or WARNINGs.
+
+There was a NOTE regarding the DOI that will be registered after publication on CRAN.
+```
+Found the following (possibly) invalid URLs:
+  URL: https://doi.org/10.18637/jss.v109.i04
+    From: DESCRIPTION
+    Status: 404
+    Message: Not Found
+
+Found the following (possibly) invalid DOIs:
+  DOI: 10.18637/jss.v109.i04
+    From: DESCRIPTION
+          inst/CITATION
+          man/MagiSolver.Rd
+          man/magi.Rd
+    Status: 404
+    Message: Not Found
+```
+
+There was a NOTE on R 4.4.0 on Ubuntu 20.04 regarding package size:
+```
+* checking installed package size ... NOTE
+  installed size is 54.4Mb
+  sub-directories of 1Mb or more:
+    libs  53.0Mb
+```
+
+
 # MAGI v.1.2.2
 
 ## Resubmission
