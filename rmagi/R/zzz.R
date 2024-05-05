@@ -10,11 +10,11 @@ NULL
   # BuildDate <- pkgdes$Date
 
   foo <- paste(#"## \n##  magi (Version ", version, ", Build Date: ", BuildDate, ")\n",
-               "##  See JSS paper https://doi.org/10.18637/jss.v109.i04 for detailed usage instructions, \n",
+               "##  See https://doi.org/10.18637/jss.v109.i04 for a user guide, \n",
+               "##  https://doi.org/10.1073/pnas.2020397118 for details of the MAGI method, \n",
                "##  and https://github.com/wongswk/magi for additional documentation.\n",
                "##  \n",
                '##  To cite the magi software, please see citation("magi")\n',
-               '##  and refer to https://doi.org/10.1073/pnas.2020397118 for details of the MAGI method.',
                sep = "")
   packageStartupMessage(foo)
 }

@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-This vignette provides a brief introduction to our R software package for the MAGI (MAnifold-constrained Gaussian process Inference) method ([Yang, Wong, and Kou 2021, PNAS](https://www.pnas.org/doi/10.1073/pnas.2020397118)) for dynamic systems. For detailed usage, see our companion article on arXiv at https://arxiv.org/abs/2203.06066 and the R package documentation.
+This vignette provides a brief introduction to our R software package for the MAGI (MAnifold-constrained Gaussian process Inference) method ([Yang, Wong, and Kou 2021, PNAS](https://doi.org/10.1073/pnas.2020397118)) for dynamic systems. For detailed usage, see our companion article in JSS ([Wong, Yang, and Kou 2024](https://doi.org/10.18637/jss.v109.i04)) and the R package documentation.
 
 Ordinary differential equations (ODEs) are widely used as models for dynamic systems in application domains, including gene regulation, economics, chemistry, epidemiology and ecology.  We focus on the setting where the ODEs are nonlinear and unknown parameters govern their behavior. The problem of interest is to recover the system trajectories and to estimate the parameters from experimental or observational data, where the observations taken from the system may be subject to measurement noise and may only be available at a sparse number of time points.  Further, some components in the system may not be observable. MAGI has been shown to provide fast and accurate inference  for this parameter estimation problem, including the case when there are unobserved system components.
 

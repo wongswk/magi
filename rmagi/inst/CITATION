@@ -1,0 +1,20 @@
+bibentry(bibtype = "Article",
+  title        = "{magi}: A Package for Inference of Dynamic Systems from Noisy and Sparse Data via Manifold-Constrained {G}aussian Processes",
+  author       = c(person(given = c("Samuel", "W.", "K."),
+                          family = "Wong",
+                          email = "samuel.wong@uwaterloo.ca"),
+                   person(given = "Shihao",
+                          family = "Yang",
+                          email = "shihao.yang@isye.gatech.edu"),
+                   person(given = c("S.", "C."),
+                          family = "Kou",
+                          email = "kou@stat.harvard.edu")),
+  journal      = "Journal of Statistical Software",
+  year         = "2024",
+  volume       = "109",
+  number       = "4",
+  pages        = "1--47",
+  doi          = "10.18637/jss.v109.i04",
+  header       = "To cite magi in publications use:"
+)
+
