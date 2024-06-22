@@ -17,5 +17,6 @@ input_cov$dotmu = c(21, 22)
 input_cov$bandsize = 2
 
 test_that("input custom object gpcov", {
+    skip("workaround Rcpp issue #1308")
     expect_equal(magi:::maternCovTestInput(input_cov), input_cov$Cinv)
 })

@@ -1,8 +1,8 @@
 Package: magi
 Type: Package
 Title: MAnifold-Constrained Gaussian Process Inference
-Version: 1.2.3
-Date: 2024-05-06
+Version: 1.2.4
+Date: 2024-06-21
 Authors@R:
   c(person(given = "Shihao",
            family = "Yang",
@@ -34,7 +34,7 @@ Imports:
     methods,
     deSolve
 LinkingTo: Rcpp, RcppArmadillo, BH, roptim
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 Suggests: 
     testthat,
     mvtnorm,

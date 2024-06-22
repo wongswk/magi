@@ -1,3 +1,28 @@
+# MAGI v.1.2.4
+
+## Resubmission
+This is a resubmission to work around the open Rcpp issue #1308 (https://github.com/RcppCore/Rcpp/issues/1308)
+
+## Changelog:
+* Skip the test offending UBSAN, as suggested by Dirk Eddelbuettel
+
+## Test environments:
+* Ubuntu 22.04, R 4.3.2
+* Windows 10, R 4.4.0
+* Windows 10, R-devel
+
+## R CMD check results
+There were no ERRORs or WARNINGs.
+
+There was a NOTE on R 4.3.2 on Ubuntu 22.04 regarding package size:
+```
+* checking installed package size ... NOTE
+  installed size is 30.2Mb
+  sub-directories of 1Mb or more:
+    libs  28.8Mb
+```
+
+
 # MAGI v.1.2.3
 
 ## Resubmission
