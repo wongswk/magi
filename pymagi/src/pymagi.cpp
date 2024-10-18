@@ -262,6 +262,14 @@ PYBIND11_MODULE(pymagi, macro)
         py::arg("dist"),
         py::arg("kernel"));
 
+    py::class_< gpcov >(macro, "gpcov")
+            .def(py::init<>())
+            .def_readwrite("C", &gpcov::C)
+            .def_readwrite("Cinv", &gpcov::Cinv)
+            .def_readwrite("mphi", &gpcov::mphi)
+            .def_readwrite("Kphi", &gpcov::Kphi)
+            .def_readwrite("Kinv", &gpcov::Kinv);
+
     /*
      * cpp class with functionals
      */
@@ -292,6 +300,14 @@ PYBIND11_MODULE(pymagi, macro)
         py::arg("ub"),
         py::arg("nsteps"),
         py::arg("traj"));
+
+    macro.def(
+        "generalMaternCov",
+        &generalMaternCov,
+        "",
+        py::arg("phi"),
+        py::arg("distSigned"),
+        py::arg("complexity"));
 
     py::class_< MagiSolver >(macro, "MagiSolver")
         .def_readwrite("phiAllDimensions", &MagiSolver::phiAllDimensions)
